@@ -1,0 +1,24 @@
+spring:
+  profiles:
+    active: test
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false # 테스트 시 로그 최소화
+    properties:
+      hibernate:
+        jdbc:
+          lob:
+            non_contextual_creation: true
+
+  sql:
+    init:
+      mode: never # 테스트에서는 SQL 초기화 비활성화
+
+logging:
+  level:
+    org.certis.studyplatform: WARN
+    org.hibernate: WARN
+    io.zonky.test.db.postgres: WARN
