@@ -10,8 +10,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
-import org.certis.studyplatform.project.domain.model.ProjectParticipant;
-import org.certis.studyplatform.project.domain.vo.*;
+//import org.certis.studyplatform.project.domain.model.ProjectParticipant;
+//import org.certis.studyplatform.project.domain.vo.*;
 
 import java.time.ZonedDateTime;
 
@@ -55,23 +55,23 @@ public class ProjectParticipantEntity {
         this.deletedAt = deletedAt;
     }
 
-    public static ProjectParticipantEntity fromDomain(ProjectParticipant participant) {
-        return ProjectParticipantEntity.builder()
-                .id(participant.getId() != null ? participant.getId().value() : null)
-                .projectId(participant.getProjectId().value())
-                .memberId(participant.getMemberId().value())
-                .createdAt(participant.getCreatedAt())
-                .updatedAt(participant.getUpdatedAt())
-                .build();
-    }
-
-    public ProjectParticipant toDomain() {
-        return new ProjectParticipant(
-                this.id != null ? new ProjectParticipantId(this.id) : null,
-                new ProjectId(this.projectId),
-                new MemberId(this.memberId),
-                this.createdAt,
-                this.updatedAt
-        );
-    }
+//    public static ProjectParticipantEntity fromDomain(ProjectParticipant participant) {
+//        return ProjectParticipantEntity.builder()
+//                .id(participant.getId() != null ? participant.getId().value() : null)
+//                .projectId(participant.getProjectId().value())
+//                .memberId(participant.getMemberId().value())
+//                .createdAt(participant.getCreatedAt())
+//                .updatedAt(participant.getUpdatedAt())
+//                .build();
+//    }
+//
+//    public ProjectParticipant toDomain() {
+//        return new ProjectParticipant(
+//                this.id != null ? new ProjectParticipantId(this.id) : null,
+//                new ProjectId(this.projectId),
+//                new MemberId(this.memberId),
+//                this.createdAt,
+//                this.updatedAt
+//        );
+//    }
 }

@@ -42,8 +42,9 @@ public class MemberEntity {
     @Column(nullable = false)
     private String role;
 
+    //TODO: String[]
     @Column(columnDefinition = "text[]")
-    private String[] skills;
+    private Object skills;
 
     private String major;
 
@@ -60,7 +61,7 @@ public class MemberEntity {
 
     @Builder(toBuilder = true)
     private MemberEntity(Long id, String name, String studentNumber, String profileImage,
-                         String grade, String role, String[] skills, String major,
+                         String grade, String role, Object skills, String major,
                          ZonedDateTime createdAt, ZonedDateTime updatedAt, ZonedDateTime deletedAt) {
         this.id = id;
         this.name = name;
@@ -91,19 +92,19 @@ public class MemberEntity {
                 .build();
     }
 
-    // Entity → Domain 변환
-    public Member toDomain() {
-        return new Member(
-                this.id != null ? new MemberId(this.id) : null,
-                this.name,
-                new StudentNumber(this.studentNumber),
-                this.profileImage != null ? new ProfileImage(this.profileImage) : null,
-                this.grade,
-                this.role,
-                this.skills != null ? Skills.of(Arrays.asList(this.skills)) : Skills.empty(),
-                this.major,
-                this.createdAt,
-                this.updatedAt
-        );
-    }
+//    // Entity → Domain 변환
+//    public Member toDomain() {
+//        return new Member(
+//                this.id != null ? new MemberId(this.id) : null,
+//                this.name,
+//                new StudentNumber(this.studentNumber),
+//                this.profileImage != null ? new ProfileImage(this.profileImage) : null,
+//                this.grade,
+//                this.role,
+//                this.skills != null ? Skills.of(Arrays.asList(this.skills)) : Skills.empty(),
+//                this.major,
+//                this.createdAt,
+//                this.updatedAt
+//        );
+//    }
 }

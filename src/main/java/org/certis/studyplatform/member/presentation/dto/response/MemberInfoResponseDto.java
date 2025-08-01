@@ -13,7 +13,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class MemberResponseDto {
+public class MemberInfoResponseDto {
     private Long id;
     private String name;
     private String studentNumber;
@@ -25,8 +25,8 @@ public class MemberResponseDto {
     private ZonedDateTime createdAt;
     private ZonedDateTime updatedAt;
 
-    public static MemberResponseDto fromDomain(Member member) {
-        return new MemberResponseDto(
+    public static MemberInfoResponseDto fromDomain(Member member) {
+        return new MemberInfoResponseDto(
                 member.getId() != null ? member.getId().value() : null,
                 member.getName(),
                 member.getStudentNumber().value(),

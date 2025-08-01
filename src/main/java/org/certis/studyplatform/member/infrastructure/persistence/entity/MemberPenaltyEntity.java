@@ -7,7 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import org.certis.studyplatform.member.domain.model.MemberPenalty;
+//import org.certis.studyplatform.member.domain.model.MemberPenalty;
 
 import java.time.ZonedDateTime;
 
@@ -44,22 +44,22 @@ public class MemberPenaltyEntity {
         this.reason = reason;
     }
 
-    public static MemberPenaltyEntity fromDomain(MemberPenalty penalty, Long memberId) {
-        return MemberPenaltyEntity.builder()
-                .memberId(memberId)
-                .penaltyPoint(penalty.getPenaltyPoint())
-                .penaltiedAt(penalty.getPenaltiedAt())
-                .updatedAt(penalty.getUpdatedAt())
-                .reason(penalty.getReason())
-                .build();
-    }
-
-    public MemberPenalty toDomain() {
-        return new MemberPenalty(
-                this.penaltyPoint,
-                this.penaltiedAt,
-                this.updatedAt,
-                this.reason
-        );
-    }
+//    public static MemberPenaltyEntity fromDomain(MemberPenalty penalty, Long memberId) {
+//        return MemberPenaltyEntity.builder()
+//                .memberId(memberId)
+//                .penaltyPoint(penalty.getPenaltyPoint())
+//                .penaltiedAt(penalty.getPenaltiedAt())
+//                .updatedAt(penalty.getUpdatedAt())
+//                .reason(penalty.getReason())
+//                .build();
+//    }
+//
+//    public MemberPenalty toDomain() {
+//        return new MemberPenalty(
+//                this.penaltyPoint,
+//                this.penaltiedAt,
+//                this.updatedAt,
+//                this.reason
+//        );
+//    }
 }

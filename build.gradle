@@ -31,9 +31,11 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
     // 데이터베이스
-    runtimeOnly 'com.h2database:h2' // 개발용
-    runtimeOnly 'org.postgresql:postgresql' // 운영용
-    // 또는 MySQL 사용시: runtimeOnly 'com.mysql:mysql-connector-j'
+    // ✅ H2 제거하고 Embedded PostgreSQL 추가
+    implementation('io.zonky.test:embedded-postgres:2.0.7') {  // 개발용 인메모리 PostgreSQL
+        exclude group: 'org.slf4j', module: 'slf4j-simple'
+    }
+    runtimeOnly 'org.postgresql:postgresql'  // PostgreSQL 드라이버 (필수)
 
     // JWT 인증 (토큰 기반 인증 사용시)
     implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
@@ -89,7 +91,12 @@ dependencies {
     testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'org.springframework.batch:spring-batch-test'
 
-    // TODO: DockerDesktop 이슈
+    // ✅ 테스트용 Embedded PostgreSQL 추가
+    testImplementation('io.zonky.test:embedded-postgres:2.0.7') {
+        exclude group: 'org.slf4j', module: 'slf4j-simple'
+    }
+
+    // TODO: DockerDesktop 이슈로 TestContainers 비활성화
 //    testImplementation 'org.testcontainers:junit-jupiter'
 //    testImplementation 'org.testcontainers:postgresql'
 //    testImplementation 'org.testcontainers:redis'

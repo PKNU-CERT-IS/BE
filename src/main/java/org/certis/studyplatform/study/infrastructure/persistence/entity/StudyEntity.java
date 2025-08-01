@@ -10,8 +10,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
-import org.certis.studyplatform.study.domain.model.Study;
-import org.certis.studyplatform.study.domain.vo.*;
+//import org.certis.studyplatform.study.domain.model.Study;
+//import org.certis.studyplatform.study.domain.vo.*;
 
 import java.time.ZonedDateTime;
 import java.util.Arrays;
@@ -40,8 +40,9 @@ public class StudyEntity {
     @Column(nullable = false)
     private String type;
 
+    //TODO: String[]
     @Column(columnDefinition = "text[]", nullable = false)
-    private String[] skills;
+    private Object skills;
 
     @Column(nullable = false)
     private String category;
@@ -90,39 +91,39 @@ public class StudyEntity {
         this.description = description;
     }
 
-    public static StudyEntity fromDomain(Study study) {
-        return StudyEntity.builder()
-                .id(study.getId() != null ? study.getId().value() : null)
-                .memberId(study.getMemberId().value())
-                .title(study.getTitle())
-                .content(study.getContent())
-                .type(study.getType())
-                .skills(study.getSkills().toArray())
-                .category(study.getCategory())
-                .createdAt(study.getCreatedAt())
-                .updatedAt(study.getUpdatedAt())
-                .startedAt(study.getStartedAt())
-                .endedAt(study.getEndedAt())
-                .maxParticipantsNumber(study.getMaxParticipantsNumber())
-                .description(study.getDescription())
-                .build();
-    }
-
-    public Study toDomain() {
-        return new Study(
-                this.id != null ? new StudyId(this.id) : null,
-                new MemberId(this.memberId),
-                this.title,
-                this.content,
-                this.type,
-                Skills.of(Arrays.asList(this.skills)),
-                this.category,
-                this.createdAt,
-                this.updatedAt,
-                this.startedAt,
-                this.endedAt,
-                this.maxParticipantsNumber,
-                this.description
-        );
-    }
+//    public static StudyEntity fromDomain(Study study) {
+//        return StudyEntity.builder()
+//                .id(study.getId() != null ? study.getId().value() : null)
+//                .memberId(study.getMemberId().value())
+//                .title(study.getTitle())
+//                .content(study.getContent())
+//                .type(study.getType())
+//                .skills(study.getSkills().toArray())
+//                .category(study.getCategory())
+//                .createdAt(study.getCreatedAt())
+//                .updatedAt(study.getUpdatedAt())
+//                .startedAt(study.getStartedAt())
+//                .endedAt(study.getEndedAt())
+//                .maxParticipantsNumber(study.getMaxParticipantsNumber())
+//                .description(study.getDescription())
+//                .build();
+//    }
+//
+//    public Study toDomain() {
+//        return new Study(
+//                this.id != null ? new StudyId(this.id) : null,
+//                new MemberId(this.memberId),
+//                this.title,
+//                this.content,
+//                this.type,
+//                Skills.of(Arrays.asList(this.skills)),
+//                this.category,
+//                this.createdAt,
+//                this.updatedAt,
+//                this.startedAt,
+//                this.endedAt,
+//                this.maxParticipantsNumber,
+//                this.description
+//        );
+//    }
 }

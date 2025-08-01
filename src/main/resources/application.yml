@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: study-platform
+
+  profiles:
+    active: local
+
+  # ✅ PostgreSQL 설정 (Embedded PostgreSQL 자동 구성)
+  # datasource 설정은 EmbeddedPostgresConfig에서 자동 처리
+
+  jpa:
+    # ✅ PostgreSQL Dialect 사용
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: create-drop  # 개발 환경: 매번 새로 생성
+    show-sql: true
+    format-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          lob:
+            non_contextual_creation: true  # PostgreSQL LOB 처리 개선
+
+  # ✅ Redis 설정 (기존 유지)
+  redis:
+    host: localhost
+    port: 6379
+    timeout: 3000ms
+
+  cache:
+    type: redis
+
+  # ✅ SQL 초기화 설정
+  sql:
+    init:
+      mode: always
+
+logging:
+  level:
+    com.certis.studyplatform: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    io.zonky.test.db.postgres: INFO  # Embedded PostgreSQL 로그

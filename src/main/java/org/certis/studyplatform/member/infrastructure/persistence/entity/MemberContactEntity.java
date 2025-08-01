@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import org.certis.studyplatform.member.domain.model.vo.*;
-import org.certis.studyplatform.member.domain.model.MemberContact;
+//import org.certis.studyplatform.member.domain.model.MemberContact;
 
 import java.time.ZonedDateTime;
 
@@ -47,24 +47,24 @@ public class MemberContactEntity {
         this.updatedAt = updatedAt;
     }
 
-    public static MemberContactEntity fromDomain(MemberContact contact, Long memberId) {
-        return MemberContactEntity.builder()
-                .memberId(memberId)
-                .description(contact.getDescription())
-                .email(contact.getEmail() != null ? contact.getEmail().value() : null)
-                .githubUrl(contact.getGithubUrl())
-                .linkedinUrl(contact.getLinkedinUrl())
-                .updatedAt(contact.getUpdatedAt())
-                .build();
-    }
-
-    public MemberContact toDomain() {
-        return new MemberContact(
-                this.description,
-                this.email != null ? new EmailVo(this.email) : null,
-                this.githubUrl,
-                this.linkedinUrl,
-                this.updatedAt
-        );
-    }
+//    public static MemberContactEntity fromDomain(MemberContact contact, Long memberId) {
+//        return MemberContactEntity.builder()
+//                .memberId(memberId)
+//                .description(contact.getDescription())
+//                .email(contact.getEmail() != null ? contact.getEmail().value() : null)
+//                .githubUrl(contact.getGithubUrl())
+//                .linkedinUrl(contact.getLinkedinUrl())
+//                .updatedAt(contact.getUpdatedAt())
+//                .build();
+//    }
+//
+//    public MemberContact toDomain() {
+//        return new MemberContact(
+//                this.description,
+//                this.email != null ? new EmailVo(this.email) : null,
+//                this.githubUrl,
+//                this.linkedinUrl,
+//                this.updatedAt
+//        );
+//    }
 }

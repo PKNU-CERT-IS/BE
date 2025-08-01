@@ -10,8 +10,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
-import org.certis.studyplatform.project.domain.model.Project;
-import org.certis.studyplatform.project.domain.vo.*;
+//import org.certis.studyplatform.project.domain.model.Project;
+//import org.certis.studyplatform.project.domain.vo.*;
 
 import java.time.ZonedDateTime;
 import java.util.Arrays;
@@ -90,39 +90,39 @@ public class ProjectEntity {
         this.maxParticipantsNumber = maxParticipantsNumber;
     }
 
-    public static ProjectEntity fromDomain(Project project) {
-        return ProjectEntity.builder()
-                .id(project.getId() != null ? project.getId().value() : null)
-                .memberId(project.getMemberId().value())
-                .title(project.getTitle())
-                .content(project.getContent())
-                .skills(project.getSkills().toArray())
-                .difficulty(project.getDifficulty())
-                .createdAt(project.getCreatedAt())
-                .updatedAt(project.getUpdatedAt())
-                .category(project.getCategory())
-                .description(project.getDescription())
-                .startedAt(project.getStartedAt())
-                .endedAt(project.getEndedAt())
-                .maxParticipantsNumber(project.getMaxParticipantsNumber())
-                .build();
-    }
-
-    public Project toDomain() {
-        return new Project(
-                this.id != null ? new ProjectId(this.id) : null,
-                new MemberId(this.memberId),
-                this.title,
-                this.content,
-                Skills.of(Arrays.asList(this.skills)),
-                this.difficulty,
-                this.createdAt,
-                this.updatedAt,
-                this.category,
-                this.description,
-                this.startedAt,
-                this.endedAt,
-                this.maxParticipantsNumber
-        );
-    }
+//    public static ProjectEntity fromDomain(Project project) {
+//        return ProjectEntity.builder()
+//                .id(project.getId() != null ? project.getId().value() : null)
+//                .memberId(project.getMemberId().value())
+//                .title(project.getTitle())
+//                .content(project.getContent())
+//                .skills(project.getSkills().toArray())
+//                .difficulty(project.getDifficulty())
+//                .createdAt(project.getCreatedAt())
+//                .updatedAt(project.getUpdatedAt())
+//                .category(project.getCategory())
+//                .description(project.getDescription())
+//                .startedAt(project.getStartedAt())
+//                .endedAt(project.getEndedAt())
+//                .maxParticipantsNumber(project.getMaxParticipantsNumber())
+//                .build();
+//    }
+//
+//    public Project toDomain() {
+//        return new Project(
+//                this.id != null ? new ProjectId(this.id) : null,
+//                new MemberId(this.memberId),
+//                this.title,
+//                this.content,
+//                Skills.of(Arrays.asList(this.skills)),
+//                this.difficulty,
+//                this.createdAt,
+//                this.updatedAt,
+//                this.category,
+//                this.description,
+//                this.startedAt,
+//                this.endedAt,
+//                this.maxParticipantsNumber
+//        );
+//    }
 }

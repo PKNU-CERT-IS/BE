@@ -10,8 +10,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
-import org.certis.studyplatform.auth.domain.model.Auth;
-import org.certis.studyplatform.auth.domain.vo.*;
+//import org.certis.studyplatform.auth.domain.model.Auth;
+//import org.certis.studyplatform.auth.domain.vo.*;
 
 import java.time.ZonedDateTime;
 
@@ -55,23 +55,23 @@ public class AuthEntity {
         this.memberId = memberId;
     }
 
-    public static AuthEntity fromDomain(Auth auth) {
-        return AuthEntity.builder()
-                .accountNumber(auth.getAccountNumber().value())
-                .password(auth.getPassword())
-                .createdAt(auth.getCreatedAt())
-                .updatedAt(auth.getUpdatedAt())
-                .memberId(auth.getMemberId().value())
-                .build();
-    }
-
-    public Auth toDomain() {
-        return new Auth(
-                new AccountNumber(this.accountNumber),
-                this.password,
-                this.createdAt,
-                this.updatedAt,
-                new MemberId(this.memberId)
-        );
-    }
+//    public static AuthEntity fromDomain(Auth auth) {
+//        return AuthEntity.builder()
+//                .accountNumber(auth.getAccountNumber().value())
+//                .password(auth.getPassword())
+//                .createdAt(auth.getCreatedAt())
+//                .updatedAt(auth.getUpdatedAt())
+//                .memberId(auth.getMemberId().value())
+//                .build();
+//    }
+//
+//    public Auth toDomain() {
+//        return new Auth(
+//                new AccountNumber(this.accountNumber),
+//                this.password,
+//                this.createdAt,
+//                this.updatedAt,
+//                new MemberId(this.memberId)
+//        );
+//    }
 }

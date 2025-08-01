@@ -9,9 +9,9 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
-
-import org.certis.studyplatform.blog.domain.model.Blog;
-import org.certis.studyplatform.blog.domain.vo.*;
+//
+//import org.certis.studyplatform.blog.domain.model.Blog;
+//import org.certis.studyplatform.blog.domain.vo.*;
 
 import java.time.ZonedDateTime;
 
@@ -76,33 +76,33 @@ public class BlogEntity {
         this.description = description;
     }
 
-    public static BlogEntity fromDomain(Blog blog) {
-        return BlogEntity.builder()
-                .id(blog.getId() != null ? blog.getId().value() : null)
-                .memberId(blog.getMemberId().value())
-                .studyId(blog.getStudyId() != null ? blog.getStudyId().value() : null)
-                .projectId(blog.getProjectId() != null ? blog.getProjectId().value() : null)
-                .title(blog.getTitle())
-                .content(blog.getContent())
-                .category(blog.getCategory())
-                .createdAt(blog.getCreatedAt())
-                .updatedAt(blog.getUpdatedAt())
-                .description(blog.getDescription())
-                .build();
-    }
-
-    public Blog toDomain() {
-        return new Blog(
-                this.id != null ? new BlogId(this.id) : null,
-                new MemberId(this.memberId),
-                this.studyId != null ? new StudyId(this.studyId) : null,
-                this.projectId != null ? new ProjectId(this.projectId) : null,
-                this.title,
-                this.content,
-                this.category,
-                this.createdAt,
-                this.updatedAt,
-                this.description
-        );
-    }
+//    public static BlogEntity fromDomain(Blog blog) {
+//        return BlogEntity.builder()
+//                .id(blog.getId() != null ? blog.getId().value() : null)
+//                .memberId(blog.getMemberId().value())
+//                .studyId(blog.getStudyId() != null ? blog.getStudyId().value() : null)
+//                .projectId(blog.getProjectId() != null ? blog.getProjectId().value() : null)
+//                .title(blog.getTitle())
+//                .content(blog.getContent())
+//                .category(blog.getCategory())
+//                .createdAt(blog.getCreatedAt())
+//                .updatedAt(blog.getUpdatedAt())
+//                .description(blog.getDescription())
+//                .build();
+//    }
+//
+//    public Blog toDomain() {
+//        return new Blog(
+//                this.id != null ? new BlogId(this.id) : null,
+//                new MemberId(this.memberId),
+//                this.studyId != null ? new StudyId(this.studyId) : null,
+//                this.projectId != null ? new ProjectId(this.projectId) : null,
+//                this.title,
+//                this.content,
+//                this.category,
+//                this.createdAt,
+//                this.updatedAt,
+//                this.description
+//        );
+//    }
 }

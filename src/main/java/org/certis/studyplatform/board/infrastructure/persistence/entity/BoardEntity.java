@@ -10,8 +10,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
-import org.certis.studyplatform.board.domain.model.Board;
-import org.certis.studyplatform.board.domain.vo.*;
+//import org.certis.studyplatform.board.domain.model.Board;
+//import org.certis.studyplatform.board.domain.vo.*;
 
 import java.time.ZonedDateTime;
 
@@ -68,29 +68,29 @@ public class BoardEntity {
         this.description = description;
     }
 
-    public static BoardEntity fromDomain(Board board) {
-        return BoardEntity.builder()
-                .id(board.getId() != null ? board.getId().value() : null)
-                .memberId(board.getMemberId().value())
-                .title(board.getTitle())
-                .content(board.getContent())
-                .category(board.getCategory())
-                .createdAt(board.getCreatedAt())
-                .updatedAt(board.getUpdatedAt())
-                .description(board.getDescription())
-                .build();
-    }
-
-    public Board toDomain() {
-        return new Board(
-                this.id != null ? new BoardId(this.id) : null,
-                new MemberId(this.memberId),
-                this.title,
-                this.content,
-                this.category,
-                this.createdAt,
-                this.updatedAt,
-                this.description
-        );
-    }
+//    public static BoardEntity fromDomain(Board board) {
+//        return BoardEntity.builder()
+//                .id(board.getId() != null ? board.getId().value() : null)
+//                .memberId(board.getMemberId().value())
+//                .title(board.getTitle())
+//                .content(board.getContent())
+//                .category(board.getCategory())
+//                .createdAt(board.getCreatedAt())
+//                .updatedAt(board.getUpdatedAt())
+//                .description(board.getDescription())
+//                .build();
+//    }
+//
+//    public Board toDomain() {
+//        return new Board(
+//                this.id != null ? new BoardId(this.id) : null,
+//                new MemberId(this.memberId),
+//                this.title,
+//                this.content,
+//                this.category,
+//                this.createdAt,
+//                this.updatedAt,
+//                this.description
+//        );
+//    }
 }
