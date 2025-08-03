@@ -1,0 +1,109 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.5.4'
+    id 'io.spring.dependency-management' version '1.1.4'
+}
+
+group = 'org.certis'
+version = '1.0-SNAPSHOT'
+
+java {
+    sourceCompatibility = '21'
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Spring Boot Starters
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // 데이터베이스
+    // ✅ H2 제거하고 Embedded PostgreSQL 추가
+    implementation('io.zonky.test:embedded-postgres:2.0.7') {  // 개발용 인메모리 PostgreSQL
+        exclude group: 'org.slf4j', module: 'slf4j-simple'
+    }
+    runtimeOnly 'org.postgresql:postgresql'  // PostgreSQL 드라이버 (필수)
+
+    // JWT 인증 (토큰 기반 인증 사용시)
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+
+    // Redis 캐싱 및 데이터 처리 (조회수/좋아요 캐싱용)
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'redis.clients:jedis' // Spring Boot 관리 버전 사용
+    implementation 'org.redisson:redisson-spring-boot-starter:3.37.0'
+
+    // 배치 처리 (주기적 DB 마이그레이션용)
+    implementation 'org.springframework.boot:spring-boot-starter-batch'
+
+    // 스케줄링
+    implementation 'org.springframework.boot:spring-boot-starter-quartz'
+
+    // 파일 업로드/처리
+    implementation 'commons-io:commons-io:2.20.0'
+    implementation 'org.apache.commons:commons-lang3:3.18.0'
+
+    // 마크다운 처리 (블로그 글 작성용)
+    implementation 'com.vladsch.flexmark:flexmark-all:0.64.8'
+
+    // 이미지 처리
+    implementation 'org.imgscalr:imgscalr-lib:4.2'
+
+    // WebSocket (실시간 채팅/알림용 - 선택사항)
+    // implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
+    // OpenAPI/Swagger 문서화
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5'
+
+    // JSON 처리 개선
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+    implementation 'com.fasterxml.jackson.module:jackson-module-parameter-names'
+
+    // 개발 도구
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+    // 어노테이션 프로세서
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+    // Lombok (선택사항 - 코드 간소화)
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    // 테스트
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'org.springframework.batch:spring-batch-test'
+
+    // ✅ 테스트용 Embedded PostgreSQL 추가
+    testImplementation('io.zonky.test:embedded-postgres:2.0.7') {
+        exclude group: 'org.slf4j', module: 'slf4j-simple'
+    }
+
+    // TODO: DockerDesktop 이슈로 TestContainers 비활성화
+//    testImplementation 'org.testcontainers:junit-jupiter'
+//    testImplementation 'org.testcontainers:postgresql'
+//    testImplementation 'org.testcontainers:redis'
+    testImplementation 'it.ozimov:embedded-redis:0.7.3'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test {
+    useJUnitPlatform()
+}

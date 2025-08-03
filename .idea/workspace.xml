@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="1e8d0ef5-02d7-418e-8f28-2f6f954f100e" name="변경" comment="" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ExternalProjectsData">
+    <projectState path="$PROJECT_DIR$">
+      <ProjectState />
+    </projectState>
+  </component>
+  <component name="ExternalProjectsManager">
+    <system id="GRADLE">
+      <state>
+        <projects_view>
+          <tree_state>
+            <expand>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="certIs" type="f1a62948:ProjectNode" />
+              </path>
+            </expand>
+            <select />
+          </tree_state>
+        </projects_view>
+      </state>
+    </system>
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Spring REST Controller" />
+        <option value="Spring Service" />
+        <option value="Spring Repository" />
+        <option value="Record" />
+        <option value="Spring Configuration" />
+        <option value="Spring Component" />
+        <option value="spring-beans.schema" />
+        <option value="Interface" />
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 5
+}</component>
+  <component name="ProjectId" id="30ccVSGdMmlzZHQUmj2kroiWIhQ" />
+  <component name="ProjectViewState">
+    <option name="flattenModules" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "Spring Boot.StudyPlatformApplication.executor": "Run",
+    "last_opened_file_path": "C:/Users/SSAFY/IdeaProjects/certIs/src/main/java/org/certIs/studyplatform/admin",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "onboarding.tips.debug.path": "C:/Users/SSAFY/IdeaProjects/cert-is/src/main/java/org/cert-is/Main.java",
+    "project.structure.last.edited": "모듈",
+    "project.structure.proportion": "0.15",
+    "project.structure.side.proportion": "0.2",
+    "settings.editor.selected.configurable": "preferences.keymap",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\SSAFY\IdeaProjects\certIs\src\main\java\org\certIs\studyplatform\admin" />
+      <recent name="C:\Users\SSAFY\IdeaProjects\certIs\src\main\java\org\certIs\studyplatform\auth" />
+      <recent name="C:\Users\SSAFY\IdeaProjects\certIs\src\main\java\org\certIs\studyplatform\blog" />
+      <recent name="C:\Users\SSAFY\IdeaProjects\certIs\src\main\java\org\certIs\studyplatform\board" />
+      <recent name="C:\Users\SSAFY\IdeaProjects\certIs\src\main\java\org\certIs\studyplatform\study" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\SSAFY\IdeaProjects\certis" />
+      <recent name="C:\Users\SSAFY\IdeaProjects\certIs\src\main\java\org\certIs\certis\exception" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration name="StudyPlatformApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <option name="ALTERNATIVE_JRE_PATH" value="corretto-21" />
+      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
+      <option name="FRAME_DEACTIVATION_UPDATE_POLICY" value="UpdateClassesAndResources" />
+      <module name="BE" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="org.certis.studyplatform.StudyPlatformApplication" />
+      <extension name="net.ashald.envfile">
+        <option name="IS_ENABLED" value="false" />
+        <option name="IS_SUBST" value="false" />
+        <option name="IS_PATH_MACRO_SUPPORTED" value="false" />
+        <option name="IS_IGNORE_MISSING_FILES" value="false" />
+        <option name="IS_ENABLE_EXPERIMENTAL_INTEGRATIONS" value="false" />
+        <ENTRIES>
+          <ENTRY IS_ENABLED="true" PARSER="runconfig" IS_EXECUTABLE="false" />
+        </ENTRIES>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-9823dce3aa75-fbdcb00ec9e3-intellij.indexing.shared.core-IU-251.27812.49" />
+        <option value="bundled-js-predefined-d6986cc7102b-09060db00ec0-JavaScript-IU-251.27812.49" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="애플리케이션 수준" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="디폴트 작업">
+      <changelist id="1e8d0ef5-02d7-418e-8f28-2f6f954f100e" name="변경" comment="" />
+      <created>1753930326889</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1753930326889</updated>
+      <workItem from="1753930328294" duration="1180000" />
+      <workItem from="1753931755282" duration="13955000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/org/cert-is/Main.java</url>
+          <line>13</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
+  </component>
+</project>
