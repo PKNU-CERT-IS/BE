@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.5.4'
     id 'io.spring.dependency-management' version '1.1.4'
+    id 'org.jooq.jooq-codegen-gradle' version '3.19.1'
 }
 
 group = 'org.certis'
@@ -30,6 +31,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-mail'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
+    // ✅ .env 파일은 Spring Boot의 spring.config.import로 처리
+
     // 데이터베이스
     // ✅ H2 제거하고 Embedded PostgreSQL 추가
     implementation('io.zonky.test:embedded-postgres:2.0.7') {  // 개발용 인메모리 PostgreSQL
@@ -47,6 +50,11 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-cache'
     implementation 'redis.clients:jedis' // Spring Boot 관리 버전 사용
     implementation 'org.redisson:redisson-spring-boot-starter:3.37.0'
+
+    // jOOQ for CQRS Query Side
+    implementation 'org.springframework.boot:spring-boot-starter-jooq'
+    implementation 'org.jooq:jooq:3.19.1'
+    implementation 'org.jooq:jooq-codegen:3.19.1'
 
     // 배치 처리 (주기적 DB 마이그레이션용)
     implementation 'org.springframework.boot:spring-boot-starter-batch'
@@ -84,6 +92,10 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
+    // jOOQ Code Generation Dependencies
+    jooqCodegen 'org.postgresql:postgresql'
+    jooqCodegen 'org.jooq:jooq-codegen:3.19.1'
+
     // 테스트
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -106,4 +118,79 @@ dependencies {
 
 test {
     useJUnitPlatform()
+}
+
+//// Data setup tasks
+//task setupMockData {
+//    group = 'data'
+//    description = 'Flush all data and setup mock data'
+//
+//    doLast {
+//        println 'Setting up mock data...'
+//        // This will be handled by Spring Boot's sql.init.mode=always
+//        // and the SQL files in src/main/resources/db/
+//    }
+//}
+//
+//task flushData {
+//    group = 'data'
+//    description = 'Flush all data from database'
+//
+//    doLast {
+//        println 'Flushing all data...'
+//        // This will be handled by V1__Flush_all_data.sql
+//    }
+//}
+//
+//task resetDatabase {
+//    group = 'data'
+//    description = 'Flush all data and reset to initial state'
+//    dependsOn flushData, setupMockData
+//
+//    doLast {
+//        println 'Database reset completed!'
+//    }
+//}
+
+// jOOQ Code Generation Configuration (Official Plugin Syntax)
+// 개발용 기본값 사용 (환경변수는 Spring Boot에서 처리)
+jooq {
+    configuration {
+        jdbc {
+            driver = 'org.postgresql.Driver'
+            url = "jdbc:postgresql://${System.getenv('DB_HOST') ?: 'localhost'}:${System.getenv('DB_PORT') ?: '5432'}/${System.getenv('DB_NAME') ?: 'studyplatform'}"
+            user = System.getenv('DB_USERNAME') ?: 'studyplatform'
+            password = System.getenv('DB_PASSWORD') ?: 'password'
+        }
+        generator {
+            database {
+                name = 'org.jooq.meta.postgres.PostgresDatabase'
+                inputSchema = 'public'
+                // PostgreSQL 메타데이터 오류 무시 설정
+                includes = '.*'
+                excludes = 'auth'  // auth 테이블 제외 (외래키 문제)
+                // 외래키 관련 메타데이터 오류 방지
+                recordVersionFields = ''
+                recordTimestampFields = ''
+                // 오류 발생 시 로그만 출력하고 계속 진행
+                onError = 'LOG'
+            }
+            target {
+                packageName = 'org.certis.studyplatform.infrastructure.persistence.jooq.generated'
+                directory = 'src/main/java'
+            }
+            generate {
+                records = true
+                pojos = true
+                daos = false
+                // 관계형 정보 생성 비활성화 (외래키 오류 방지)
+                relations = false
+                keys = false
+            }
+            // 오류 발생 시 경고로 처리하고 계속 진행
+            strategy {
+                name = 'org.jooq.codegen.DefaultGeneratorStrategy'
+            }
+        }
+    }
 }

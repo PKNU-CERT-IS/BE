@@ -1,13 +1,17 @@
 package org.certis.studyplatform.member.presentation.dto.response;
 
-import org.certis.studyplatform.member.domain.model.Member;
+import org.certis.studyplatform.member.domain.Member;
 import lombok.*;
 
 import java.time.ZonedDateTime;
 import java.util.List;
 
-
-
+/**
+ * Member Information Response DTO
+ * 
+ * Presentation Layer의 응답 DTO
+ * API 응답에 사용되는 회원 정보
+ */
 @Getter
 @ToString
 @Builder
@@ -16,6 +20,7 @@ import java.util.List;
 public class MemberInfoResponseDto {
     private Long id;
     private String name;
+    private String description;
     private String studentNumber;
     private String profileImage;
     private String grade;
@@ -25,18 +30,22 @@ public class MemberInfoResponseDto {
     private ZonedDateTime createdAt;
     private ZonedDateTime updatedAt;
 
+    /**
+     * Domain Member로부터 DTO 생성
+     */
     public static MemberInfoResponseDto fromDomain(Member member) {
-        return new MemberInfoResponseDto(
-                member.getId() != null ? member.getId().value() : null,
-                member.getName(),
-                member.getStudentNumber().value(),
-                member.getProfileImage() != null ? member.getProfileImage().value() : null,
-                member.getGrade(),
-                member.getRole(),
-                member.getSkills().values(),
-                member.getMajor(),
-                member.getCreatedAt(),
-                member.getUpdatedAt()
-        );
+        return MemberInfoResponseDto.builder()
+                .id(member.getId() != null ? member.getId().value() : null)
+                .name(member.getName().value())
+                .description(member.getDescription())
+                .studentNumber(member.getStudentNumber().value())
+                .grade(member.getGrade().value())
+                .role(member.getRole().value())
+                .major(member.getMajor().value())
+                .skills(member.getSkills().values())
+                .profileImage(member.getProfileImage() != null ? member.getProfileImage().value() : null)
+                .createdAt(member.getCreatedAt())
+                .updatedAt(member.getUpdatedAt())
+                .build();
     }
 }

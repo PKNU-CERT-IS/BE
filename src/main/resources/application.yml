@@ -1,44 +1,117 @@
 spring:
   application:
-    name: study-platform
+    name: ${APP_NAME:study-platform}
+
+  config:
+    import: "optional:file:.env[.properties]"
 
   profiles:
-    active: local
+    active: ${SPRING_PROFILES_ACTIVE:local}
 
-  # ✅ PostgreSQL 설정 (Embedded PostgreSQL 자동 구성)
-  # datasource 설정은 EmbeddedPostgresConfig에서 자동 처리
+  # ✅ PostgreSQL 설정 - 환경변수 필수
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+    driver-class-name: org.postgresql.Driver
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: ${HIKARI_MAX_POOL_SIZE}
+      minimum-idle: ${HIKARI_MIN_IDLE}
+      connection-timeout: ${HIKARI_CONNECTION_TIMEOUT}
+      idle-timeout: ${HIKARI_IDLE_TIMEOUT}
 
   jpa:
     # ✅ PostgreSQL Dialect 사용
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: create-drop  # 개발 환경: 매번 새로 생성
-    show-sql: true
-    format-sql: true
+      ddl-auto: ${DDL_AUTO} # SQL 스크립트로 완전 제어
+    show-sql: ${SHOW_SQL}
+    format-sql: ${FORMAT_SQL}
     properties:
       hibernate:
-        format_sql: true
+        format_sql: ${FORMAT_SQL}
         jdbc:
           lob:
-            non_contextual_creation: true  # PostgreSQL LOB 처리 개선
+            non_contextual_creation: true # PostgreSQL LOB 처리 개선
 
-  # ✅ Redis 설정 (기존 유지)
+  # ✅ Redis 설정 - 환경변수 필수
   redis:
-    host: localhost
-    port: 6379
+    host: ${REDIS_HOST}
+    port: ${REDIS_PORT}
+    password: ${REDIS_PASSWORD}
     timeout: 3000ms
 
   cache:
     type: redis
 
-  # ✅ SQL 초기화 설정
+  # ✅ SQL 초기화 설정 - 완전한 테이블 재생성
   sql:
     init:
-      mode: always
+      mode: always # 항상 SQL 파일 실행
+      separator: ";"
+      continue-on-error: false # SQL 오류 시 중단
+      schema-locations:
+        - classpath:db/V0__Drop_all_tables.sql # 모든 테이블 삭제
+        - classpath:db/schema.sql # 스키마 재생성
+      data-locations:
+        - classpath:db/V2__Insert_member_data.sql
+        - classpath:db/V3__Insert_auth_data.sql
+        - classpath:db/V4__Insert_member_penalty_data.sql
+        - classpath:db/V5__Insert_member_contact_data.sql
+        - classpath:db/V6__Insert_study_data.sql
+        - classpath:db/V7__Insert_project_data.sql
+        - classpath:db/V8__Insert_blog_data.sql
+        - classpath:db/V9__Insert_board_data.sql
+        - classpath:db/V10__Insert_schedule_data.sql
+        - classpath:db/V11__Insert_blog_tag.sql
+        - classpath:db/V12__Insert_blog_view.sql
+        - classpath:db/V13__Insert_board_attached.sql
+        - classpath:db/V14__Insert_board_like.sql
+        - classpath:db/V15__Insert_board_report.sql
+        - classpath:db/V16__Insert_board_view.sql
+        - classpath:db/V17__Insert_project_attached.sql
+        - classpath:db/V18__Insert_project_participant.sql
+        - classpath:db/V19__Insert_project_tag.sql
+        - classpath:db/V20__Insert_schedule_attached.sql
+        - classpath:db/V21__Insert_study_meeting.sql
+        - classpath:db/V22__Insert_study_participant.sql
+        - classpath:db/V23__Insert_study_tag.sql
+
+# ✅ 서버 설정
+server:
+  port: ${SERVER_PORT}
+  servlet:
+    context-path: ${CONTEXT_PATH}
+
+# ✅ Email 설정 (환경변수 필수)
+mail:
+  host: ${MAIL_HOST}
+  port: ${MAIL_PORT}
+  username: ${MAIL_USERNAME}
+  password: ${MAIL_PASSWORD}
+  properties:
+    mail:
+      smtp:
+        auth: true
+        starttls:
+          enable: true
+
+# ✅ 관리 및 모니터링
+management:
+  server:
+    port: ${MANAGEMENT_PORT}
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      enabled: ${MANAGEMENT_HEALTH_ENABLED}
 
 logging:
   level:
-    com.certis.studyplatform: DEBUG
-    org.hibernate.SQL: DEBUG
+    root: ${LOG_LEVEL_ROOT}
+    org.certis.studyplatform: ${LOG_LEVEL_APP}
+    org.hibernate.SQL: ${LOG_LEVEL_SQL}
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-    io.zonky.test.db.postgres: INFO  # Embedded PostgreSQL 로그
+    org.springframework.jdbc.datasource.init: DEBUG # SQL 초기화 로그

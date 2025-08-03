@@ -1,0 +1,55 @@
+spring:
+  config:
+    activate:
+      on-profile: embedded
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    format-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          lob:
+            non_contextual_creation: true
+
+  # ✅ SQL 초기화 설정 - Mock Data Setup (Embedded용)
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/schema.sql
+      data-locations:
+        - classpath:db/V1__Flush_all_data.sql
+        - classpath:db/V2__Insert_member_data.sql
+        - classpath:db/V3__Insert_auth_data.sql
+        - classpath:db/V4__Insert_member_penalty_data.sql
+        - classpath:db/V5__Insert_member_contact_data.sql
+        - classpath:db/V6__Insert_study_data.sql
+        - classpath:db/V7__Insert_project_data.sql
+        - classpath:db/V8__Insert_blog_data.sql
+        - classpath:db/V9__Insert_board_data.sql
+        - classpath:db/V10__Insert_schedule_data.sql
+        - classpath:db/V11__Insert_blog_tag.sql
+        - classpath:db/V12__Insert_blog_view.sql
+        - classpath:db/V13__Insert_board_attached.sql
+        - classpath:db/V14__Insert_board_like.sql
+        - classpath:db/V15__Insert_board_report.sql
+        - classpath:db/V16__Insert_board_view.sql
+        - classpath:db/V17__Insert_project_attached.sql
+        - classpath:db/V18__Insert_project_participant.sql
+        - classpath:db/V19__Insert_project_tag.sql
+        - classpath:db/V20__Insert_schedule_attached.sql
+        - classpath:db/V21__Insert_study_meeting.sql
+        - classpath:db/V22__Insert_study_participant.sql
+        - classpath:db/V23__Insert_study_tag.sql
+      continue-on-error: false
+
+logging:
+  level:
+    org.certis.studyplatform: DEBUG
+    org.hibernate.SQL: DEBUG
+    io.zonky.test.db.postgres: INFO
+    org.springframework.jdbc.datasource.init: DEBUG
