@@ -28,12 +28,12 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
         // 이곳에 로그를 추가할 수도 있습니다.
 
         CustomExceptionStatus errorResponse = new CustomExceptionStatus(
-                ExceptionStatus.AUTH_COOKIE_UNAUTHORIZED,
-                ExceptionStatus.AUTH_COOKIE_UNAUTHORIZED.getMessage()
+                ExceptionStatus.PRESENTATION_AUTH_UNAUTHORIZED,
+                ExceptionStatus.PRESENTATION_AUTH_UNAUTHORIZED.getMessage()
         );
 
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.setStatus(ExceptionStatus.AUTH_COOKIE_UNAUTHORIZED.getStatusCode());
+        response.setStatus(ExceptionStatus.PRESENTATION_AUTH_UNAUTHORIZED.getStatusCode());
 
         objectMapper.writeValue(response.getOutputStream(), errorResponse);
     }

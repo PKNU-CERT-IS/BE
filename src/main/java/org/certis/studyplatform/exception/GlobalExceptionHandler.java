@@ -2,184 +2,292 @@ package org.certis.studyplatform.exception;
 
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.certis.studyplatform.response.GlobalResponseHandler;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import java.time.ZonedDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Global exception handler to manage all exceptions across the application.
+ * Global Exception Handler
+ * 
+ * Clean Architecture 계층별 예외를 적절한 HTTP 응답으로 변환
+ * GlobalResponseHandler를 사용한 일관된 응답 형식 제공
  */
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
 
+    // =================================================================
+    // PRESENTATION LAYER EXCEPTIONS
+    // =================================================================
+
     /**
-     * Handle ControllerException
+     * Presentation Layer 커스텀 예외 처리
      */
-    @ExceptionHandler(ControllerException.class)
-    public ResponseEntity<CustomExceptionStatus> handleApiException(ControllerException ex, WebRequest request) {
-        log.error("ApiException: {}", ex.getMessage(), ex);
-        return buildErrorResponse(ex.getStatus(), request);
+    @ExceptionHandler(PresentationException.class)
+    public ResponseEntity<GlobalResponseHandler<Object>> handlePresentationException(
+            PresentationException ex, WebRequest request) {
+        log.warn("Presentation layer exception: {}", ex.getMessage());
+        
+        return GlobalResponseHandler.error(
+            ex.getStatus().getStatusCode(),
+            ex.getMessage(),
+            createErrorDetails("PRESENTATION_ERROR", request)
+        );
     }
 
     /**
-     * Handle ServiceException
-     */
-    @ExceptionHandler(ServiceException.class)
-    public ResponseEntity<CustomExceptionStatus> handleApplicationException(ServiceException ex, WebRequest request) {
-        log.error("ApplicationException: {}", ex.getMessage(), ex);
-        return buildErrorResponse(ex.getStatus(), request);
-    }
-
-    /**
-     * Handle VoException
-     */
-    @ExceptionHandler(VoException.class)
-    public ResponseEntity<CustomExceptionStatus> handleDaoException(VoException ex, WebRequest request) {
-        log.error("DaoException: {}", ex.getMessage(), ex);
-        return buildErrorResponse(ex.getStatus(), request);
-    }
-
-    /**
-     * Handle DtoException
-     */
-    @ExceptionHandler(DtoException.class)
-    public ResponseEntity<CustomExceptionStatus> handleDtoException(DtoException ex, WebRequest request) {
-        log.error("DtoException: {}", ex.getMessage(), ex);
-        return buildErrorResponse(ex.getStatus(), request);
-    }
-
-    /**
-     * Handle EntityException
-     */
-    @ExceptionHandler(EntityException.class)
-    public ResponseEntity<CustomExceptionStatus> handleDomainException(EntityException ex, WebRequest request) {
-        log.error("DomainException: {}", ex.getMessage(), ex);
-        return buildErrorResponse(ex.getStatus(), request);
-    }
-
-    /**
-     * Handle RepositoryException
-     */
-    @ExceptionHandler(RepositoryException.class)
-    public ResponseEntity<CustomExceptionStatus> handleRepositoryException(RepositoryException ex, WebRequest request) {
-        log.error("RepositoryException: {}", ex.getMessage(), ex);
-        return buildErrorResponse(ex.getStatus(), request);
-    }
-
-    /**
-     * Handle UtilException
-     */
-    @ExceptionHandler(UtilException.class)
-    public ResponseEntity<CustomExceptionStatus> handleUtilException(UtilException ex, WebRequest request) {
-        log.error("UtilException: {}", ex.getMessage(), ex);
-        return buildErrorResponse(ex.getStatus(), request);
-    }
-
-    /**
-     * Handle MiddlewareException
-     */
-    @ExceptionHandler(MiddlewareException.class)
-    public ResponseEntity<CustomExceptionStatus> handleMiddlewareException(MiddlewareException ex, WebRequest request) {
-        log.error("MiddlewareException: {}", ex.getMessage(), ex);
-        return buildErrorResponse(ex.getStatus(), request);
-    }
-
-    /**
-     * Handle AsyncException for asynchronous processing errors
-     */
-    @ExceptionHandler(AsyncException.class)
-    public ResponseEntity<CustomExceptionStatus> handleAsyncException(AsyncException ex, WebRequest request) {
-        log.error("AsyncException: {}", ex.getMessage(), ex);
-        return buildErrorResponse(ex.getStatus(), request);
-    }
-
-    /**
-     * Handle MethodArgumentNotValidException (DTO 검증 실패)
+     * Bean Validation 실패 처리
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<CustomExceptionStatus> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex, WebRequest request) {
-        log.error("MethodArgumentNotValidException: {}", ex.getMessage(), ex);
-
-        // 필드별 오류 메시지를 "field: message" 형태로 결합
-        String fieldErrors = ex.getBindingResult()
-                .getFieldErrors()
-                .stream()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
-                .collect(Collectors.joining("; "));
-
-        // CustomExceptionStatus 객체 생성
-        CustomExceptionStatus errorResponse = new CustomExceptionStatus(
-                ExceptionStatus.GENERAL_REQUEST_INVALID_PARAMS,
-                fieldErrors
+    public ResponseEntity<GlobalResponseHandler<Object>> handleValidationErrors(
+            MethodArgumentNotValidException ex, WebRequest request) {
+        log.warn("Bean validation failed: {}", ex.getMessage());
+        
+        Map<String, String> fieldErrors = new HashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(error -> 
+            fieldErrors.put(error.getField(), error.getDefaultMessage())
         );
-
-        return ResponseEntity.status(ExceptionStatus.GENERAL_REQUEST_INVALID_PARAMS.getStatusCode()).body(errorResponse);
+        
+        Map<String, Object> errorDetails = createErrorDetails("VALIDATION_ERROR", request);
+        errorDetails.put("fieldErrors", fieldErrors);
+        
+        return GlobalResponseHandler.error(
+            HttpStatus.BAD_REQUEST.value(),
+            "입력 데이터 검증에 실패했습니다",
+            errorDetails
+        );
     }
 
     /**
-     * Handle ConstraintViolationException (경로 변수, 요청 파라미터 검증 실패)
+     * 제약 조건 위반 처리
      */
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<CustomExceptionStatus> handleConstraintViolationException(ConstraintViolationException ex, WebRequest request) {
-        log.error("ConstraintViolationException: {}", ex.getMessage(), ex);
-
-        String violations = ex.getConstraintViolations()
-                .stream()
+    public ResponseEntity<GlobalResponseHandler<Object>> handleConstraintViolation(
+            ConstraintViolationException ex, WebRequest request) {
+        log.warn("Constraint validation failed: {}", ex.getMessage());
+        
+        String violations = ex.getConstraintViolations().stream()
                 .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
-                .collect(Collectors.joining("; "));
-
-        CustomExceptionStatus errorResponse = new CustomExceptionStatus(
-                ExceptionStatus.GENERAL_REQUEST_INVALID_PARAMS,
-                violations
+                .collect(Collectors.joining(", "));
+        
+        return GlobalResponseHandler.error(
+            HttpStatus.BAD_REQUEST.value(),
+            "제약 조건 위반: " + violations,
+            createErrorDetails("CONSTRAINT_VIOLATION", request)
         );
-
-        return ResponseEntity.status(ExceptionStatus.GENERAL_REQUEST_INVALID_PARAMS.getStatusCode()).body(errorResponse);
     }
 
     /**
-     * Handle MethodArgumentTypeMismatchException (예: 잘못된 Enum 값)
+     * 타입 변환 오류 처리
      */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<CustomExceptionStatus> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException ex, WebRequest request) {
-        log.error("MethodArgumentTypeMismatchException: {}", ex.getMessage(), ex);
-
-        String message = ExceptionStatus.GENERAL_REQUEST_INVALID_PARAMS.getMessage();
-
-        CustomExceptionStatus errorResponse = new CustomExceptionStatus(
-                ExceptionStatus.GENERAL_REQUEST_INVALID_PARAMS,
-                message
+    public ResponseEntity<GlobalResponseHandler<Object>> handleTypeMismatch(
+            MethodArgumentTypeMismatchException ex, WebRequest request) {
+        log.warn("Type mismatch: {}", ex.getMessage());
+        
+        String message = String.format("'%s' 파라미터의 값 '%s'을(를) %s 타입으로 변환할 수 없습니다", 
+                ex.getName(), ex.getValue(), ex.getRequiredType().getSimpleName());
+        
+        return GlobalResponseHandler.error(
+            HttpStatus.BAD_REQUEST.value(),
+            message,
+            createErrorDetails("TYPE_MISMATCH", request)
         );
-
-        return ResponseEntity.status(ExceptionStatus.GENERAL_REQUEST_INVALID_PARAMS.getStatusCode()).body(errorResponse);
     }
 
     /**
-     * Handle Generic Exceptions
+     * HTTP 메서드 오류 처리
+     */
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<GlobalResponseHandler<Object>> handleMethodNotSupported(
+            HttpRequestMethodNotSupportedException ex, WebRequest request) {
+        log.warn("Method not supported: {}", ex.getMessage());
+        
+        return GlobalResponseHandler.error(
+            HttpStatus.METHOD_NOT_ALLOWED.value(),
+            "지원하지 않는 HTTP 메서드입니다: " + ex.getMethod(),
+            createErrorDetails("METHOD_NOT_ALLOWED", request)
+        );
+    }
+
+    // =================================================================
+    // APPLICATION LAYER EXCEPTIONS
+    // =================================================================
+
+    /**
+     * Application Layer 커스텀 예외 처리
+     */
+    @ExceptionHandler(ApplicationException.class)
+    public ResponseEntity<GlobalResponseHandler<Object>> handleApplicationException(
+            ApplicationException ex, WebRequest request) {
+        log.warn("Application layer exception: {}", ex.getMessage());
+        
+        return GlobalResponseHandler.error(
+            ex.getStatus().getStatusCode(),
+            ex.getMessage(),
+            createErrorDetails("APPLICATION_ERROR", request)
+        );
+    }
+
+    // =================================================================
+    // DOMAIN LAYER EXCEPTIONS
+    // =================================================================
+
+    /**
+     * Domain Layer 커스텀 예외 처리
+     */
+    @ExceptionHandler(DomainException.class)
+    public ResponseEntity<GlobalResponseHandler<Object>> handleDomainException(
+            DomainException ex, WebRequest request) {
+        log.warn("Domain layer exception: {}", ex.getMessage());
+        
+        return GlobalResponseHandler.error(
+            ex.getStatus().getStatusCode(),
+            ex.getMessage(),
+            createErrorDetails("DOMAIN_ERROR", request)
+        );
+    }
+
+    // =================================================================
+    // INFRASTRUCTURE LAYER EXCEPTIONS
+    // =================================================================
+
+    /**
+     * Infrastructure Layer 커스텀 예외 처리
+     */
+    @ExceptionHandler(InfrastructureException.class)
+    public ResponseEntity<GlobalResponseHandler<Object>> handleInfrastructureException(
+            InfrastructureException ex, WebRequest request) {
+        log.error("Infrastructure layer exception: {}", ex.getMessage(), ex);
+        
+        return GlobalResponseHandler.error(
+            ex.getStatus().getStatusCode(),
+            ex.getMessage(),
+            createErrorDetails("INFRASTRUCTURE_ERROR", request)
+        );
+    }
+
+    /**
+     * Database 무결성 위반 처리
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<GlobalResponseHandler<Object>> handleDataIntegrityViolation(
+            DataIntegrityViolationException ex, WebRequest request) {
+        log.error("Data integrity violation: {}", ex.getMessage(), ex);
+        
+        String message = "데이터 무결성 제약 조건 위반입니다";
+        
+        // 일반적인 제약 조건 위반 메시지 변환
+        if (ex.getMessage().contains("unique")) {
+            message = "중복된 데이터로 인해 처리할 수 없습니다";
+        } else if (ex.getMessage().contains("foreign key")) {
+            message = "참조 무결성 제약으로 인해 처리할 수 없습니다";
+        } else if (ex.getMessage().contains("not null")) {
+            message = "필수 데이터가 누락되어 처리할 수 없습니다";
+        }
+        
+        return GlobalResponseHandler.error(
+            HttpStatus.CONFLICT.value(),
+            message,
+            createErrorDetails("DATA_INTEGRITY_VIOLATION", request)
+        );
+    }
+
+    // =================================================================
+    // SYSTEM EXCEPTIONS
+    // =================================================================
+
+    /**
+     * IllegalArgumentException 처리
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<GlobalResponseHandler<Object>> handleIllegalArgument(
+            IllegalArgumentException ex, WebRequest request) {
+        log.warn("Invalid argument: {}", ex.getMessage());
+        
+        return GlobalResponseHandler.error(
+            HttpStatus.BAD_REQUEST.value(),
+            ex.getMessage(),
+            createErrorDetails("INVALID_ARGUMENT", request)
+        );
+    }
+
+    /**
+     * IllegalStateException 처리 (Repository에서 비즈니스 규칙 위반 시 사용)
+     */
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<GlobalResponseHandler<Object>> handleIllegalState(
+            IllegalStateException ex, WebRequest request) {
+        log.warn("Illegal state (business rule violation): {}", ex.getMessage());
+        
+        return GlobalResponseHandler.error(
+            HttpStatus.CONFLICT.value(),
+            ex.getMessage(),
+            createErrorDetails("BUSINESS_RULE_VIOLATION", request)
+        );
+    }
+
+    /**
+     * 일반적인 Runtime Exception 처리
+     */
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<GlobalResponseHandler<Object>> handleRuntimeException(
+            RuntimeException ex, WebRequest request) {
+        log.error("Unexpected runtime exception: {}", ex.getMessage(), ex);
+        
+        return GlobalResponseHandler.error(
+            HttpStatus.INTERNAL_SERVER_ERROR.value(),
+            "서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+            createErrorDetails("RUNTIME_ERROR", request)
+        );
+    }
+
+    /**
+     * 모든 예외의 최종 처리
      */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<CustomExceptionStatus> handleGenericException(Exception ex, WebRequest request) {
-        log.error("Unhandled Exception: {}", ex.getMessage(), ex);
-        CustomExceptionStatus errorResponse = new CustomExceptionStatus(
-                ExceptionStatus.GENERAL_INTERNAL_SERVER_ERROR,
-                "서버에서 알 수 없는 오류가 발생했습니다."
+    public ResponseEntity<GlobalResponseHandler<Object>> handleAllExceptions(
+            Exception ex, WebRequest request) {
+        log.error("Unexpected exception: {}", ex.getMessage(), ex);
+        
+        return GlobalResponseHandler.error(
+            HttpStatus.INTERNAL_SERVER_ERROR.value(),
+            "예상치 못한 오류가 발생했습니다. 관리자에게 문의해주세요.",
+            createErrorDetails("UNEXPECTED_ERROR", request)
         );
-        return ResponseEntity.status(ExceptionStatus.GENERAL_INTERNAL_SERVER_ERROR.getStatusCode()).body(errorResponse);
+    }
+
+    // =================================================================
+    // HELPER METHODS
+    // =================================================================
+
+    /**
+     * 에러 상세 정보 생성
+     */
+    private Map<String, Object> createErrorDetails(String errorType, WebRequest request) {
+        Map<String, Object> details = new HashMap<>();
+        details.put("timestamp", ZonedDateTime.now());
+        details.put("type", errorType);
+        details.put("path", getPath(request));
+        return details;
     }
 
     /**
-     * Build the error response based on ExceptionStatus
+     * 요청 경로 추출
      */
-    private ResponseEntity<CustomExceptionStatus> buildErrorResponse(ExceptionStatus errorCode, WebRequest request) {
-        CustomExceptionStatus errorResponse = new CustomExceptionStatus(
-                errorCode,
-                errorCode.getMessage()
-        );
-        return ResponseEntity.status(errorCode.getStatusCode()).body(errorResponse);
+    private String getPath(WebRequest request) {
+        return request.getDescription(false).replace("uri=", "");
     }
 }
