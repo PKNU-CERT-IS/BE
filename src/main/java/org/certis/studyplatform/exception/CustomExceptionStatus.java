@@ -24,6 +24,6 @@ public class CustomExceptionStatus {
     public CustomExceptionStatus(ExceptionStatus status, String message) {
         this.statusCode = status.getStatusCode();
         this.message = message;
-        this.error = status.getError();
+        this.error = status.getMessage();
     }
 }

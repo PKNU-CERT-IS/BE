@@ -17,7 +17,7 @@ public class TestEmbeddedPostgresConfig {
     @Primary
     public DataSource testDataSource() throws IOException {
         return EmbeddedPostgres.builder()
-                .setPort(0) // 랜덤 포트 사용 (테스트 격리)
+                .setPort(5432) // 랜덤 포트 사용 (테스트 격리)
                 .start()
                 .getPostgresDatabase();
     }

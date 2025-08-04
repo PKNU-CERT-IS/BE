@@ -5,79 +5,203 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 
+/**
+ * 스터디 플랫폼 예외 상태 정의
+ * 
+ * 네이밍 규칙: {DOMAIN}_{LAYER}_{ERROR_TYPE}
+ * 예: MEMBER_INFRASTRUCTURE_NOT_FOUND, PROJECT_DOMAIN_CAPACITY_EXCEEDED
+ */
 @JsonFormat(shape = JsonFormat.Shape.OBJECT)
 @RequiredArgsConstructor
 @Getter
 public enum ExceptionStatus {
 
-    // AUTH ERROR CODE
-    AUTH_INVALID_PARAMS(HttpStatus.BAD_REQUEST, "잘못된 인자로 요청했습니다"),
-    AUTH_DUPLICATE_STUDENT_NUMBER(HttpStatus.BAD_REQUEST,"이미 존재하는 유저입니다."),
-    AUTH_DELETED_USER(HttpStatus.BAD_REQUEST,"탈퇴된 유저입니다."),
-    AUTH_BAD_SESSION_REQUEST(HttpStatus.BAD_REQUEST, "잘못된 세션으로 인한 요청 방법입니다."),
-    AUTH_COOKIE_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "잘못된 쿠키로 접근했습니다"),
-    AUTH_SESSION_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "잘못된 세션으로 접근했습니다"),
-    AUTH_MISMATCH_PASSWORD(HttpStatus.UNAUTHORIZED,"비밀번호 불일치"),
-    AUTH_MISMATCH_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED,"리프레시 토큰 불일치."),
+    // =================================================================
+    // GENERIC PRESENTATION LAYER EXCEPTIONS (4xx)
+    // =================================================================
+    PRESENTATION_VALIDATION_INVALID_REQUEST_DATA(HttpStatus.BAD_REQUEST, "요청 데이터가 유효하지 않습니다"),
+    PRESENTATION_VALIDATION_MISSING_PARAMETER(HttpStatus.BAD_REQUEST, "필수 파라미터가 누락되었습니다"),
+    PRESENTATION_VALIDATION_INVALID_PATH_VARIABLE(HttpStatus.BAD_REQUEST, "경로 변수가 유효하지 않습니다"),
+    PRESENTATION_HTTP_METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "허용되지 않는 HTTP 메서드입니다"),
+    PRESENTATION_HTTP_UNSUPPORTED_MEDIA_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "지원하지 않는 미디어 타입입니다"),
 
-    // CABINET ERROR CODE
-    CABINET_INVALID_ID(HttpStatus.BAD_REQUEST, "잘못된 사물함 ID입니다"),
-    CABINET_INVALID_STUDENT_NUMBER(HttpStatus.BAD_REQUEST, "잘못된 학번입니다"),
-    CABINET_HISTORY_CREATION_FAILED(HttpStatus.BAD_REQUEST, "사물함 대여 기록 생성에 실패했습니다"),
-    CABINET_HISTORY_NOT_FOUND(HttpStatus.NOT_FOUND, "사물함 대여 기록을 찾을 수 없습니다"),
-    CABINET_HISTORY_SEARCH_FAILED(HttpStatus.BAD_REQUEST, "사물함 대여 기록 조회에 실패했습니다"),
+    // AUTHENTICATION & AUTHORIZATION (401, 403)
+    PRESENTATION_AUTH_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "인증이 필요합니다"),
+    PRESENTATION_AUTH_ACCESS_DENIED(HttpStatus.FORBIDDEN, "접근 권한이 없습니다"),
+    PRESENTATION_AUTH_INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다"),
+    PRESENTATION_AUTH_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "토큰이 만료되었습니다"),
 
-    CABINET_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 사물함의 정보를 찾을 수 없습니다"),
+    // =================================================================
+    // MEMBER DOMAIN EXCEPTIONS
+    // =================================================================
+    
+    // Member - Presentation Layer
+    MEMBER_PRESENTATION_INVALID_REQUEST(HttpStatus.BAD_REQUEST, "회원 요청 데이터가 유효하지 않습니다"),
+    MEMBER_PRESENTATION_UNAUTHORIZED_ACCESS(HttpStatus.UNAUTHORIZED, "회원 정보에 대한 접근 권한이 없습니다"),
+    
+    // Member - Application Layer  
+    MEMBER_APPLICATION_BUSINESS_RULE_VIOLATION(HttpStatus.UNPROCESSABLE_ENTITY, "회원 비즈니스 규칙 위반입니다"),
+    MEMBER_APPLICATION_COMMAND_EXECUTION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "회원 명령 실행에 실패했습니다"),
+    MEMBER_APPLICATION_QUERY_EXECUTION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "회원 조회 실행에 실패했습니다"),
+    MEMBER_APPLICATION_FACADE_OPERATION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "회원 비즈니스 작업 실행에 실패했습니다"),
+    
+    // Member - Domain Layer
+    MEMBER_DOMAIN_RULE_VIOLATION(HttpStatus.UNPROCESSABLE_ENTITY, "회원 도메인 규칙 위반입니다"),
+    MEMBER_DOMAIN_AGGREGATE_CONSISTENCY_VIOLATION(HttpStatus.UNPROCESSABLE_ENTITY, "회원 애그리게이트 일관성 위반입니다"),
+    MEMBER_DOMAIN_EVENT_PROCESSING_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "회원 도메인 이벤트 처리에 실패했습니다"),
+    MEMBER_DOMAIN_DUPLICATE_STUDENT_NUMBER(HttpStatus.CONFLICT, "이미 존재하는 학번입니다"),
+    MEMBER_DOMAIN_DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 존재하는 이메일입니다"),
+    MEMBER_DOMAIN_INVALID_STATUS(HttpStatus.UNPROCESSABLE_ENTITY, "유효하지 않은 회원 상태입니다"),
+    
+    // Member - Domain VO Validation
+    MEMBER_DOMAIN_INVALID_NAME(HttpStatus.BAD_REQUEST, "유효하지 않은 이름입니다"),
+    MEMBER_DOMAIN_INVALID_STUDENT_NUMBER(HttpStatus.BAD_REQUEST, "유효하지 않은 학번입니다"),
+    MEMBER_DOMAIN_INVALID_EMAIL(HttpStatus.BAD_REQUEST, "유효하지 않은 이메일입니다"),
+    MEMBER_DOMAIN_INVALID_GRADE(HttpStatus.BAD_REQUEST, "유효하지 않은 학년입니다"),
+    MEMBER_DOMAIN_INVALID_MAJOR(HttpStatus.BAD_REQUEST, "유효하지 않은 전공입니다"),
+    MEMBER_DOMAIN_INVALID_ROLE(HttpStatus.BAD_REQUEST, "유효하지 않은 역할입니다"),
+    MEMBER_DOMAIN_INVALID_SKILLS(HttpStatus.BAD_REQUEST, "유효하지 않은 기술 스택입니다"),
+    
+    // Member - Infrastructure Layer
+    MEMBER_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "회원을 찾을 수 없습니다"),
+    MEMBER_INFRASTRUCTURE_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 존재하는 회원입니다"),
+    MEMBER_INFRASTRUCTURE_DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "회원 데이터베이스 오류가 발생했습니다"),
+    MEMBER_INFRASTRUCTURE_RESOURCE_CONFLICT(HttpStatus.CONFLICT, "회원 리소스 충돌이 발생했습니다"),
+    MEMBER_INFRASTRUCTURE_EXTERNAL_SERVICE_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "회원 관련 외부 서비스 오류가 발생했습니다"),
 
-    CABINET_NOT_USING(HttpStatus.CONFLICT, "사용중이지 않은 사물함입니다"),
-    CABINET_ALREADY_USING(HttpStatus.CONFLICT, "이미 대여중인 사물함입니다"),
+    // =================================================================
+    // PROJECT DOMAIN EXCEPTIONS
+    // =================================================================
+    
+    // Project - Presentation Layer
+    PROJECT_PRESENTATION_INVALID_REQUEST(HttpStatus.BAD_REQUEST, "프로젝트 요청 데이터가 유효하지 않습니다"),
+    PROJECT_PRESENTATION_UNAUTHORIZED_ACCESS(HttpStatus.UNAUTHORIZED, "프로젝트에 대한 접근 권한이 없습니다"),
+    
+    // Project - Application Layer
+    PROJECT_APPLICATION_BUSINESS_RULE_VIOLATION(HttpStatus.UNPROCESSABLE_ENTITY, "프로젝트 비즈니스 규칙 위반입니다"),
+    PROJECT_APPLICATION_COMMAND_EXECUTION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "프로젝트 명령 실행에 실패했습니다"),
+    PROJECT_APPLICATION_QUERY_EXECUTION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "프로젝트 조회 실행에 실패했습니다"),
+    
+    // Project - Domain Layer
+    PROJECT_DOMAIN_RULE_VIOLATION(HttpStatus.UNPROCESSABLE_ENTITY, "프로젝트 도메인 규칙 위반입니다"),
+    PROJECT_DOMAIN_CAPACITY_EXCEEDED(HttpStatus.UNPROCESSABLE_ENTITY, "프로젝트 정원을 초과했습니다"),
+    PROJECT_DOMAIN_DEADLINE_PASSED(HttpStatus.UNPROCESSABLE_ENTITY, "프로젝트 마감일이 지났습니다"),
+    PROJECT_DOMAIN_INVALID_STATUS(HttpStatus.UNPROCESSABLE_ENTITY, "유효하지 않은 프로젝트 상태입니다"),
+    
+    // Project - Domain VO Validation
+    PROJECT_DOMAIN_INVALID_ID(HttpStatus.BAD_REQUEST, "유효하지 않은 프로젝트 ID입니다"),
+    PROJECT_DOMAIN_INVALID_TITLE(HttpStatus.BAD_REQUEST, "유효하지 않은 프로젝트 제목입니다"),
+    PROJECT_DOMAIN_INVALID_DESCRIPTION(HttpStatus.BAD_REQUEST, "유효하지 않은 프로젝트 설명입니다"),
+    PROJECT_DOMAIN_INVALID_DIFFICULTY(HttpStatus.BAD_REQUEST, "유효하지 않은 프로젝트 난이도입니다"),
+    PROJECT_DOMAIN_INVALID_CATEGORY(HttpStatus.BAD_REQUEST, "유효하지 않은 프로젝트 카테고리입니다"),
+    PROJECT_DOMAIN_INVALID_PARTICIPANT_LIMIT(HttpStatus.BAD_REQUEST, "유효하지 않은 참가자 제한 수입니다"),
+    PROJECT_DOMAIN_INVALID_DATE_RANGE(HttpStatus.BAD_REQUEST, "유효하지 않은 프로젝트 기간입니다"),
+    
+    // Project - Infrastructure Layer
+    PROJECT_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "프로젝트를 찾을 수 없습니다"),
+    PROJECT_INFRASTRUCTURE_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 존재하는 프로젝트입니다"),
+    PROJECT_INFRASTRUCTURE_DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "프로젝트 데이터베이스 오류가 발생했습니다"),
+    PROJECT_INFRASTRUCTURE_RESOURCE_CONFLICT(HttpStatus.CONFLICT, "프로젝트 리소스 충돌이 발생했습니다"),
 
-    CABINET_RENT_FAILED(HttpStatus.CONFLICT, "사물함 대여에 실패했습니다"),
-    CABINET_RETURN_FAILED(HttpStatus.CONFLICT, "사물함 반납에 실패했습니다"),
-    CABINET_HISTORY_UPDATE_FAILED(HttpStatus.CONFLICT, "사물함 대여 기록 업데이트에 실패했습니다"),
+    // =================================================================
+    // STUDY DOMAIN EXCEPTIONS
+    // =================================================================
+    
+    // Study - Presentation Layer
+    STUDY_PRESENTATION_INVALID_REQUEST(HttpStatus.BAD_REQUEST, "스터디 요청 데이터가 유효하지 않습니다"),
+    STUDY_PRESENTATION_UNAUTHORIZED_ACCESS(HttpStatus.UNAUTHORIZED, "스터디에 대한 접근 권한이 없습니다"),
+    
+    // Study - Application Layer
+    STUDY_APPLICATION_BUSINESS_RULE_VIOLATION(HttpStatus.UNPROCESSABLE_ENTITY, "스터디 비즈니스 규칙 위반입니다"),
+    STUDY_APPLICATION_COMMAND_EXECUTION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "스터디 명령 실행에 실패했습니다"),
+    STUDY_APPLICATION_QUERY_EXECUTION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "스터디 조회 실행에 실패했습니다"),
+    
+    // Study - Domain Layer
+    STUDY_DOMAIN_RULE_VIOLATION(HttpStatus.UNPROCESSABLE_ENTITY, "스터디 도메인 규칙 위반입니다"),
+    STUDY_DOMAIN_CAPACITY_EXCEEDED(HttpStatus.UNPROCESSABLE_ENTITY, "스터디 정원을 초과했습니다"),
+    STUDY_DOMAIN_SESSION_CONFLICT(HttpStatus.CONFLICT, "스터디 세션 시간이 중복됩니다"),
+    STUDY_DOMAIN_INVALID_STATUS(HttpStatus.UNPROCESSABLE_ENTITY, "유효하지 않은 스터디 상태입니다"),
+    
+    // Study - Infrastructure Layer
+    STUDY_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "스터디를 찾을 수 없습니다"),
+    STUDY_INFRASTRUCTURE_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 존재하는 스터디입니다"),
+    STUDY_INFRASTRUCTURE_DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "스터디 데이터베이스 오류가 발생했습니다"),
+    STUDY_INFRASTRUCTURE_RESOURCE_CONFLICT(HttpStatus.CONFLICT, "스터디 리소스 충돌이 발생했습니다"),
 
-    CABINET_NOT_ALLOW_RENT(HttpStatus.BAD_REQUEST, "아직 대여 가능 시간이 아닙니다. 반납일 다음날 13시 이후에 대여할 수 있습니다."),
+    // =================================================================
+    // BOARD DOMAIN EXCEPTIONS
+    // =================================================================
+    
+    // Board - Presentation Layer
+    BOARD_PRESENTATION_INVALID_REQUEST(HttpStatus.BAD_REQUEST, "게시글 요청 데이터가 유효하지 않습니다"),
+    BOARD_PRESENTATION_UNAUTHORIZED_ACCESS(HttpStatus.UNAUTHORIZED, "게시글에 대한 접근 권한이 없습니다"),
+    
+    // Board - Application Layer
+    BOARD_APPLICATION_BUSINESS_RULE_VIOLATION(HttpStatus.UNPROCESSABLE_ENTITY, "게시글 비즈니스 규칙 위반입니다"),
+    BOARD_APPLICATION_COMMAND_EXECUTION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "게시글 명령 실행에 실패했습니다"),
+    BOARD_APPLICATION_QUERY_EXECUTION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "게시글 조회 실행에 실패했습니다"),
+    
+    // Board - Domain Layer
+    BOARD_DOMAIN_RULE_VIOLATION(HttpStatus.UNPROCESSABLE_ENTITY, "게시글 도메인 규칙 위반입니다"),
+    BOARD_DOMAIN_ACCESS_DENIED(HttpStatus.FORBIDDEN, "게시글 접근 권한이 없습니다"),
+    BOARD_DOMAIN_INVALID_STATUS(HttpStatus.UNPROCESSABLE_ENTITY, "유효하지 않은 게시글 상태입니다"),
+    
+    // Board - Infrastructure Layer
+    BOARD_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다"),
+    BOARD_INFRASTRUCTURE_DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "게시글 데이터베이스 오류가 발생했습니다"),
+    BOARD_INFRASTRUCTURE_FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "첨부파일 업로드에 실패했습니다"),
+    BOARD_INFRASTRUCTURE_RESOURCE_CONFLICT(HttpStatus.CONFLICT, "게시글 리소스 충돌이 발생했습니다"),
 
-    CABINET_STATUS_MULTI_UPDATE_FAILED(HttpStatus.BAD_REQUEST, "AVAILABLE을 제외한 상태 변경은 한 개의 사물함만 가능합니다."),
-    CABINET_STATUS_BROKEN_REASON_UPDATE_FAILED(HttpStatus.BAD_REQUEST, "BROKEN 상태 변경시에는 사유가 필요합니다."),
+    // Comment - Infrastructure Layer
+    COMMENT_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "댓글을 찾을 수 없습니다"),
+    COMMENT_INFRASTRUCTURE_DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "댓글 데이터베이스 오류가 발생했습니다"),
 
-    //USER
-    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 유저를 찾을 수 없습니다"),
-    USER_INVALID_STUDENT_NUMBER(HttpStatus.BAD_REQUEST, "잘못된 학번입니다."),
-    USER_INVALID_VISIBILITY(HttpStatus.BAD_REQUEST, "잘못된 공개 여부 설정입니다."),
-    USER_VISIBILITY_UPDATE_FAILED(HttpStatus.BAD_REQUEST, "해당 유저정보를 수정할 수 없습니다."),
+    // =================================================================
+    // BLOG DOMAIN EXCEPTIONS
+    // =================================================================
+    
+    // Blog - Infrastructure Layer
+    BLOG_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "블로그 글을 찾을 수 없습니다"),
+    BLOG_INFRASTRUCTURE_DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "블로그 데이터베이스 오류가 발생했습니다"),
 
-    // GENERAL ERROR CODE
-    GENERAL_BAD_REQUEST(HttpStatus.BAD_REQUEST, "서버에 잘못된 요청입니다."),
-    GENERAL_REQUEST_INVALID_PARAMS(HttpStatus.BAD_REQUEST, "서버에 잘못된 요청입니다."),
+    // =================================================================
+    // SCHEDULE DOMAIN EXCEPTIONS  
+    // =================================================================
+    
+    // Schedule - Infrastructure Layer
+    SCHEDULE_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "일정을 찾을 수 없습니다"),
+    SCHEDULE_INFRASTRUCTURE_DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "일정 데이터베이스 오류가 발생했습니다"),
+    SCHEDULE_INFRASTRUCTURE_RESOURCE_CONFLICT(HttpStatus.CONFLICT, "일정 시간 충돌이 발생했습니다"),
 
-    SQL_FILE_LOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR,"SQL 파일 로딩 실패."),
+    // =================================================================
+    // FILE & NOTIFICATION EXCEPTIONS
+    // =================================================================
+    
+    // File - Infrastructure Layer
+    FILE_INFRASTRUCTURE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다"),
+    FILE_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일을 찾을 수 없습니다"),
+    FILE_INFRASTRUCTURE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 삭제에 실패했습니다"),
+    FILE_INFRASTRUCTURE_STORAGE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "파일 저장소 오류가 발생했습니다"),
+    
+    // Notification - Infrastructure Layer  
+    NOTIFICATION_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다"),
+    NOTIFICATION_INFRASTRUCTURE_DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "알림 데이터베이스 오류가 발생했습니다"),
+    NOTIFICATION_INFRASTRUCTURE_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "알림 전송에 실패했습니다"),
 
-    GENERAL_INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버에서 알 수 없는 오류가 발생했습니다"),
-    GENERAL_SERVICE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "서버가 작동하지 않고 있습니다."),
-    GENERAL_GATEWAY_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "서버에서 타임아웃이 발생했습니다"),
+    // =================================================================
+    // SYSTEM LEVEL EXCEPTIONS (500)
+    // =================================================================
+    SYSTEM_INFRASTRUCTURE_INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다"),
+    SYSTEM_INFRASTRUCTURE_SERVICE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "서비스를 사용할 수 없습니다"),
+    SYSTEM_INFRASTRUCTURE_ASYNC_PROCESSING_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "비동기 처리 오류가 발생했습니다"),
+    SYSTEM_INFRASTRUCTURE_CACHE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "캐시 처리 오류가 발생했습니다"),
+    SYSTEM_INFRASTRUCTURE_MESSAGING_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "메시징 처리 오류가 발생했습니다");
 
-    // CABINET POSITION
-    CABINET_POSITION_NOT_FOUND(HttpStatus.NOT_FOUND,"해당 사물함 위치를 찾을 수 없습니다."),
-
-    // BUILDING
-    BUILDING_NOT_FOUND(HttpStatus.BAD_REQUEST,"해당 건물 정보를 조회할 수 없습니다."),
-    INVALID_BUILDING_INFO(HttpStatus.BAD_REQUEST,"잘못된 건물 조회 정보입니다."),
-
-    // Cabinet Bookmark
-    BOOKMARK_ALREADY_EXIST(HttpStatus.BAD_REQUEST,"이미 즐겨찾기에 등록이 되어있습니다."),
-    BOOKMARK_NOT_FOUND(HttpStatus.NOT_FOUND,"해당 즐겨찾기 정보가 존재하지 않습니다.");
-
-    // 필드 선언은 열거형 상수 뒤에 위치
     private final int statusCode;
     private final String message;
-    private final String error;
 
-    // 생성자도 열거형 상수 뒤에 위치
     ExceptionStatus(HttpStatus status, String message) {
         this.statusCode = status.value();
         this.message = message;
-        this.error = status.getReasonPhrase();
     }
-}
-
+} 
