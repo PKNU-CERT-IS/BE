@@ -87,6 +87,8 @@ public interface MemberQueryRepository {
      * @return 최근 가입 회원 목록
      */
     // List<Member> findRecentMembers(int limit);
+
+    Optional<Member> findById(Long memberId);
     
     /**
      * 회원 검색 조건 클래스

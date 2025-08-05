@@ -1,4 +1,4 @@
-package org.certis.studyplatform.member.infrastructure.persistence;
+package org.certis.studyplatform.member.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Where;
+import org.hibernate.annotations.SQLRestriction;
 
 import org.certis.studyplatform.member.domain.Member;
 
@@ -20,7 +20,7 @@ import java.util.Arrays;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 @SQLDelete(sql = "UPDATE member SET deleted_at = NOW() WHERE id = ?")
-@Where(clause = "deleted_at IS NULL")
+@SQLRestriction("deleted_at IS NULL")
 public class MemberEntity {
 
     @Id
@@ -45,9 +45,8 @@ public class MemberEntity {
     @Column(nullable = false)
     private String role;
 
-    //TODO: String[]
     @Column(columnDefinition = "text[]")
-    private Object skills;
+    private String[] skills;
 
     @Column(nullable = false)
     private String major;
@@ -71,7 +70,7 @@ public class MemberEntity {
 
     @Builder(toBuilder = true)
     private MemberEntity(Long id, String name, String description, String studentNumber, String profileImage, 
-                        String grade, String role, Object skills, String major,
+                        String grade, String role, String[] skills, String major,
                         ZonedDateTime birthday, String gender,
                         ZonedDateTime createdAt, ZonedDateTime updatedAt, ZonedDateTime deletedAt) {
         this.id = id;
@@ -88,53 +87,5 @@ public class MemberEntity {
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.deletedAt = deletedAt;
-    }
-
-    // Domain → Entity 변환
-    public static MemberEntity fromDomain(Member member) {
-        return MemberEntity.builder()
-                .id(member.getId() != null ? member.getId().value() : null)
-                .name(member.getName().value())
-                .description(member.getDescription())
-                .studentNumber(member.getStudentNumber().value())
-                .profileImage(member.getProfileImage() != null ? member.getProfileImage().value() : null)
-                .grade(member.getGrade().value())
-                .role(member.getRole().value())
-                .skills(member.getSkills().toArray())
-                .major(member.getMajor().value())
-                .createdAt(member.getCreatedAt())
-                .updatedAt(member.getUpdatedAt())
-                .build();
-    }
-
-    // Entity → Domain 변환
-    public Member toDomain() {
-        return new Member(
-                this.id != null ? new org.certis.studyplatform.member.domain.vo.MemberIdVo(this.id) : null,
-                this.name,
-                new org.certis.studyplatform.member.domain.vo.StudentNumberVo(this.studentNumber),
-                this.profileImage != null ? new org.certis.studyplatform.member.domain.vo.ProfileImageVo(this.profileImage) : null,
-                this.grade,
-                this.role,
-                new org.certis.studyplatform.member.domain.vo.SkillsVo(parseSkills(this.skills)),
-                this.major,
-                this.createdAt,
-                this.updatedAt
-        );
-    }
-
-    private java.util.List<String> parseSkills(Object skills) {
-        if (skills == null) {
-            return java.util.List.of();
-        }
-        
-        // PostgreSQL array 처리
-        String skillsString = skills.toString();
-        if (skillsString.startsWith("{") && skillsString.endsWith("}")) {
-            skillsString = skillsString.substring(1, skillsString.length() - 1);
-            return Arrays.asList(skillsString.split(","));
-        }
-        
-        return java.util.List.of(skillsString);
     }
 } 
