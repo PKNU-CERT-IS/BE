@@ -62,10 +62,10 @@ public class JwtTokenProvider {
         String token = createToken(userId, role, "access", accessTokenExpiration);
 
         // 밀리초를 올바르게 LocalDateTime에 추가
-        LocalDateTime expiresAt = LocalDateTime.now()
+        LocalDateTime expiredAt = LocalDateTime.now()
                 .plus(accessTokenExpiration, ChronoUnit.MILLIS);
 
-        return new AccessTokenVo(token, expiresAt);
+        return new AccessTokenVo(token, expiredAt);
     }
 
 
@@ -74,13 +74,13 @@ public class JwtTokenProvider {
         String token = createToken(userId, null, "refresh", refreshTokenExpiration);
 
         // 밀리초를 올바르게 LocalDateTime에 추가
-        LocalDateTime expiresAt = LocalDateTime.now()
+        LocalDateTime expiredAt = LocalDateTime.now()
                 .plus(refreshTokenExpiration,ChronoUnit.MILLIS);
 
-        return new RefreshTokenVo(token, expiresAt, userId);
+        return new RefreshTokenVo(token, expiredAt, userId);
     }
 
-    // 토큰 유효성 검증
+    // 토큰 유효성 검증 (이후 전역 예외 처리)
     public boolean isValidateToken(String token){
         try{
             Jwts.parser()
@@ -134,7 +134,7 @@ public class JwtTokenProvider {
             Claims claims = getClaimsFromToken(token);
             return "access".equals(claims.get("type", String.class));
         } catch (JwtException e) {
-            return false;
+            return false; // 이후 전역 예외 처리
         }
     }
 
