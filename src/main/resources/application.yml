@@ -115,3 +115,9 @@ logging:
     org.hibernate.SQL: ${LOG_LEVEL_SQL}
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
     org.springframework.jdbc.datasource.init: DEBUG # SQL 초기화 로그
+
+# ✅ JWT 설정
+jwt:
+  secret: ${JWT_SECRET} # 토큰 서명에 사용되는 비밀 키 (환경변수 필수)
+  access-token-expiration: ${JWT_ACCESS_EXPIRATION_SECONDS} # 액세스 토큰 만료 시간 (초 단위)
+  refresh-token-expiration: ${JWT_REFRESH_EXPIRATION_SECONDS} # 리프레시 토큰 만료 시간 (초 단위)
