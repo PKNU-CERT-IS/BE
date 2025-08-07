@@ -14,13 +14,15 @@ import java.time.ZonedDateTime;
 public class Profile {
     
     @Getter
+    private Long id;
+    @Getter
     private Long memberId;
     @Getter
     private String name;
     @Getter
     private String description;
 
-    private ProfileImageVo profileImageUrl;
+    private ProfileImageVo profileImage;
     @Getter
     private ZonedDateTime createdAt;
     @Getter
@@ -28,41 +30,47 @@ public class Profile {
 
     // 새 프로필 생성
     public Profile(Long memberId, String name, String description, 
-                   String profileImageUrl, Boolean isPublic) {
+                   String profileImage) {
         this.memberId = memberId;
         this.name = name;
         this.description = description;
-        this.profileImageUrl = ProfileImageVo.of(profileImageUrl);
+        this.profileImage = ProfileImageVo.of(profileImage);
         this.createdAt = ZonedDateTime.now();
         this.updatedAt = ZonedDateTime.now();
     }
 
     // 기존 프로필 복원 (Repository 계층에서 사용)
-    public Profile(Long memberId, String name, 
-                   String description, ProfileImageVo profileImageUrl, 
+    public Profile(Long id, Long memberId, String name, 
+                   String description, ProfileImageVo profileImage,
                    ZonedDateTime createdAt, ZonedDateTime updatedAt) {
+        this.id = id;
         this.memberId = memberId;
         this.name = name;
         this.description = description;
-        this.profileImageUrl = profileImageUrl;
+        this.profileImage = profileImage;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
 
     @Builder
     public static Profile create(Long memberId, String name, String description, 
-                                ProfileImageVo profileImageUrl) {
-        return new Profile(memberId, name, description, profileImageUrl, ZonedDateTime.now(), ZonedDateTime.now());
+                                ProfileImageVo profileImage) {
+        return new Profile(memberId, name, description, profileImage != null ? profileImage.value() : null);
     }
 
     // 비즈니스 로직
-    public void updateProfile(String description, String profileImageUrl) {
+    public void updateProfile(String description, String profileImage) {
         if (description != null) {
             this.description = description;
         }
-        if (profileImageUrl != null) {
-            this.profileImageUrl = ProfileImageVo.of(profileImageUrl);
+        if (profileImage != null) {
+            this.profileImage = ProfileImageVo.of(profileImage);
         }
+        this.updatedAt = ZonedDateTime.now();
+    }
+
+    public void updateName(String name) {
+        this.name = name;
         this.updatedAt = ZonedDateTime.now();
     }
 
@@ -71,12 +79,8 @@ public class Profile {
         this.updatedAt = ZonedDateTime.now();
     }
 
-    public void updateProfileImageUrl(String profileImageUrl) {
-        this.profileImageUrl = ProfileImageVo.of(profileImageUrl);
-        this.updatedAt = ZonedDateTime.now();
-    }
-
-    public void updateVisibility(Boolean isPublic) {
+    public void updateProfileImageUrl(String profileImage) {
+        this.profileImage = ProfileImageVo.of(profileImage);
         this.updatedAt = ZonedDateTime.now();
     }
 
@@ -84,11 +88,11 @@ public class Profile {
     //public Long getId() { return id; }
     //public Long getMemberId() { return memberId; }
     //public DescriptionVo getDescription() { return description; }
-    //public ProfileImageUrlVo getProfileImageUrl() { return profileImageUrl; }
+    //public ProfileImageUrlVo getProfileImageUrl() { return profileImage; }
     //public VisibilityVo getVisibility() { return visibility; }
     //public ZonedDateTime getCreatedAt() { return createdAt; }
     //public ZonedDateTime getUpdatedAt() { return updatedAt; }
 
     // Primitive 값 반환 메서드 (편의용)
-    public String getProfileImageUrlValue() { return profileImageUrl != null ? profileImageUrl.value() : null; }
+    public String getProfileImageValue() { return profileImage != null ? profileImage.value() : null; }
 }

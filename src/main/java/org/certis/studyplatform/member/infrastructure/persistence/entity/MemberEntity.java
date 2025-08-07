@@ -88,4 +88,31 @@ public class MemberEntity {
         this.updatedAt = updatedAt;
         this.deletedAt = deletedAt;
     }
+
+    // =================================================================
+    // equals, hashCode, toString
+    // =================================================================
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        MemberEntity that = (MemberEntity) obj;
+        return id != null && id.equals(that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return id != null ? id.hashCode() : 0;
+    }
+
+    @Override
+    public String toString() {
+        return "MemberEntity{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", studentNumber='" + studentNumber + '\'' +
+                ", createdAt=" + createdAt +
+                '}';
+    }
 } 

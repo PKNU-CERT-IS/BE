@@ -7,6 +7,7 @@ import lombok.Getter;
 
 import java.time.ZonedDateTime;
 
+@Builder
 @Getter
 public class Member {
     private final Long id;
@@ -90,6 +91,11 @@ public class Member {
         this.updatedAt = ZonedDateTime.now();
     }
 
+    public void updateMajor(String major) {
+        this.major = MajorVo.of(major);
+        this.updatedAt = ZonedDateTime.now();
+    }
+
     public void setDescription(String description) {
         this.description = description;
         this.updatedAt = ZonedDateTime.now();
@@ -104,4 +110,6 @@ public class Member {
     public String getRoleValue() { return role != null ? role.value() : null; }
     public String getGradeValue() { return grade != null ? grade.value() : null; }
     public String getMajorValue() { return major != null ? major.value() : null; }
+    public String getProfileImageValue() { return profileImage != null ? profileImage.value() : null;}
+    public String getStudentNumberValue() { return studentNumber != null ? studentNumber.value() : null;}
 } 

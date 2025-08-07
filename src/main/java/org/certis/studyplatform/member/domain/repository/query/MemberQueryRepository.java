@@ -1,6 +1,9 @@
-package org.certis.studyplatform.member.domain.repository;
+package org.certis.studyplatform.member.domain.repository.query;
 
 import org.certis.studyplatform.member.domain.Member;
+import org.certis.studyplatform.member.domain.vo.MemberIdVo;
+import org.certis.studyplatform.member.application.object.query.SearchMembersQuery;
+import org.certis.studyplatform.member.application.object.query.GetMembersQuery;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -88,8 +91,32 @@ public interface MemberQueryRepository {
      */
     // List<Member> findRecentMembers(int limit);
 
-    Optional<Member> findById(Long memberId);
-    
+    Optional<Member> findById(MemberIdVo memberId);
+
+    /**
+     * 회원 존재 여부 확인
+     *
+     * @param memberId 회원 ID
+     * @return 존재 여부
+     */
+    boolean existsById(Long memberId);
+
+    /**
+     * SearchMembersQuery를 사용한 회원 검색
+     *
+     * @param query 검색 쿼리
+     * @return 페이징된 회원 목록
+     */
+    Page<Member> searchMembers(SearchMembersQuery query);
+
+    /**
+     * GetMembersQuery를 사용한 전체 회원 조회
+     *
+     * @param query 조회 쿼리
+     * @return 페이징된 회원 목록
+     */
+    Page<Member> findAll(GetMembersQuery query);
+
     /**
      * 회원 검색 조건 클래스
      */

@@ -2,7 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.5.4'
     id 'io.spring.dependency-management' version '1.1.4'
-    id 'org.jooq.jooq-codegen-gradle' version '3.19.1'
+    id 'org.jooq.jooq-codegen-gradle' version '3.20.1'
 }
 
 group = 'org.certis'
@@ -53,8 +53,8 @@ dependencies {
 
     // jOOQ for CQRS Query Side
     implementation 'org.springframework.boot:spring-boot-starter-jooq'
-    implementation 'org.jooq:jooq:3.19.1'
-    implementation 'org.jooq:jooq-codegen:3.19.1'
+    implementation 'org.jooq:jooq:3.20.1'
+    implementation 'org.jooq:jooq-codegen:3.20.1'
 
     // 배치 처리 (주기적 DB 마이그레이션용)
     implementation 'org.springframework.boot:spring-boot-starter-batch'
@@ -94,7 +94,7 @@ dependencies {
 
     // jOOQ Code Generation Dependencies
     jooqCodegen 'org.postgresql:postgresql'
-    jooqCodegen 'org.jooq:jooq-codegen:3.19.1'
+    jooqCodegen 'org.jooq:jooq-codegen:3.20.1'
 
     // 테스트
     testImplementation platform('org.junit:junit-bom:5.10.0')
@@ -174,6 +174,73 @@ jooq {
                 recordTimestampFields = ''
                 // 오류 발생 시 로그만 출력하고 계속 진행
                 onError = 'LOG'
+                // PostgreSQL 메타데이터 스키마 호환성 설정
+                properties {
+                    property {
+                        key = 'defaultNameCase'
+                        value = 'lower'
+                    }
+                    property {
+                        key = 'defaultSchema'
+                        value = 'public'
+                    }
+                    property {
+                        key = 'includeSystemTables'
+                        value = 'false'
+                    }
+                    property {
+                        key = 'includeSystemSchemas'
+                        value = 'false'
+                    }
+                    property {
+                        key = 'includeSystemIndexes'
+                        value = 'false'
+                    }
+                    property {
+                        key = 'includeSystemForeignKeys'
+                        value = 'false'
+                    }
+                    property {
+                        key = 'includeSystemPrimaryKeys'
+                        value = 'false'
+                    }
+                    property {
+                        key = 'includeSystemUniqueKeys'
+                        value = 'false'
+                    }
+                    property {
+                        key = 'includeSystemCheckConstraints'
+                        value = 'false'
+                    }
+                    property {
+                        key = 'includeSystemSequences'
+                        value = 'false'
+                    }
+                    property {
+                        key = 'includeSystemRoutines'
+                        value = 'false'
+                    }
+                    property {
+                        key = 'includeSystemUDTs'
+                        value = 'false'
+                    }
+                    property {
+                        key = 'includeIndexes'
+                        value = 'false'
+                    }
+                    property {
+                        key = 'includeSequences'
+                        value = 'false'
+                    }
+                    property {
+                        key = 'includeRoutines'
+                        value = 'false'
+                    }
+                    property {
+                        key = 'includeUDTs'
+                        value = 'false'
+                    }
+                }
             }
             target {
                 packageName = 'org.certis.studyplatform.infrastructure.persistence.jooq.generated'

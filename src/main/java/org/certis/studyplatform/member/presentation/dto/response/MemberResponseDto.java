@@ -17,7 +17,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class MemberInfoResponseDto {
+public class MemberResponseDto {
     private Long id;
     private String name;
     private String description;
@@ -33,9 +33,9 @@ public class MemberInfoResponseDto {
     /**
      * Domain Member로부터 DTO 생성
      */
-    public static MemberInfoResponseDto fromDomain(Member member) {
-        return MemberInfoResponseDto.builder()
-                .id(member.getId() != null ? member.getId().value() : null)
+    public static MemberResponseDto fromDomain(Member member) {
+        return MemberResponseDto.builder()
+                .id(member.getId() != null ? member.getId() : null)
                 .name(member.getName().value())
                 .description(member.getDescription())
                 .studentNumber(member.getStudentNumber().value())

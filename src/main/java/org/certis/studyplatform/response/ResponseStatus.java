@@ -16,6 +16,20 @@ import org.springframework.http.HttpStatus;
 @Getter
 public enum ResponseStatus {
 
+
+    // =================================================================
+    // PROFILE DOMAIN RESPONSE CODES
+    // =================================================================
+    PROFILE_CREATE_SUCCESS(HttpStatus.CREATED, "회원이 성공적으로 생성되었습니다"),
+    PROFILE_FIND_SUCCESS(HttpStatus.OK, "회원을 성공적으로 조회했습니다"),
+    PROFILE_UPDATE_SUCCESS(HttpStatus.OK, "회원 정보가 성공적으로 갱신되었습니다"),
+    PROFILE_DELETE_SUCCESS(HttpStatus.OK, "회원이 성공적으로 삭제되었습니다"),
+    PROFILE_PROFILE_UPDATE_SUCCESS(HttpStatus.OK, "회원 프로필이 성공적으로 갱신되었습니다"),
+    PROFILE_SKILLS_UPDATE_SUCCESS(HttpStatus.OK, "회원 기술 스택이 성공적으로 갱신되었습니다"),
+    PROFILE_ROLE_UPDATE_SUCCESS(HttpStatus.OK, "회원 역할이 성공적으로 갱신되었습니다"),
+    PROFILE_LIST_SUCCESS(HttpStatus.OK, "회원 목록을 성공적으로 조회했습니다"),
+    PROFILE_SEARCH_SUCCESS(HttpStatus.OK, "회원 검색을 성공적으로 완료했습니다"),
+
     // =================================================================
     // MEMBER DOMAIN RESPONSE CODES
     // =================================================================

@@ -1,8 +1,8 @@
-package org.certis.studyplatform.member.domain.repository;
+package org.certis.studyplatform.member.domain.repository.command;
 
 import org.certis.studyplatform.member.domain.Member;
-import org.certis.studyplatform.member.domain.vo.MemberIdVo;
 import org.certis.studyplatform.member.domain.vo.StudentNumberVo;
+import org.certis.studyplatform.member.domain.vo.MemberIdVo;
 
 import java.util.Optional;
 
@@ -30,19 +30,19 @@ public interface MemberCommandRepository {
     /**
      * 회원 삭제
      * 
-     * @param id 삭제할 회원 ID
+     * @param memberId 삭제할 회원 ID
      */
-    void deleteById(MemberIdVo id);
+    void deleteById(MemberIdVo memberId);
     
     /**
      * 회원 ID로 조회 (Command 실행을 위한 최소한의 읽기)
      * 
      * 용도: Update Command에서 기존 회원 조회
      * 
-     * @param id 회원 ID
+     * @param memberId 회원 ID
      * @return 회원 도메인 객체 (Optional)
      */
-    Optional<Member> findById(MemberIdVo id);
+    Optional<Member> findById(MemberIdVo memberId);
     
     /**
      * 학번 중복 체크 (Command 실행을 위한 존재성 확인)
@@ -54,13 +54,5 @@ public interface MemberCommandRepository {
      */
     boolean existsByStudentNumber(StudentNumberVo studentNumber);
     
-    /**
-     * 이메일 중복 체크 (Command 실행을 위한 존재성 확인)
-     * 
-     * 용도: Create/Update Command에서 이메일 중복 검증
-     * 
-     * @param email 확인할 이메일
-     * @return 중복 여부 (true: 중복됨, false: 중복되지 않음)
-     */
-    boolean existsByEmail(String email);
+
 } 

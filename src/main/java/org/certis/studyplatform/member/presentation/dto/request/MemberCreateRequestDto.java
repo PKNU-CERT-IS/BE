@@ -16,7 +16,7 @@ import java.util.List;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateMemberRequestDto {
+public class MemberCreateRequestDto {
     
     @NotBlank(message = "이름은 필수입니다")
     private String name;
@@ -31,7 +31,6 @@ public class CreateMemberRequestDto {
     private String role;
     
     @NotNull(message = "기술 스택은 필수입니다")
-    @Size(min = 1, message = "기술 스택은 최소 1개 이상이어야 합니다")
     private List<@NotBlank(message = "기술 스택 항목은 빈 값일 수 없습니다") String> skills;
     
     @NotBlank(message = "전공은 필수입니다")

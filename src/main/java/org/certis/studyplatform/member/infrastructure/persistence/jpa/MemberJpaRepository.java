@@ -1,4 +1,4 @@
-package org.certis.studyplatform.member.infrastructure.jpa;
+package org.certis.studyplatform.member.infrastructure.persistence.jpa;
 
 import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberEntity;
 import org.springframework.data.jpa.repository.JpaRepository;

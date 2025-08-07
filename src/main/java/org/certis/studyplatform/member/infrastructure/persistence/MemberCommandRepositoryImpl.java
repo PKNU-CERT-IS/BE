@@ -3,11 +3,12 @@ package org.certis.studyplatform.member.infrastructure.persistence;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.member.domain.Member;
-import org.certis.studyplatform.member.domain.repository.MemberCommandRepository;
+import org.certis.studyplatform.member.domain.repository.command.MemberCommandRepository;
 import org.certis.studyplatform.member.domain.vo.MemberIdVo;
 import org.certis.studyplatform.member.domain.vo.StudentNumberVo;
-import org.certis.studyplatform.member.infrastructure.jpa.MemberJpaRepository;
-import org.certis.studyplatform.member.infrastructure.mapper.MemberMapper;
+import org.certis.studyplatform.member.infrastructure.persistence.jpa.MemberJpaRepository;
+import org.certis.studyplatform.member.infrastructure.mapper.DomainToEntityMapper;
+import org.certis.studyplatform.member.infrastructure.mapper.EntityToDomainMapper;
 import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberEntity;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
@@ -28,6 +29,7 @@ import java.util.Optional;
  * 
  * CQRS 패턴:
  * - Command 전용: JPA 사용으로 트랜잭션과 데이터 무결성에 최적화
+ * - 새로운 매퍼 시스템 사용: DomainToEntityMapper, EntityToDomainMapper
  */
 @Repository
 @RequiredArgsConstructor
@@ -35,7 +37,8 @@ import java.util.Optional;
 public class MemberCommandRepositoryImpl implements MemberCommandRepository {
     
     private final MemberJpaRepository memberJpaRepository;
-    private final MemberMapper memberMapper;
+    private final DomainToEntityMapper domainToEntityMapper;
+    private final EntityToDomainMapper entityToDomainMapper;
     
     @Override
     public Member save(Member member) {
@@ -54,15 +57,15 @@ public class MemberCommandRepositoryImpl implements MemberCommandRepository {
                 }
             }
 
-            // Domain -> Entity 변환
-            MemberEntity memberEntity = memberMapper.toEntity(member);
+            // 새로운 매퍼 사용: Domain → Entity 변환
+            MemberEntity memberEntity = domainToEntityMapper.toMemberEntity(member);
 
             // JPA 저장
             MemberEntity savedEntity = memberJpaRepository.save(memberEntity);
             log.info("Member saved successfully with ID: {}", savedEntity.getId());
 
-            // Entity -> Domain 변환하여 반환
-            return memberMapper.toDomain(savedEntity);
+            // 새로운 매퍼 사용: Entity → Domain 변환하여 반환
+            return entityToDomainMapper.toMember(savedEntity);
 
         } catch (DataIntegrityViolationException e) {
             log.error("Data integrity violation while saving member: {}", e.getMessage());
@@ -102,13 +105,23 @@ public class MemberCommandRepositoryImpl implements MemberCommandRepository {
             throw new IllegalArgumentException("조회할 회원 ID가 null입니다");
         }
         
-        log.debug("Command Infrastructure: Finding member by ID: {}", memberId.value());
+        log.info("Command Infrastructure: Finding member by ID: {}", memberId.value());
         
         try {
-            return memberJpaRepository.findById(memberId.value())
-                    .map(memberMapper::toDomain);
+            Optional<MemberEntity> memberEntity = memberJpaRepository.findById(memberId.value());
+            
+            if (memberEntity.isPresent()) {
+                // 새로운 매퍼 사용: Entity → Domain 변환
+                Member member = entityToDomainMapper.toMember(memberEntity.get());
+                log.info("Member found: {}", member.getStudentNumber().value());
+                return Optional.of(member);
+            } else {
+                log.info("Member not found: {}", memberId.value());
+                return Optional.empty();
+            }
+            
         } catch (Exception e) {
-            log.error("Error finding member by ID {}: {}", memberId.value(), e.getMessage());
+            log.error("Error finding member {}: {}", memberId.value(), e.getMessage());
             throw e;
         }
     }
@@ -116,22 +129,21 @@ public class MemberCommandRepositoryImpl implements MemberCommandRepository {
     @Override
     public boolean existsByStudentNumber(StudentNumberVo studentNumber) {
         if (studentNumber == null) {
-            return false;
+            throw new IllegalArgumentException("조회할 학번이 null입니다");
         }
         
-        log.debug("Command Infrastructure: Checking student number existence: {}", studentNumber.value());
+        log.info("Command Infrastructure: Checking existence by student number: {}", studentNumber.value());
         
         try {
-            return memberJpaRepository.existsByStudentNumber(studentNumber.value());
+            boolean exists = memberJpaRepository.existsByStudentNumber(studentNumber.value());
+            log.info("Student number {} exists: {}", studentNumber.value(), exists);
+            return exists;
+            
         } catch (Exception e) {
             log.error("Error checking student number existence {}: {}", studentNumber.value(), e.getMessage());
-            return false;
+            throw e;
         }
     }
     
-    @Override
-    public boolean existsByEmail(String email) {
-        log.warn("Email functionality is not implemented yet - MemberEntity doesn't have email field");
-        return false;
-    }
+
 }
