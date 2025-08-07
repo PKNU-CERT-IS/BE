@@ -18,7 +18,7 @@ public class Member {
 
     // 새 회원 생성
     public Member(String name, String studentNumber, String grade,
-                  java.util.List<String> skills, String role, String major) {
+                  java.util.List<String> skills, MemberRole role, String major) {
         this.id = null;
         this.name = NameVo.of(name);
         this.studentNumber = new StudentNumberVo(studentNumber);
@@ -52,7 +52,7 @@ public class Member {
 
     // 기존 회원 복원 (Primitive 타입 버전 - Repository 계층에서 사용)
     public Member(MemberIdVo id, String name, StudentNumberVo studentNumber, 
-                  ProfileImageVo profileImage, String grade, String role, 
+                  ProfileImageVo profileImage, String grade, MemberRole role,
                   SkillsVo skills, String major,
                   ZonedDateTime createdAt, ZonedDateTime updatedAt) {
         this.id = id;
@@ -70,7 +70,7 @@ public class Member {
 
     // Factory method for domain creation
     public static Member create(String name, String studentNumber, String grade,
-                              java.util.List<String> skills, String role, String major) {
+                              java.util.List<String> skills, MemberRole role, String major) {
         return new Member(name, studentNumber, grade, skills, role, major);
     }
 
@@ -89,8 +89,8 @@ public class Member {
         this.updatedAt = ZonedDateTime.now();
     }
 
-    public void updateRole(String role) {
-        if (role == null || role.trim().isEmpty()) {
+    public void updateRole(MemberRole role) {
+        if (role == null) {
             throw new IllegalArgumentException("역할은 필수입니다");
         }
         this.role = RoleVo.of(role);
@@ -126,7 +126,7 @@ public class Member {
 
     // Primitive 값 반환 메서드 (편의용)
     public String getNameValue() { return name != null ? name.value() : null; }
-    public String getRoleValue() { return role != null ? role.value() : null; }
+    public MemberRole getRoleValue() { return role != null ? role : null; }
     public String getGradeValue() { return grade != null ? grade.value() : null; }
     public String getMajorValue() { return major != null ? major.value() : null; }
 } 

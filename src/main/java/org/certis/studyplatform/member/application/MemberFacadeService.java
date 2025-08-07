@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.member.application.command.MemberCommandService;
 import org.certis.studyplatform.member.application.query.MemberQueryService;
 import org.certis.studyplatform.member.domain.Member;
+import org.certis.studyplatform.member.domain.MemberRole;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -106,7 +107,7 @@ public class MemberFacadeService {
      * @param role 새 역할
      */
     @Transactional
-    public void updateMemberRole(Long memberId, String role) {
+    public void updateMemberRole(Long memberId, MemberRole role) {
         log.info("Updating member role via facade - ID: {}", memberId);
         
         // Command Service 실행 (JPA write)

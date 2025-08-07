@@ -3,6 +3,7 @@ package org.certis.studyplatform.member.application.command;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.member.domain.Member;
+import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.service.MemberDomainService;
 import org.certis.studyplatform.member.domain.vo.MemberIdVo;
 import org.springframework.context.ApplicationEventPublisher;
@@ -130,7 +131,7 @@ public class MemberCommandService {
      * @param role 새 역할
      */
     @Transactional
-    public void updateMemberRole(Long memberId, String role) {
+    public void updateMemberRole(Long memberId, MemberRole role) {
         log.info("Application: Updating member role with ID: {}", memberId);
         
         MemberIdVo memberIdVo = new MemberIdVo(memberId);
