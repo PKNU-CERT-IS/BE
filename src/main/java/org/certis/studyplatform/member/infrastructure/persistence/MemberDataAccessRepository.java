@@ -49,8 +49,7 @@ public interface MemberDataAccessRepository {
     /**
      * 역할별 회원 수 집계
      */
-    long countByRole(String role);
-    
+    long countByRole(MemberRole role);
     /**
      * 학년별 회원 수 집계
      */

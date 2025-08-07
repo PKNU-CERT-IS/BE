@@ -43,6 +43,7 @@ public class MemberEntity {
     @Column(nullable = false)
     private String grade;
 
+    @Enumerated(EnumType.STRING) // 중요!!
     @Column(nullable = false)
     private MemberRole role;
 

@@ -82,7 +82,7 @@ public class MemberJooqDataAccessRepository implements MemberDataAccessRepositor
     // 이메일 관련 기능은 현재 MemberEntity에 email 필드가 없어서 제외
     
     @Override
-    public long countByRole(String role) {
+    public long countByRole(MemberRole role) {
         if (role == null) {
             return 0L;
         }

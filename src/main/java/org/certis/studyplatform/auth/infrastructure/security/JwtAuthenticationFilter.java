@@ -49,7 +49,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }else{
                     log.warn("유효하지 않은 AccessToken");
                     // 예외처리 이후
-                    return;
                 }
             }else{
                 log.warn("AccessToken 만료 또는 유효하지 않음");
@@ -63,6 +62,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // 예외 만들기 이후
             }
         }
+        filterChain.doFilter(request,response);
     }
 
     // Bearer Token 추출

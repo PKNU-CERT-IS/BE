@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.member.domain.Member;
+import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.infrastructure.jpa.MemberJpaRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -152,7 +153,7 @@ public class MemberJpaDataAccessRepository implements MemberDataAccessRepository
     // 이메일 관련 기능은 현재 MemberEntity에 email 필드가 없어서 제외
     
     @Override
-    public long countByRole(String role) {
+    public long countByRole(MemberRole role) {
         if (role == null) {
             return 0L;
         }

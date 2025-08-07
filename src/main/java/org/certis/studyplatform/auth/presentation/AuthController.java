@@ -18,10 +18,7 @@ import org.certis.studyplatform.member.domain.MemberRole;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
@@ -31,7 +28,6 @@ public class AuthController {
 
     private final AuthFacadeService authFacadeService;
     private final AuthCommandService authCommandService;
-    private final JwtTokenProvider jwtTokenProvider;
 
     private static final String REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
 

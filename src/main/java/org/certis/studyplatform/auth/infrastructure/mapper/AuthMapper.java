@@ -6,7 +6,9 @@ import org.certis.studyplatform.auth.domain.model.vo.EncodedPasswordVo;
 import org.certis.studyplatform.auth.infrastructure.persistence.AuthEntity;
 import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.vo.RoleVo;
+import org.springframework.stereotype.Component;
 
+@Component
 public class AuthMapper {
 
     public AuthEntity toEntity(Auth auth){

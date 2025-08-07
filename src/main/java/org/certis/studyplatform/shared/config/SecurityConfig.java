@@ -47,7 +47,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auths -> auths
                         // 인증 없이 접근 가능한 경로
                         .requestMatchers(
-                                "/api/v1/auth/login",           // 로그인
+                                "/api/api/v1/auth/login",
+                                "/api/v1/auth/login",  // 로그인
                                 "/api/v1/auth/signup",          // 회원가입
                                 "/api/v1/auth/token/refresh",   // 토큰 갱신
                                 "/h2-console/**",               // H2 콘솔
