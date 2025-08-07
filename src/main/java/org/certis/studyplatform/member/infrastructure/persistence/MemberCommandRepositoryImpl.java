@@ -7,8 +7,7 @@ import org.certis.studyplatform.member.domain.repository.command.MemberCommandRe
 import org.certis.studyplatform.member.domain.vo.MemberIdVo;
 import org.certis.studyplatform.member.domain.vo.StudentNumberVo;
 import org.certis.studyplatform.member.infrastructure.persistence.jpa.MemberJpaRepository;
-import org.certis.studyplatform.member.infrastructure.mapper.DomainToEntityMapper;
-import org.certis.studyplatform.member.infrastructure.mapper.EntityToDomainMapper;
+import org.certis.studyplatform.member.infrastructure.mapper.MemberMapper;
 import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberEntity;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
@@ -29,7 +28,7 @@ import java.util.Optional;
  * 
  * CQRS 패턴:
  * - Command 전용: JPA 사용으로 트랜잭션과 데이터 무결성에 최적화
- * - 새로운 매퍼 시스템 사용: DomainToEntityMapper, EntityToDomainMapper
+ * - 통합 매퍼 시스템 사용: MemberMapper
  */
 @Repository
 @RequiredArgsConstructor
@@ -37,8 +36,7 @@ import java.util.Optional;
 public class MemberCommandRepositoryImpl implements MemberCommandRepository {
     
     private final MemberJpaRepository memberJpaRepository;
-    private final DomainToEntityMapper domainToEntityMapper;
-    private final EntityToDomainMapper entityToDomainMapper;
+    private final MemberMapper memberMapper;
     
     @Override
     public Member save(Member member) {
@@ -57,15 +55,15 @@ public class MemberCommandRepositoryImpl implements MemberCommandRepository {
                 }
             }
 
-            // 새로운 매퍼 사용: Domain → Entity 변환
-            MemberEntity memberEntity = domainToEntityMapper.toMemberEntity(member);
+            // 통합 매퍼 사용: Domain → Entity 변환
+            MemberEntity memberEntity = memberMapper.toEntity(member);
 
             // JPA 저장
             MemberEntity savedEntity = memberJpaRepository.save(memberEntity);
             log.info("Member saved successfully with ID: {}", savedEntity.getId());
 
-            // 새로운 매퍼 사용: Entity → Domain 변환하여 반환
-            return entityToDomainMapper.toMember(savedEntity);
+            // 통합 매퍼 사용: Entity → Domain 변환하여 반환
+            return memberMapper.toDomain(savedEntity);
 
         } catch (DataIntegrityViolationException e) {
             log.error("Data integrity violation while saving member: {}", e.getMessage());
@@ -111,8 +109,8 @@ public class MemberCommandRepositoryImpl implements MemberCommandRepository {
             Optional<MemberEntity> memberEntity = memberJpaRepository.findById(memberId.value());
             
             if (memberEntity.isPresent()) {
-                // 새로운 매퍼 사용: Entity → Domain 변환
-                Member member = entityToDomainMapper.toMember(memberEntity.get());
+                // 통합 매퍼 사용: Entity → Domain 변환
+                Member member = memberMapper.toDomain(memberEntity.get());
                 log.info("Member found: {}", member.getStudentNumber().value());
                 return Optional.of(member);
             } else {

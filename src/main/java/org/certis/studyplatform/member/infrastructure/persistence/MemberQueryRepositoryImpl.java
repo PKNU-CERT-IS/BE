@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.member.domain.Member;
 import org.certis.studyplatform.member.domain.repository.query.MemberQueryRepository;
 import org.certis.studyplatform.member.domain.vo.*;
-import org.certis.studyplatform.member.infrastructure.mapper.EntityToDomainMapper;
+import org.certis.studyplatform.member.infrastructure.mapper.MemberMapper;
 import org.certis.studyplatform.member.application.object.query.SearchMembersQuery;
 import org.certis.studyplatform.member.application.object.query.GetMembersQuery;
 import org.jooq.Condition;
@@ -31,7 +31,7 @@ import static org.jooq.impl.DSL.*;
  * - Domain ↔ Raw Data 변환 (Mapper 사용)
  * - 복잡한 조회 쿼리 및 성능 최적화
  * - 페이징 및 동적 쿼리 구성
- * - 새로운 매퍼 시스템 사용: EntityToDomainMapper
+ * - 통합 매퍼 시스템 사용: MemberMapper
  */
 @Repository
 @RequiredArgsConstructor
@@ -39,7 +39,7 @@ import static org.jooq.impl.DSL.*;
 public class MemberQueryRepositoryImpl implements MemberQueryRepository {
 
     private final DSLContext dsl;
-    private final EntityToDomainMapper entityToDomainMapper;
+    private final MemberMapper memberMapper;
 
     // 테이블 이름을 직접 사용 (jOOQ 코드 생성 전까지)
     private static final String MEMBER_TABLE = "member";
@@ -70,8 +70,8 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
                     .where(field("id").eq(memberIdVo.value())
                             .and(field("deleted_at").isNull()))
                     .fetchOptional(record -> {
-                        // 새로운 매퍼 사용: Raw Data → Domain 변환
-                        return entityToDomainMapper.toMember(
+                        // 통합 매퍼 사용: Raw Data → Domain 변환
+                        return memberMapper.toDomain(
                             record.get("id", Long.class),
                             record.get("name", String.class),
                             record.get("student_number", String.class),
@@ -125,8 +125,8 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
                     .limit(query.pageable().getPageSize())
                     .offset(query.pageable().getOffset())
                     .fetch(record -> {
-                        // 새로운 매퍼 사용: Raw Data → Domain 변환
-                        return entityToDomainMapper.toMember(
+                        // 통합 매퍼 사용: Raw Data → Domain 변환
+                        return memberMapper.toDomain(
                             record.get("id", Long.class),
                             record.get("name", String.class),
                             record.get("student_number", String.class),
@@ -180,8 +180,8 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
                     .limit(query.pageable().getPageSize())
                     .offset(query.pageable().getOffset())
                     .fetch(record -> {
-                        // 새로운 매퍼 사용: Raw Data → Domain 변환
-                        return entityToDomainMapper.toMember(
+                        // 통합 매퍼 사용: Raw Data → Domain 변환
+                        return memberMapper.toDomain(
                             record.get("id", Long.class),
                             record.get("name", String.class),
                             record.get("student_number", String.class),

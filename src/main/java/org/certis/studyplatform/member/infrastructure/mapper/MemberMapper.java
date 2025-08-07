@@ -5,157 +5,211 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.member.domain.Member;
+import org.certis.studyplatform.member.domain.Profile;
 import org.certis.studyplatform.member.domain.vo.*;
 import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberEntity;
 import org.springframework.stereotype.Component;
 
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 
 /**
- * @deprecated 이 클래스는 더 이상 사용되지 않습니다.
- * 대신 다음 매퍼들을 사용하세요:
- * - {@link DomainToEntityMapper}: Domain Entity → JPA Entity 변환
- * - {@link EntityToDomainMapper}: JPA Entity → Domain Entity 변환
+ * Member Infrastructure Mapper (Facade)
  * 
- * Clean Architecture 원칙에 따라 단일 책임 원칙을 적용하여 매퍼를 분리했습니다.
+ * ✅ Infrastructure Layer의 통합 매퍼 (Facade Pattern)
+ * ✅ DomainToEntityMapper, EntityToDomainMapper를 통합 관리
+ * ✅ 네이밍 컨벤션: MemberMapper
+ * ✅ 하위 호환성 유지 (기존 메서드들 유지)
  */
-@Deprecated(since = "1.0", forRemoval = true)
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class MemberMapper {
 
+    private final DomainToEntityMapper domainToEntityMapper;
+    private final EntityToDomainMapper entityToDomainMapper;
     private final ObjectMapper objectMapper;
 
     // =================================================================
-    // Public Methods
+    // Domain → Entity 변환 (DomainToEntityMapper 위임)
     // =================================================================
 
     /**
-     * Domain Member -> MemberEntity 변환 (메인 메서드)
-     * 
-     * @deprecated {@link DomainToEntityMapper#toMemberEntity(Member)} 사용
+     * Domain Member → MemberEntity 변환 (메인 메서드)
      */
-    @Deprecated
     public MemberEntity toEntity(Member member) {
-        if (member == null) {
-            return null;
-        }
-
-        return MemberEntity.builder()
-                .id(member.getId())
-                .name(mapNameVoToString(member.getName()))
-                .studentNumber(mapStudentNumberVoToString(member.getStudentNumber()))
-                .profileImage(mapProfileImageVoToString(member.getProfileImage()))
-                .grade(mapGradeVoToString(member.getGrade()))
-                .role(mapRoleVoToString(member.getRole()))
-                .major(mapMajorVoToString(member.getMajor()))
-                .description(member.getDescription())
-                .skills(mapSkillsVoToStringArray(member.getSkills()))
-                .createdAt(member.getCreatedAt())
-                .updatedAt(member.getUpdatedAt())
-                .build();
+        return domainToEntityMapper.toMemberEntity(member);
     }
 
     /**
-     * MemberEntity -> Domain Member 변환 (메인 메서드)
-     * 
-     * @deprecated {@link EntityToDomainMapper#toMember(MemberEntity)} 사용
+     * Domain Member → MemberEntity 변환 (ID만)
      */
-    @Deprecated
-    public Member toDomain(MemberEntity entity) {
-        if (entity == null) {
-            return null;
-        }
-
-        return new Member(
-                entity.getId(),
-                mapStringToNameVo(entity.getName()),
-                mapStringToStudentNumberVo(entity.getStudentNumber()),
-                mapStringToProfileImageVo(entity.getProfileImage()),
-                mapStringToGradeVo(entity.getGrade()),
-                mapStringToRoleVo(entity.getRole()),
-                mapStringArrayToSkillsVo(entity.getSkills()),
-                mapStringToMajorVo(entity.getMajor()),
-                entity.getDescription(),
-                entity.getCreatedAt(),
-                entity.getUpdatedAt()
-        );
+    public MemberEntity toEntity(Long memberId) {
+        return domainToEntityMapper.toMemberEntity(memberId);
     }
+
+    /**
+     * Profile Domain → MemberEntity 변환 (새 Entity 생성)
+     */
+    public MemberEntity toEntityFromProfile(Profile profile, DomainToEntityMapper.MemberEntityInfo memberInfo) {
+        return domainToEntityMapper.toMemberEntityFromProfile(profile, memberInfo);
+    }
+
+    /**
+     * Profile Domain 정보로 기존 MemberEntity 업데이트
+     */
+    public MemberEntity updateEntityWithProfile(MemberEntity existingEntity, Profile profile) {
+        return domainToEntityMapper.updateMemberEntityWithProfile(existingEntity, profile);
+    }
+
+    /**
+     * Profile만 업데이트 (Member 정보는 유지)
+     */
+    public MemberEntity updateProfileFields(MemberEntity existingEntity, String description, String profileImage) {
+        return domainToEntityMapper.updateProfileFields(existingEntity, description, profileImage);
+    }
+
+    /**
+     * MemberEntity에서 Profile 관련 필드 제거
+     */
+    public MemberEntity clearProfileFromEntity(MemberEntity existingEntity) {
+        return domainToEntityMapper.clearProfileFromMemberEntity(existingEntity);
+    }
+
+    /**
+     * Profile Domain으로부터 최소한의 MemberEntity 생성
+     */
+    public MemberEntity createMinimalEntityForProfile(Profile profile) {
+        return domainToEntityMapper.createMinimalMemberEntityForProfile(profile);
+    }
+
+    /**
+     * Entity가 Profile 정보를 가지고 있는지 확인
+     */
+    public boolean hasProfileInformation(MemberEntity entity) {
+        return domainToEntityMapper.hasProfileInformation(entity);
+    }
+
+    // =================================================================
+    // Entity → Domain 변환 (EntityToDomainMapper 위임)
+    // =================================================================
+
+    /**
+     * MemberEntity → Domain Member 변환 (메인 메서드)
+     */
+    public Member toDomain(MemberEntity entity) {
+        return entityToDomainMapper.toMember(entity);
+    }
+
+    /**
+     * Raw Data → Domain Member 변환 (jOOQ 쿼리 결과용)
+     */
+    public Member toDomain(Long id, String name, String studentNumber, String profileImage,
+                          String grade, String role, Object skills, String major, String description,
+                          ZonedDateTime createdAt, ZonedDateTime updatedAt) {
+        return entityToDomainMapper.toMember(id, name, studentNumber, profileImage, grade, role, 
+                                           skills, major, description, createdAt, updatedAt);
+    }
+
+    /**
+     * MemberEntity → Profile Domain 변환
+     */
+    public Profile toProfile(MemberEntity entity) {
+        return entityToDomainMapper.toProfile(entity);
+    }
+
+    /**
+     * MemberEntity → Profile Domain 변환 (기존 Profile 정보 포함)
+     */
+    public Profile toProfileWithExistingData(MemberEntity entity) {
+        return entityToDomainMapper.toProfileWithExistingData(entity);
+    }
+
+    // =================================================================
+    // Helper Methods (EntityToDomainMapper 위임)
+    // =================================================================
 
     /**
      * 데이터베이스에서 조회된 skills 데이터를 파싱
-     *
-     * @param skillsData 데이터베이스의 skills 컬럼 데이터 (JSON 배열 또는 String 배열)
-     * @return 파싱된 기술 스택 리스트
-     * 
-     * @deprecated {@link EntityToDomainMapper#parseSkillsFromDatabase(Object)} 사용
      */
-    @Deprecated
     public List<String> parseSkillsFromDatabase(Object skillsData) {
-        if (skillsData == null) {
-            return List.of();
-        }
-
-        try {
-            // String 배열인 경우
-            if (skillsData instanceof String[]) {
-                return Arrays.asList((String[]) skillsData);
-            }
-
-            // JSON 문자열인 경우
-            if (skillsData instanceof String) {
-                String jsonString = (String) skillsData;
-                if (jsonString.trim().isEmpty() || "null".equals(jsonString)) {
-                    return List.of();
-                }
-
-                // JSON 배열 파싱
-                List<String> skills = objectMapper.readValue(jsonString, new TypeReference<List<String>>() {});
-                return skills != null ? skills : List.of();
-            }
-
-            // PostgreSQL 배열인 경우
-            if (skillsData instanceof String && ((String) skillsData).startsWith("{")) {
-                return parsePostgreSQLArray((String) skillsData);
-            }
-
-            // 콤마로 구분된 문자열인 경우
-            if (skillsData instanceof String) {
-                return parseCommaSeparatedString((String) skillsData);
-            }
-
-            log.warn("지원하지 않는 skills 데이터 타입: {}", skillsData.getClass().getSimpleName());
-            return List.of();
-
-        } catch (Exception e) {
-            log.error("skills 데이터 파싱 중 오류 발생: {}", e.getMessage(), e);
-            return List.of();
-        }
+        return entityToDomainMapper.parseSkillsFromDatabase(skillsData);
     }
+
+    // =================================================================
+    // Helper Methods (DomainToEntityMapper 위임)
+    // =================================================================
 
     /**
      * 기술 스택을 데이터베이스 저장용 JSON으로 직렬화
-     * 
-     * @deprecated {@link DomainToEntityMapper#serializeSkillsForDatabase(List)} 사용
      */
-    @Deprecated
     public String serializeSkillsForDatabase(List<String> skills) {
-        if (skills == null || skills.isEmpty()) {
-            return "[]";
-        }
+        return domainToEntityMapper.serializeSkillsForDatabase(skills);
+    }
 
-        try {
-            return objectMapper.writeValueAsString(skills);
-        } catch (Exception e) {
-            log.error("기술 스택 직렬화 중 오류 발생: {}", e.getMessage(), e);
-            return "[]";
+    // =================================================================
+    // Helper Record (DomainToEntityMapper 위임)
+    // =================================================================
+
+    /**
+     * Member 기본 정보를 담는 Record
+     * Profile 생성 시 필요한 Member 정보 전달용
+     */
+    public record MemberEntityInfo(
+            String name,
+            String studentNumber,
+            String grade,
+            String role,
+            String major,
+            String description,
+            String[] skills,
+            ZonedDateTime createdAt
+    ) {
+
+        /**
+         * 기존 Member Entity로부터 정보 추출
+         */
+        public static MemberEntityInfo from(MemberEntity entity) {
+            if (entity == null) {
+                return null;
+            }
+
+            return new MemberEntityInfo(
+                    entity.getName(),
+                    entity.getStudentNumber(),
+                    entity.getGrade(),
+                    entity.getRole(),
+                    entity.getMajor(),
+                    entity.getDescription(),
+                    entity.getSkills(),
+                    entity.getCreatedAt()
+            );
         }
     }
 
     // =================================================================
-    // Private Helper Methods
+    // 하위 호환성을 위한 기존 메서드들 (Deprecated)
+    // =================================================================
+
+    /**
+     * @deprecated {@link #toEntity(Member)} 사용
+     */
+    @Deprecated(since = "1.0", forRemoval = true)
+    public MemberEntity toMemberEntity(Member member) {
+        return toEntity(member);
+    }
+
+    /**
+     * @deprecated {@link #toDomain(MemberEntity)} 사용
+     */
+    @Deprecated(since = "1.0", forRemoval = true)
+    public Member toMember(MemberEntity entity) {
+        return toDomain(entity);
+    }
+
+    // =================================================================
+    // Private Helper Methods (기존 구현 유지 - 하위 호환성)
     // =================================================================
 
     private String mapNameVoToString(NameVo nameVo) {
