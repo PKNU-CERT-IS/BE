@@ -5,13 +5,14 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberEntity;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
 import java.time.ZonedDateTime;
-import org.certis.studyplatform.member.infrastructure.persistence.MemberEntity;
 
 /**
  * Auth Entity
