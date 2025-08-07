@@ -32,17 +32,17 @@ public class RedisRefreshTokenRepositoryImpl implements RedisRefreshTokenReposit
         }
 
         redisTemplate.opsForValue().set(key,refreshTokenVo,ttl);
-        log.debug("리프레시 토큰 저장 완료: userId={}, ttl={}초", refreshTokenVo.memberId(), ttl.getSeconds());
+        log.debug("리프레시 토큰 저장 완료: memberId={}, ttl={}초", refreshTokenVo.memberId(), ttl.getSeconds());
     }
 
     @Override
-    public Optional<RefreshTokenVo> findByUserId(Long userId) {
-        String key = getKey(userId);
+    public Optional<RefreshTokenVo> findByMemberId(Long memberId) {
+        String key = getKey(memberId);
         Object value = redisTemplate.opsForValue().get(key);
 
         if(value instanceof RefreshTokenVo refreshTokenVo){
             if(refreshTokenVo.isExpiredRefreshToken()){
-                deleteByUserId(userId);
+                deleteByMemberId(memberId);
                 // 예외처리 (만료)
                 return Optional.empty();
             }
@@ -54,19 +54,19 @@ public class RedisRefreshTokenRepositoryImpl implements RedisRefreshTokenReposit
     }
 
     @Override
-    public void deleteByUserId(Long userId) {
-        String key = getKey(userId);
+    public void deleteByMemberId(Long memberId) {
+        String key = getKey(memberId);
         Boolean deleted = redisTemplate.delete(key);
-        log.debug("리프레시 토큰 삭제: userId={}, deleted={}", userId, deleted);
+        log.debug("리프레시 토큰 삭제: memberId={}, deleted={}", memberId, deleted);
 
     }
 
     @Override
-    public boolean existsByUserId(Long userId) {
-        String key = getKey(userId);
+    public boolean existsByMemberId(Long memberId) {
+        String key = getKey(memberId);
         return redisTemplate.hasKey(key);    }
 
-    private String getKey(Long userId){
-        return REFRESH_TOKEN_KEY_PREFIX + userId;
+    private String getKey(Long memberId){
+        return REFRESH_TOKEN_KEY_PREFIX + memberId;
     }
 }

@@ -6,7 +6,6 @@ import org.certis.studyplatform.auth.domain.model.vo.AccessTokenVo;
 import org.certis.studyplatform.auth.domain.model.vo.RefreshTokenVo;
 import org.certis.studyplatform.member.domain.MemberRole;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Builder

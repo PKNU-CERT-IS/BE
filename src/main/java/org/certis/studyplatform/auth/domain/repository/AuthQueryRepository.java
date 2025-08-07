@@ -6,7 +6,7 @@ import java.util.Optional;
 
 public interface AuthQueryRepository {
 
-        // 인증 정보 vo ( 회원ID, 계정번호, 비밀번호, role )
+        // 인증 정보 ( 회원ID, 계정번호, 비밀번호, role )
         Optional<Auth> findByAccountNumber(String accountNumber);
 
         // 계정 번호 존재 여부

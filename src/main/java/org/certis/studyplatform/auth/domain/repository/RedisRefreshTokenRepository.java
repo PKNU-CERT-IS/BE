@@ -8,9 +8,10 @@ public interface RedisRefreshTokenRepository {
 
     void save(RefreshTokenVo refreshTokenVo);
 
-    Optional<RefreshTokenVo> findByUserId(Long userId);
+    Optional<RefreshTokenVo> findByMemberId(Long memberId);
 
-    void deleteByUserId(Long userId);
+    void deleteByMemberId(Long memberId);
 
-    boolean existsByUserId(Long userId);
+    boolean existsByMemberId(Long memberId);
+
 }

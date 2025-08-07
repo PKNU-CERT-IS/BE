@@ -63,4 +63,11 @@ public class AuthEntity {
         this.deletedAt = deletedAt;
         this.memberId = memberId;
     }
+
+    public void setPassword(String newPassword) {
+        if (newPassword == null || newPassword.isBlank()) {
+        // 예외처리
+        }
+        this.password = newPassword;
+    }
 } 
