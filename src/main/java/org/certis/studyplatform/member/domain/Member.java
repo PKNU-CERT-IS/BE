@@ -35,6 +35,8 @@ public class Member {
     // 기존 회원 복원 (도메인 VO 버전)
     public Member(MemberIdVo id, NameVo name, StudentNumberVo studentNumber, 
                   ProfileImageVo profileImage, GradeVo grade, MemberRole role,
+    public Member(Long id, NameVo name, StudentNumberVo studentNumber,
+                  ProfileImageVo profileImage, GradeVo grade, RoleVo role,
                   SkillsVo skills, MajorVo major, String description,
                   ZonedDateTime createdAt, ZonedDateTime updatedAt) {
         this.id = id;

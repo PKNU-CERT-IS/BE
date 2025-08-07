@@ -54,3 +54,5 @@ src/main/java/org/certis/studyplatform/infrastructure/persistence/jooq/generated
 uploads/
 temp/
 tmp/
+
+.copilot-instructions.md

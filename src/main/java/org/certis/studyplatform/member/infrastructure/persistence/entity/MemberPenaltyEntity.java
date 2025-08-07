@@ -1,4 +1,4 @@
-package org.certis.studyplatform.member.infrastructure.persistence;
+package org.certis.studyplatform.member.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
