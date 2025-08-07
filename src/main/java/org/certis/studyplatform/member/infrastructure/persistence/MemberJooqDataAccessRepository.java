@@ -3,6 +3,7 @@ package org.certis.studyplatform.member.infrastructure.persistence;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.member.domain.Member;
+import org.certis.studyplatform.member.domain.MemberRole;
 import org.jooq.DSLContext;
 import org.jooq.Condition;
 import org.springframework.data.domain.Page;
@@ -133,7 +134,7 @@ public class MemberJooqDataAccessRepository implements MemberDataAccessRepositor
                         field("student_number", String.class),
                         field("profile_image", String.class),
                         field("grade", String.class),
-                        field("role", String.class),
+                        field("role", MemberRole.class),
                         field("skills", Object.class),
                         field("major", String.class),
                         field("created_at", ZonedDateTime.class),
@@ -235,7 +236,7 @@ public class MemberJooqDataAccessRepository implements MemberDataAccessRepositor
         }
         
         // 역할 필터 (정확 일치)
-        String role = searchCriteria.getSafeRole();
+        MemberRole role = searchCriteria.getSafeRole();
         if (role != null) {
             conditions = conditions.and(field("role").eq(role));
         }

@@ -5,6 +5,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.certis.studyplatform.member.domain.MemberRole;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.SQLDelete;
@@ -43,7 +44,7 @@ public class MemberEntity {
     private String grade;
 
     @Column(nullable = false)
-    private String role;
+    private MemberRole role;
 
     //TODO: String[]
     @Column(columnDefinition = "text[]")
@@ -71,7 +72,7 @@ public class MemberEntity {
 
     @Builder(toBuilder = true)
     private MemberEntity(Long id, String name, String description, String studentNumber, String profileImage, 
-                        String grade, String role, Object skills, String major,
+                        String grade, MemberRole role, Object skills, String major,
                         ZonedDateTime birthday, String gender,
                         ZonedDateTime createdAt, ZonedDateTime updatedAt, ZonedDateTime deletedAt) {
         this.id = id;
@@ -99,7 +100,7 @@ public class MemberEntity {
                 .studentNumber(member.getStudentNumber().value())
                 .profileImage(member.getProfileImage() != null ? member.getProfileImage().value() : null)
                 .grade(member.getGrade().value())
-                .role(member.getRole().value())
+                .role(member.getRole())
                 .skills(member.getSkills().toArray())
                 .major(member.getMajor().value())
                 .createdAt(member.getCreatedAt())

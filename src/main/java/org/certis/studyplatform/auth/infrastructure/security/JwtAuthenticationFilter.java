@@ -79,18 +79,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     // Jwt 토큰 정보로 인증 처리
     private void authenticationUser(String accessToken){
         try{
-            Long userId = jwtTokenProvider.getUserIdFromToken(accessToken);
+            Long memberId = jwtTokenProvider.getUserIdFromToken(accessToken);
             MemberRole role = jwtTokenProvider.getRoleFromAccessToken(accessToken);
 
             UsernamePasswordAuthenticationToken authenticationToken =
                     new UsernamePasswordAuthenticationToken(
-                            userId,
+                            memberId,
                             null,
                             Collections.singletonList(new SimpleGrantedAuthority(role.toAuthorityString())) // ROLE_ 정보 저장
                     );
             // spring security 에 인증 정보 설정
             SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-            log.debug("JWT 인증 성공: userId={}, role={}", userId, role);
+            log.debug("JWT 인증 성공: memberId={}, role={}", memberId, role);
         }catch (Exception e){
             log.warn("JWT 토큰에서 인증 정보 추출 실패: {}", e.getMessage());
         }

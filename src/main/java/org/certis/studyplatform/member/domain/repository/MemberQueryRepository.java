@@ -1,6 +1,7 @@
 package org.certis.studyplatform.member.domain.repository;
 
 import org.certis.studyplatform.member.domain.Member;
+import org.certis.studyplatform.member.domain.MemberRole;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -52,7 +53,7 @@ public interface MemberQueryRepository {
      * @return 페이징된 회원 정보
      */
     default Page<Member> findMembers(String nameFilter, 
-                                    String roleFilter, 
+                                    MemberRole roleFilter,
                                     String gradeFilter, 
                                     String skillFilter, 
                                     Pageable pageable) {
@@ -92,10 +93,10 @@ public interface MemberQueryRepository {
      * 회원 검색 조건 클래스
      */
     record MemberSearchCriteria(
-        String keyword,     // 이름, 전공, 기술 스택에서 검색
-        String grade,       // 학년 필터 (정확 일치)
-        String role,        // 역할 필터 (정확 일치)
-        String skill        // 특정 기술 필터 (포함 검색)
+            String keyword,     // 이름, 전공, 기술 스택에서 검색
+            String grade,       // 학년 필터 (정확 일치)
+            MemberRole role,        // 역할 필터 (정확 일치)
+            String skill        // 특정 기술 필터 (포함 검색)
     ) {
         public static Builder builder() {
             return new Builder();
@@ -104,7 +105,7 @@ public interface MemberQueryRepository {
         public static class Builder {
             private String keyword;
             private String grade;
-            private String role;
+            private MemberRole role;
             private String skill;
             
             public Builder keyword(String keyword) {
@@ -117,7 +118,7 @@ public interface MemberQueryRepository {
                 return this;
             }
             
-            public Builder role(String role) {
+            public Builder role(MemberRole role) {
                 this.role = role;
                 return this;
             }
@@ -138,7 +139,7 @@ public interface MemberQueryRepository {
         public boolean isEmpty() {
             return (keyword == null || keyword.trim().isEmpty()) &&
                    (grade == null || grade.trim().isEmpty()) &&
-                   (role == null || role.trim().isEmpty()) &&
+                   (role == null ) &&
                    (skill == null || skill.trim().isEmpty());
         }
         
@@ -153,8 +154,8 @@ public interface MemberQueryRepository {
             return grade != null && !grade.trim().isEmpty() ? grade.trim() : null;
         }
         
-        public String getSafeRole() {
-            return role != null && !role.trim().isEmpty() ? role.trim() : null;
+        public MemberRole getSafeRole() {
+            return role;
         }
         
         public String getSafeSkill() {

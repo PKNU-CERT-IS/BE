@@ -1,6 +1,7 @@
 package org.certis.studyplatform.member.infrastructure.persistence;
 
 import org.certis.studyplatform.member.domain.Member;
+import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.vo.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -71,10 +72,10 @@ public interface MemberDataAccessRepository {
      * 검색 조건 DTO
      */
     record MemberSearchCriteria(
-        String keyword,     // 이름, 전공, 기술 스택에서 검색
-        String grade,       // 학년 필터 (정확 일치)
-        String role,        // 역할 필터 (정확 일치)
-        String skill        // 특정 기술 필터 (포함 검색)
+            String keyword,     // 이름, 전공, 기술 스택에서 검색
+            String grade,       // 학년 필터 (정확 일치)
+            MemberRole role,        // 역할 필터 (정확 일치)
+            String skill        // 특정 기술 필터 (포함 검색)
     ) {
         /**
          * 검색 조건이 비어있는지 확인
@@ -82,7 +83,7 @@ public interface MemberDataAccessRepository {
         public boolean isEmpty() {
             return (keyword == null || keyword.trim().isEmpty()) &&
                    (grade == null || grade.trim().isEmpty()) &&
-                   (role == null || role.trim().isEmpty()) &&
+                   (role == null ) &&
                    (skill == null || skill.trim().isEmpty());
         }
         
@@ -97,8 +98,8 @@ public interface MemberDataAccessRepository {
             return grade != null && !grade.trim().isEmpty() ? grade.trim() : null;
         }
         
-        public String getSafeRole() {
-            return role != null && !role.trim().isEmpty() ? role.trim() : null;
+        public MemberRole getSafeRole() {
+            return role ;
         }
         
         public String getSafeSkill() {

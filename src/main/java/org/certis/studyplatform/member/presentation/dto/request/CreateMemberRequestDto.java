@@ -4,6 +4,7 @@ import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import org.certis.studyplatform.member.domain.MemberRole;
 
 import java.util.List;
 
@@ -28,7 +29,7 @@ public class CreateMemberRequestDto {
     private String grade;
     
     @NotBlank(message = "역할은 필수입니다")
-    private String role;
+    private MemberRole role;
     
     @NotNull(message = "기술 스택은 필수입니다")
     @Size(min = 1, message = "기술 스택은 최소 1개 이상이어야 합니다")
@@ -48,7 +49,7 @@ public class CreateMemberRequestDto {
         return name != null && !name.trim().isEmpty() &&
                studentNumber != null && !studentNumber.trim().isEmpty() &&
                grade != null && !grade.trim().isEmpty() &&
-               role != null && !role.trim().isEmpty() &&
+               role != null &&
                skills != null && !skills.isEmpty() &&
                major != null && !major.trim().isEmpty();
     }

@@ -41,7 +41,7 @@ public class MemberInfoResponseDto {
                 .description(member.getDescription())
                 .studentNumber(member.getStudentNumber().value())
                 .grade(member.getGrade().value())
-                .role(member.getRole().role())
+                .role(member.getRole())
                 .major(member.getMajor().value())
                 .skills(member.getSkills().values())
                 .profileImage(member.getProfileImage() != null ? member.getProfileImage().value() : null)

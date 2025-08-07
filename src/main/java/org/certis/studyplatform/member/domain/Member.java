@@ -9,7 +9,7 @@ public class Member {
     private final StudentNumberVo studentNumber;
     private ProfileImageVo profileImage;
     private GradeVo grade;
-    private RoleVo role;
+    private MemberRole role;
     private SkillsVo skills;
     private MajorVo major;
     private String description;
@@ -24,7 +24,7 @@ public class Member {
         this.studentNumber = new StudentNumberVo(studentNumber);
         this.profileImage = null;
         this.grade = GradeVo.of(grade);
-        this.role = RoleVo.of(role);
+        this.role = role;
         this.skills = new SkillsVo(skills);
         this.major = MajorVo.of(major);
         this.description = null;
@@ -34,7 +34,7 @@ public class Member {
 
     // 기존 회원 복원 (도메인 VO 버전)
     public Member(MemberIdVo id, NameVo name, StudentNumberVo studentNumber, 
-                  ProfileImageVo profileImage, GradeVo grade, RoleVo role, 
+                  ProfileImageVo profileImage, GradeVo grade, MemberRole role,
                   SkillsVo skills, MajorVo major, String description,
                   ZonedDateTime createdAt, ZonedDateTime updatedAt) {
         this.id = id;
@@ -60,7 +60,7 @@ public class Member {
         this.studentNumber = studentNumber;
         this.profileImage = profileImage;
         this.grade = GradeVo.of(grade);
-        this.role = RoleVo.of(role);
+        this.role = role;
         this.skills = skills;
         this.major = MajorVo.of(major);
         this.description = description;
@@ -93,7 +93,7 @@ public class Member {
         if (role == null) {
             throw new IllegalArgumentException("역할은 필수입니다");
         }
-        this.role = RoleVo.of(role);
+        this.role = role;
         this.updatedAt = ZonedDateTime.now();
     }
 
@@ -117,7 +117,7 @@ public class Member {
     public StudentNumberVo getStudentNumber() { return studentNumber; }
     public ProfileImageVo getProfileImage() { return profileImage; }
     public GradeVo getGrade() { return grade; }
-    public RoleVo getRole() { return role; }
+    public MemberRole getRole() { return role; }
     public SkillsVo getSkills() { return skills; }
     public MajorVo getMajor() { return major; }
     public String getDescription() { return description; }

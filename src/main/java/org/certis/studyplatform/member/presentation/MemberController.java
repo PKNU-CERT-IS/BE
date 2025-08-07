@@ -76,7 +76,7 @@ public class MemberController {
                 .description(createdMember.getDescription())
                 .studentNumber(createdMember.getStudentNumber().value())
                 .grade(createdMember.getGrade().value())
-                .role(createdMember.getRole().role())
+                .role(createdMember.getRole())
                 .major(createdMember.getMajor().value())
                 .skills(createdMember.getSkills().values())
                 .profileImage(createdMember.getProfileImage() != null ? createdMember.getProfileImage().value() : null)
@@ -109,7 +109,7 @@ public class MemberController {
                 .description(member.getDescription())
                 .studentNumber(member.getStudentNumber().value())
                 .grade(member.getGrade().value())
-                .role(member.getRole().role())
+                .role(member.getRole())
                 .major(member.getMajor().value())
                 .skills(member.getSkills().values())
                 .profileImage(member.getProfileImage() != null ? member.getProfileImage().value() : null)
@@ -207,7 +207,7 @@ public class MemberController {
         Page<Member> result = memberFacadeService.searchMembers(
                 searchRequest.getSafeKeyword(),
                 searchRequest.getSafeGrade(),
-                searchRequest.getSafeRole(),
+                searchRequest.getRole(),
                 pageable
         );
         
@@ -234,7 +234,7 @@ public class MemberController {
                         .name(member.getName().value())
                         .studentNumber(member.getStudentNumber().value())
                         .grade(member.getGrade().value())
-                        .role(member.getRole().role())
+                        .role(member.getRole())
                         .major(member.getMajor().value())
                         .skills(member.getSkills().values())
                         .createdAt(member.getCreatedAt())

@@ -53,7 +53,7 @@ public class MemberFacadeService {
      */
     @Transactional
     public Member createMember(String name, String studentNumber, String grade, 
-                              List<String> skills, String role, String major, String description) {
+                              List<String> skills, MemberRole role, String major, String description) {
         log.info("Creating member via facade - student number: {}", studentNumber);
         
         // Command Service 실행 (JPA write)
@@ -157,7 +157,7 @@ public class MemberFacadeService {
      * @param pageable 페이징 정보
      * @return 검색된 회원 목록과 페이징 정보
      */
-    public Page<Member> searchMembers(String keyword, String grade, String role, Pageable pageable) {
+    public Page<Member> searchMembers(String keyword, String grade, MemberRole role, Pageable pageable) {
         log.info("Searching members via facade - keyword: {}, grade: {}, role: {}", keyword, grade, role);
         
         // Query Service 실행 (jOOQ read)
@@ -178,7 +178,7 @@ public class MemberFacadeService {
      * @param pageable 페이징 정보
      * @return 페이징된 회원 목록
      */
-    public Page<Member> findMembers(String nameFilter, String roleFilter, 
+    public Page<Member> findMembers(String nameFilter, MemberRole roleFilter,
                                    String gradeFilter, String skillFilter, 
                                    Pageable pageable) {
         log.info("Finding members via facade with filters - name: {}, role: {}, grade: {}, skill: {}", 

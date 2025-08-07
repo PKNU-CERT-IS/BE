@@ -51,7 +51,7 @@ public class MemberCommandService {
      */
     @Transactional
     public Member createMember(String name, String studentNumber, String grade, 
-                              List<String> skills, String role, String major, String description) {
+                              List<String> skills, MemberRole role, String major, String description) {
         log.info("Application: Creating member with student number: {}", studentNumber);
         
         // 1. Domain Service를 통한 비즈니스 로직 수행
