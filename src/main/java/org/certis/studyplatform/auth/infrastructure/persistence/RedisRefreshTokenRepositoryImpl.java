@@ -3,7 +3,7 @@ package org.certis.studyplatform.auth.infrastructure.persistence;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.auth.domain.model.vo.RefreshTokenVo;
-import org.certis.studyplatform.auth.domain.repository.RefreshTokenRepository;
+import org.certis.studyplatform.auth.domain.repository.RedisRefreshTokenRepository;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -14,25 +14,25 @@ import java.util.Optional;
 @Slf4j
 @Repository
 @RequiredArgsConstructor
-public class RedisRefreshTokenRepository implements RefreshTokenRepository{
+public class RedisRefreshTokenRepositoryImpl implements RedisRefreshTokenRepository {
 
     private final RedisTemplate<String, Object> redisTemplate;
     private static final String REFRESH_TOKEN_KEY_PREFIX = "refresh_token:";
 
     @Override
     public void save(RefreshTokenVo refreshTokenVo) {
-        String key = getKey(refreshTokenVo.userId());
+        String key = getKey(refreshTokenVo.memberId());
 
         Duration ttl = Duration.between(LocalDateTime.now(),refreshTokenVo.expiredAt());
 
         if(ttl.isNegative() || ttl.isZero()){
-            log.warn("만료된 리프레시 토큰 저장 시도: userId={}", refreshTokenVo.userId());
+            log.warn("만료된 리프레시 토큰 저장 시도: userId={}", refreshTokenVo.memberId());
             // 예외 처리
             return;
         }
 
         redisTemplate.opsForValue().set(key,refreshTokenVo,ttl);
-        log.debug("리프레시 토큰 저장 완료: userId={}, ttl={}초", refreshTokenVo.userId(), ttl.getSeconds());
+        log.debug("리프레시 토큰 저장 완료: userId={}, ttl={}초", refreshTokenVo.memberId(), ttl.getSeconds());
     }
 
     @Override

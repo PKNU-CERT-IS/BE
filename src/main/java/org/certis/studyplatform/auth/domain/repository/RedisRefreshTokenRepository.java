@@ -4,7 +4,7 @@ import org.certis.studyplatform.auth.domain.model.vo.RefreshTokenVo;
 
 import java.util.Optional;
 
-public interface RefreshTokenRepository {
+public interface RedisRefreshTokenRepository {
 
     void save(RefreshTokenVo refreshTokenVo);
 
