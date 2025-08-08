@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.certis.studyplatform.exception.InfrastructureException;
 import org.certis.studyplatform.member.domain.MemberRole;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -18,6 +19,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
+import static org.certis.studyplatform.exception.ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_FILTER_PROCESSING_ERROR;
 
 @Slf4j
 @Component
@@ -37,30 +40,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         try{
-
             // HTTP 헤더로부터 JWT 토큰 추출
             String accessToken = resolveToken(request);
-
             if(StringUtils.hasText(accessToken)&& jwtTokenProvider.isValidateToken(accessToken)){
                 if(jwtTokenProvider.isAccessToken(accessToken)){
                     authenticationUser(accessToken);
                     filterChain.doFilter(request,response);
                     return;
-                }else{
-                    log.warn("유효하지 않은 AccessToken");
-                    // 예외처리 이후
                 }
-            }else{
-                log.warn("AccessToken 만료 또는 유효하지 않음");
-                //예외처리 이후
             }
         }
         catch (Exception e){
-            // 예외 만들기 이후
             log.error("JWT 필터 처리 중 예외 발생: {}", e.getMessage(), e);
-            if (!response.isCommitted()) {
-                // 예외 만들기 이후
-            }
+            throw new InfrastructureException(AUTH_INFRASTRUCTURE_JWT_FILTER_PROCESSING_ERROR);
         }
         filterChain.doFilter(request,response);
     }

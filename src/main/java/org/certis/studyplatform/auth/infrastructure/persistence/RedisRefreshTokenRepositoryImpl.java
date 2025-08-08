@@ -6,12 +6,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.auth.domain.model.vo.RefreshTokenVo;
 import org.certis.studyplatform.auth.domain.repository.RedisRefreshTokenRepository;
+import org.certis.studyplatform.exception.ExceptionStatus;
+import org.certis.studyplatform.exception.InfrastructureException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
+
+import static org.certis.studyplatform.exception.ExceptionStatus.AUTH_INFRASTRUCTURE_REDIS_ERROR;
 
 @Slf4j
 @Repository
@@ -66,9 +70,14 @@ public class RedisRefreshTokenRepositoryImpl implements RedisRefreshTokenReposit
     @Override
     public void deleteByMemberId(Long memberId) {
         String key = getKey(memberId);
-        Boolean deleted = redisTemplate.delete(key);
-        log.debug("리프레시 토큰 삭제: memberId={}, deleted={}", memberId, deleted);
+        try {
+            Boolean deleted = redisTemplate.delete(key);
+            log.debug("리프레시 토큰 삭제: memberId={}, deleted={}", memberId, deleted);
 
+        } catch (Exception e) {
+            log.error("Redis 처리 오류: memberId={}, key={}, error={}", memberId, key, e.getMessage(), e);
+            throw new InfrastructureException(AUTH_INFRASTRUCTURE_REDIS_ERROR);
+        }
     }
 
     @Override

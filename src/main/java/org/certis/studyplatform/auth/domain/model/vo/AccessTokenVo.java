@@ -11,8 +11,4 @@ public record AccessTokenVo(String value, LocalDateTime expiredAt) {
         Objects.requireNonNull(expiredAt,"만료시간은 필수입니다.");
     }
 
-    // 토큰 만료 여부 확인
-    public boolean isExpiredAccessToken(){
-        return LocalDateTime.now().isAfter(expiredAt);
-    }
 }

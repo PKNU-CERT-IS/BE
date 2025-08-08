@@ -51,14 +51,4 @@ public class AuthToken {
                 .createdAt(LocalDateTime.now())
                 .build();
     }
-
-    // 토큰 갱신 가능 여부
-    public boolean canRefreshToken(){
-        return !refreshToken.isExpiredRefreshToken();
-    }
-
-    // 액세스 토큰 유효성 확인
-    public boolean isValidAccessToken(){
-        return !accessToken.isExpiredAccessToken();
-    }
 }

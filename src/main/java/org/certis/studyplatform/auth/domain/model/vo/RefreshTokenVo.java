@@ -20,11 +20,6 @@ public record RefreshTokenVo(String value, LocalDateTime expiredAt, Long memberI
         return LocalDateTime.now().isAfter(expiredAt);
     }
 
-    // 특정 회원의 토큰인지 확인
-    public boolean belongsToMember(Long memberId){
-        return Objects.equals(memberId,this.memberId);
-    }
-
     public static RefreshTokenVo of(String value, Long memberId, LocalDateTime expiredAt) {
         return new RefreshTokenVo(value, expiredAt, memberId);
     }

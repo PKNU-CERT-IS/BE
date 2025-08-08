@@ -14,11 +14,15 @@ import org.certis.studyplatform.auth.infrastructure.security.JwtTokenProvider;
 import org.certis.studyplatform.auth.presentation.dto.request.LoginRequestDto;
 import org.certis.studyplatform.auth.presentation.dto.response.AccessTokenRefreshResponseDto;
 import org.certis.studyplatform.auth.presentation.dto.response.LoginResponseDto;
+import org.certis.studyplatform.exception.ExceptionStatus;
+import org.certis.studyplatform.exception.PresentationException;
 import org.certis.studyplatform.member.domain.MemberRole;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+
+import static org.certis.studyplatform.exception.ExceptionStatus.AUTH_PRESENTATION_INVALID_REQUEST;
 
 @Slf4j
 @RestController
@@ -27,7 +31,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthFacadeService authFacadeService;
-    private final AuthCommandService authCommandService;
+    private final JwtTokenProvider jwtTokenProvider;
 
     private static final String REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
 
@@ -86,9 +90,9 @@ public class AuthController {
 
         log.info("토큰 갱신 요청: memberId={}", memberId);
 
-        // 만료된 AccessToken에서 role 추출 (Command Service를 통해)
+        // 만료된 AccessToken 에서 role 추출 (Command Service를 통해)
         String accessToken = extractTokenFromHeader(request);
-        MemberRole currentRole = authCommandService.extractRoleFromAccessToken(accessToken);
+        MemberRole currentRole = extractRoleFromAccessToken(accessToken);
 
         // 토큰 갱신
         AccessTokenVo newAccessToken = authFacadeService.refreshAccessToken(memberId, currentRole);
@@ -99,6 +103,13 @@ public class AuthController {
 
         log.info("토큰 갱신 성공: memberId={}", memberId);
         return ResponseEntity.ok(response);
+    }
+
+    // 만료된 토큰으로 부터 role 추출하여 리프레시 로직에 활용
+    // 이유 1. 리프레시 에는 role 정보를 두지 않음
+    // 이유 2. role 정보를 위해 관계형 db에 접근하지 않기 위함
+    private MemberRole extractRoleFromAccessToken(String expiredToken) {
+        return jwtTokenProvider.getRoleFromAccessToken(expiredToken);
     }
 
     /**
@@ -136,7 +147,7 @@ public class AuthController {
         String authHeader = request.getHeader("Authorization");
 
         if (!StringUtils.hasText(authHeader) || !authHeader.startsWith("Bearer ")) {
-            throw new RuntimeException("Authorization 헤더가 없거나 형식이 올바르지 않습니다.");
+            throw new PresentationException(AUTH_PRESENTATION_INVALID_REQUEST);
         }
         return authHeader.substring(7).trim();
     }

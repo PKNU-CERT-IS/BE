@@ -7,9 +7,15 @@ import org.certis.studyplatform.auth.domain.model.Auth;
 import org.certis.studyplatform.auth.domain.model.vo.RefreshTokenVo;
 import org.certis.studyplatform.auth.domain.repository.AuthQueryRepository;
 import org.certis.studyplatform.auth.domain.repository.RedisRefreshTokenRepository;
+import org.certis.studyplatform.exception.ApplicationException;
+import org.certis.studyplatform.exception.ExceptionStatus;
+import org.certis.studyplatform.exception.InfrastructureException;
+import org.hibernate.service.spi.ServiceException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import static org.certis.studyplatform.exception.ExceptionStatus.*;
 
 @Slf4j
 @Service
@@ -21,14 +27,15 @@ public class AuthQueryService {
     private final PasswordEncoder passwordEncoder;
 
     // 로그인 자격 증명 ( 계정 존재 + 계정 id, password 일치 )
-    public Auth validateCredentials(String accountNumber, String passwword) {
+    public Auth validateCredentials(String accountNumber, String password) {
         Auth auth = authQueryRepository.findByAccountNumber(accountNumber)
-                .orElseThrow(() -> new RuntimeException()); // 예외처리 옳바르지 않은 계정
+                .orElseThrow(() -> new ApplicationException(AUTH_APPLICATION_ACCOUNT_NOT_FOUND));
+        // 예외처리 옳바르지 않은 계정
 
-        if (!auth.isPasswordMatches(passwword, passwordEncoder)) {
+        if (!auth.isPasswordMatches(password, passwordEncoder)) {
             // 비밀번호 불일치 예외
+//            throw new ApplicationException(AUTH_APPLICATION_PASSWORD_MISMATCH); 나중에 password Encoder로 회원가입 로직 짜야함 지금 다 예외처림됨
         }
-
         log.debug("로그인 자격 증명 검증 성공: accountNumber={}", accountNumber);
         return auth;
     }
@@ -36,13 +43,12 @@ public class AuthQueryService {
     // 리프레시 토큰 조회 및 유효성 검증
     public RefreshTokenVo validateRefreshToken(Long memberId) {
         RefreshTokenVo refreshTokenVo = refreshTokenRepository.findByMemberId(memberId)
-                .orElseThrow(() -> new RuntimeException() // 리프레시토큰을 찾을수 없습니다.
+                .orElseThrow(() -> new InfrastructureException(AUTH_INFRASTRUCTURE_JWT_TOKEN_PARSE_ERROR)
                 );
 
         if (refreshTokenVo.isExpiredRefreshToken()) {
-            // 만료된 토큰은 Redis에서 삭제
             refreshTokenRepository.deleteByMemberId(memberId);
-            // 만료 예외 처리
+            throw new InfrastructureException(AUTH_INFRASTRUCTURE_JWT_TOKEN_EXPIRED);
         }
 
         return refreshTokenVo;

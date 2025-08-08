@@ -28,9 +28,30 @@ public enum ExceptionStatus {
     // AUTHENTICATION & AUTHORIZATION (401, 403)
     PRESENTATION_AUTH_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "인증이 필요합니다"),
     PRESENTATION_AUTH_ACCESS_DENIED(HttpStatus.FORBIDDEN, "접근 권한이 없습니다"),
-    PRESENTATION_AUTH_INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다"),
-    PRESENTATION_AUTH_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "토큰이 만료되었습니다"),
 
+
+    // Auth - Application Layer
+    AUTH_APPLICATION_ACCOUNT_NOT_FOUND(HttpStatus.UNAUTHORIZED, "존재하지 않는 계정입니다"),
+    AUTH_APPLICATION_PASSWORD_MISMATCH(HttpStatus.UNAUTHORIZED, "비밀번호가 일치하지 않습니다"),
+
+    // Auth - Domain Layer
+    AUTH_DOMAIN_INVALID_ACCOUNT_NUMBER_LENGTH(HttpStatus.BAD_REQUEST, "계정번호는 6자 이상 20자 이하여야 합니다"),
+
+    // Auth - Infrastructure (JWT token 관련)
+    AUTH_INFRASTRUCTURE_INVALID_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 엑세스 토큰입니다"),
+    AUTH_INFRASTRUCTURE_JWT_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "JWT 토큰이 만료되었습니다"),
+    AUTH_INFRASTRUCTURE_JWT_TOKEN_INVALID_FORMAT(HttpStatus.UNAUTHORIZED, "JWT 토큰 형식이 올바르지 않습니다"),
+    AUTH_INFRASTRUCTURE_JWT_TOKEN_UNSUPPORTED(HttpStatus.UNAUTHORIZED, "지원하지 않는 JWT 토큰입니다"),
+    AUTH_INFRASTRUCTURE_JWT_TOKEN_INVALID_SIGNATURE(HttpStatus.UNAUTHORIZED, "JWT 토큰 서명이 유효하지 않습니다"),
+    AUTH_INFRASTRUCTURE_JWT_TOKEN_MISSING_CLAIMS(HttpStatus.UNAUTHORIZED, "JWT 토큰에 필수 정보가 없습니다"),
+    AUTH_INFRASTRUCTURE_JWT_TOKEN_PARSE_ERROR(HttpStatus.UNAUTHORIZED, "JWT 토큰 파싱 중 오류가 발생했습니다"),
+    AUTH_INFRASTRUCTURE_JWT_FILTER_PROCESSING_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "JWT 필터 처리 중 예상치 못한 오류가 발생했습니다"),
+
+    // Auth - Infrastructure Layer (Redis 관련)
+    AUTH_INFRASTRUCTURE_REDIS_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Redis 저장소 처리 중 오류가 발생했습니다"),
+
+    // Auth - Presentation Layer
+    AUTH_PRESENTATION_INVALID_REQUEST(HttpStatus.BAD_REQUEST, "인증 요청 데이터가 유효하지 않습니다"),
     // =================================================================
     // MEMBER DOMAIN EXCEPTIONS
     // =================================================================
