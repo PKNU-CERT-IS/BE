@@ -36,7 +36,7 @@ public class MemberInfoResponseDto {
      */
     public static MemberInfoResponseDto fromDomain(Member member) {
         return MemberInfoResponseDto.builder()
-                .id(member.getId() != null ? member.getId().value() : null)
+                .id(member.getId() != null ? member.getId() : null)
                 .name(member.getName().value())
                 .description(member.getDescription())
                 .studentNumber(member.getStudentNumber().value())

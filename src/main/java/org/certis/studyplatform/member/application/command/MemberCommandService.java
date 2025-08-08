@@ -68,7 +68,7 @@ public class MemberCommandService {
         // - 외부 시스템 연동 등
         
         log.info("Application: Member created successfully with ID: {}", 
-                savedMember.getId() != null ? savedMember.getId().value() : "null");
+                savedMember.getId() != null ? savedMember.getId() : "null");
         
         return savedMember;
     }

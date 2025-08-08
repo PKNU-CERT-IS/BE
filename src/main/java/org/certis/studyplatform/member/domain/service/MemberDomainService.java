@@ -63,7 +63,7 @@ public class MemberDomainService {
         // 3. 영속화
         Member savedMember = memberCommandRepository.save(member);
 
-        log.info("Domain: Member created successfully with ID: {}", savedMember.getId().value());
+        log.info("Domain: Member created successfully with ID: {}", savedMember.getId());
         return savedMember;
     }
 

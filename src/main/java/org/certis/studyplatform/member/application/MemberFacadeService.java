@@ -62,7 +62,7 @@ public class MemberFacadeService {
         );
         
         log.info("Member created via facade - ID: {}", 
-                createdMember.getId() != null ? createdMember.getId().value() : "null");
+                createdMember.getId() != null ? createdMember.getId(): "null");
         
         return createdMember;
     }

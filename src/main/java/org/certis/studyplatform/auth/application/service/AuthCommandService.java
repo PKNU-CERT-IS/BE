@@ -70,7 +70,7 @@ public class AuthCommandService {
     // 만료된 토큰으로 부터 role 추출하여 리프레시 로직에 활용
     // 이유 1. 리프레시 에는 role 정보를 두지 않음
     // 이유 2. role 정보를 위해 관계형 db에 접근하지 않기 위함
-    public MemberRole extractRoleFromExpiredToken(String expiredToken) {
+    public MemberRole extractRoleFromAccessToken(String expiredToken) {
         return jwtTokenProvider.getRoleFromAccessToken(expiredToken);
     }
 }

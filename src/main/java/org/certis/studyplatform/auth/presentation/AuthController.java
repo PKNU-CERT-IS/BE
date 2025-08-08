@@ -87,8 +87,8 @@ public class AuthController {
         log.info("토큰 갱신 요청: memberId={}", memberId);
 
         // 만료된 AccessToken에서 role 추출 (Command Service를 통해)
-        String expiredToken = extractTokenFromHeader(request);
-        MemberRole currentRole = authCommandService.extractRoleFromExpiredToken(expiredToken);
+        String accessToken = extractTokenFromHeader(request);
+        MemberRole currentRole = authCommandService.extractRoleFromAccessToken(accessToken);
 
         // 토큰 갱신
         AccessTokenVo newAccessToken = authFacadeService.refreshAccessToken(memberId, currentRole);

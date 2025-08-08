@@ -4,7 +4,7 @@ import org.certis.studyplatform.member.domain.vo.*;
 import java.time.ZonedDateTime;
 
 public class Member {
-    private final MemberIdVo id;
+    private final Long id;
     private NameVo name;
     private final StudentNumberVo studentNumber;
     private ProfileImageVo profileImage;
@@ -33,10 +33,9 @@ public class Member {
     }
 
     // 기존 회원 복원 (도메인 VO 버전)
-    public Member(MemberIdVo id, NameVo name, StudentNumberVo studentNumber, 
-                  ProfileImageVo profileImage, GradeVo grade, MemberRole role,
+
     public Member(Long id, NameVo name, StudentNumberVo studentNumber,
-                  ProfileImageVo profileImage, GradeVo grade, RoleVo role,
+                  ProfileImageVo profileImage, GradeVo grade, MemberRole role,
                   SkillsVo skills, MajorVo major, String description,
                   ZonedDateTime createdAt, ZonedDateTime updatedAt) {
         this.id = id;
@@ -53,7 +52,7 @@ public class Member {
     }
 
     // 기존 회원 복원 (Primitive 타입 버전 - Repository 계층에서 사용)
-    public Member(MemberIdVo id, String name, StudentNumberVo studentNumber, 
+    public Member(Long id, String name, StudentNumberVo studentNumber,
                   ProfileImageVo profileImage, String grade, MemberRole role,
                   SkillsVo skills, String major,
                   ZonedDateTime createdAt, ZonedDateTime updatedAt) {
@@ -114,7 +113,7 @@ public class Member {
     }
 
     // Getters - Domain VOs 반환
-    public MemberIdVo getId() { return id; }
+    public Long getId() { return id; }
     public NameVo getName() { return name; }
     public StudentNumberVo getStudentNumber() { return studentNumber; }
     public ProfileImageVo getProfileImage() { return profileImage; }

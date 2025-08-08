@@ -1,5 +1,7 @@
 package org.certis.studyplatform.auth.infrastructure.persistence;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.auth.domain.model.vo.RefreshTokenVo;
@@ -17,6 +19,8 @@ import java.util.Optional;
 public class RedisRefreshTokenRepositoryImpl implements RedisRefreshTokenRepository {
 
     private final RedisTemplate<String, Object> redisTemplate;
+    private final ObjectMapper objectMapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule());
     private static final String REFRESH_TOKEN_KEY_PREFIX = "refresh_token:";
 
     @Override
@@ -39,17 +43,23 @@ public class RedisRefreshTokenRepositoryImpl implements RedisRefreshTokenReposit
     public Optional<RefreshTokenVo> findByMemberId(Long memberId) {
         String key = getKey(memberId);
         Object value = redisTemplate.opsForValue().get(key);
+        if (value != null) {
+            try {
+                // LinkedHashMap을 RefreshTokenVo로 변환
+                RefreshTokenVo refreshTokenVo = objectMapper.convertValue(value, RefreshTokenVo.class);
 
-        if(value instanceof RefreshTokenVo refreshTokenVo){
-            if(refreshTokenVo.isExpiredRefreshToken()){
-                deleteByMemberId(memberId);
-                // 예외처리 (만료)
+                if (refreshTokenVo.isExpiredRefreshToken()) {
+                    deleteByMemberId(memberId);
+                    return Optional.empty();
+                }
+
+                return Optional.of(refreshTokenVo);
+
+            } catch (Exception e) {
+                log.error("RefreshTokenVo 변환 실패: {}", e.getMessage(), e);
                 return Optional.empty();
             }
-
-            return Optional.of(refreshTokenVo);
         }
-        // 예외처리 (타입 불일치)
         return Optional.empty();
     }
 

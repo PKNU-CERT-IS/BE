@@ -1,11 +1,14 @@
 package org.certis.studyplatform.member.infrastructure.mapper;
 
 import org.certis.studyplatform.member.domain.Member;
+import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.vo.*;
 import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberEntity;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 @Component
 public class MemberMapper {
@@ -81,8 +84,8 @@ public class MemberMapper {
         return gradeVo != null ? gradeVo.value() : null;
     }
 
-    private String mapRoleVoToString(RoleVo roleVo) {
-        return roleVo != null ? roleVo.value() : null;
+    private MemberRole mapRoleVoToString(MemberRole roleVo) {
+        return roleVo;
     }
 
     private String mapMajorVoToString(MajorVo majorVo) {
@@ -116,8 +119,8 @@ public class MemberMapper {
         return grade != null ? GradeVo.of(grade) : null;
     }
 
-    private RoleVo mapStringToRoleVo(String role) {
-        return role != null ? RoleVo.of(role) : null;
+    private MemberRole mapStringToRoleVo(MemberRole role) {
+        return role ;
     }
 
     private MajorVo mapStringToMajorVo(String major) {
@@ -133,5 +136,9 @@ public class MemberMapper {
             return null;
         }
         return SkillsVo.of(Arrays.asList(skills));
+    }
+
+    public List<String> parseSkillsFromDatabase(Object o) {
+        return  new ArrayList<>();
     }
 }

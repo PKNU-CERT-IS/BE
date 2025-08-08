@@ -101,8 +101,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // 인증 관련
                 "/api/v1/auth/login",
                 "/api/v1/auth/signup",
-                "/api/v1/auth/token/refresh",
-
                 //문서 모니터링
                 "/swagger-ui.html",
                 "/swagger-ui",

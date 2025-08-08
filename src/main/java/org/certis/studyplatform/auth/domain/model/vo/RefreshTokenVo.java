@@ -1,5 +1,7 @@
 package org.certis.studyplatform.auth.domain.model.vo;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.time.LocalDateTime;
 import java.util.Objects;
 
@@ -13,6 +15,7 @@ public record RefreshTokenVo(String value, LocalDateTime expiredAt, Long memberI
     }
 
     // 토큰 만료 여부 확인
+    @JsonIgnore // Jackson은 isXxx() 메서드를 boolean 프로퍼티로 자동 인식합니다: 따라서 레디스 직렬화에 제거하기위한 에노테이션을 붙여줍니다.
     public boolean isExpiredRefreshToken(){
         return LocalDateTime.now().isAfter(expiredAt);
     }
