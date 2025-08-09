@@ -28,16 +28,8 @@ public class RedisRefreshTokenRepositoryImpl implements RedisRefreshTokenReposit
     private static final String REFRESH_TOKEN_KEY_PREFIX = "refresh_token:";
 
     @Override
-    public void save(RefreshTokenVo refreshTokenVo) {
+    public void save(RefreshTokenVo refreshTokenVo,Duration ttl) {
         String key = getKey(refreshTokenVo.memberId());
-
-        Duration ttl = Duration.between(LocalDateTime.now(),refreshTokenVo.expiredAt());
-
-        if(ttl.isNegative() || ttl.isZero()){
-            log.warn("만료된 리프레시 토큰 저장 시도: userId={}", refreshTokenVo.memberId());
-            // 예외 처리
-            return;
-        }
 
         redisTemplate.opsForValue().set(key,refreshTokenVo,ttl);
         log.debug("리프레시 토큰 저장 완료: memberId={}, ttl={}초", refreshTokenVo.memberId(), ttl.getSeconds());

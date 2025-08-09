@@ -7,6 +7,7 @@ import org.certis.studyplatform.auth.domain.model.AuthToken;
 import org.certis.studyplatform.auth.domain.model.vo.AccessTokenVo;
 import org.certis.studyplatform.auth.domain.model.vo.RefreshTokenVo;
 import org.certis.studyplatform.auth.domain.repository.RedisRefreshTokenRepository;
+import org.certis.studyplatform.auth.domain.service.AuthDomainService;
 import org.certis.studyplatform.auth.infrastructure.security.JwtTokenProvider;
 import org.certis.studyplatform.member.domain.MemberRole;
 import org.springframework.stereotype.Service;
@@ -18,8 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class AuthCommandService {
 
-    private final RedisRefreshTokenRepository refreshTokenRepository;
     private final JwtTokenProvider jwtTokenProvider;
+    private final AuthDomainService authDomainService;
 
    // 로그인 - accessToken,refreshToken 생성
     public AuthToken executeLogin(Auth auth) {
@@ -41,7 +42,7 @@ public class AuthCommandService {
         );
 
         // Redis에 refreshToken 저장
-        refreshTokenRepository.save(refreshToken);
+        authDomainService.saveRefreshToken(refreshToken);
 
         log.info("로그인 성공: memberId={}, role={}", auth.getMemberId(), auth.getRoleVo().role());
 
@@ -50,7 +51,7 @@ public class AuthCommandService {
 
     //  로그아웃 - RefreshToken 삭제
     public void executeLogout(Long memberId) {
-        refreshTokenRepository.deleteByMemberId(memberId);
+        authDomainService.deleteRefreshToken(memberId);
     }
 
     // accessToken 갱신

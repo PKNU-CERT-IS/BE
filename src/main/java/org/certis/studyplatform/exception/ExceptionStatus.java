@@ -52,6 +52,12 @@ public enum ExceptionStatus {
 
     // Auth - Presentation Layer
     AUTH_PRESENTATION_INVALID_REQUEST(HttpStatus.BAD_REQUEST, "인증 요청 데이터가 유효하지 않습니다"),
+
+    // Auth - Domain Layer
+    AUTH_DOMAIN_JWT_TOKEN_PARSE_ERROR(HttpStatus.UNAUTHORIZED, "JWT 토큰 파싱 중 오류가 발생했습니다"),
+    AUTH_DOMAIN_JWT_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "JWT 토큰이 만료되었습니다"),
+    AUTH_DOMAIN_ACCOUNT_NOT_FOUND(HttpStatus.UNAUTHORIZED, "존재하지 않는 계정입니다"),
+
     // =================================================================
     // MEMBER DOMAIN EXCEPTIONS
     // =================================================================
