@@ -8,6 +8,7 @@ import org.certis.studyplatform.auth.domain.model.vo.RefreshTokenVo;
 import org.certis.studyplatform.auth.domain.repository.RedisRefreshTokenRepository;
 import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.exception.InfrastructureException;
+import org.certis.studyplatform.member.domain.vo.MemberIdVo;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -36,8 +37,8 @@ public class RedisRefreshTokenRepositoryImpl implements RedisRefreshTokenReposit
     }
 
     @Override
-    public Optional<RefreshTokenVo> findByMemberId(Long memberId) {
-        String key = getKey(memberId);
+    public Optional<RefreshTokenVo> findByMemberId(MemberIdVo memberIdVo) {
+        String key = getKey(memberIdVo.value());
         Object value = redisTemplate.opsForValue().get(key);
         if (value != null) {
             try {
@@ -45,7 +46,7 @@ public class RedisRefreshTokenRepositoryImpl implements RedisRefreshTokenReposit
                 RefreshTokenVo refreshTokenVo = objectMapper.convertValue(value, RefreshTokenVo.class);
 
                 if (refreshTokenVo.isExpiredRefreshToken()) {
-                    deleteByMemberId(memberId);
+                    deleteByMemberId(memberIdVo);
                     return Optional.empty();
                 }
 
@@ -60,14 +61,14 @@ public class RedisRefreshTokenRepositoryImpl implements RedisRefreshTokenReposit
     }
 
     @Override
-    public void deleteByMemberId(Long memberId) {
-        String key = getKey(memberId);
+    public void deleteByMemberId(MemberIdVo memberIdVo) {
+        String key = getKey(memberIdVo.value());
         try {
             Boolean deleted = redisTemplate.delete(key);
-            log.debug("리프레시 토큰 삭제: memberId={}, deleted={}", memberId, deleted);
+            log.debug("리프레시 토큰 삭제: memberId={}, deleted={}", memberIdVo.value(), deleted);
 
         } catch (Exception e) {
-            log.error("Redis 처리 오류: memberId={}, key={}, error={}", memberId, key, e.getMessage(), e);
+            log.error("Redis 처리 오류: memberId={}, key={}, error={}", memberIdVo.value(), key, e.getMessage(), e);
             throw new InfrastructureException(AUTH_INFRASTRUCTURE_REDIS_ERROR);
         }
     }

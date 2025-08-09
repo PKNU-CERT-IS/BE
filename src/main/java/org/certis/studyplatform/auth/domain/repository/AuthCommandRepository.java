@@ -1,11 +1,9 @@
 package org.certis.studyplatform.auth.domain.repository;
 
-import org.certis.studyplatform.auth.domain.model.Auth;
+import org.certis.studyplatform.auth.domain.model.vo.AuthInfoVo;
 
 public interface AuthCommandRepository {
 
-    // 회원 가입
-    void saveAuth(Auth auth);
 
     // 비밀번호 변경
     void updatePassword(Long memberId, String newEncodedPassword);

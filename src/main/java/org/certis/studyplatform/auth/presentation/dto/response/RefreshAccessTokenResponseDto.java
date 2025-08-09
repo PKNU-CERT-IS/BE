@@ -1,5 +1,6 @@
 package org.certis.studyplatform.auth.presentation.dto.response;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -7,10 +8,8 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class AccessTokenRefreshResponseDto {
+public class RefreshAccessTokenResponseDto {
+    @NotBlank(message = "액세스 토큰은 필수입니다")
     private String accessToken;
 
-    public boolean hasRequiredFields() {
-        return accessToken != null && !accessToken.trim().isEmpty();
-    }
 }

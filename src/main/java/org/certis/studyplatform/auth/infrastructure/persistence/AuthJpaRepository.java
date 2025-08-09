@@ -1,6 +1,5 @@
 package org.certis.studyplatform.auth.infrastructure.persistence;
 
-import org.certis.studyplatform.auth.domain.model.Auth;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

@@ -3,18 +3,16 @@ package org.certis.studyplatform.auth.presentation;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.certis.studyplatform.auth.application.service.AuthCommandService;
 import org.certis.studyplatform.auth.application.service.AuthFacadeService;
-import org.certis.studyplatform.auth.domain.model.AuthToken;
 import org.certis.studyplatform.auth.domain.model.vo.AccessTokenVo;
-import org.certis.studyplatform.auth.domain.model.vo.RefreshTokenVo;
 import org.certis.studyplatform.auth.infrastructure.security.JwtTokenProvider;
 import org.certis.studyplatform.auth.presentation.dto.request.LoginRequestDto;
-import org.certis.studyplatform.auth.presentation.dto.response.AccessTokenRefreshResponseDto;
+import org.certis.studyplatform.auth.presentation.dto.response.RefreshAccessTokenResponseDto;
 import org.certis.studyplatform.auth.presentation.dto.response.LoginResponseDto;
-import org.certis.studyplatform.exception.ExceptionStatus;
+import org.certis.studyplatform.auth.presentation.dto.response.TokenRequestDto;
 import org.certis.studyplatform.exception.PresentationException;
 import org.certis.studyplatform.member.domain.MemberRole;
 import org.springframework.http.ResponseEntity;
@@ -40,25 +38,25 @@ public class AuthController {
      */
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDto> login(
-            @RequestBody LoginRequestDto request,
+           @Valid @RequestBody LoginRequestDto request,
             HttpServletResponse response) {
 
         log.info("로그인 요청: accountNumber={}", request.getAccountNumber());
 
         // 로그인 처리
-        AuthToken authToken = authFacadeService.login(request.getAccountNumber(), request.getPassword());
+        TokenRequestDto tokenRequestDto = authFacadeService.login(request);
 
         // RefreshToken을 HttpOnly 쿠키로 설정 (실제 만료시간 사용)
-        setRefreshTokenCookie(response, authToken.getRefreshToken());
+        setRefreshTokenCookie(response, tokenRequestDto);
 
         // AccessToken만 응답 Body에
         LoginResponseDto loginResponse = new LoginResponseDto(
-                authToken.getAccessToken().value(),
-                authToken.getMemberId(),
-                authToken.getRole()
+                tokenRequestDto.getAccessToken(),
+                tokenRequestDto.getMemberId(),
+                tokenRequestDto.getRole()
         );
 
-        log.info("로그인 성공: memberId={}", authToken.getMemberId());
+        log.info("로그인 성공: memberId={}", loginResponse.getMemberId());
         return ResponseEntity.ok(loginResponse);
     }
 
@@ -84,7 +82,7 @@ public class AuthController {
      * AccessToken 갱신
      */
     @PostMapping("/token/refresh")
-    public ResponseEntity<AccessTokenRefreshResponseDto> refreshToken(
+    public ResponseEntity<RefreshAccessTokenResponseDto> refreshToken(
             HttpServletRequest request,
             @AuthenticationPrincipal Long memberId) {
 
@@ -94,15 +92,11 @@ public class AuthController {
         String accessToken = extractTokenFromHeader(request);
         MemberRole currentRole = extractRoleFromAccessToken(accessToken);
 
-        // 토큰 갱신
-        AccessTokenVo newAccessToken = authFacadeService.refreshAccessToken(memberId, currentRole);
-
-        AccessTokenRefreshResponseDto response = new AccessTokenRefreshResponseDto(
-                newAccessToken.value()
-        );
+        // 토큰 갱신 ( memberId는 검증된 값 currentRole 도 또한 검증된 값 따라서 dto 감싸는건 과다하다고 생각)
+        RefreshAccessTokenResponseDto responseDto = authFacadeService.refreshAccessToken(memberId, currentRole);
 
         log.info("토큰 갱신 성공: memberId={}", memberId);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(responseDto);
     }
 
     // 만료된 토큰으로 부터 role 추출하여 리프레시 로직에 활용
@@ -115,8 +109,8 @@ public class AuthController {
     /**
      * RefreshToken 쿠키 설정 (실제 토큰 만료시간 사용)
      */
-    private void setRefreshTokenCookie(HttpServletResponse response, RefreshTokenVo refreshToken) {
-        Cookie cookie = new Cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken.value());
+    private void setRefreshTokenCookie(HttpServletResponse response, TokenRequestDto tokenRequestDto) {
+        Cookie cookie = new Cookie(REFRESH_TOKEN_COOKIE_NAME, tokenRequestDto.getRefreshToken());
         cookie.setHttpOnly(true);
         cookie.setSecure(false); // HTTP 에서도 동작 이후 true로 바꿔야함
         cookie.setPath("/");
@@ -124,7 +118,7 @@ public class AuthController {
         // RefreshToken의 실제 만료시간으로 쿠키 만료시간 설정
         long ttlSeconds = java.time.Duration.between(
                 java.time.LocalDateTime.now(),
-                refreshToken.expiredAt()
+                tokenRequestDto.getRefreshExpiredAt()
         ).getSeconds();
         cookie.setMaxAge((int) ttlSeconds);
 

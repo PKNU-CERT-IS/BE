@@ -9,7 +9,6 @@ import static org.certis.studyplatform.exception.ExceptionStatus.AUTH_DOMAIN_INV
 
 public record AccountNumberVo(String accountNumber) {
     public AccountNumberVo{
-        Objects.requireNonNull(accountNumber, "계정번호는 필수입니다.");
         if(accountNumber.length()<6||accountNumber.length()>20){
             throw new DomainException(AUTH_DOMAIN_INVALID_ACCOUNT_NUMBER_LENGTH);
         }

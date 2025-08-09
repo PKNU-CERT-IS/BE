@@ -3,42 +3,38 @@ package org.certis.studyplatform.auth.application.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.certis.studyplatform.auth.domain.model.Auth;
+import org.certis.studyplatform.auth.application.object.query.ValidateCredentialsQuery;
+import org.certis.studyplatform.auth.application.object.query.ValidateRefreshTokenQuery;
+import org.certis.studyplatform.auth.domain.model.vo.AuthInfoVo;
+import org.certis.studyplatform.auth.domain.model.vo.RawPasswordVo;
 import org.certis.studyplatform.auth.domain.model.vo.RefreshTokenVo;
-import org.certis.studyplatform.auth.domain.repository.AuthQueryRepository;
-import org.certis.studyplatform.auth.domain.repository.RedisRefreshTokenRepository;
 import org.certis.studyplatform.auth.domain.service.AuthDomainService;
-import org.certis.studyplatform.exception.ApplicationException;
-import org.certis.studyplatform.exception.ExceptionStatus;
-import org.certis.studyplatform.exception.InfrastructureException;
-import org.hibernate.service.spi.ServiceException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import static org.certis.studyplatform.exception.ExceptionStatus.*;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true) // 읽기 전용
 public class AuthQueryService {
-    private final RedisRefreshTokenRepository refreshTokenRepository;
     private final AuthDomainService authDomainService;
 
     // 로그인 자격 증명 ( 계정 존재 + 계정 id, password 일치 )
-    public Auth validateCredentials(String accountNumber, String password) {
-        Auth auth = authDomainService.findAuthByAccountNumber(accountNumber);
+    public AuthInfoVo validateCredentials(ValidateCredentialsQuery validateCredentialsQuery) {
+        AuthInfoVo auth = authDomainService.findAuthByAccountNumber(validateCredentialsQuery);
 
-        authDomainService.validatePassword(auth,password);
+        RawPasswordVo rawPasswordVo = RawPasswordVo.of(validateCredentialsQuery.rawPassword());
 
-        log.debug("로그인 자격 증명 검증 성공: accountNumber={}", accountNumber);
+        authDomainService.validatePassword(auth,rawPasswordVo);
+
+        log.debug("로그인 자격 증명 검증 성공: accountNumber={}", validateCredentialsQuery.accountNumber());
         return auth;
     }
 
     // 리프레시 토큰 조회 및 유효성 검증
-    public RefreshTokenVo validateRefreshToken(Long memberId) {
-       RefreshTokenVo refreshTokenVo= authDomainService.validateRefreshToken(memberId);
+    public RefreshTokenVo validateRefreshToken(ValidateRefreshTokenQuery validateRefreshTokenQuery) {
+       RefreshTokenVo refreshTokenVo= authDomainService.validateRefreshToken(validateRefreshTokenQuery);
 
         return refreshTokenVo;
     }

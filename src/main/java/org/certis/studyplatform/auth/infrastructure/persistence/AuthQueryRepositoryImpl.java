@@ -1,8 +1,8 @@
 package org.certis.studyplatform.auth.infrastructure.persistence;
 
 import lombok.RequiredArgsConstructor;
-import org.certis.studyplatform.auth.domain.model.Auth;
 import org.certis.studyplatform.auth.domain.model.vo.AccountNumberVo;
+import org.certis.studyplatform.auth.domain.model.vo.AuthInfoVo;
 import org.certis.studyplatform.auth.domain.model.vo.EncodedPasswordVo;
 import org.certis.studyplatform.auth.domain.repository.AuthQueryRepository;
 import org.certis.studyplatform.member.domain.MemberRole;
@@ -25,69 +25,30 @@ public class AuthQueryRepositoryImpl implements AuthQueryRepository {
     private final DSLContext dsl;
 
     @Override
-    public Optional<Auth> findByAccountNumber(String accountNumber) {
+    public Optional<AuthInfoVo> findByAccountNumber(AccountNumberVo accountNumberVo) {
         return dsl.select(
                         field("a.member_id").as("member_id"),
                         field("a.account_number").as("account_number"),
                         field("a.password").as("password"),
-                        field("m.role").as("role"),
-                        field("a.created_at").as("created_at"),
-                        field("a.updated_at").as("updated_at"),
-                        field("a.deleted_at").as("deleted_at")
+                        field("m.role").as("role")
                 )
                 .from(table("auth").as("a"))
                 .join(table("member").as("m")).on(field("a.member_id").eq(field("m.id")))
-                .where(field("a.account_number").eq(accountNumber)
+                .where(field("a.account_number").eq(accountNumberVo.accountNumber())
                         .and(field("a.deleted_at").isNull())
                         .and(field("m.deleted_at").isNull()))
                 .fetchOptional()
                 .map(record -> {
                     String roleStr = record.getValue("role", String.class);
                     MemberRole role = MemberRole.valueOf(roleStr);
-
-                    return Auth.builder()
-                        .memberId(record.getValue("member_id", Long.class))
-                        .accountNumberVo(AccountNumberVo.of(record.getValue("account_number", String.class)))
-                        .encodedPasswordVo(EncodedPasswordVo.of(record.getValue("password", String.class)))
-                        .roleVo(RoleVo.of(role))
-                            .createdAt(convertToLocalDateTime(record.getValue("created_at")))
-                            .updatedAt(convertToLocalDateTime(record.getValue("updated_at")))
-                            .deletedAt(convertToLocalDateTime(record.getValue("deleted_at")))
-                        .build();});
+                    return AuthInfoVo.of(
+                            record.getValue("member_id", Long.class),
+                            record.getValue("account_number", String.class),
+                            record.getValue("password", String.class),
+                           role
+                    );});
     }
 
-    @Override
-    public Optional<Auth> findByMemberId(Long memberId) {
-        return dsl.select(
-                        field("a.member_id").as("member_id"),
-                        field("a.account_number").as("account_number"),
-                        field("a.password").as("password"),
-                        field("m.role").as("role"),
-                        field("a.created_at").as("created_at"),
-                        field("a.updated_at").as("updated_at"),
-                        field("a.deleted_at").as("deleted_at")
-                )
-                .from(table("auth").as("a"))
-                .join(table("member").as("m")).on(field("a.member_id").eq(field("m.id")))
-                .where(field("a.member_id").eq(memberId)
-                        .and(field("a.deleted_at").isNull())
-                        .and(field("m.deleted_at").isNull()))
-                .fetchOptional()
-                .map(
-                        record ->
-                        {
-                            String roleStr = record.getValue("role", String.class);
-                            MemberRole role = MemberRole.valueOf(roleStr);
-                            return Auth.builder()
-                        .memberId(record.getValue("member_id", Long.class))
-                        .accountNumberVo(AccountNumberVo.of(record.getValue("account_number", String.class)))
-                        .encodedPasswordVo(EncodedPasswordVo.of(record.getValue("password", String.class)))
-                        .roleVo(RoleVo.of(role))
-                                    .createdAt(convertToLocalDateTime(record.getValue("created_at")))
-                                    .updatedAt(convertToLocalDateTime(record.getValue("updated_at")))
-                                    .deletedAt(convertToLocalDateTime(record.getValue("deleted_at")))
-                        .build();});
-    }
 
     @Override
     public boolean existsByAccountNumber(String accountNumber) {
