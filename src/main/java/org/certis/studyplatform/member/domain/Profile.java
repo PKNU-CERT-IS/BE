@@ -10,6 +10,7 @@ import java.time.ZonedDateTime;
 
 //TODO: Lombok Getter 가 접근 가능한지 알아보기
 // => 원시타입만 가능함
+@Deprecated(forRemoval = true)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Profile {
     

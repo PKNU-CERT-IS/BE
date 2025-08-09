@@ -23,7 +23,7 @@ public class SecurityConfig {
                         headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
                 )
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/api/auth/**", "/h2-console/**").permitAll()
+                        .requestMatchers("/api/v1/auth/**", "/h2-console/**", "/api/v1/profile/**").permitAll()
                         .anyRequest().authenticated()
                 );
 

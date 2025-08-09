@@ -7,6 +7,7 @@ import lombok.Getter;
 
 import java.time.ZonedDateTime;
 
+@Deprecated(forRemoval = true)
 @Builder
 @Getter
 public class Member {

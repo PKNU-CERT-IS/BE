@@ -80,8 +80,6 @@ spring:
 # ✅ 서버 설정
 server:
   port: ${SERVER_PORT}
-  servlet:
-    context-path: ${CONTEXT_PATH}
 
 # ✅ Email 설정 (환경변수 필수)
 mail:
