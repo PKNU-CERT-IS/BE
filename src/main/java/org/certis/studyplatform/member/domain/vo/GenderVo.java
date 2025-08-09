@@ -1,70 +1,75 @@
 package org.certis.studyplatform.member.domain.vo;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.Set;
 
 /**
- * Gender Value Object
+ * 성별 Value Object
  * 
- * ✅ 성별 정보를 담는 Value Object
- * ✅ MALE, FEMALE, OTHER 값만 허용
- * ✅ 유효성 검사 포함
+ * 회원의 성별 정보를 담는 불변 객체
+ * 허용된 성별 값들에 대한 검증 포함
  */
 public record GenderVo(String value) {
-
-    private static final List<String> VALID_GENDERS = Arrays.asList("MALE", "FEMALE", "OTHER");
-
+    
+    // 허용된 성별 값들
+    private static final Set<String> VALID_GENDERS = Set.of(
+        "MALE",     // 남성
+        "FEMALE",   // 여성
+        "OTHER",    // 기타
+        "UNKNOWN"   // 미지정
+    );
+    
     public GenderVo {
-        // record의 정규화 생성자에서 유효성 검사는 불필요
-        // 정적 팩토리 메서드에서 검증됨
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalArgumentException("성별은 필수입니다");
+        }
+        
+        String upperValue = value.trim().toUpperCase();
+        if (!VALID_GENDERS.contains(upperValue)) {
+            throw new IllegalArgumentException("유효하지 않은 성별입니다. 허용값: " + VALID_GENDERS);
+        }
+        
+        // 정규화된 값으로 저장
+        value = upperValue;
     }
-
+    
     /**
-     * 문자열로부터 GenderVo 생성
+     * 팩토리 메서드
      */
     public static GenderVo of(String gender) {
-        validateGender(gender);
-        return new GenderVo(gender.toUpperCase());
+        return new GenderVo(gender);
     }
-
-    /**
-     * 성별 유효성 검사
-     */
-    private static void validateGender(String gender) {
-        if (gender == null || gender.trim().isEmpty()) {
-            throw new IllegalArgumentException("성별은 null이거나 빈 문자열일 수 없습니다.");
-        }
-
-        if (!VALID_GENDERS.contains(gender.toUpperCase())) {
-            throw new IllegalArgumentException("유효하지 않은 성별입니다. 허용된 값: " + VALID_GENDERS);
-        }
-    }
-
-    /**
-     * 성별 문자열 반환
-     */
-    public String getGender() {
-        return value;
-    }
-
+    
     /**
      * 남성인지 확인
      */
     public boolean isMale() {
         return "MALE".equals(value);
     }
-
+    
     /**
      * 여성인지 확인
      */
     public boolean isFemale() {
         return "FEMALE".equals(value);
     }
-
+    
     /**
-     * 기타인지 확인
+     * 성별이 지정되었는지 확인
      */
-    public boolean isOther() {
-        return "OTHER".equals(value);
+    public boolean isSpecified() {
+        return !"UNKNOWN".equals(value);
+    }
+    
+    /**
+     * 표시용 문자열 반환
+     */
+    public String getDisplayName() {
+        return switch (value) {
+            case "MALE" -> "남성";
+            case "FEMALE" -> "여성";
+            case "OTHER" -> "기타";
+            case "UNKNOWN" -> "미지정";
+            default -> value;
+        };
     }
 } 
