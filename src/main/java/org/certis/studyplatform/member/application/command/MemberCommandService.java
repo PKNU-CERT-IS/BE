@@ -6,12 +6,9 @@ import org.certis.studyplatform.member.application.mapper.MemberApplicationMappe
 import org.certis.studyplatform.member.application.object.command.CreateMemberCommand;
 import org.certis.studyplatform.member.application.object.command.DeleteMemberCommand;
 import org.certis.studyplatform.member.application.object.command.UpdateMemberCommand;
-import org.certis.studyplatform.member.domain.Member;
 import org.certis.studyplatform.member.domain.service.MemberDomainService;
 import org.certis.studyplatform.member.domain.vo.MemberCreatedVo;
-import org.certis.studyplatform.member.domain.vo.MemberIdVo;
 import org.certis.studyplatform.member.domain.vo.MemberUpdatedVo;
-import org.certis.studyplatform.member.domain.mapper.DomainToVoMapper;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +29,6 @@ public class MemberCommandService {
 
     private final MemberDomainService memberDomainService;
     private final MemberApplicationMapper memberApplicationMapper; // VO → DTO 변환용
-    private final DomainToVoMapper domainToVoMapper; // Domain → VO 변환용
     private final ApplicationEventPublisher eventPublisher;
 
     /**
@@ -42,10 +38,7 @@ public class MemberCommandService {
     public MemberCreatedVo createMember(CreateMemberCommand command) {
         log.info("Command: Creating member with student number: {}", command.studentNumber());
 
-        MemberCreatedVo savedMember = memberDomainService.createMember(
-                command.name(), command.studentNumber(), command.grade(),
-                command.skills(), command.role(), command.major(), command.description()
-        );
+        MemberCreatedVo savedMember = memberDomainService.createMember(command);
 
         return savedMember;
     }
@@ -69,12 +62,8 @@ public class MemberCommandService {
                 command.major() != null,
                 command.skills() != null && !command.skills().isEmpty());
 
-        MemberIdVo memberIdVo = new MemberIdVo(command.id());
-
-        Member updatedMember = memberDomainService.updateMember(memberIdVo, command);
-
         // 새로운 매퍼 사용: Domain → VO 변환
-        return domainToVoMapper.toMemberUpdatedVo(updatedMember);
+        return memberDomainService.updateMember(command);
     }
 
 
@@ -84,8 +73,7 @@ public class MemberCommandService {
     @Transactional
     public void deleteMember(DeleteMemberCommand command) {
         log.info("Command: Deleting member with ID: {}", command.id());
-        MemberIdVo memberIdVo = new MemberIdVo(command.id());
-        memberDomainService.deleteMember(memberIdVo);
+        memberDomainService.deleteMember(command);
         log.info("Member deleted successfully: {}", command.id());
     }
 }

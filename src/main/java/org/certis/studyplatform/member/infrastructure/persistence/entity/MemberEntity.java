@@ -10,8 +10,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
-import org.certis.studyplatform.member.domain.Member;
-
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 
@@ -69,8 +67,8 @@ public class MemberEntity {
     private ZonedDateTime deletedAt;
 
     @Builder(toBuilder = true)
-    private MemberEntity(Long id, String name, String description, String studentNumber, String profileImage, 
-                        String grade, String role, String[] skills, String major,
+    private MemberEntity(Long id, String name, String description, String studentNumber,
+                        String profileImage, String grade, String role, String[] skills, String major,
                         ZonedDateTime birthday, String gender,
                         ZonedDateTime createdAt, ZonedDateTime updatedAt, ZonedDateTime deletedAt) {
         this.id = id;

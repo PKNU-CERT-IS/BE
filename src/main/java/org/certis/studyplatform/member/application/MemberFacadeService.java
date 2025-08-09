@@ -22,15 +22,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-/**
- * Member Facade Service - Clean Architecture 적용
- *
- * ✅ 단일 진입점: 모든 Member 관련 작업의 통합 인터페이스
- * ✅ Facade + CQRS: Command/Query 완전 분리
- * ✅ DTO ↔ Command/Query Object 변환 담당
- * ✅ 새로운 매퍼 시스템 사용: MemberApplicationCommandMapper, MemberApplicationQueryMapper
- * ✅ VO 직접 반환: Controller에서 VO → ResponseDTO 변환 제거
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
