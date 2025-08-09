@@ -5,6 +5,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.certis.studyplatform.member.domain.MemberRole;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.SQLDelete;
@@ -40,8 +41,9 @@ public class MemberEntity {
     @Column(nullable = false)
     private String grade;
 
+    @Enumerated(EnumType.STRING) // 중요!!
     @Column(nullable = false)
-    private String role;
+    private MemberRole role;
 
     @Column(columnDefinition = "text[]")
     private String[] skills;
@@ -67,10 +69,10 @@ public class MemberEntity {
     private ZonedDateTime deletedAt;
 
     @Builder(toBuilder = true)
-    private MemberEntity(Long id, String name, String description, String studentNumber,
-                        String profileImage, String grade, String role, String[] skills, String major,
-                        ZonedDateTime birthday, String gender,
-                        ZonedDateTime createdAt, ZonedDateTime updatedAt, ZonedDateTime deletedAt) {
+    private MemberEntity(Long id, String name, String description, String studentNumber, String profileImage,
+                         String grade, MemberRole role, String[] skills, String major,
+                         ZonedDateTime birthday, String gender,
+                         ZonedDateTime createdAt, ZonedDateTime updatedAt, ZonedDateTime deletedAt) {
         this.id = id;
         this.name = name;
         this.description = description;

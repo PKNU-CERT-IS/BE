@@ -4,6 +4,7 @@ import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import org.certis.studyplatform.member.domain.MemberRole;
 
 import java.util.List;
 
@@ -28,7 +29,7 @@ public class MemberCreateRequestDto {
     private String grade;
     
     @NotBlank(message = "역할은 필수입니다")
-    private String role;
+    private MemberRole role;
     
     @NotNull(message = "기술 스택은 필수입니다")
     private List<@NotBlank(message = "기술 스택 항목은 빈 값일 수 없습니다") String> skills;
