@@ -7,8 +7,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.auth.application.service.AuthFacadeService;
-import org.certis.studyplatform.auth.domain.model.vo.AccessTokenVo;
-import org.certis.studyplatform.auth.infrastructure.security.JwtTokenProvider;
+import org.certis.studyplatform.exception.ExceptionStatus;
+import org.certis.studyplatform.shared.security.JwtTokenProvider;
 import org.certis.studyplatform.auth.presentation.dto.request.LoginRequestDto;
 import org.certis.studyplatform.auth.presentation.dto.response.RefreshAccessTokenResponseDto;
 import org.certis.studyplatform.auth.presentation.dto.response.LoginResponseDto;
@@ -20,7 +20,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
-import static org.certis.studyplatform.exception.ExceptionStatus.AUTH_PRESENTATION_INVALID_REQUEST;
 
 @Slf4j
 @RestController
@@ -30,8 +29,6 @@ public class AuthController {
 
     private final AuthFacadeService authFacadeService;
     private final JwtTokenProvider jwtTokenProvider;
-
-    private static final String REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
 
     /**
      * 로그인
@@ -110,7 +107,7 @@ public class AuthController {
      * RefreshToken 쿠키 설정 (실제 토큰 만료시간 사용)
      */
     private void setRefreshTokenCookie(HttpServletResponse response, TokenRequestDto tokenRequestDto) {
-        Cookie cookie = new Cookie(REFRESH_TOKEN_COOKIE_NAME, tokenRequestDto.getRefreshToken());
+        Cookie cookie = new Cookie("refreshToken", tokenRequestDto.getRefreshToken());
         cookie.setHttpOnly(true);
         cookie.setSecure(false); // HTTP 에서도 동작 이후 true로 바꿔야함
         cookie.setPath("/");
@@ -128,7 +125,7 @@ public class AuthController {
 
     // refresh 토큰 삭제
     private void clearRefreshTokenCookie(HttpServletResponse response) {
-        Cookie cookie = new Cookie(REFRESH_TOKEN_COOKIE_NAME, "");
+        Cookie cookie = new Cookie("refreshToken", "");
         cookie.setHttpOnly(true);
         cookie.setSecure(false);
         cookie.setPath("/");
@@ -141,7 +138,7 @@ public class AuthController {
         String authHeader = request.getHeader("Authorization");
 
         if (!StringUtils.hasText(authHeader) || !authHeader.startsWith("Bearer ")) {
-            throw new PresentationException(AUTH_PRESENTATION_INVALID_REQUEST);
+            throw new PresentationException(ExceptionStatus.AUTH_PRESENTATION_INVALID_REQUEST);
         }
         return authHeader.substring(7).trim();
     }

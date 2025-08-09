@@ -1,4 +1,4 @@
-package org.certis.studyplatform.auth.infrastructure.security;
+package org.certis.studyplatform.shared.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.exception.InfrastructureException;
 import org.certis.studyplatform.member.domain.MemberRole;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -20,7 +21,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.certis.studyplatform.exception.ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_FILTER_PROCESSING_ERROR;
 
 @Slf4j
 @Component
@@ -52,7 +52,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
         catch (Exception e){
             log.error("JWT 필터 처리 중 예외 발생: {}", e.getMessage(), e);
-            throw new InfrastructureException(AUTH_INFRASTRUCTURE_JWT_FILTER_PROCESSING_ERROR);
+            throw new InfrastructureException(ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_FILTER_PROCESSING_ERROR);
         }
         filterChain.doFilter(request,response);
     }

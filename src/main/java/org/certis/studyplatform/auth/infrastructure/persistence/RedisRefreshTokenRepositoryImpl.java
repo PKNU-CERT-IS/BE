@@ -16,8 +16,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-import static org.certis.studyplatform.exception.ExceptionStatus.AUTH_INFRASTRUCTURE_REDIS_ERROR;
-
 @Slf4j
 @Repository
 @RequiredArgsConstructor
@@ -69,7 +67,7 @@ public class RedisRefreshTokenRepositoryImpl implements RedisRefreshTokenReposit
 
         } catch (Exception e) {
             log.error("Redis 처리 오류: memberId={}, key={}, error={}", memberIdVo.value(), key, e.getMessage(), e);
-            throw new InfrastructureException(AUTH_INFRASTRUCTURE_REDIS_ERROR);
+            throw new InfrastructureException(ExceptionStatus.AUTH_INFRASTRUCTURE_REDIS_ERROR);
         }
     }
 

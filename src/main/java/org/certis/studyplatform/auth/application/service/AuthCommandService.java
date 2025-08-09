@@ -9,8 +9,7 @@ import org.certis.studyplatform.auth.domain.model.vo.AccessTokenVo;
 import org.certis.studyplatform.auth.domain.model.vo.RefreshTokenVo;
 import org.certis.studyplatform.auth.domain.model.vo.TokenInfoVo;
 import org.certis.studyplatform.auth.domain.service.AuthDomainService;
-import org.certis.studyplatform.auth.infrastructure.security.JwtTokenProvider;
-import org.certis.studyplatform.member.domain.MemberRole;
+import org.certis.studyplatform.shared.security.JwtTokenProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

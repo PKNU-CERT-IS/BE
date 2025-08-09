@@ -13,6 +13,7 @@ import org.certis.studyplatform.auth.domain.repository.AuthQueryRepository;
 import org.certis.studyplatform.auth.domain.repository.RedisRefreshTokenRepository;
 import org.certis.studyplatform.exception.ApplicationException;
 import org.certis.studyplatform.exception.DomainException;
+import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.exception.InfrastructureException;
 import org.certis.studyplatform.member.domain.vo.MemberIdVo;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,8 +21,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-
-import static org.certis.studyplatform.exception.ExceptionStatus.*;
 
 @Slf4j
 @Service
@@ -38,7 +37,7 @@ public class AuthDomainService {
             log.warn("만료된 리프레시 토큰 저장 시도 방지: memberId={}, expiredAt={}",
                     refreshTokenVo.memberId(),
                     refreshTokenVo.expiredAt());
-            throw new DomainException(AUTH_DOMAIN_JWT_TOKEN_EXPIRED);
+            throw new DomainException(ExceptionStatus.AUTH_DOMAIN_JWT_TOKEN_EXPIRED);
         }
 
         Duration ttl = Duration.between(LocalDateTime.now(),refreshTokenVo.expiredAt());
@@ -51,7 +50,7 @@ public class AuthDomainService {
         MemberIdVo memberIdVo = MemberIdVo.of(validateRefreshTokenQuery.memberId());
 
         RefreshTokenVo refreshTokenVo = refreshTokenRepository.findByMemberId(memberIdVo)
-                .orElseThrow(() -> new InfrastructureException(AUTH_DOMAIN_JWT_TOKEN_PARSE_ERROR)
+                .orElseThrow(() -> new InfrastructureException(ExceptionStatus.AUTH_DOMAIN_JWT_TOKEN_PARSE_ERROR)
                 );
 
         // 이럴수가
@@ -59,7 +58,7 @@ public class AuthDomainService {
 
         if (refreshTokenVo.isExpiredRefreshToken()) {
             deleteRefreshToken(logoutCommand);
-            throw new DomainException(AUTH_DOMAIN_JWT_TOKEN_EXPIRED);
+            throw new DomainException(ExceptionStatus.AUTH_DOMAIN_JWT_TOKEN_EXPIRED);
         }
 
         return refreshTokenVo;
@@ -74,7 +73,7 @@ public class AuthDomainService {
     public AuthInfoVo findAuthByAccountNumber(ValidateCredentialsQuery validateCredentialsQuery){
         AccountNumberVo accountNumberVo = AccountNumberVo.of(validateCredentialsQuery.accountNumber());
         return authQueryRepository.findByAccountNumber(accountNumberVo)
-                .orElseThrow(() -> new ApplicationException(AUTH_DOMAIN_ACCOUNT_NOT_FOUND));
+                .orElseThrow(() -> new ApplicationException(ExceptionStatus.AUTH_DOMAIN_ACCOUNT_NOT_FOUND));
     }
 
     public void validatePassword(AuthInfoVo authInfoVo, RawPasswordVo rawPasswordVo) {

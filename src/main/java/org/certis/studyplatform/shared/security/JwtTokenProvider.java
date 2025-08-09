@@ -1,4 +1,4 @@
-package org.certis.studyplatform.auth.infrastructure.security;
+package org.certis.studyplatform.shared.security;
 
 
 // Jwt 토큰 생성/파싱/검증 담당
@@ -19,8 +19,6 @@ import javax.crypto.SecretKey;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-
-import static org.certis.studyplatform.exception.ExceptionStatus.*;
 
 @Slf4j
 @Component
@@ -93,22 +91,22 @@ public class JwtTokenProvider {
                     return true;
         } catch (ExpiredJwtException e) {
             log.debug("JWT token expired: {}", e.getMessage()); // 만료는 debug 레벨
-            throw new InfrastructureException(AUTH_INFRASTRUCTURE_JWT_TOKEN_EXPIRED);
+            throw new InfrastructureException(ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_TOKEN_EXPIRED);
         } catch (UnsupportedJwtException e) {
             log.warn("Unsupported JWT token: {}", e.getMessage());
-            throw new InfrastructureException(AUTH_INFRASTRUCTURE_JWT_TOKEN_UNSUPPORTED);
+            throw new InfrastructureException(ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_TOKEN_UNSUPPORTED);
         } catch (MalformedJwtException e) {
             log.warn("Malformed JWT token: {}", e.getMessage());
-            throw new InfrastructureException(AUTH_INFRASTRUCTURE_JWT_TOKEN_INVALID_FORMAT);
+            throw new InfrastructureException(ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_TOKEN_INVALID_FORMAT);
         } catch (SecurityException e) {
             log.warn("Invalid JWT signature: {}", e.getMessage());
-            throw new InfrastructureException(AUTH_INFRASTRUCTURE_JWT_TOKEN_INVALID_SIGNATURE);
+            throw new InfrastructureException(ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_TOKEN_INVALID_SIGNATURE);
         } catch (IllegalArgumentException e) {
             log.warn("JWT token compact invalid: {}", e.getMessage());
-            throw new InfrastructureException(AUTH_INFRASTRUCTURE_JWT_TOKEN_MISSING_CLAIMS);
+            throw new InfrastructureException(ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_TOKEN_MISSING_CLAIMS);
         } catch (JwtException e) {
             log.warn("JWT 유효성 검증 실패: {}", e.getMessage());
-            throw new InfrastructureException(AUTH_INFRASTRUCTURE_JWT_TOKEN_PARSE_ERROR);
+            throw new InfrastructureException(ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_TOKEN_PARSE_ERROR);
         }
     }
 
@@ -137,7 +135,7 @@ public class JwtTokenProvider {
             Claims claims = getClaimsFromToken(token);
             return "access".equals(claims.get("type", String.class));
         } catch (JwtException e) {
-            throw new InfrastructureException(AUTH_INFRASTRUCTURE_INVALID_ACCESS_TOKEN);
+            throw new InfrastructureException(ExceptionStatus.AUTH_INFRASTRUCTURE_INVALID_ACCESS_TOKEN);
         }
     }
 
