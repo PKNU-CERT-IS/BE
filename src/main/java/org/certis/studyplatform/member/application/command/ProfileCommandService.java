@@ -2,9 +2,9 @@ package org.certis.studyplatform.member.application.command;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.certis.studyplatform.member.domain.Profile;
+import org.certis.studyplatform.member.application.object.command.UpdateProfileCommand;
 import org.certis.studyplatform.member.domain.service.ProfileDomainService;
-import org.certis.studyplatform.member.presentation.dto.request.ProfileUpdateRequestDto;
+import org.certis.studyplatform.member.domain.vo.ProfileVo;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,41 +34,31 @@ public class ProfileCommandService {
     private final ApplicationEventPublisher eventPublisher;
 
     /**
-     * 내 프로필 정보 수정
+     * 프로필 정보 수정 (Command 객체 사용, VO 반환)
      *
-     * @param memberId 현재 로그인한 회원 ID
-     * @param request 프로필 수정 요청 DTO
+     * @param command 프로필 수정 Command 객체
+     * @return 수정된 프로필 VO
      */
     @Transactional
-    public void updateMyProfile(Long memberId, ProfileUpdateRequestDto request) {
-        log.info("Application: Updating my profile for member ID: {}, fields: name={}, description={}, profileImage={}",
-                memberId,
-                request.getName() != null,
-                request.getDescription() != null,
-                request.getProfileImage() != null);
+    public ProfileVo updateMyProfile(UpdateProfileCommand command) {
+        log.info("Executing update profile command - member ID: {}, fields: name={}, description={}, profileImage={}",
+                command.memberId(),
+                command.name() != null,
+                command.description() != null,
+                command.profileImage() != null);
 
-        // 1. Domain Service를 통한 비즈니스 로직 수행
-        profileDomainService.updateMyProfile(memberId, profile -> {
-            // 이름이 제공된 경우에만 업데이트
-            if (request.getName() != null && !request.getName().trim().isEmpty()) {
-                profile.updateName(request.getName());
-            }
-
-            // 설명 업데이트 (null 허용 - 설명 제거 가능)
-            profile.updateDescription(request.getDescription());
-
-            // 프로필 이미지 업데이트 (null 허용 - 이미지 제거 가능)
-            profile.updateProfileImageUrl(request.getProfileImage());
-        });
+        // 1. Domain Service를 통한 비즈니스 로직 수행 (VO 반환)
+        ProfileVo updatedProfile = profileDomainService.updateMyProfile(command);
 
         // 2. 도메인 이벤트 발행 (향후 구현)
-        // eventPublisher.publishEvent(new MyProfileUpdatedEvent(memberId));
+        // eventPublisher.publishEvent(new MyProfileUpdatedEvent(command.memberId()));
 
         // 3. Application 레벨 부가 작업
         // - 캐시 무효화
         // - 검색 인덱스 업데이트
         // - 알림 발송 등
 
-        log.info("Application: My profile updated successfully for member ID: {}", memberId);
+        log.info("Profile update command executed successfully - member ID: {}", command.memberId());
+        return updatedProfile;
     }
 }

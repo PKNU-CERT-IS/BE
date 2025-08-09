@@ -52,9 +52,7 @@ public class MemberInfrastructureEntityMapper {
                 .major(extractMajorValue(creationVo.major()))
                 .skills(extractSkillsArray(creationVo.skills()))
                 .description(creationVo.description())
-                
-                // 선택적 필드 변환 (null 안전)
-                .email(extractEmailValue(creationVo.email()))
+
                 .profileImage(extractProfileImageValue(creationVo.profileImage()))
                 
                 // 기본값 필드 (현재 DB 스키마 호환성)

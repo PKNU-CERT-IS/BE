@@ -92,20 +92,6 @@ public class CurrentUser implements UserDetails {
         return enabled;
     }
 
-    /**
-     * 현재 사용자가 관리자인지 확인
-     */
-    public boolean isAdmin() {
-        return "ADMIN".equals(role);
-    }
-
-    /**
-     * 현재 사용자가 특정 역할을 가지고 있는지 확인
-     */
-    public boolean hasRole(String roleName) {
-        return roleName.equals(role);
-    }
-
     @Override
     public String toString() {
         return "CurrentUser{" +

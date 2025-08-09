@@ -3,15 +3,20 @@ package org.certis.studyplatform.exception;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.response.GlobalResponseHandler;
+import org.springframework.beans.TypeMismatchException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.ZonedDateTime;
 import java.util.HashMap;
@@ -20,7 +25,7 @@ import java.util.stream.Collectors;
 
 /**
  * Global Exception Handler
- * 
+ *
  * Clean Architecture 계층별 예외를 적절한 HTTP 응답으로 변환
  * GlobalResponseHandler를 사용한 일관된 응답 형식 제공
  */
@@ -39,11 +44,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<GlobalResponseHandler<Object>> handlePresentationException(
             PresentationException ex, WebRequest request) {
         log.warn("Presentation layer exception: {}", ex.getMessage());
-        
+
         return GlobalResponseHandler.error(
-            ex.getStatus().getStatusCode(),
-            ex.getMessage(),
-            createErrorDetails("PRESENTATION_ERROR", request)
+                ex.getStatus().getStatusCode(),
+                ex.getMessage(),
+                createErrorDetails("PRESENTATION_ERROR", request)
         );
     }
 
@@ -54,19 +59,34 @@ public class GlobalExceptionHandler {
     public ResponseEntity<GlobalResponseHandler<Object>> handleValidationErrors(
             MethodArgumentNotValidException ex, WebRequest request) {
         log.warn("Bean validation failed: {}", ex.getMessage());
-        
+
         Map<String, String> fieldErrors = new HashMap<>();
-        ex.getBindingResult().getFieldErrors().forEach(error -> 
-            fieldErrors.put(error.getField(), error.getDefaultMessage())
+        ex.getBindingResult().getFieldErrors().forEach(error ->
+                fieldErrors.put(error.getField(), error.getDefaultMessage())
         );
-        
+
         Map<String, Object> errorDetails = createErrorDetails("VALIDATION_ERROR", request);
         errorDetails.put("fieldErrors", fieldErrors);
-        
+
         return GlobalResponseHandler.error(
-            HttpStatus.BAD_REQUEST.value(),
-            "입력 데이터 검증에 실패했습니다",
-            errorDetails
+                HttpStatus.BAD_REQUEST.value(),
+                "입력 데이터 검증에 실패했습니다",
+                errorDetails
+        );
+    }
+
+    /**
+     * DtoException 처리
+     */
+    @ExceptionHandler(DtoException.class)
+    public ResponseEntity<GlobalResponseHandler<Object>> handleDtoException(
+            DtoException ex, WebRequest request) {
+        log.warn("DTO validation exception: {}", ex.getMessage());
+
+        return GlobalResponseHandler.error(
+                HttpStatus.BAD_REQUEST.value(),
+                ex.getMessage(),
+                createErrorDetails("DTO_VALIDATION_ERROR", request)
         );
     }
 
@@ -77,33 +97,108 @@ public class GlobalExceptionHandler {
     public ResponseEntity<GlobalResponseHandler<Object>> handleConstraintViolation(
             ConstraintViolationException ex, WebRequest request) {
         log.warn("Constraint validation failed: {}", ex.getMessage());
-        
+
         String violations = ex.getConstraintViolations().stream()
                 .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
                 .collect(Collectors.joining(", "));
-        
+
         return GlobalResponseHandler.error(
-            HttpStatus.BAD_REQUEST.value(),
-            "제약 조건 위반: " + violations,
-            createErrorDetails("CONSTRAINT_VIOLATION", request)
+                HttpStatus.BAD_REQUEST.value(),
+                "제약 조건 위반: " + violations,
+                createErrorDetails("CONSTRAINT_VIOLATION", request)
         );
     }
 
     /**
-     * 타입 변환 오류 처리
+     * 요청 본문이 누락되거나 읽을 수 없는 경우 처리
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<GlobalResponseHandler<Object>> handleHttpMessageNotReadable(
+            HttpMessageNotReadableException ex, WebRequest request) {
+        log.warn("HTTP message not readable: {}", ex.getMessage());
+
+        String message = "요청 본문이 누락되었거나 올바르지 않습니다";
+
+        // 구체적인 에러 메시지 제공
+        if (ex.getMessage().contains("Required request body is missing")) {
+            message = "요청 본문이 필요합니다";
+        } else if (ex.getMessage().contains("JSON parse error")) {
+            message = "JSON 형식이 올바르지 않습니다";
+        }
+
+        return GlobalResponseHandler.error(
+                HttpStatus.BAD_REQUEST.value(),
+                message,
+                createErrorDetails("INVALID_REQUEST_BODY", request)
+        );
+    }
+
+    /**
+     * 요청 파라미터가 누락된 경우 처리
+     */
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<GlobalResponseHandler<Object>> handleMissingParams(
+            MissingServletRequestParameterException ex, WebRequest request) {
+        log.warn("Missing request parameter: {}", ex.getMessage());
+
+        String message = String.format("필수 파라미터가 누락되었습니다: %s", ex.getParameterName());
+
+        return GlobalResponseHandler.error(
+                HttpStatus.BAD_REQUEST.value(),
+                message,
+                createErrorDetails("MISSING_PARAMETER", request)
+        );
+    }
+
+    /**
+     * 미디어 타입이 지원되지 않는 경우 처리
+     */
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<GlobalResponseHandler<Object>> handleMediaTypeNotSupported(
+            HttpMediaTypeNotSupportedException ex, WebRequest request) {
+        log.warn("Media type not supported: {}", ex.getMessage());
+
+        String message = "지원하지 않는 미디어 타입입니다";
+
+        return GlobalResponseHandler.error(
+                HttpStatus.UNSUPPORTED_MEDIA_TYPE.value(),
+                message,
+                createErrorDetails("UNSUPPORTED_MEDIA_TYPE", request)
+        );
+    }
+
+    /**
+     * 타입 변환 오류 처리 (일반적인 타입 변환)
+     */
+    @ExceptionHandler(TypeMismatchException.class)
+    public ResponseEntity<GlobalResponseHandler<Object>> handleTypeMismatch(
+            TypeMismatchException ex, WebRequest request) {
+        log.warn("Type mismatch: {}", ex.getMessage());
+
+        String message = String.format("타입 변환 오류: %s", ex.getPropertyName());
+
+        return GlobalResponseHandler.error(
+                HttpStatus.BAD_REQUEST.value(),
+                message,
+                createErrorDetails("TYPE_MISMATCH", request)
+        );
+    }
+
+    /**
+     * 경로 변수 및 메서드 파라미터 타입 변환 오류 처리
      */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<GlobalResponseHandler<Object>> handleTypeMismatch(
+    public ResponseEntity<GlobalResponseHandler<Object>> handleMethodArgumentTypeMismatch(
             MethodArgumentTypeMismatchException ex, WebRequest request) {
-        log.warn("Type mismatch: {}", ex.getMessage());
-        
-        String message = String.format("'%s' 파라미터의 값 '%s'을(를) %s 타입으로 변환할 수 없습니다", 
+        log.warn("Method argument type mismatch: {}", ex.getMessage());
+
+        String message = String.format("'%s' 파라미터의 값 '%s'을(를) %s 타입으로 변환할 수 없습니다",
                 ex.getName(), ex.getValue(), ex.getRequiredType().getSimpleName());
-        
+
         return GlobalResponseHandler.error(
-            HttpStatus.BAD_REQUEST.value(),
-            message,
-            createErrorDetails("TYPE_MISMATCH", request)
+                HttpStatus.BAD_REQUEST.value(),
+                message,
+                createErrorDetails("METHOD_ARGUMENT_TYPE_MISMATCH", request)
         );
     }
 
@@ -114,11 +209,33 @@ public class GlobalExceptionHandler {
     public ResponseEntity<GlobalResponseHandler<Object>> handleMethodNotSupported(
             HttpRequestMethodNotSupportedException ex, WebRequest request) {
         log.warn("Method not supported: {}", ex.getMessage());
-        
+
         return GlobalResponseHandler.error(
-            HttpStatus.METHOD_NOT_ALLOWED.value(),
-            "지원하지 않는 HTTP 메서드입니다: " + ex.getMethod(),
-            createErrorDetails("METHOD_NOT_ALLOWED", request)
+                HttpStatus.METHOD_NOT_ALLOWED.value(),
+                "지원하지 않는 HTTP 메서드입니다: " + ex.getMethod(),
+                createErrorDetails("METHOD_NOT_ALLOWED", request)
+        );
+    }
+
+    /**
+     * 리소스를 찾을 수 없는 경우 처리 (404 Not Found)
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<GlobalResponseHandler<Object>> handleNoResourceFound(
+            NoResourceFoundException ex, WebRequest request) {
+        log.warn("No resource found: {}", ex.getMessage());
+
+        String message = "요청한 리소스를 찾을 수 없습니다";
+
+        // API 경로인지 확인하여 적절한 메시지 제공
+        if (ex.getResourcePath().startsWith("api/")) {
+            message = "존재하지 않는 API 엔드포인트입니다";
+        }
+
+        return GlobalResponseHandler.error(
+                HttpStatus.NOT_FOUND.value(),
+                message,
+                createErrorDetails("RESOURCE_NOT_FOUND", request)
         );
     }
 
@@ -133,11 +250,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<GlobalResponseHandler<Object>> handleApplicationException(
             ApplicationException ex, WebRequest request) {
         log.warn("Application layer exception: {}", ex.getMessage());
-        
+
         return GlobalResponseHandler.error(
-            ex.getStatus().getStatusCode(),
-            ex.getMessage(),
-            createErrorDetails("APPLICATION_ERROR", request)
+                ex.getStatus().getStatusCode(),
+                ex.getMessage(),
+                createErrorDetails("APPLICATION_ERROR", request)
         );
     }
 
@@ -152,11 +269,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<GlobalResponseHandler<Object>> handleDomainException(
             DomainException ex, WebRequest request) {
         log.warn("Domain layer exception: {}", ex.getMessage());
-        
+
         return GlobalResponseHandler.error(
-            ex.getStatus().getStatusCode(),
-            ex.getMessage(),
-            createErrorDetails("DOMAIN_ERROR", request)
+                ex.getStatus().getStatusCode(),
+                ex.getMessage(),
+                createErrorDetails("DOMAIN_ERROR", request)
         );
     }
 
@@ -171,11 +288,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<GlobalResponseHandler<Object>> handleInfrastructureException(
             InfrastructureException ex, WebRequest request) {
         log.error("Infrastructure layer exception: {}", ex.getMessage(), ex);
-        
+
         return GlobalResponseHandler.error(
-            ex.getStatus().getStatusCode(),
-            ex.getMessage(),
-            createErrorDetails("INFRASTRUCTURE_ERROR", request)
+                ex.getStatus().getStatusCode(),
+                ex.getMessage(),
+                createErrorDetails("INFRASTRUCTURE_ERROR", request)
         );
     }
 
@@ -186,9 +303,9 @@ public class GlobalExceptionHandler {
     public ResponseEntity<GlobalResponseHandler<Object>> handleDataIntegrityViolation(
             DataIntegrityViolationException ex, WebRequest request) {
         log.error("Data integrity violation: {}", ex.getMessage(), ex);
-        
+
         String message = "데이터 무결성 제약 조건 위반입니다";
-        
+
         // 일반적인 제약 조건 위반 메시지 변환
         if (ex.getMessage().contains("unique")) {
             message = "중복된 데이터로 인해 처리할 수 없습니다";
@@ -197,11 +314,11 @@ public class GlobalExceptionHandler {
         } else if (ex.getMessage().contains("not null")) {
             message = "필수 데이터가 누락되어 처리할 수 없습니다";
         }
-        
+
         return GlobalResponseHandler.error(
-            HttpStatus.CONFLICT.value(),
-            message,
-            createErrorDetails("DATA_INTEGRITY_VIOLATION", request)
+                HttpStatus.CONFLICT.value(),
+                message,
+                createErrorDetails("DATA_INTEGRITY_VIOLATION", request)
         );
     }
 
@@ -216,11 +333,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<GlobalResponseHandler<Object>> handleIllegalArgument(
             IllegalArgumentException ex, WebRequest request) {
         log.warn("Invalid argument: {}", ex.getMessage());
-        
+
         return GlobalResponseHandler.error(
-            HttpStatus.BAD_REQUEST.value(),
-            ex.getMessage(),
-            createErrorDetails("INVALID_ARGUMENT", request)
+                HttpStatus.BAD_REQUEST.value(),
+                ex.getMessage(),
+                createErrorDetails("INVALID_ARGUMENT", request)
         );
     }
 
@@ -231,11 +348,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<GlobalResponseHandler<Object>> handleIllegalState(
             IllegalStateException ex, WebRequest request) {
         log.warn("Illegal state (business rule violation): {}", ex.getMessage());
-        
+
         return GlobalResponseHandler.error(
-            HttpStatus.CONFLICT.value(),
-            ex.getMessage(),
-            createErrorDetails("BUSINESS_RULE_VIOLATION", request)
+                HttpStatus.CONFLICT.value(),
+                ex.getMessage(),
+                createErrorDetails("BUSINESS_RULE_VIOLATION", request)
         );
     }
 
@@ -246,11 +363,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<GlobalResponseHandler<Object>> handleRuntimeException(
             RuntimeException ex, WebRequest request) {
         log.error("Unexpected runtime exception: {}", ex.getMessage(), ex);
-        
+
         return GlobalResponseHandler.error(
-            HttpStatus.INTERNAL_SERVER_ERROR.value(),
-            "서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
-            createErrorDetails("RUNTIME_ERROR", request)
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+                createErrorDetails("RUNTIME_ERROR", request)
         );
     }
 
@@ -261,11 +378,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<GlobalResponseHandler<Object>> handleAllExceptions(
             Exception ex, WebRequest request) {
         log.error("Unexpected exception: {}", ex.getMessage(), ex);
-        
+
         return GlobalResponseHandler.error(
-            HttpStatus.INTERNAL_SERVER_ERROR.value(),
-            "예상치 못한 오류가 발생했습니다. 관리자에게 문의해주세요.",
-            createErrorDetails("UNEXPECTED_ERROR", request)
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "예상치 못한 오류가 발생했습니다. 관리자에게 문의해주세요.",
+                createErrorDetails("UNEXPECTED_ERROR", request)
         );
     }
 

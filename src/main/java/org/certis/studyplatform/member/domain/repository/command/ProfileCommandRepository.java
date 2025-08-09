@@ -1,6 +1,8 @@
 package org.certis.studyplatform.member.domain.repository.command;
 
-import org.certis.studyplatform.member.domain.Profile;
+import org.certis.studyplatform.member.domain.vo.MemberIdVo;
+import org.certis.studyplatform.member.domain.vo.ProfileVo;
+
 import java.util.Optional;
 
 /**
@@ -20,33 +22,18 @@ public interface ProfileCommandRepository {
     /**
      * 프로필 저장 (생성/수정)
      *
-     * @param profile 저장할 프로필 도메인 객체
+     * @param profileVo 저장할 프로필 도메인 객체
      * @return 저장된 프로필 도메인 객체
      */
-    Profile save(Profile profile);
+    ProfileVo save(ProfileVo profileVo);
 
-    /**
-     * 회원 ID로 프로필 조회 (Command용)
-     *
-     * @param memberId 회원 ID
-     * @return 프로필 도메인 객체 Optional
-     */
-    Optional<Profile> findByMemberId(Long memberId);
 
     /**
      * 회원 ID로 프로필 삭제
      *
-     * @param memberId 삭제할 프로필의 회원 ID
+     * @param memberIdVo 삭제할 프로필의 회원 ID
      */
-    void deleteByMemberId(Long memberId);
-
-    /**
-     * 프로필 존재 여부 확인
-     *
-     * @param memberId 회원 ID
-     * @return 존재 여부
-     */
-    boolean existsByMemberId(Long memberId);
+    void deleteByMemberId(MemberIdVo memberIdVo);
 
     /**
      * 모든 프로필 삭제 (테스트용)

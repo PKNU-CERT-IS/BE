@@ -4,12 +4,20 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1e8d0ef5-02d7-418e-8f28-2f6f954f100e" name="변경" comment="Refactor: Mapper strategy for each layer #8">
+    <list default="true" id="1e8d0ef5-02d7-418e-8f28-2f6f954f100e" name="변경" comment="Refactor: Change profile methods flow for mapper refactor #8">
       <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/mapper/MemberMapper.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/mapper/MemberMapper.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/persistence/MemberCommandRepositoryImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/persistence/MemberCommandRepositoryImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/persistence/MemberQueryRepositoryImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/persistence/MemberQueryRepositoryImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/common/security/CurrentUser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/common/security/CurrentUser.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/GlobalExceptionHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/GlobalExceptionHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/ProfileFacadeService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/ProfileFacadeService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/command/ProfileCommandService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/command/ProfileCommandService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/query/ProfileQueryService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/query/ProfileQueryService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/repository/command/ProfileCommandRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/repository/command/ProfileCommandRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/repository/query/ProfileQueryRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/repository/query/ProfileQueryRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/service/ProfileDomainService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/service/ProfileDomainService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/persistence/ProfileCommandRepositoryImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/persistence/ProfileCommandRepositoryImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/persistence/ProfileQueryRepositoryImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/persistence/ProfileQueryRepositoryImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/presentation/ProfileController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/presentation/ProfileController.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -43,8 +51,8 @@
         <option value="Spring Component" />
         <option value="spring-beans.schema" />
         <option value="Interface" />
-        <option value="Record" />
         <option value="Class" />
+        <option value="Record" />
       </list>
     </option>
   </component>
@@ -163,6 +171,7 @@
       <workItem from="1754530853826" duration="2403000" />
       <workItem from="1754533765035" duration="1350000" />
       <workItem from="1754539042895" duration="2058000" />
+      <workItem from="1754712315442" duration="30950000" />
     </task>
     <task id="LOCAL-00001" summary="Build: Change Internal DB to postgres #1">
       <option name="closed" value="true" />
@@ -180,7 +189,55 @@
       <option name="project" value="LOCAL" />
       <updated>1754559858400</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="Refactor: Temp deprecate domain layer entity(object) #8">
+      <option name="closed" value="true" />
+      <created>1754754426025</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1754754426025</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Refactor: Make &amp; Rename data object mappers each occasion #8">
+      <option name="closed" value="true" />
+      <created>1754754617656</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1754754617656</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Feat: Make Domain layer mapper in member domain #8">
+      <option name="closed" value="true" />
+      <created>1754754738942</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1754754738942</updated>
+    </task>
+    <task id="LOCAL-00006" summary="Feat: Create VO, DTO, command &amp; query objects #8">
+      <option name="closed" value="true" />
+      <created>1754754905175</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1754754905175</updated>
+    </task>
+    <task id="LOCAL-00007" summary="Feat: Create VO, DTO, command &amp; query objects #8">
+      <option name="closed" value="true" />
+      <created>1754754921297</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1754754921297</updated>
+    </task>
+    <task id="LOCAL-00008" summary="Refactor: Change member methods flow for mapper refactor #8">
+      <option name="closed" value="true" />
+      <created>1754755012350</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1754755012350</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -192,7 +249,14 @@
     <MESSAGE value="Fix: Compile error for rollback issue #1" />
     <MESSAGE value="Build: Change Internal DB to postgres #1" />
     <MESSAGE value="Refactor: Mapper strategy for each layer #8" />
-    <option name="LAST_COMMIT_MESSAGE" value="Refactor: Mapper strategy for each layer #8" />
+    <MESSAGE value="Refactor: Temp deprecate domain layer entity(object) #8" />
+    <MESSAGE value="Refactor: Make &amp; Rename data object mappers each occasion #8" />
+    <MESSAGE value="Refactor: Delete unused mappers #8" />
+    <MESSAGE value="Feat: Make Domain layer mapper in member domain #8" />
+    <MESSAGE value="Feat: Create VO, DTO, command &amp; query objects #8" />
+    <MESSAGE value="Refactor: Change member methods flow for mapper refactor #8" />
+    <MESSAGE value="Refactor: Change profile methods flow for mapper refactor #8" />
+    <option name="LAST_COMMIT_MESSAGE" value="Refactor: Change profile methods flow for mapper refactor #8" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

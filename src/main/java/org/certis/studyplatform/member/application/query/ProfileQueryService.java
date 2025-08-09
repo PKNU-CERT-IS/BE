@@ -2,6 +2,10 @@ package org.certis.studyplatform.member.application.query;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.certis.studyplatform.member.application.object.query.GetProfileBlogsByMemberIdQuery;
+import org.certis.studyplatform.member.application.object.query.GetProfileByMemberIdQuery;
+import org.certis.studyplatform.member.application.object.query.GetProfileProjectsByMemberIdQuery;
+import org.certis.studyplatform.member.application.object.query.GetProfileStudiesByMemberIdQuery;
 import org.certis.studyplatform.member.domain.service.ProfileDomainService;
 import org.certis.studyplatform.member.domain.vo.ProfileVo;
 import org.certis.studyplatform.member.domain.vo.ProfileBlogVo;
@@ -31,34 +35,33 @@ public class ProfileQueryService {
     /**
      * 회원 ID로 프로필 조회 (내 프로필 조회용)
      *
-     * @param memberId 회원 ID
+     * @param query GetProfileByMemberIdQuery
      * @return 프로필 정보 (VO 직접 반환)
      */
     @Transactional(readOnly = true)
-    public ProfileVo getProfileByMemberId(Long memberId) {
-        log.info("Query: Getting profile by member ID: {}", memberId);
+    public ProfileVo getProfileByMemberId(GetProfileByMemberIdQuery query) {
+        log.info("Query: Getting profile by member ID: {}", query.memberId());
 
         // Domain Service를 통한 프로필 조회
-        ProfileVo profileVo = profileDomainService.getProfileVoByMemberId(memberId);
+        ProfileVo profileVo = profileDomainService.getProfileVoByMemberId(query);
 
-        log.info("Query: Profile found for member ID: {}", memberId);
         return profileVo;
     }
 
     /**
      * 회원이 관여한 스터디 목록 조회
      *
-     * @param memberId 회원 ID
+     * @param query 회원 ID
      * @return 스터디 목록 (VO 직접 반환)
      */
     @Transactional(readOnly = true)
-    public List<ProfileStudyVo> getStudiesByMemberId(Long memberId) {
-        log.info("Query: Getting studies by member ID: {}", memberId);
+    public List<ProfileStudyVo> getStudiesByMemberId(GetProfileStudiesByMemberIdQuery query) {
+        log.info("Query: Getting studies by member ID: {}", query.memberId());
 
         // Domain Service를 통한 스터디 목록 조회
-        List<ProfileStudyVo> studyVos = profileDomainService.getStudiesByMemberId(memberId);
+        List<ProfileStudyVo> studyVos = profileDomainService.getStudiesByMemberId(query);
 
-        log.info("Query: Found {} studies for member ID: {}", studyVos.size(), memberId);
+        log.info("Query: Found {} studies for member ID: {}", studyVos.size(), query);
 
         return studyVos;
     }
@@ -66,17 +69,17 @@ public class ProfileQueryService {
     /**
      * 회원이 관여한 프로젝트 목록 조회
      *
-     * @param memberId 회원 ID
+     * @param query 회원 ID
      * @return 프로젝트 목록 (VO 직접 반환)
      */
     @Transactional(readOnly = true)
-    public List<ProfileProjectVo> getProjectsByMemberId(Long memberId) {
-        log.info("Query: Getting projects by member ID: {}", memberId);
+    public List<ProfileProjectVo> getProjectsByMemberId(GetProfileProjectsByMemberIdQuery query) {
+        log.info("Query: Getting projects by member ID: {}", query.memberId());
 
         // Domain Service를 통한 프로젝트 목록 조회
-        List<ProfileProjectVo> projectVos = profileDomainService.getProjectsByMemberId(memberId);
+        List<ProfileProjectVo> projectVos = profileDomainService.getProjectsByMemberId(query);
 
-        log.info("Query: Found {} projects for member ID: {}", projectVos.size(), memberId);
+        log.info("Query: Found {} projects for member ID: {}", projectVos.size(), query.memberId());
 
         return projectVos;
     }
@@ -84,17 +87,17 @@ public class ProfileQueryService {
     /**
      * 회원이 작성한 블로그 목록 조회
      *
-     * @param memberId 회원 ID
+     * @param query 회원 ID
      * @return 블로그 목록 (VO 직접 반환)
      */
     @Transactional(readOnly = true)
-    public List<ProfileBlogVo> getBlogsByMemberId(Long memberId) {
-        log.info("Query: Getting blogs by member ID: {}", memberId);
+    public List<ProfileBlogVo> getBlogsByMemberId(GetProfileBlogsByMemberIdQuery query) {
+        log.info("Query: Getting blogs by member ID: {}", query.memberId());
 
         // Domain Service를 통한 블로그 목록 조회
-        List<ProfileBlogVo> blogVos = profileDomainService.getBlogsByMemberId(memberId);
+        List<ProfileBlogVo> blogVos = profileDomainService.getBlogsByMemberId(query);
 
-        log.info("Query: Found {} blogs for member ID: {}", blogVos.size(), memberId);
+        log.info("Query: Found {} blogs for member ID: {}", blogVos.size(), query.memberId());
 
         return blogVos;
     }
