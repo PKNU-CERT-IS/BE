@@ -3,6 +3,7 @@ package org.certis.studyplatform.member.application.command;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.member.domain.Member;
+import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.service.MemberDomainService;
 import org.certis.studyplatform.member.domain.vo.MemberIdVo;
 import org.springframework.context.ApplicationEventPublisher;
@@ -50,7 +51,7 @@ public class MemberCommandService {
      */
     @Transactional
     public Member createMember(String name, String studentNumber, String grade, 
-                              List<String> skills, String role, String major, String description) {
+                              List<String> skills, MemberRole role, String major, String description) {
         log.info("Application: Creating member with student number: {}", studentNumber);
         
         // 1. Domain Service를 통한 비즈니스 로직 수행
@@ -67,7 +68,7 @@ public class MemberCommandService {
         // - 외부 시스템 연동 등
         
         log.info("Application: Member created successfully with ID: {}", 
-                savedMember.getId() != null ? savedMember.getId().value() : "null");
+                savedMember.getId() != null ? savedMember.getId() : "null");
         
         return savedMember;
     }
@@ -130,7 +131,7 @@ public class MemberCommandService {
      * @param role 새 역할
      */
     @Transactional
-    public void updateMemberRole(Long memberId, String role) {
+    public void updateMemberRole(Long memberId, MemberRole role) {
         log.info("Application: Updating member role with ID: {}", memberId);
         
         MemberIdVo memberIdVo = new MemberIdVo(memberId);

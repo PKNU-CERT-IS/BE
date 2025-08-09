@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.member.domain.Member;
+import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.vo.MemberIdVo;
 import org.certis.studyplatform.member.domain.vo.StudentNumberVo;
 import org.certis.studyplatform.member.domain.repository.MemberCommandRepository;
@@ -49,7 +50,7 @@ public class MemberDomainService {
      * @return 생성된 회원 도메인 객체
      */
     public Member createMember(String name, String studentNumber, String grade,
-                              List<String> skills, String role, String major, String description) {
+                               List<String> skills, MemberRole role, String major, String description) {
         log.info("Domain: Creating member with student number: {}", studentNumber);
 
         // 1. 도메인 객체 생성
@@ -62,7 +63,7 @@ public class MemberDomainService {
         // 3. 영속화
         Member savedMember = memberCommandRepository.save(member);
 
-        log.info("Domain: Member created successfully with ID: {}", savedMember.getId().value());
+        log.info("Domain: Member created successfully with ID: {}", savedMember.getId());
         return savedMember;
     }
 

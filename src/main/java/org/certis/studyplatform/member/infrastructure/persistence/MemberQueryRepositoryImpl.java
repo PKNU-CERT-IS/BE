@@ -3,6 +3,7 @@ package org.certis.studyplatform.member.infrastructure.persistence;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.member.domain.Member;
+import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.repository.MemberQueryRepository;
 import org.certis.studyplatform.member.domain.vo.*;
 import org.certis.studyplatform.member.infrastructure.mapper.MemberMapper;
@@ -56,7 +57,7 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
                         field("student_number", String.class),
                         field("profile_image", String.class),
                         field("grade", String.class),
-                        field("role", String.class),
+                        field("role", MemberRole.class),
                         field("skills", Object.class),
                         field("major", String.class),
                         field("created_at", ZonedDateTime.class),
@@ -66,7 +67,7 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
                     .where(field("id").eq(memberId)
                            .and(field("deleted_at").isNull()))
                     .fetchOptional(record -> new Member(
-                        new MemberIdVo(record.value1()),
+                        record.value1(),
                         record.value2(),
                         new StudentNumberVo(record.value3()),
                         record.value4() != null ? new ProfileImageVo(record.value4()) : null,
@@ -104,7 +105,7 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
                         field("student_number", String.class),
                         field("profile_image", String.class),
                         field("grade", String.class),
-                        field("role", String.class),
+                        field("role", MemberRole.class),
                         field("skills", Object.class),
                         field("major", String.class),
                         field("created_at", ZonedDateTime.class),
@@ -116,7 +117,7 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
                     .limit(pageable.getPageSize())
                     .offset((int) pageable.getOffset())
                     .fetch(record -> new Member(
-                        new MemberIdVo(record.value1()),
+                        record.value1(),
                         record.value2(),
                         new StudentNumberVo(record.value3()),
                         record.value4() != null ? new ProfileImageVo(record.value4()) : null,
@@ -157,7 +158,7 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
         }
         
         // 역할 필터
-        String role = searchCriteria.getSafeRole();
+        MemberRole role = searchCriteria.getSafeRole();
         if (role != null) {
             conditions = conditions.and(field("role").eq(role));
         }

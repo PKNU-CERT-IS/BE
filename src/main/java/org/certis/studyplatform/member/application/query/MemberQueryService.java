@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.member.domain.Member;
+import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.repository.MemberQueryRepository;
 import org.certis.studyplatform.member.domain.repository.MemberQueryRepository.MemberSearchCriteria;
 import org.springframework.data.domain.Page;
@@ -43,7 +44,7 @@ public class MemberQueryService {
      * @param pageable 페이징 정보
      * @return 검색된 회원 목록과 페이징 정보
      */
-    public Page<Member> searchMembers(String keyword, String grade, String role, Pageable pageable) {
+    public Page<Member> searchMembers(String keyword, String grade, MemberRole role, Pageable pageable) {
         log.info("Application: Searching members with criteria - keyword: {}, grade: {}, role: {}", 
                 keyword, grade, role);
         
@@ -99,7 +100,7 @@ public class MemberQueryService {
      * @param pageable 페이징 정보
      * @return 페이징된 회원 목록
      */
-    public Page<Member> findMembers(String nameFilter, String roleFilter, 
+    public Page<Member> findMembers(String nameFilter, MemberRole roleFilter,
                                    String gradeFilter, String skillFilter, 
                                    Pageable pageable) {
         log.info("Application: Finding members with filters - name: {}, role: {}, grade: {}, skill: {}", 

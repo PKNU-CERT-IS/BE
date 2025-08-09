@@ -115,3 +115,11 @@ logging:
     org.hibernate.SQL: ${LOG_LEVEL_SQL}
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
     org.springframework.jdbc.datasource.init: DEBUG # SQL 초기화 로그
+    org.springframework.security: DEBUG
+    org.certis.studyplatform.auth: DEBUG
+
+# ✅ JWT 설정
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expiration: ${JWT_ACCESS_EXPIRATION_MILLIS}
+  refresh-token-expiration: ${JWT_REFRESH_EXPIRATION_MILLIS}

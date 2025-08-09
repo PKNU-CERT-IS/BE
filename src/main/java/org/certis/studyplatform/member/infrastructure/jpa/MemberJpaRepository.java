@@ -1,6 +1,7 @@
 package org.certis.studyplatform.member.infrastructure.jpa;
 
 import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberEntity;
+import org.certis.studyplatform.member.domain.MemberRole;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,7 +19,7 @@ public interface MemberJpaRepository extends JpaRepository<MemberEntity, Long> {
     // Basic finders
     Optional<MemberEntity> findByStudentNumber(String studentNumber);
     
-    List<MemberEntity> findByRole(String role);
+    List<MemberEntity> findByRole(MemberRole role);
     
     List<MemberEntity> findByGrade(String grade);
     
@@ -45,7 +46,7 @@ public interface MemberJpaRepository extends JpaRepository<MemberEntity, Long> {
     boolean existsByStudentNumber(String studentNumber);
     
     // 역할별, 학년별 카운트를 위한 메서드들
-    long countByRole(String role);
+    long countByRole(MemberRole role);
     
     long countByGrade(String grade);
 }

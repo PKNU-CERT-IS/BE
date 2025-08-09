@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.certis.studyplatform.member.domain.Member;
+import org.certis.studyplatform.member.domain.MemberRole;
 
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -48,7 +50,7 @@ public class MemberSearchResponseDto {
         private String description;
         private String studentNumber;
         private String grade;
-        private String role;
+        private MemberRole role;
         private String major;
         private List<String> skills;
         
@@ -81,7 +83,7 @@ public class MemberSearchResponseDto {
     @AllArgsConstructor
     public static class SearchInfoDto {
         private String grade;
-        private String role;
+        private MemberRole role;
         private String keyword;
         private int resultCount;
     }

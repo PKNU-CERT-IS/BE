@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.certis.studyplatform.member.domain.MemberRole;
 
 /**
  * 회원 검색 요청 DTO
@@ -27,7 +28,7 @@ public class MemberSearchRequestDto {
      * 역할 필터 (선택적)
      * 예: "개발자", "디자이너", "기획자" 등
      */
-    private String role;
+    private MemberRole role;
     
     /**
      * 검색 키워드 (선택적)
@@ -40,7 +41,7 @@ public class MemberSearchRequestDto {
      */
     public boolean hasAnyFilter() {
         return (grade != null && !grade.trim().isEmpty()) ||
-               (role != null && !role.trim().isEmpty()) ||
+               (role != null)||
                (keyword != null && !keyword.trim().isEmpty());
     }
     
@@ -51,8 +52,8 @@ public class MemberSearchRequestDto {
         return grade != null ? grade.trim() : null;
     }
     
-    public String getSafeRole() {
-        return role != null ? role.trim() : null;
+    public MemberRole getSafeRole() {
+        return role != null ? role : null;
     }
     
     public String getSafeKeyword() {

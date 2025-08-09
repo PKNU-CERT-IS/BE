@@ -71,12 +71,12 @@ public class MemberController {
         
         // Domain Entity를 Response DTO로 변환
         MemberInfoResponseDto response = MemberInfoResponseDto.builder()
-                .id(createdMember.getId() != null ? createdMember.getId().value() : null)
+                .id(createdMember.getId() != null ? createdMember.getId() : null)
                 .name(createdMember.getName().value())
                 .description(createdMember.getDescription())
                 .studentNumber(createdMember.getStudentNumber().value())
                 .grade(createdMember.getGrade().value())
-                .role(createdMember.getRole().value())
+                .role(createdMember.getRole())
                 .major(createdMember.getMajor().value())
                 .skills(createdMember.getSkills().values())
                 .profileImage(createdMember.getProfileImage() != null ? createdMember.getProfileImage().value() : null)
@@ -104,12 +104,12 @@ public class MemberController {
         
         // Domain Entity를 Response DTO로 변환
         MemberInfoResponseDto response = MemberInfoResponseDto.builder()
-                .id(member.getId().value())
+                .id(member.getId())
                 .name(member.getName().value())
                 .description(member.getDescription())
                 .studentNumber(member.getStudentNumber().value())
                 .grade(member.getGrade().value())
-                .role(member.getRole().value())
+                .role(member.getRole())
                 .major(member.getMajor().value())
                 .skills(member.getSkills().values())
                 .profileImage(member.getProfileImage() != null ? member.getProfileImage().value() : null)
@@ -207,7 +207,7 @@ public class MemberController {
         Page<Member> result = memberFacadeService.searchMembers(
                 searchRequest.getSafeKeyword(),
                 searchRequest.getSafeGrade(),
-                searchRequest.getSafeRole(),
+                searchRequest.getRole(),
                 pageable
         );
         
@@ -230,11 +230,11 @@ public class MemberController {
         // 회원 목록 변환
         var memberSummaries = result.getContent().stream()
                 .map(member -> MemberSearchResponseDto.MemberSummaryDto.builder()
-                        .id(member.getId().value())
+                        .id(member.getId())
                         .name(member.getName().value())
                         .studentNumber(member.getStudentNumber().value())
                         .grade(member.getGrade().value())
-                        .role(member.getRole().value())
+                        .role(member.getRole())
                         .major(member.getMajor().value())
                         .skills(member.getSkills().values())
                         .createdAt(member.getCreatedAt())
