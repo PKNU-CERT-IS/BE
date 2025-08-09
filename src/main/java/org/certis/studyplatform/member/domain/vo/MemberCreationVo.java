@@ -1,5 +1,7 @@
 package org.certis.studyplatform.member.domain.vo;
 
+import org.certis.studyplatform.member.domain.MemberRole;
+
 import java.util.List;
 
 /**
@@ -159,8 +161,8 @@ public record MemberCreationVo(
     /**
      * 역할 문자열 반환
      */
-    public String getRoleValue() {
-        return role.value();
+    public MemberRole getRoleValue() {
+        return role.role();
     }
     
     /**

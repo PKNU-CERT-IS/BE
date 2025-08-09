@@ -4,7 +4,7 @@ import lombok.Builder;
 import lombok.Getter;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 @Getter
 @Builder
@@ -17,7 +17,7 @@ public class MemberUpdatedResponseDto {
     private final String profileImage;
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
-    private final ZonedDateTime updatedAt;
+    private final OffsetDateTime updatedAt;
 
     // toString for logging
     @Override

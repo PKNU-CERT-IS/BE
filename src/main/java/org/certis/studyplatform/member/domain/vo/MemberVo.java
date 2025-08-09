@@ -1,6 +1,8 @@
 package org.certis.studyplatform.member.domain.vo;
 
-import java.time.ZonedDateTime;
+import org.certis.studyplatform.member.domain.MemberRole;
+
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
@@ -13,12 +15,12 @@ public record MemberVo(
         String studentNumber,
         String profileImage,
         String grade,
-        String role,
+        MemberRole role,
         List<String> skills,
         String major,
         String description,
-        ZonedDateTime createdAt,
-        ZonedDateTime updatedAt
+        OffsetDateTime createdAt,
+        OffsetDateTime updatedAt
 ) {
     // 방어적 복사를 위한 생성자
     public MemberVo {
@@ -29,8 +31,8 @@ public record MemberVo(
      * 정적 팩토리 메서드
      */
     public static MemberVo of(Long id, String name, String studentNumber, String profileImage,
-                              String grade, String role, List<String> skills, String major,
-                              String description, ZonedDateTime createdAt, ZonedDateTime updatedAt) {
+                              String grade, MemberRole role, List<String> skills, String major,
+                              String description, OffsetDateTime createdAt, OffsetDateTime updatedAt) {
         return new MemberVo(id, name, studentNumber, profileImage, grade, role, skills, major, description, createdAt, updatedAt);
     }
     
@@ -76,7 +78,7 @@ public record MemberVo(
     /**
      * 역할 반환
      */
-    public String getRole() {
+    public MemberRole getRole() {
         return role;
     }
     
@@ -104,14 +106,14 @@ public record MemberVo(
     /**
      * 생성일시 반환
      */
-    public ZonedDateTime getCreatedAt() {
+    public OffsetDateTime getCreatedAt() {
         return createdAt;
     }
     
     /**
      * 수정일시 반환
      */
-    public ZonedDateTime getUpdatedAt() {
+    public OffsetDateTime getUpdatedAt() {
         return updatedAt;
     }
 

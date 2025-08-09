@@ -1,6 +1,6 @@
 package org.certis.studyplatform.member.domain.vo;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 /**
  * 프로필 Value Object (Record)
@@ -14,15 +14,15 @@ public record ProfileVo(
         String name,
         String description,
         String profileImage,
-        ZonedDateTime createdAt,
-        ZonedDateTime updatedAt
+        OffsetDateTime createdAt,
+        OffsetDateTime updatedAt
 ) {
 
     /**
      * 정적 팩토리 메서드
      */
     public static ProfileVo of(Long id, Long memberId, String name, String description, 
-                               String profileImage, ZonedDateTime createdAt, ZonedDateTime updatedAt) {
+                               String profileImage, OffsetDateTime createdAt, OffsetDateTime updatedAt) {
         return new ProfileVo(id, memberId, name, description, profileImage, createdAt, updatedAt);
     }
     
@@ -68,14 +68,14 @@ public record ProfileVo(
     /**
      * 생성일시 반환
      */
-    public ZonedDateTime getCreatedAt() {
+    public OffsetDateTime getCreatedAt() {
         return createdAt;
     }
     
     /**
      * 수정일시 반환
      */
-    public ZonedDateTime getUpdatedAt() {
+    public OffsetDateTime getUpdatedAt() {
         return updatedAt;
     }
 
@@ -98,7 +98,7 @@ public record ProfileVo(
      */
     public boolean isRecentlyUpdated() {
         if (updatedAt == null) return false;
-        ZonedDateTime weekAgo = ZonedDateTime.now().minusDays(7);
+        OffsetDateTime weekAgo = OffsetDateTime.now().minusDays(7);
         return updatedAt.isAfter(weekAgo);
     }
 
@@ -107,7 +107,7 @@ public record ProfileVo(
      */
     public boolean isRecentlyCreated() {
         if (createdAt == null) return false;
-        ZonedDateTime monthAgo = ZonedDateTime.now().minusDays(30);
+        OffsetDateTime monthAgo = OffsetDateTime.now().minusDays(30);
         return createdAt.isAfter(monthAgo);
     }
 } 

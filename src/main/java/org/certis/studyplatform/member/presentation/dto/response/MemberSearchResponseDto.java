@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import org.certis.studyplatform.member.domain.Member;
 import org.certis.studyplatform.member.domain.MemberRole;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /**

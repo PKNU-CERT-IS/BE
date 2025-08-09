@@ -57,7 +57,7 @@ public class MemberApplicationDtoMapper {
                 .id(vo.getId().value())
                 .name(vo.getName().value())
                 .grade(vo.getGrade().value())
-                .role(vo.getRole().value())
+                .role(vo.getRole().toString())
                 .build();
     }
 

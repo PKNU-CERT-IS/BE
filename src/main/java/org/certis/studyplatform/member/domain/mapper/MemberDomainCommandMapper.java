@@ -1,6 +1,7 @@
 package org.certis.studyplatform.member.domain.mapper;
 
 import lombok.RequiredArgsConstructor;
+import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.vo.*;
 import org.springframework.stereotype.Component;
 
@@ -64,7 +65,7 @@ public class MemberDomainCommandMapper {
      * String → RoleVo 변환
      * VO 생성 시 역할 검증 규칙 자동 적용
      */
-    public RoleVo toRoleVo(String role) {
+    public RoleVo toRoleVo(MemberRole role) {
         // RoleVo.of() 내부에서 검증 수행 (null 체크, 허용된 역할 검증 등)
         return RoleVo.of(role);
     }

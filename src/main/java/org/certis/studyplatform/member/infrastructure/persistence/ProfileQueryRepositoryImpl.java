@@ -9,7 +9,7 @@ import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberE
 import org.certis.studyplatform.member.infrastructure.persistence.jpa.MemberJpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 

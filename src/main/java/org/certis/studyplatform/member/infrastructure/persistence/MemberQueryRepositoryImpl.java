@@ -2,6 +2,7 @@ package org.certis.studyplatform.member.infrastructure.persistence;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.repository.query.MemberQueryRepository;
 import org.certis.studyplatform.member.domain.vo.*;
 import org.certis.studyplatform.member.infrastructure.mapper.MemberInfrastructureMapper;
@@ -16,7 +17,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -63,10 +64,10 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
                             field("skills", String[].class), // String[] 배열로 처리
                             field("major", String.class),
                             field("description", String.class),
-                            field("birthday", ZonedDateTime.class),
+                            field("birthday", OffsetDateTime.class),
                             field("gender", String.class),
-                            field("created_at", ZonedDateTime.class),
-                            field("updated_at", ZonedDateTime.class)
+                            field("created_at", OffsetDateTime.class),
+                            field("updated_at", OffsetDateTime.class)
                     )
                     .from(table(MEMBER_TABLE))
                     .where(field("id").eq(memberIdVo.value())
@@ -107,9 +108,9 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
                             field("skills", String[].class), // String[] 배열로 처리
                             field("major", String.class),
                             field("description", String.class),
-                            field("birthday", ZonedDateTime.class),
+                            field("birthday", OffsetDateTime.class),
                             field("gender", String.class),
-                            field("created_at", ZonedDateTime.class)
+                            field("created_at", OffsetDateTime.class)
                     )
                     .from(table(MEMBER_TABLE))
                     .where(conditions.and(field("deleted_at").isNull()))
@@ -152,9 +153,9 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
                             field("skills", String[].class), // String[] 배열로 처리
                             field("major", String.class),
                             field("description", String.class),
-                            field("birthday", ZonedDateTime.class),
+                            field("birthday", OffsetDateTime.class),
                             field("gender", String.class),
-                            field("created_at", ZonedDateTime.class)
+                            field("created_at", OffsetDateTime.class)
                     )
                     .from(table(MEMBER_TABLE))
                     .where(field("deleted_at").isNull())
@@ -200,9 +201,9 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
                             field("skills", String[].class), // String[] 배열로 처리
                             field("major", String.class),
                             field("description", String.class),
-                            field("birthday", ZonedDateTime.class),
+                            field("birthday", OffsetDateTime.class),
                             field("gender", String.class),
-                            field("created_at", ZonedDateTime.class)
+                            field("created_at", OffsetDateTime.class)
                     )
                     .from(table(MEMBER_TABLE))
                     .where(conditions.and(field("deleted_at").isNull()))
@@ -238,14 +239,14 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
                 .studentNumber(record.get("student_number", String.class))
                 .profileImage(record.get("profile_image", String.class))
                 .grade(record.get("grade", String.class))
-                .role(record.get("role", String.class))
+                .role(record.get("role", MemberRole.class))
                 .skills(record.get("skills", String[].class)) // String[] 배열
                 .major(record.get("major", String.class))
                 .description(record.get("description", String.class))
-                .birthday(record.get("birthday", ZonedDateTime.class))
+                .birthday(record.get("birthday", OffsetDateTime.class))
                 .gender(record.get("gender", String.class))
-                .createdAt(record.get("created_at", ZonedDateTime.class))
-                .updatedAt(record.get("updated_at", ZonedDateTime.class))
+                .createdAt(record.get("created_at", OffsetDateTime.class))
+                .updatedAt(record.get("updated_at", OffsetDateTime.class))
                 .build();
     }
 
@@ -265,7 +266,7 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
             conditions = conditions.and(field("grade").eq(query.grade()));
         }
 
-        if (query.role() != null && !query.role().trim().isEmpty()) {
+        if (query.role() != null) {
             conditions = conditions.and(field("role").eq(query.role()));
         }
 

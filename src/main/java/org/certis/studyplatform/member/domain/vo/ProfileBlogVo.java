@@ -1,6 +1,6 @@
 package org.certis.studyplatform.member.domain.vo;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
@@ -14,9 +14,9 @@ public record ProfileBlogVo(
         String title,
         String summary, // 요약 또는 첫 몇 줄
         String status, // DRAFT, PUBLISHED, PRIVATE
-        ZonedDateTime createdAt,
-        ZonedDateTime publishedAt,
-        ZonedDateTime updatedAt,
+        OffsetDateTime createdAt,
+        OffsetDateTime publishedAt,
+        OffsetDateTime updatedAt,
         Integer viewCount,
         Integer likeCount,
         Integer commentCount,
@@ -43,7 +43,7 @@ public record ProfileBlogVo(
      * 편의 생성자 - 최소 필드만
      */
     public ProfileBlogVo(Long blogId, String title, String summary, String status,
-                         ZonedDateTime createdAt, ZonedDateTime updatedAt) {
+                         OffsetDateTime createdAt, OffsetDateTime updatedAt) {
         this(blogId, title, summary, status, createdAt, null, updatedAt,
                 0, 0, 0, List.of(), List.of(), null);
     }
@@ -88,7 +88,7 @@ public record ProfileBlogVo(
      */
     public boolean isRecentlyUpdated() {
         if (updatedAt == null) return false;
-        ZonedDateTime weekAgo = ZonedDateTime.now().minusDays(7);
+        OffsetDateTime weekAgo = OffsetDateTime.now().minusDays(7);
         return updatedAt.isAfter(weekAgo);
     }
 
@@ -97,7 +97,7 @@ public record ProfileBlogVo(
      */
     public boolean isRecentlyPublished() {
         if (publishedAt == null) return false;
-        ZonedDateTime monthAgo = ZonedDateTime.now().minusDays(30);
+        OffsetDateTime monthAgo = OffsetDateTime.now().minusDays(30);
         return publishedAt.isAfter(monthAgo);
     }
 

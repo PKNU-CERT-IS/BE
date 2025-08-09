@@ -7,7 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 /**
  * Member Penalty Entity
@@ -29,18 +29,18 @@ public class MemberPenaltyEntity {
     private Integer penaltyPoint;
 
     @Column(name = "penaltied_at", nullable = false)
-    private ZonedDateTime penaltiedAt;
+    private OffsetDateTime penaltiedAt;
 
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
-    private ZonedDateTime updatedAt;
+    private OffsetDateTime updatedAt;
 
     @Column(name = "reason", nullable = false)
     private String reason;
 
     @Builder(toBuilder = true)
-    private MemberPenaltyEntity(Long memberId, Integer penaltyPoint, ZonedDateTime penaltiedAt,
-                               ZonedDateTime updatedAt, String reason) {
+    private MemberPenaltyEntity(Long memberId, Integer penaltyPoint, OffsetDateTime penaltiedAt,
+                               OffsetDateTime updatedAt, String reason) {
         this.memberId = memberId;
         this.penaltyPoint = penaltyPoint;
         this.penaltiedAt = penaltiedAt;

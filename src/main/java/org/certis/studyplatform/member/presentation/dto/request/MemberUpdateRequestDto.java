@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import org.certis.studyplatform.member.domain.MemberRole;
 
 import java.util.List;
 
@@ -34,7 +35,7 @@ public class MemberUpdateRequestDto {
     // 기본 정보 필드 (선택적)
     private String grade;
 
-    private String role;
+    private MemberRole role;
 
     private String major;
 

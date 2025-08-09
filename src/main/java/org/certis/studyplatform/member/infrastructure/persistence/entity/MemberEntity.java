@@ -11,7 +11,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 
 @Entity
@@ -52,27 +52,27 @@ public class MemberEntity {
     private String major;
 
     @Column(name = "birthday", nullable = false)
-    private ZonedDateTime birthday;
+    private OffsetDateTime birthday;
 
     @Column(name = "gender", nullable = false)
     private String gender;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
-    private ZonedDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
-    private ZonedDateTime updatedAt;
+    private OffsetDateTime updatedAt;
 
     @Column(name = "deleted_at")
-    private ZonedDateTime deletedAt;
+    private OffsetDateTime deletedAt;
 
     @Builder(toBuilder = true)
     private MemberEntity(Long id, String name, String description, String studentNumber, String profileImage,
                          String grade, MemberRole role, String[] skills, String major,
-                         ZonedDateTime birthday, String gender,
-                         ZonedDateTime createdAt, ZonedDateTime updatedAt, ZonedDateTime deletedAt) {
+                         OffsetDateTime birthday, String gender,
+                         OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
         this.id = id;
         this.name = name;
         this.description = description;

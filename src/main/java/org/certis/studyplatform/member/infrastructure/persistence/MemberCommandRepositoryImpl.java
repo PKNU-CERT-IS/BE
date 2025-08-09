@@ -13,7 +13,7 @@ import org.certis.studyplatform.member.infrastructure.persistence.jpa.MemberJpaR
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.Optional;
 
 /**
@@ -297,7 +297,7 @@ public class MemberCommandRepositoryImpl implements MemberCommandRepository {
             // deleted_at을 null로 설정하여 활성화
             MemberEntity activatedEntity = entity.toBuilder()
                     .deletedAt(null)
-                    .updatedAt(ZonedDateTime.now())
+                    .updatedAt(OffsetDateTime.now())
                     .build();
 
             // Entity 저장
@@ -322,7 +322,7 @@ public class MemberCommandRepositoryImpl implements MemberCommandRepository {
     public long countByConditions(GradeVo grade, RoleVo role) {
         log.debug("Command Infrastructure: Counting members by conditions - grade: {}, role: {}",
                 grade != null ? grade.value() : null,
-                role != null ? role.value() : null);
+                role != null ? role.role() : null);
 
         try {
             if (grade != null && role != null) {

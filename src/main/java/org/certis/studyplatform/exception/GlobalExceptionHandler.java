@@ -18,7 +18,7 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -395,7 +395,7 @@ public class GlobalExceptionHandler {
      */
     private Map<String, Object> createErrorDetails(String errorType, WebRequest request) {
         Map<String, Object> details = new HashMap<>();
-        details.put("timestamp", ZonedDateTime.now());
+        details.put("timestamp", OffsetDateTime.now());
         details.put("type", errorType);
         details.put("path", getPath(request));
         return details;

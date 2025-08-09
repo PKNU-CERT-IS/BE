@@ -1,5 +1,7 @@
 package org.certis.studyplatform.member.application.object.command;
 
+import org.certis.studyplatform.member.domain.MemberRole;
+
 import java.util.List;
 
 /**
@@ -22,7 +24,7 @@ public record CreateMemberCommand(
         String name,                    // → NameVo (2-50자, 한글/영문/공백)
         String studentNumber,           // → StudentNumberVo (6-20자, 숫자만)
         String grade,                   // → GradeVo (1-4학년, 석사, 박사, 수료생)
-        String role,                    // → RoleVo (2-100자, 다국어)
+        MemberRole role,                    // → RoleVo (2-100자, 다국어)
         String major,                   // → MajorVo (2-100자, 특수문자 포함)
         String description,             // → String (선택적, 2000자 이하)
         List<String> skills,            // → SkillsVo (1-20개, 중복제거, 각 50자 이하)
@@ -43,9 +45,6 @@ public record CreateMemberCommand(
         }
         if (grade == null || grade.trim().isEmpty()) {
             throw new IllegalArgumentException("학년은 필수입니다");
-        }
-        if (role == null || role.trim().isEmpty()) {
-            throw new IllegalArgumentException("역할은 필수입니다");
         }
         if (major == null || major.trim().isEmpty()) {
             throw new IllegalArgumentException("전공은 필수입니다");

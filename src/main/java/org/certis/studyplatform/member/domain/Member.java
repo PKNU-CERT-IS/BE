@@ -1,7 +1,9 @@
 package org.certis.studyplatform.member.domain;
 
+import lombok.Builder;
+import lombok.Getter;
 import org.certis.studyplatform.member.domain.vo.*;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 @Deprecated(forRemoval = true)
 @Builder
@@ -16,8 +18,8 @@ public class Member {
     private SkillsVo skills;
     private MajorVo major;
     private String description;
-    private final ZonedDateTime createdAt;
-    private ZonedDateTime updatedAt;
+    private final OffsetDateTime createdAt;
+    private OffsetDateTime updatedAt;
 
     // 새 회원 생성
     public Member(String name, String studentNumber, String grade,
@@ -31,8 +33,8 @@ public class Member {
         this.skills = new SkillsVo(skills);
         this.major = MajorVo.of(major);
         this.description = null;
-        this.createdAt = ZonedDateTime.now();
-        this.updatedAt = ZonedDateTime.now();
+        this.createdAt = OffsetDateTime.now();
+        this.updatedAt = OffsetDateTime.now();
     }
 
     // 기존 회원 복원 (도메인 VO 버전)
@@ -40,7 +42,7 @@ public class Member {
     public Member(Long id, NameVo name, StudentNumberVo studentNumber,
                   ProfileImageVo profileImage, GradeVo grade, MemberRole role,
                   SkillsVo skills, MajorVo major, String description,
-                  ZonedDateTime createdAt, ZonedDateTime updatedAt) {
+                  OffsetDateTime createdAt, OffsetDateTime updatedAt) {
         this.id = id;
         this.name = name;
         this.studentNumber = studentNumber;
@@ -58,7 +60,7 @@ public class Member {
     public Member(Long id, String name, StudentNumberVo studentNumber,
                   ProfileImageVo profileImage, String grade, MemberRole role,
                   SkillsVo skills, String major,
-                  ZonedDateTime createdAt, ZonedDateTime updatedAt) {
+                  OffsetDateTime createdAt, OffsetDateTime updatedAt) {
         this.id = id;
         this.name = NameVo.of(name);
         this.studentNumber = studentNumber;
@@ -85,12 +87,12 @@ public class Member {
         }
         this.name = NameVo.of(name);
         this.profileImage = profileImageUrl != null ? new ProfileImageVo(profileImageUrl) : null;
-        this.updatedAt = ZonedDateTime.now();
+        this.updatedAt = OffsetDateTime.now();
     }
 
     public void updateSkills(java.util.List<String> skills) {
         this.skills = new SkillsVo(skills);
-        this.updatedAt = ZonedDateTime.now();
+        this.updatedAt = OffsetDateTime.now();
     }
 
     public void updateRole(MemberRole role) {
@@ -98,22 +100,22 @@ public class Member {
             throw new IllegalArgumentException("역할은 필수입니다");
         }
         this.role = role;
-        this.updatedAt = ZonedDateTime.now();
+        this.updatedAt = OffsetDateTime.now();
     }
 
     public void updateGrade(String grade) {
         this.grade = GradeVo.of(grade);
-        this.updatedAt = ZonedDateTime.now();
+        this.updatedAt = OffsetDateTime.now();
     }
 
     public void updateMajor(String major) {
         this.major = MajorVo.of(major);
-        this.updatedAt = ZonedDateTime.now();
+        this.updatedAt = OffsetDateTime.now();
     }
 
     public void setDescription(String description) {
         this.description = description;
-        this.updatedAt = ZonedDateTime.now();
+        this.updatedAt = OffsetDateTime.now();
     }
 
     public boolean hasSkill(String skill) {
@@ -130,8 +132,8 @@ public class Member {
     public SkillsVo getSkills() { return skills; }
     public MajorVo getMajor() { return major; }
     public String getDescription() { return description; }
-    public ZonedDateTime getCreatedAt() { return createdAt; }
-    public ZonedDateTime getUpdatedAt() { return updatedAt; }
+    public OffsetDateTime getCreatedAt() { return createdAt; }
+    public OffsetDateTime getUpdatedAt() { return updatedAt; }
 
     // Primitive 값 반환 메서드 (편의용)
     public String getNameValue() { return name != null ? name.value() : null; }

@@ -34,7 +34,7 @@ import org.springframework.web.bind.annotation.*;
  * Presentation → Application (Facade) → Application (Services) → Domain → Infrastructure
  */
 @RestController
-@RequestMapping("/api/v1/members")
+@RequestMapping("/api/v1/member")
 @RequiredArgsConstructor
 @Slf4j
 public class MemberController {

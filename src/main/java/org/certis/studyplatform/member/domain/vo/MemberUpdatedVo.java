@@ -1,6 +1,6 @@
 package org.certis.studyplatform.member.domain.vo;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 /**
  * 회원 수정 결과 Value Object
@@ -12,7 +12,7 @@ public record MemberUpdatedVo(
         MemberIdVo id,                    // 수정된 회원 ID
         NameVo name,                      // 수정된 이름
         ProfileImageVo profileImage,      // 수정된 프로필 이미지 (nullable)
-        ZonedDateTime updatedAt           // 수정 시각
+        OffsetDateTime updatedAt           // 수정 시각
 ) {
     
     public MemberUpdatedVo {
@@ -31,21 +31,21 @@ public record MemberUpdatedVo(
      * 정적 팩토리 메서드 (프로필 이미지 포함)
      */
     public static MemberUpdatedVo of(MemberIdVo id, NameVo name, 
-                                     ProfileImageVo profileImage, ZonedDateTime updatedAt) {
+                                     ProfileImageVo profileImage, OffsetDateTime updatedAt) {
         return new MemberUpdatedVo(id, name, profileImage, updatedAt);
     }
     
     /**
      * 정적 팩토리 메서드 (프로필 이미지 없음)
      */
-    public static MemberUpdatedVo of(MemberIdVo id, NameVo name, ZonedDateTime updatedAt) {
+    public static MemberUpdatedVo of(MemberIdVo id, NameVo name, OffsetDateTime updatedAt) {
         return new MemberUpdatedVo(id, name, null, updatedAt);
     }
     
     /**
      * 정적 팩토리 메서드 (primitive 값들로)
      */
-    public static MemberUpdatedVo of(Long id, String name, String profileImage, ZonedDateTime updatedAt) {
+    public static MemberUpdatedVo of(Long id, String name, String profileImage, OffsetDateTime updatedAt) {
         return new MemberUpdatedVo(
             MemberIdVo.of(id), 
             NameVo.of(name), 
@@ -82,7 +82,7 @@ public record MemberUpdatedVo(
     /**
      * 수정 시각 반환
      */
-    public ZonedDateTime getUpdatedAt() {
+    public OffsetDateTime getUpdatedAt() {
         return updatedAt;
     }
     

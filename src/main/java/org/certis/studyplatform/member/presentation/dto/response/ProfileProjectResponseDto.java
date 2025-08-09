@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 /**
  * 프로필용 프로젝트 응답 DTO
@@ -22,9 +22,9 @@ public class ProfileProjectResponseDto {
     private String description;
     private String status; // PLANNING, IN_PROGRESS, COMPLETED, ON_HOLD, CANCELLED
     private String role; // PROJECT_LEADER, TECH_LEADER, MEMBER
-    private ZonedDateTime joinedAt;
-    private ZonedDateTime projectStartDate;
-    private ZonedDateTime projectEndDate;
+    private OffsetDateTime joinedAt;
+    private OffsetDateTime projectStartDate;
+    private OffsetDateTime projectEndDate;
     private String repositoryUrl;
     private String deployUrl;
     private Integer memberCount;

@@ -5,7 +5,7 @@ import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberE
 import org.certis.studyplatform.member.domain.vo.*;
 import org.springframework.stereotype.Component;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 /**
  * Member Infrastructure Mapper (Facade)
@@ -147,7 +147,7 @@ public class MemberInfrastructureMapper {
     public MemberEntity toEntity(Long id, NameVo name, StudentNumberVo studentNumber,
                                  ProfileImageVo profileImage, GradeVo grade, RoleVo role,
                                  SkillsVo skills, MajorVo major, String description,
-                                 ZonedDateTime createdAt, ZonedDateTime updatedAt) {
+                                 OffsetDateTime createdAt, OffsetDateTime updatedAt) {
         return memberInfrastructureEntityMapper.toEntity(id, name, studentNumber, profileImage,
                 grade, role, skills, major, description, createdAt, updatedAt);
     }
@@ -159,7 +159,7 @@ public class MemberInfrastructureMapper {
                                  ProfileImageVo profileImage, GradeVo grade, RoleVo role,
                                  SkillsVo skills, MajorVo major, String description,
                                  BirthdayVo birthday, GenderVo gender,
-                                 ZonedDateTime createdAt, ZonedDateTime updatedAt) {
+                                 OffsetDateTime createdAt, OffsetDateTime updatedAt) {
         return memberInfrastructureEntityMapper.toEntity(id, name, studentNumber, profileImage,
                 grade, role, skills, major, description, birthday, gender, createdAt, updatedAt);
     }
@@ -239,7 +239,7 @@ public class MemberInfrastructureMapper {
                 .name(profileVo.name())
                 .description(profileVo.description())
                 .profileImage(profileVo.profileImage())
-                .updatedAt(ZonedDateTime.now())
+                .updatedAt(OffsetDateTime.now())
                 .build();
     }
 
@@ -255,7 +255,7 @@ public class MemberInfrastructureMapper {
         return existingEntity.toBuilder()
                 .description(null)
                 .profileImage(null)
-                .updatedAt(ZonedDateTime.now())
+                .updatedAt(OffsetDateTime.now())
                 .build();
     }
 
@@ -289,7 +289,7 @@ public class MemberInfrastructureMapper {
         return existingEntity.toBuilder()
                 .description(description)
                 .profileImage(profileImageUrl)
-                .updatedAt(ZonedDateTime.now())
+                .updatedAt(OffsetDateTime.now())
                 .build();
     }
 }

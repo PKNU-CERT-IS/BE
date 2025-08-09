@@ -1,6 +1,6 @@
 package org.certis.studyplatform.member.domain.vo;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
@@ -13,9 +13,9 @@ public record ProfileStudyVo(
         String description,
         String status,
         String role,
-        ZonedDateTime joinedAt,
-        ZonedDateTime studyStartDate,
-        ZonedDateTime studyEndDate,
+        OffsetDateTime joinedAt,
+        OffsetDateTime studyStartDate,
+        OffsetDateTime studyEndDate,
         String meetingUrl,
         Integer memberCount,
         List<String> tags,

@@ -87,7 +87,7 @@ public class MemberDomainService {
         
         // 역할 VO 변환 (길이, 형식 검증 자동 수행)
         RoleVo roleVo = memberDomainMapper.toRoleVo(command.role());
-        log.debug("✅ RoleVo created: {}", roleVo.value());
+        log.debug("✅ RoleVo created: {}", roleVo.role());
         
         // 전공 VO 변환 (길이, 형식 검증 자동 수행)
         MajorVo majorVo = memberDomainMapper.toMajorVo(command.major());
@@ -192,7 +192,7 @@ public class MemberDomainService {
         if (command.role() != null) {
             RoleVo roleVo = memberDomainMapper.toRoleVo(command.role());
             updateBuilder.role(roleVo);
-            log.debug("✅ RoleVo converted and set: {}", roleVo.value());
+            log.debug("✅ RoleVo converted and set: {}", roleVo.role());
         }
 
         // 전공 VO 변환 및 설정 (null-safe)
@@ -458,7 +458,7 @@ public class MemberDomainService {
 
     private void validateGradeRoleConsistency(GradeVo grade, RoleVo role) {
         // 예: 1학년은 팀장이 될 수 없다는 규칙
-        if ("1".equals(grade.value()) && "LEADER".equals(role.value())) {
+        if ("1".equals(grade.value()) && "LEADER".equals(role.role())) {
             throw new DomainException(ExceptionStatus.MEMBER_DOMAIN_INVALID_NAME,
                     "1학년은 팀장 역할을 할 수 없습니다");
         }

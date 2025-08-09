@@ -1,6 +1,6 @@
 package org.certis.studyplatform.member.domain.vo;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
@@ -15,9 +15,9 @@ public record ProfileProjectVo(
         String description,
         String status, // PLANNING, IN_PROGRESS, COMPLETED, ON_HOLD, CANCELLED
         String role, // PROJECT_LEADER, TECH_LEADER, MEMBER
-        ZonedDateTime joinedAt,
-        ZonedDateTime projectStartDate,
-        ZonedDateTime projectEndDate,
+        OffsetDateTime joinedAt,
+        OffsetDateTime projectStartDate,
+        OffsetDateTime projectEndDate,
         String repositoryUrl,
         String deployUrl,
         Integer memberCount,
@@ -36,8 +36,8 @@ public record ProfileProjectVo(
      * 편의 생성자 - 기술 스택 없이
      */
     public ProfileProjectVo(Long projectId, String title, String description, String status,
-                            String role, ZonedDateTime joinedAt, ZonedDateTime projectStartDate,
-                            ZonedDateTime projectEndDate, String repositoryUrl, String deployUrl,
+                            String role, OffsetDateTime joinedAt, OffsetDateTime projectStartDate,
+                            OffsetDateTime projectEndDate, String repositoryUrl, String deployUrl,
                             Integer memberCount) {
         this(projectId, title, description, status, role, joinedAt, projectStartDate,
                 projectEndDate, repositoryUrl, deployUrl, memberCount, List.of());
@@ -127,7 +127,7 @@ public record ProfileProjectVo(
         if (projectStartDate == null || projectEndDate == null) {
             return false;
         }
-        ZonedDateTime now = ZonedDateTime.now();
+        OffsetDateTime now = OffsetDateTime.now();
         return !now.isBefore(projectStartDate) && !now.isAfter(projectEndDate);
     }
 

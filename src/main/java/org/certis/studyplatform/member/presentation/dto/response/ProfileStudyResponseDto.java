@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 /**
  * 프로필용 스터디 응답 DTO
@@ -22,9 +22,9 @@ public class ProfileStudyResponseDto {
     private String description;
     private String status; // RECRUITING, IN_PROGRESS, COMPLETED, CANCELLED
     private String role; // LEADER, MEMBER
-    private ZonedDateTime joinedAt;
-    private ZonedDateTime studyStartDate;
-    private ZonedDateTime studyEndDate;
+    private OffsetDateTime joinedAt;
+    private OffsetDateTime studyStartDate;
+    private OffsetDateTime studyEndDate;
     private Integer memberCount;
     private Integer maxMembers;
     private String[] tags;

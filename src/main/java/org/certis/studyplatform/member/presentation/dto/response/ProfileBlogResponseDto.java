@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
@@ -22,9 +22,9 @@ public class ProfileBlogResponseDto {
     private String title;
     private String summary; // 요약 또는 첫 몇 줄
     private String status; // DRAFT, PUBLISHED, PRIVATE
-    private ZonedDateTime createdAt;
-    private ZonedDateTime publishedAt;
-    private ZonedDateTime updatedAt;
+    private OffsetDateTime createdAt;
+    private OffsetDateTime publishedAt;
+    private OffsetDateTime updatedAt;
     private Integer viewCount;
     private Integer likeCount;
     private Integer commentCount;

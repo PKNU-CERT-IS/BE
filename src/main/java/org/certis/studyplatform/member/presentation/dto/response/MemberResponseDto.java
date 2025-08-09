@@ -3,7 +3,7 @@ package org.certis.studyplatform.member.presentation.dto.response;
 import org.certis.studyplatform.member.domain.Member;
 import lombok.*;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
@@ -27,6 +27,6 @@ public class MemberResponseDto {
     private String role;
     private List<String> skills;
     private String major;
-    private ZonedDateTime createdAt;
-    private ZonedDateTime updatedAt;
+    private OffsetDateTime createdAt;
+    private OffsetDateTime updatedAt;
 }

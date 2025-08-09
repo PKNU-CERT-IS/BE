@@ -1,6 +1,7 @@
 package org.certis.studyplatform.member.domain.mapper;
 
 import lombok.RequiredArgsConstructor;
+import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.vo.*;
 import org.springframework.stereotype.Component;
 
@@ -70,7 +71,7 @@ public class MemberDomainMapper {
     /**
      * String → RoleVo 변환 (검증 포함)
      */
-    public RoleVo toRoleVo(String role) {
+    public RoleVo toRoleVo(MemberRole role) {
         return memberDomainCommandMapper.toRoleVo(role);
     }
 
@@ -124,7 +125,7 @@ public class MemberDomainMapper {
     /**
      * Query 조건을 필터링용 VO로 변환 (필요시 구현)
      */
-    public RoleVo toSearchRoleVo(String role) {
+    public RoleVo toSearchRoleVo(MemberRole role) {
         return memberDomainQueryMapper.toSearchRoleVo(role);
     }
 }

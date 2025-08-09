@@ -1,6 +1,7 @@
 package org.certis.studyplatform.member.domain.mapper;
 
 import lombok.RequiredArgsConstructor;
+import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.vo.*;
 import org.springframework.stereotype.Component;
 
@@ -44,7 +45,7 @@ public class MemberDomainQueryMapper {
      * String → RoleVo 변환 (필터링용)
      * Query에서 역할 필터 조건을 VO로 변환
      */
-    public RoleVo toSearchRoleVo(String role) {
+    public RoleVo toSearchRoleVo(MemberRole role) {
         // RoleVo.of() 내부에서 검증 수행 (null 체크, 허용된 역할 검증 등)
         return role != null ? RoleVo.of(role) : null;
     }

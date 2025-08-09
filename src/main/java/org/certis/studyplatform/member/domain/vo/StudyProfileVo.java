@@ -1,7 +1,7 @@
 
 package org.certis.studyplatform.member.domain.vo;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
@@ -16,9 +16,9 @@ public record StudyProfileVo(
         String description,
         String status, // RECRUITING, IN_PROGRESS, COMPLETED, CANCELLED
         String role, // LEADER, MEMBER
-        ZonedDateTime joinedAt,
-        ZonedDateTime studyStartDate,
-        ZonedDateTime studyEndDate,
+        OffsetDateTime joinedAt,
+        OffsetDateTime studyStartDate,
+        OffsetDateTime studyEndDate,
         Integer memberCount,
         Integer maxMembers,
         List<String> tags
@@ -36,8 +36,8 @@ public record StudyProfileVo(
      * 편의 생성자 - tags 없이
      */
     public StudyProfileVo(Long studyId, String title, String description, String status,
-                          String role, ZonedDateTime joinedAt, ZonedDateTime studyStartDate,
-                          ZonedDateTime studyEndDate, Integer memberCount, Integer maxMembers) {
+                          String role, OffsetDateTime joinedAt, OffsetDateTime studyStartDate,
+                          OffsetDateTime studyEndDate, Integer memberCount, Integer maxMembers) {
         this(studyId, title, description, status, role, joinedAt, studyStartDate,
                 studyEndDate, memberCount, maxMembers, List.of());
     }
@@ -99,7 +99,7 @@ public record StudyProfileVo(
         if (studyStartDate == null || studyEndDate == null) {
             return false;
         }
-        ZonedDateTime now = ZonedDateTime.now();
+        OffsetDateTime now = OffsetDateTime.now();
         return !now.isBefore(studyStartDate) && !now.isAfter(studyEndDate);
     }
 }

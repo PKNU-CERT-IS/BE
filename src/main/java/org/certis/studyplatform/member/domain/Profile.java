@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 //TODO: Lombok Getter 가 접근 가능한지 알아보기
 // => 원시타입만 가능함
@@ -25,9 +25,9 @@ public class Profile {
 
     private ProfileImageVo profileImage;
     @Getter
-    private ZonedDateTime createdAt;
+    private OffsetDateTime createdAt;
     @Getter
-    private ZonedDateTime updatedAt;
+    private OffsetDateTime updatedAt;
 
     // 새 프로필 생성
     public Profile(Long memberId, String name, String description, 
@@ -36,14 +36,14 @@ public class Profile {
         this.name = name;
         this.description = description;
         this.profileImage = ProfileImageVo.of(profileImage);
-        this.createdAt = ZonedDateTime.now();
-        this.updatedAt = ZonedDateTime.now();
+        this.createdAt = OffsetDateTime.now();
+        this.updatedAt = OffsetDateTime.now();
     }
 
     // 기존 프로필 복원 (Repository 계층에서 사용)
     public Profile(Long id, Long memberId, String name, 
                    String description, ProfileImageVo profileImage,
-                   ZonedDateTime createdAt, ZonedDateTime updatedAt) {
+                   OffsetDateTime createdAt, OffsetDateTime updatedAt) {
         this.id = id;
         this.memberId = memberId;
         this.name = name;
@@ -67,22 +67,22 @@ public class Profile {
         if (profileImage != null) {
             this.profileImage = ProfileImageVo.of(profileImage);
         }
-        this.updatedAt = ZonedDateTime.now();
+        this.updatedAt = OffsetDateTime.now();
     }
 
     public void updateName(String name) {
         this.name = name;
-        this.updatedAt = ZonedDateTime.now();
+        this.updatedAt = OffsetDateTime.now();
     }
 
     public void updateDescription(String description) {
         this.description = description;
-        this.updatedAt = ZonedDateTime.now();
+        this.updatedAt = OffsetDateTime.now();
     }
 
     public void updateProfileImageUrl(String profileImage) {
         this.profileImage = ProfileImageVo.of(profileImage);
-        this.updatedAt = ZonedDateTime.now();
+        this.updatedAt = OffsetDateTime.now();
     }
 
     // Getters - Domain VOs 반환
@@ -91,8 +91,8 @@ public class Profile {
     //public DescriptionVo getDescription() { return description; }
     //public ProfileImageUrlVo getProfileImageUrl() { return profileImage; }
     //public VisibilityVo getVisibility() { return visibility; }
-    //public ZonedDateTime getCreatedAt() { return createdAt; }
-    //public ZonedDateTime getUpdatedAt() { return updatedAt; }
+    //public OffsetDateTime getCreatedAt() { return createdAt; }
+    //public OffsetDateTime getUpdatedAt() { return updatedAt; }
 
     // Primitive 값 반환 메서드 (편의용)
     public String getProfileImageValue() { return profileImage != null ? profileImage.value() : null; }

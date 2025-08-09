@@ -5,8 +5,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import org.certis.studyplatform.member.domain.MemberRole;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
@@ -23,16 +24,16 @@ public class MemberDetailResponseDto {
     private String studentNumber;
     private String profileImage;
     private String grade;
-    private String role;
+    private MemberRole role;
     private List<String> skills;
     private String major;
     private String description;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private ZonedDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private ZonedDateTime updatedAt;
+    private OffsetDateTime updatedAt;
 
     // 프로필 정보
     private String profileDescription;

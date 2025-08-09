@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 /**
  * 내 프로필 응답 DTO
@@ -20,6 +20,6 @@ public class ProfileInfoResponseDto {
     private String name;
     private String description;
     private String profileImage;
-    private ZonedDateTime createdAt;
-    private ZonedDateTime updatedAt;
+    private OffsetDateTime createdAt;
+    private OffsetDateTime updatedAt;
 }

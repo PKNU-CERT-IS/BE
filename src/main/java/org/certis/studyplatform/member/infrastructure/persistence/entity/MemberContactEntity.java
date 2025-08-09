@@ -7,7 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 /**
  * Member Contact Entity
@@ -39,11 +39,11 @@ public class MemberContactEntity {
 
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
-    private ZonedDateTime updatedAt;
+    private OffsetDateTime updatedAt;
 
     @Builder(toBuilder = true)
     private MemberContactEntity(Long memberId, String email,
-                               String githubUrl, String linkedinUrl, String phoneNumber, ZonedDateTime updatedAt) {
+                               String githubUrl, String linkedinUrl, String phoneNumber, OffsetDateTime updatedAt) {
         this.memberId = memberId;
         this.email = email;
         this.githubUrl = githubUrl;

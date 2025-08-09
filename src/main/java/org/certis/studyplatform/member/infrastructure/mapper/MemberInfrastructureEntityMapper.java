@@ -1,10 +1,11 @@
 package org.certis.studyplatform.member.infrastructure.mapper;
 
+import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberEntity;
 import org.certis.studyplatform.member.domain.vo.*;
 import org.springframework.stereotype.Component;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -56,12 +57,12 @@ public class MemberInfrastructureEntityMapper {
                 .profileImage(extractProfileImageValue(creationVo.profileImage()))
                 
                 // 기본값 필드 (현재 DB 스키마 호환성)
-                .birthday(ZonedDateTime.now().minusYears(20)) // 기본 나이 20세로 설정
+                .birthday(OffsetDateTime.now().minusYears(20)) // 기본 나이 20세로 설정
                 .gender("UNKNOWN") // 기본 성별
                 
                 // 자동 관리 필드 (JPA에서 자동 설정)
-                .createdAt(ZonedDateTime.now())
-                .updatedAt(ZonedDateTime.now())
+                .createdAt(OffsetDateTime.now())
+                .updatedAt(OffsetDateTime.now())
                 .build();
     }
     
@@ -74,14 +75,14 @@ public class MemberInfrastructureEntityMapper {
                 .name(creationVo.name().value())
                 .studentNumber(creationVo.studentNumber().value())
                 .grade(creationVo.grade().value())
-                .role(creationVo.role().value())
+                .role(creationVo.role().role())
                 .major(creationVo.major().value())
                 .skills(convertSkillsToArray(creationVo.skills()))
                 .description(creationVo.description())
                 .profileImage(creationVo.profileImage() != null ?
                         creationVo.profileImage().value() : null)
-                .birthday(birthday != null ? birthday.value().atZone(ZonedDateTime.now().getZone()) :
-                        ZonedDateTime.now().minusYears(20))
+                .birthday(birthday != null ? birthday.value().atOffset(OffsetDateTime.now().getOffset()) :
+                        OffsetDateTime.now().minusYears(20))
                 .gender(gender != null ? gender.value() : "UNKNOWN")
                 .build();
     }
@@ -96,7 +97,7 @@ public class MemberInfrastructureEntityMapper {
         return existingEntity.toBuilder()
                 .name(updateVo.name() != null ? updateVo.name().value() : existingEntity.getName())
                 .grade(updateVo.grade() != null ? updateVo.grade().value() : existingEntity.getGrade())
-                .role(updateVo.role() != null ? updateVo.role().value() : existingEntity.getRole())
+                .role(updateVo.role() != null ? updateVo.role().role() : existingEntity.getRole())
                 .major(updateVo.major() != null ? updateVo.major().value() : existingEntity.getMajor())
                 .skills(updateVo.skills() != null ? convertSkillsToArray(updateVo.skills()) : existingEntity.getSkills())
                 .description(updateVo.description() != null ? updateVo.description() : existingEntity.getDescription())
@@ -122,18 +123,18 @@ public class MemberInfrastructureEntityMapper {
     public MemberEntity toEntity(Long id, NameVo name, StudentNumberVo studentNumber,
                                  ProfileImageVo profileImage, GradeVo grade, RoleVo role,
                                  SkillsVo skills, MajorVo major, String description,
-                                 ZonedDateTime createdAt, ZonedDateTime updatedAt) {
+                                 OffsetDateTime createdAt, OffsetDateTime updatedAt) {
         return MemberEntity.builder()
                 .id(id)
                 .name(name.value())
                 .studentNumber(studentNumber.value())
                 .profileImage(profileImage != null ? profileImage.value() : null)
                 .grade(grade.value())
-                .role(role.value())
+                .role(role.role())
                 .skills(convertSkillsToArray(skills))
                 .major(major.value())
                 .description(description)
-                .birthday(ZonedDateTime.now().minusYears(20)) // 기본값
+                .birthday(OffsetDateTime.now().minusYears(20)) // 기본값
                 .gender("UNKNOWN") // 기본값
                 .createdAt(createdAt)
                 .updatedAt(updatedAt)
@@ -147,19 +148,19 @@ public class MemberInfrastructureEntityMapper {
                                  ProfileImageVo profileImage, GradeVo grade, RoleVo role,
                                  SkillsVo skills, MajorVo major, String description,
                                  BirthdayVo birthday, GenderVo gender,
-                                 ZonedDateTime createdAt, ZonedDateTime updatedAt) {
+                                 OffsetDateTime createdAt, OffsetDateTime updatedAt) {
         return MemberEntity.builder()
                 .id(id)
                 .name(name.value())
                 .studentNumber(studentNumber.value())
                 .profileImage(profileImage != null ? profileImage.value() : null)
                 .grade(grade.value())
-                .role(role.value())
+                .role(role.role())
                 .skills(convertSkillsToArray(skills))
                 .major(major.value())
                 .description(description)
-                .birthday(birthday != null ? birthday.value().atZone(ZonedDateTime.now().getZone()) :
-                        ZonedDateTime.now().minusYears(20))
+                .birthday(birthday != null ? birthday.value().atOffset(OffsetDateTime.now().getOffset()) :
+                        OffsetDateTime.now().minusYears(20))
                 .gender(gender != null ? gender.value() : "UNKNOWN")
                 .createdAt(createdAt)
                 .updatedAt(updatedAt)
@@ -178,7 +179,7 @@ public class MemberInfrastructureEntityMapper {
         return SearchConditionJpa.builder()
                 .keyword(searchConditionVo.keyword())
                 .grade(searchConditionVo.grade() != null ? searchConditionVo.grade().value() : null)
-                .role(searchConditionVo.role() != null ? searchConditionVo.role().value() : null)
+                .role(searchConditionVo.role() != null ? searchConditionVo.role().role() : null)
                 .major(searchConditionVo.major() != null ? searchConditionVo.major().value() : null)
                 .skills(searchConditionVo.skills() != null ?
                         convertSkillsToArray(searchConditionVo.skills()) : null)
@@ -191,7 +192,7 @@ public class MemberInfrastructureEntityMapper {
     public FilterConditionJpa toFilterCondition(MemberFilterVo filterVo) {
         return FilterConditionJpa.builder()
                 .grade(filterVo.grade() != null ? filterVo.grade().value() : null)
-                .role(filterVo.role() != null ? filterVo.role().value() : null)
+                .role(filterVo.role() != null ? filterVo.role().role() : null)
                 .major(filterVo.major() != null ? filterVo.major().value() : null)
                 .isActive(filterVo.isActive())
                 .build();
@@ -280,13 +281,13 @@ public class MemberInfrastructureEntityMapper {
     }
     
     /**
-     * RoleVo → String 추출
+     * RoleVo → MemberRole 추출
      */
-    private String extractRoleValue(RoleVo roleVo) {
+    private MemberRole extractRoleValue(RoleVo roleVo) {
         if (roleVo == null) {
             throw new IllegalArgumentException("RoleVo는 필수입니다");
         }
-        return roleVo.value();
+        return roleVo.role();
     }
     
     /**
@@ -333,7 +334,7 @@ public class MemberInfrastructureEntityMapper {
     public static class SearchConditionJpa {
         private final String keyword;
         private final String grade;
-        private final String role;
+        private final MemberRole role;
         private final String major;
         private final String[] skills;
 
@@ -352,20 +353,20 @@ public class MemberInfrastructureEntityMapper {
         // Getters
         public String getKeyword() { return keyword; }
         public String getGrade() { return grade; }
-        public String getRole() { return role; }
+        public MemberRole getRole() { return role; }
         public String getMajor() { return major; }
         public String[] getSkills() { return skills; }
 
         public static class Builder {
             private String keyword;
             private String grade;
-            private String role;
+            private MemberRole role;
             private String major;
             private String[] skills;
 
             public Builder keyword(String keyword) { this.keyword = keyword; return this; }
             public Builder grade(String grade) { this.grade = grade; return this; }
-            public Builder role(String role) { this.role = role; return this; }
+            public Builder role(MemberRole role) { this.role = role; return this; }
             public Builder major(String major) { this.major = major; return this; }
             public Builder skills(String[] skills) { this.skills = skills; return this; }
 
@@ -380,7 +381,7 @@ public class MemberInfrastructureEntityMapper {
      */
     public static class FilterConditionJpa {
         private final String grade;
-        private final String role;
+        private final MemberRole role;
         private final String major;
         private final Boolean isActive;
 
@@ -397,18 +398,18 @@ public class MemberInfrastructureEntityMapper {
 
         // Getters
         public String getGrade() { return grade; }
-        public String getRole() { return role; }
+        public MemberRole getRole() { return role; }
         public String getMajor() { return major; }
         public Boolean getIsActive() { return isActive; }
 
         public static class Builder {
             private String grade;
-            private String role;
+            private MemberRole role;
             private String major;
             private Boolean isActive;
 
             public Builder grade(String grade) { this.grade = grade; return this; }
-            public Builder role(String role) { this.role = role; return this; }
+            public Builder role(MemberRole role) { this.role = role; return this; }
             public Builder major(String major) { this.major = major; return this; }
             public Builder isActive(Boolean isActive) { this.isActive = isActive; return this; }
 

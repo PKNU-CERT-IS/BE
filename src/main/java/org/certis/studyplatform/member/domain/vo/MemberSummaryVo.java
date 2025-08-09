@@ -1,6 +1,8 @@
 package org.certis.studyplatform.member.domain.vo;
 
-import java.time.ZonedDateTime;
+import org.certis.studyplatform.member.domain.MemberRole;
+
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
@@ -19,7 +21,7 @@ public record MemberSummaryVo(
         String description,               // 설명 (nullable)
         SkillsVo skills,                  // 기술 스택
         ProfileImageVo profileImage,      // 프로필 이미지 (nullable)
-        ZonedDateTime createdAt           // 생성일시
+        OffsetDateTime createdAt           // 생성일시
 ) {
     
     public MemberSummaryVo {
@@ -55,7 +57,7 @@ public record MemberSummaryVo(
     public static MemberSummaryVo of(MemberIdVo id, NameVo name, StudentNumberVo studentNumber,
                                      GradeVo grade, RoleVo role, MajorVo major,
                                      String description, SkillsVo skills,
-                                     ProfileImageVo profileImage, ZonedDateTime createdAt) {
+                                     ProfileImageVo profileImage, OffsetDateTime createdAt) {
         return new MemberSummaryVo(id, name, studentNumber, grade, role, major,
                 description, skills, profileImage, createdAt);
     }
@@ -65,7 +67,7 @@ public record MemberSummaryVo(
      */
     public static MemberSummaryVo of(MemberIdVo id, NameVo name, StudentNumberVo studentNumber,
                                      GradeVo grade, RoleVo role, MajorVo major,
-                                     SkillsVo skills, ZonedDateTime createdAt) {
+                                     SkillsVo skills, OffsetDateTime createdAt) {
         return new MemberSummaryVo(id, name, studentNumber, grade, role, major,
                 null, skills, null, createdAt);
     }
@@ -74,9 +76,9 @@ public record MemberSummaryVo(
      * 정적 팩토리 메서드 (primitive 값들로)
      */
     public static MemberSummaryVo of(Long id, String name, String studentNumber,
-                                     String grade, String role, String major,
+                                     String grade, MemberRole role, String major,
                                      String description, List<String> skills,
-                                     String profileImage, ZonedDateTime createdAt) {
+                                     String profileImage, OffsetDateTime createdAt) {
         return new MemberSummaryVo(
             MemberIdVo.of(id),
             NameVo.of(name),
@@ -161,7 +163,7 @@ public record MemberSummaryVo(
     /**
      * 생성일시 반환
      */
-    public ZonedDateTime getCreatedAt() {
+    public OffsetDateTime getCreatedAt() {
         return createdAt;
     }
     
@@ -196,8 +198,8 @@ public record MemberSummaryVo(
     /**
      * 역할 반환
      */
-    public String getRoleValue() {
-        return role.value();
+    public MemberRole getRoleValue() {
+        return role.role();
     }
     
     /**
