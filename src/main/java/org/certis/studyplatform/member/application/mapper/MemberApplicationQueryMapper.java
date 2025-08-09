@@ -35,6 +35,7 @@ public class MemberApplicationQueryMapper {
             requestDto.getSafeKeyword(),
             requestDto.getSafeGrade(),
             requestDto.getSafeRole(),
+            null, // TODO: MemberSearchRequestDto에 skills 필드 추가 필요
             pageable
         );
     }
@@ -49,6 +50,7 @@ public class MemberApplicationQueryMapper {
             requestDto.getSafeKeyword(),
             requestDto.getSafeGrade(),
             requestDto.getSafeRole(),
+            null, // TODO: MemberSearchRequestDto에 skills 필드 추가 필요
             defaultPageable
         );
     }
@@ -57,7 +59,7 @@ public class MemberApplicationQueryMapper {
      * DTO → SearchMembersQuery 변환 (키워드 + 페이징)
      */
     public SearchMembersQuery toSearchMembersQuery(String keyword, Pageable pageable) {
-        return new SearchMembersQuery(keyword, null, null, pageable);
+        return new SearchMembersQuery(keyword, null, null, null, pageable);
     }
 
     /**

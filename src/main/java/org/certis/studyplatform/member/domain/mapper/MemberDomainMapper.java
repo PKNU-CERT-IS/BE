@@ -1,140 +1,130 @@
 package org.certis.studyplatform.member.domain.mapper;
 
 import lombok.RequiredArgsConstructor;
-import org.certis.studyplatform.member.domain.Member;
 import org.certis.studyplatform.member.domain.vo.*;
 import org.springframework.stereotype.Component;
 
-import java.time.ZonedDateTime;
 import java.util.List;
 
 /**
  * Member Domain Mapper (Facade)
- * 
- * ✅ Domain Layer의 통합 매퍼 (Facade Pattern)
- * ✅ PrimitiveToVoMapper, VoToDomainMapper, DomainToVoMapper를 통합 관리
- * ✅ 네이밍 컨벤션: MemberDomainMapper
+ *
+ * ✅ Domain Layer의 Command/Query → VO 변환 전용 매퍼
+ * ✅ Domain Service에서 Command/Query 객체를 VO로 변환할 때 사용
+ * ✅ Entity to VO 변환은 Infrastructure Layer에서 담당
+ *
+ * 책임:
+ * - Command Object → VO 변환 (검증 포함)
+ * - Query Object → VO 변환 (검증 포함)
+ *
+ * 제외사항:
+ * - Entity → VO 변환 (Infrastructure 담당)
+ * - VO → Entity 변환 (Infrastructure 담당)
+ * - Domain Entity 관련 변환 (Infrastructure 담당)
+ *
+ * 특징:
+ * - Command/Query 객체의 primitive 값들을 검증된 VO로 변환
+ * - VO 생성 시점에서 자동으로 비즈니스 검증 수행
+ * - 단방향 데이터 흐름에서 변환 역할 담당
  */
 @Component
 @RequiredArgsConstructor
 public class MemberDomainMapper {
 
-    private final PrimitiveToVoMapper primitiveToVoMapper;
-    private final VoToDomainMapper voToDomainMapper;
-    private final DomainToVoMapper domainToVoMapper;
+    private final MemberDomainCommandMapper memberDomainCommandMapper;
+    private final MemberDomainQueryMapper memberDomainQueryMapper;
 
     // =================================================================
-    // Primitive → VO 변환 (PrimitiveToVoMapper 위임)
+    // Command Object → VO 변환 (Domain Service에서 사용)
+    // Command 객체의 primitive 값들을 검증이 포함된 VO로 변환
     // =================================================================
 
+    /**
+     * String → NameVo 변환 (검증 포함)
+     */
     public NameVo toNameVo(String name) {
-        return primitiveToVoMapper.toNameVo(name);
+        return memberDomainCommandMapper.toNameVo(name);
     }
 
+    /**
+     * String → StudentNumberVo 변환 (검증 포함)
+     */
     public StudentNumberVo toStudentNumberVo(String studentNumber) {
-        return primitiveToVoMapper.toStudentNumberVo(studentNumber);
+        return memberDomainCommandMapper.toStudentNumberVo(studentNumber);
     }
 
+    /**
+     * String → EmailVo 변환 (검증 포함)
+     */
     public EmailVo toEmailVo(String email) {
-        return primitiveToVoMapper.toEmailVo(email);
+        return memberDomainCommandMapper.toEmailVo(email);
     }
 
+    /**
+     * String → GradeVo 변환 (검증 포함)
+     */
     public GradeVo toGradeVo(String grade) {
-        return primitiveToVoMapper.toGradeVo(grade);
+        return memberDomainCommandMapper.toGradeVo(grade);
     }
 
+    /**
+     * String → RoleVo 변환 (검증 포함)
+     */
     public RoleVo toRoleVo(String role) {
-        return primitiveToVoMapper.toRoleVo(role);
+        return memberDomainCommandMapper.toRoleVo(role);
     }
 
+    /**
+     * String → MajorVo 변환 (검증 포함)
+     */
     public MajorVo toMajorVo(String major) {
-        return primitiveToVoMapper.toMajorVo(major);
+        return memberDomainCommandMapper.toMajorVo(major);
     }
 
+    /**
+     * String → ProfileImageVo 변환 (검증 포함)
+     */
     public ProfileImageVo toProfileImageVo(String profileImage) {
-        return primitiveToVoMapper.toProfileImageVo(profileImage);
+        return memberDomainCommandMapper.toProfileImageVo(profileImage);
     }
 
+    /**
+     * List<String> → SkillsVo 변환 (검증 포함)
+     */
     public SkillsVo toSkillsVo(List<String> skills) {
-        return primitiveToVoMapper.toSkillsVo(skills);
+        return memberDomainCommandMapper.toSkillsVo(skills);
     }
 
+    /**
+     * Long → MemberIdVo 변환 (검증 포함)
+     */
     public MemberIdVo toMemberIdVo(Long memberId) {
-        return primitiveToVoMapper.toMemberIdVo(memberId);
+        return memberDomainCommandMapper.toMemberIdVo(memberId);
     }
 
     // =================================================================
-    // VO → Domain 변환 (VoToDomainMapper 위임)
+    // Query Object → VO 변환 (필요시 확장)
+    // Query 객체의 검색 조건들을 VO로 변환
     // =================================================================
 
-    public Member toMember(String name, String studentNumber, String grade,
-                          String role, String major, String description, 
-                          List<String> skills) {
-        return voToDomainMapper.toMember(name, studentNumber, grade, role, major, description, skills);
+    /**
+     * Query 조건을 검색용 VO로 변환 (필요시 구현)
+     */
+    public MemberIdVo toSearchMemberIdVo(Long memberId) {
+        return memberDomainQueryMapper.toSearchMemberIdVo(memberId);
     }
 
-    public Member toMember(Long id, NameVo name, StudentNumberVo studentNumber, 
-                          ProfileImageVo profileImage, GradeVo grade, RoleVo role, 
-                          SkillsVo skills, MajorVo major, String description,
-                          ZonedDateTime createdAt, ZonedDateTime updatedAt) {
-        return voToDomainMapper.toMember(id, name, studentNumber, profileImage, grade, role, 
-                                       skills, major, description, createdAt, updatedAt);
+    /**
+     * Query 조건을 필터링용 VO로 변환 (필요시 구현)
+     */
+    public GradeVo toSearchGradeVo(String grade) {
+        return memberDomainQueryMapper.toSearchGradeVo(grade);
     }
 
-    public Member toMember(String name, String studentNumber, String grade,
-                          List<String> skills, String role, String major) {
-        return voToDomainMapper.toMember(name, studentNumber, grade, skills, role, major);
-    }
-
-    // =================================================================
-    // Domain → VO 변환 (DomainToVoMapper 위임)
-    // =================================================================
-
-    public MemberVo toMemberVo(Member member) {
-        return domainToVoMapper.toMemberVo(member);
-    }
-
-    public MemberCreatedVo toMemberCreatedVo(Member member) {
-        return domainToVoMapper.toMemberCreatedVo(member);
-    }
-
-    public MemberUpdatedVo toMemberUpdatedVo(Member member) {
-        return domainToVoMapper.toMemberUpdatedVo(member);
-    }
-
-    public MemberSummaryVo toMemberSummaryVo(Member member) {
-        return domainToVoMapper.toMemberSummaryVo(member);
-    }
-
-    public MemberIdVo toMemberIdVo(Member member) {
-        return domainToVoMapper.toMemberIdVo(member);
-    }
-
-    public NameVo toNameVo(Member member) {
-        return domainToVoMapper.toNameVo(member);
-    }
-
-    public StudentNumberVo toStudentNumberVo(Member member) {
-        return domainToVoMapper.toStudentNumberVo(member);
-    }
-
-    public GradeVo toGradeVo(Member member) {
-        return domainToVoMapper.toGradeVo(member);
-    }
-
-    public RoleVo toRoleVo(Member member) {
-        return domainToVoMapper.toRoleVo(member);
-    }
-
-    public MajorVo toMajorVo(Member member) {
-        return domainToVoMapper.toMajorVo(member);
-    }
-
-    public SkillsVo toSkillsVo(Member member) {
-        return domainToVoMapper.toSkillsVo(member);
-    }
-
-    public ProfileImageVo toProfileImageVo(Member member) {
-        return domainToVoMapper.toProfileImageVo(member);
+    /**
+     * Query 조건을 필터링용 VO로 변환 (필요시 구현)
+     */
+    public RoleVo toSearchRoleVo(String role) {
+        return memberDomainQueryMapper.toSearchRoleVo(role);
     }
 }

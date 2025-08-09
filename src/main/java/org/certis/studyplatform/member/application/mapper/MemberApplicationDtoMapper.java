@@ -28,10 +28,8 @@ public class MemberApplicationDtoMapper {
      */
     public MemberCreatedResponseDto toMemberCreatedResponseDto(MemberCreatedVo vo) {
         return MemberCreatedResponseDto.builder()
-                .id(vo.id())
-                .name(vo.name())
-                .studentNumber(vo.studentNumber())
-                .createdAt(vo.createdAt())
+                .id(vo.getId().value())
+                .studentNumber(vo.getStudentNumber().value())
                 .build();
     }
 
@@ -40,10 +38,10 @@ public class MemberApplicationDtoMapper {
      */
     public MemberUpdatedResponseDto toMemberUpdatedResponseDto(MemberUpdatedVo vo) {
         return MemberUpdatedResponseDto.builder()
-                .id(vo.id())
-                .name(vo.name())
-                .profileImage(vo.profileImage())
-                .updatedAt(vo.updatedAt())
+                .id(vo.getId().value())
+                .name(vo.getName().value())
+                .profileImage(vo.getProfileImageValue())
+                .updatedAt(vo.getUpdatedAt())
                 .build();
     }
 
@@ -56,10 +54,10 @@ public class MemberApplicationDtoMapper {
      */
     public MemberSummaryResponseDto toMemberSummaryResponseDto(MemberSummaryVo vo) {
         return MemberSummaryResponseDto.builder()
-                .id(vo.id())
-                .name(vo.name())
-                .grade(vo.grade())
-                .role(vo.role())
+                .id(vo.getId().value())
+                .name(vo.getName().value())
+                .grade(vo.getGrade().value())
+                .role(vo.getRole().value())
                 .build();
     }
 
@@ -69,17 +67,17 @@ public class MemberApplicationDtoMapper {
      */
     public MemberDetailResponseDto toMemberDetailResponseDto(MemberVo vo) {
         return MemberDetailResponseDto.builder()
-                .id(vo.id())
-                .name(vo.name())
-                .studentNumber(vo.studentNumber())
-                .profileImage(vo.profileImage())
-                .grade(vo.grade())
-                .role(vo.role())
-                .skills(vo.skills())
-                .major(vo.major())
-                .description(vo.description())
-                .createdAt(vo.createdAt())
-                .updatedAt(vo.updatedAt())
+                .id(vo.getId())
+                .name(vo.getName())
+                .studentNumber(vo.getStudentNumber())
+                .profileImage(vo.getProfileImage())
+                .grade(vo.getGrade())
+                .role(vo.getRole())
+                .skills(vo.getSkills())
+                .major(vo.getMajor())
+                .description(vo.getDescription())
+                .createdAt(vo.getCreatedAt())
+                .updatedAt(vo.getUpdatedAt())
                 .build();
     }
 

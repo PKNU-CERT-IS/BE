@@ -40,15 +40,23 @@ public class MemberApplicationMapper {
                 dto.getRole(),
                 dto.getMajor(),
                 dto.getDescription(),
-                Optional.ofNullable(dto.getSkills()).orElse(List.of())
+                Optional.ofNullable(dto.getSkills()).orElse(List.of()),
+                dto.getEmail(),
+                dto.getProfileImage()
         );
     }
 
     public UpdateMemberCommand toUpdateCommand(Long id, MemberUpdateRequestDto dto) {
         if (dto == null) return null;
         return new UpdateMemberCommand(
-                id, dto.getName(), null, dto.getGrade(),
-                dto.getRole(), dto.getMajor(), dto.getDescription(), dto.getSkills()
+                id, 
+                dto.getName(), 
+                null, // studentNumber는 업데이트 불가 (불변 필드)
+                dto.getGrade(),
+                dto.getRole(), 
+                dto.getMajor(), 
+                dto.getDescription(), 
+                dto.getSkills()
         );
     }
 
@@ -65,10 +73,10 @@ public class MemberApplicationMapper {
 
     public SearchMembersQuery toSearchMembersQuery(SearchMembersRequestDto dto, Pageable pageable) {
         if (dto == null) {
-            return new SearchMembersQuery(null, null, null, pageable);
+            return new SearchMembersQuery(null, null, null, dto.getSkills(), pageable);
         }
         return new SearchMembersQuery(
-                dto.getName(), dto.getGrade(), dto.getRole(), pageable
+                dto.getName(), dto.getGrade(), dto.getRole(), dto.getSkills(), pageable
         );
     }
 
@@ -95,15 +103,15 @@ public class MemberApplicationMapper {
     public MemberResponseDto toMemberResponseDto(MemberSummaryVo vo) {
         if (vo == null) return null;
         return MemberResponseDto.builder()
-                .id(vo.id())
-                .name(vo.name())
-                .studentNumber(vo.studentNumber())
-                .grade(vo.grade())
-                .role(vo.role())
-                .major(vo.major())
+                .id(vo.getMemberId())
+                .name(vo.getNameValue())
+                .studentNumber(vo.getStudentNumberValue())
+                .grade(vo.getGradeValue())
+                .role(vo.getRoleValue())
+                .major(vo.getMajorValue())
                 .description(vo.description())
-                .skills(vo.skills())
-                .profileImage(vo.profileImage())
+                .skills(vo.getSkillsValues())
+                .profileImage(vo.getProfileImageValue())
                 .createdAt(vo.createdAt())
                 .build();
     }
