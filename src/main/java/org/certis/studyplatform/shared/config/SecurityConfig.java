@@ -1,8 +1,8 @@
 package org.certis.studyplatform.shared.config;
 
 import lombok.RequiredArgsConstructor;
-import org.certis.studyplatform.shared.security.JwtAuthenticationFilter;
-import org.certis.studyplatform.shared.security.JwtTokenProvider;
+// import org.certis.studyplatform.shared.security.JwtAuthenticationFilter;  // 🔥 JWT 비활성화
+// import org.certis.studyplatform.shared.security.JwtTokenProvider;        // 🔥 JWT 비활성화
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -23,7 +23,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtTokenProvider jwtTokenProvider;
     private final CorsConfigurationSource corsConfigurationSource;
 
     @Bean
@@ -41,25 +40,12 @@ public class SecurityConfig {
                 .headers(headers ->
                         headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
                 )
-                // 인증/인가 설정
+                // 🔥 API 테스트용 - 모든 요청 허용
                 .authorizeHttpRequests(auths -> auths
-                        // 인증 없이 접근 가능한 경로
-                        .requestMatchers(
-                                "/api/v1/auth/login",  // 로그인
-                                "/api/v1/auth/signup",          // 회원가입
-                                "/api/v1/auth/token/refresh",   // 토큰 갱신
-                                "/h2-console/**",               // H2 콘솔
-                                "/swagger-ui/**",               // Swagger UI
-                                "/swagger-ui.html",
-                                "/v3/api-docs/**",              // API 문서
-                                "/health",                      // 헬스체크
-                                "/actuator/**"                  // 액추에이터
-                        ).permitAll()
-                        // 나머지는 모두 인증 필요
-                        .anyRequest().authenticated()
+                        .anyRequest().permitAll()
                 )
-                // JWT 인증 필터 추가 (UsernamePasswordAuthenticationFilter 이전에)
-                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class)
+                // 🔥 JWT 필터 완전 비활성화 (API 테스트용)
+                // .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class)
                 // 기본 폼 로그인 비활성화
                 .formLogin(AbstractHttpConfigurer::disable)
                 // HTTP Basic 인증 비활성화

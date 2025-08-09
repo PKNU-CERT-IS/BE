@@ -10,7 +10,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 /**
  * Board Entity
@@ -46,19 +46,19 @@ public class BoardEntity {
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
-    private ZonedDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
-    private ZonedDateTime updatedAt;
+    private OffsetDateTime updatedAt;
 
     @Column(name = "deleted_at")
-    private ZonedDateTime deletedAt;
+    private OffsetDateTime deletedAt;
 
     @Builder(toBuilder = true)
     private BoardEntity(Long id, Long memberId, String title, String content,
-                       String category, String description, ZonedDateTime createdAt,
-                       ZonedDateTime updatedAt, ZonedDateTime deletedAt) {
+                       String category, String description, OffsetDateTime createdAt,
+                       OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
         this.id = id;
         this.memberId = memberId;
         this.title = title;

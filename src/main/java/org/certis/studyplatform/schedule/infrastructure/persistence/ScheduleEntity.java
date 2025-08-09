@@ -10,7 +10,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 /**
  * Schedule Entity
@@ -45,26 +45,26 @@ public class ScheduleEntity {
     private String place;
 
     @Column(name = "started_at", nullable = false)
-    private ZonedDateTime startedAt;
+    private OffsetDateTime startedAt;
 
     @Column(name = "ended_at", nullable = false)
-    private ZonedDateTime endedAt;
+    private OffsetDateTime endedAt;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
-    private ZonedDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
-    private ZonedDateTime updatedAt;
+    private OffsetDateTime updatedAt;
 
     @Column(name = "deleted_at")
-    private ZonedDateTime deletedAt;
+    private OffsetDateTime deletedAt;
 
     @Builder(toBuilder = true)
     private ScheduleEntity(Long id, Long memberId, String type, String title,
-                          String description, String place, ZonedDateTime startedAt, ZonedDateTime endedAt,
-                          ZonedDateTime createdAt, ZonedDateTime updatedAt, ZonedDateTime deletedAt) {
+                          String description, String place, OffsetDateTime startedAt, OffsetDateTime endedAt,
+                          OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
         this.id = id;
         this.memberId = memberId;
         this.type = type;

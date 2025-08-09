@@ -12,7 +12,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 /**
  * Auth Entity
@@ -45,18 +45,18 @@ public class AuthEntity {
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
-    private ZonedDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
-    private ZonedDateTime updatedAt;
+    private OffsetDateTime updatedAt;
 
     @Column(name = "deleted_at")
-    private ZonedDateTime deletedAt;
+    private OffsetDateTime deletedAt;
 
     @Builder(toBuilder = true)
-    private AuthEntity(String accountNumber, String password, ZonedDateTime createdAt, 
-                      ZonedDateTime updatedAt, ZonedDateTime deletedAt, Long memberId) {
+    private AuthEntity(String accountNumber, String password, OffsetDateTime createdAt, 
+                      OffsetDateTime updatedAt, OffsetDateTime deletedAt, Long memberId) {
         this.accountNumber = accountNumber;
         this.password = password;
         this.createdAt = createdAt;
