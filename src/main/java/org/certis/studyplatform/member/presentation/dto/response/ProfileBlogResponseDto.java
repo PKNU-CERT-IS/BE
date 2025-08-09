@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.ZonedDateTime;
+import java.util.List;
 
 /**
  * 프로필용 블로그 응답 DTO
@@ -27,7 +28,7 @@ public class ProfileBlogResponseDto {
     private Integer viewCount;
     private Integer likeCount;
     private Integer commentCount;
-    private String[] categories;
-    private String[] tags;
+    private List<String> categories;
+    private List<String> tags;
     private String thumbnailUrl;
 }

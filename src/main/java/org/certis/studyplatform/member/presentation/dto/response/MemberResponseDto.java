@@ -29,23 +29,4 @@ public class MemberResponseDto {
     private String major;
     private ZonedDateTime createdAt;
     private ZonedDateTime updatedAt;
-
-    /**
-     * Domain Member로부터 DTO 생성
-     */
-    public static MemberResponseDto fromDomain(Member member) {
-        return MemberResponseDto.builder()
-                .id(member.getId() != null ? member.getId() : null)
-                .name(member.getName().value())
-                .description(member.getDescription())
-                .studentNumber(member.getStudentNumber().value())
-                .grade(member.getGrade().value())
-                .role(member.getRole().value())
-                .major(member.getMajor().value())
-                .skills(member.getSkills().values())
-                .profileImage(member.getProfileImage() != null ? member.getProfileImage().value() : null)
-                .createdAt(member.getCreatedAt())
-                .updatedAt(member.getUpdatedAt())
-                .build();
-    }
 }

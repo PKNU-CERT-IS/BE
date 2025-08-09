@@ -1,17 +1,33 @@
 package org.certis.studyplatform.member.domain.vo;
 
-import jakarta.persistence.Embeddable;
-
 /**
  * 회원 ID Value Object
  * 
- * 순수한 래핑 역할만 수행 - 검증은 DTO 레이어에서 완료
- * 타입 안전성과 도메인 개념 캡슐화에만 집중
+ * 회원 식별자를 담는 불변 객체
+ * 도메인 전반에서 회원을 식별하는 용도로 사용
  */
-@Embeddable
 public record MemberIdVo(Long value) {
     
-    public static MemberIdVo of(Long id) {
-        return new MemberIdVo(id);
+    public MemberIdVo {
+        if (value == null) {
+            throw new IllegalArgumentException("회원 ID는 필수입니다");
+        }
+        if (value <= 0) {
+            throw new IllegalArgumentException("회원 ID는 양수여야 합니다");
+        }
+    }
+    
+    /**
+     * 팩토리 메서드
+     */
+    public static MemberIdVo of(Long value) {
+        return new MemberIdVo(value);
+    }
+    
+    /**
+     * Long 타입으로 변환
+     */
+    public Long toLong() {
+        return value;
     }
 } 

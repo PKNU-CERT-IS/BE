@@ -35,20 +35,10 @@ public class MemberCreateRequestDto {
     
     @NotBlank(message = "전공은 필수입니다")
     private String major;
-    
+
     // 선택적 필드 - 기본 타입 검증만
+    private String profileImage;
     private String description;
     private String email;
-    
-    /**
-     * 기본 타입 검증 통과 확인
-     */
-    public boolean hasRequiredFields() {
-        return name != null && !name.trim().isEmpty() &&
-               studentNumber != null && !studentNumber.trim().isEmpty() &&
-               grade != null && !grade.trim().isEmpty() &&
-               role != null && !role.trim().isEmpty() &&
-               skills != null && !skills.isEmpty() &&
-               major != null && !major.trim().isEmpty();
-    }
+
 }

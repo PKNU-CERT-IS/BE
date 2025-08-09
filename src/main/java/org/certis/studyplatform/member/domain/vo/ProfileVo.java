@@ -1,7 +1,5 @@
 package org.certis.studyplatform.member.domain.vo;
 
-import org.certis.studyplatform.member.domain.Profile;
-
 import java.time.ZonedDateTime;
 
 /**
@@ -21,18 +19,64 @@ public record ProfileVo(
 ) {
 
     /**
-     * Profile Domain Entity에서 ProfileVo 생성
+     * 정적 팩토리 메서드
      */
-    public static ProfileVo from(Profile profile) {
-        return new ProfileVo(
-                profile.getId(),
-                profile.getMemberId(),
-                profile.getName(),
-                profile.getDescription(),
-                profile.getProfileImageValue(),
-                profile.getCreatedAt(),
-                profile.getUpdatedAt()
-        );
+    public static ProfileVo of(Long id, Long memberId, String name, String description, 
+                               String profileImage, ZonedDateTime createdAt, ZonedDateTime updatedAt) {
+        return new ProfileVo(id, memberId, name, description, profileImage, createdAt, updatedAt);
+    }
+    
+    // =================================================================
+    // Getter 메서드들
+    // =================================================================
+    
+    /**
+     * ID 반환
+     */
+    public Long getId() {
+        return id;
+    }
+    
+    /**
+     * 회원 ID 반환
+     */
+    public Long getMemberId() {
+        return memberId;
+    }
+    
+    /**
+     * 이름 반환
+     */
+    public String getName() {
+        return name;
+    }
+    
+    /**
+     * 설명 반환
+     */
+    public String getDescription() {
+        return description;
+    }
+    
+    /**
+     * 프로필 이미지 반환
+     */
+    public String getProfileImage() {
+        return profileImage;
+    }
+    
+    /**
+     * 생성일시 반환
+     */
+    public ZonedDateTime getCreatedAt() {
+        return createdAt;
+    }
+    
+    /**
+     * 수정일시 반환
+     */
+    public ZonedDateTime getUpdatedAt() {
+        return updatedAt;
     }
 
     /**

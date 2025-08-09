@@ -4,7 +4,7 @@ public record UpdateProfileCommand(
         Long memberId,
         String name,
         String description,
-        String profileImageUrl
+        String profileImage
 ) {
     public static Builder builder() {
         return new Builder();
@@ -14,7 +14,7 @@ public record UpdateProfileCommand(
         private Long memberId;
         private String name;
         private String description;
-        private String profileImageUrl;
+        private String profileImage;
 
         public Builder memberId(Long memberId) {
             this.memberId = memberId;
@@ -31,13 +31,13 @@ public record UpdateProfileCommand(
             return this;
         }
 
-        public Builder profileImageUrl(String profileImageUrl) {
-            this.profileImageUrl = profileImageUrl;
+        public Builder profileImage(String profileImage) {
+            this.profileImage = profileImage;
             return this;
         }
 
         public UpdateProfileCommand build() {
-            return new UpdateProfileCommand(memberId, name, description, profileImageUrl);
+            return new UpdateProfileCommand(memberId, name, description, profileImage);
         }
     }
 }
