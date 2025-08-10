@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.auth.application.service.AuthFacadeService;
 import org.certis.studyplatform.auth.presentation.dto.request.RegisterRequestDto;
 import org.certis.studyplatform.exception.ExceptionStatus;
+import org.certis.studyplatform.response.GlobalResponseHandler;
+import org.certis.studyplatform.response.ResponseStatus;
 import org.certis.studyplatform.shared.security.JwtTokenProvider;
 import org.certis.studyplatform.auth.presentation.dto.request.LoginRequestDto;
 import org.certis.studyplatform.auth.presentation.dto.response.RefreshAccessTokenResponseDto;
@@ -35,7 +37,7 @@ public class AuthController {
      * 로그인
      */
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDto> login(
+    public ResponseEntity<GlobalResponseHandler<LoginResponseDto>> login(
            @Valid @RequestBody LoginRequestDto request,
             HttpServletResponse response) {
 
@@ -55,12 +57,12 @@ public class AuthController {
         );
 
         log.info("로그인 성공: memberId={}", loginResponse.getMemberId());
-        return ResponseEntity.ok(loginResponse);
+        return GlobalResponseHandler.success(ResponseStatus.AUTH_LOGIN_SUCCESS,loginResponse);
     }
 
     // 로그아웃
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(
+    public ResponseEntity<GlobalResponseHandler<Void>> logout(
             @AuthenticationPrincipal Long memberId,
             HttpServletResponse response) {
 
@@ -73,14 +75,14 @@ public class AuthController {
         clearRefreshTokenCookie(response);
 
         log.info("로그아웃 성공: memberId={}", memberId);
-        return ResponseEntity.ok().build();
+        return GlobalResponseHandler.success(ResponseStatus.AUTH_LOGOUT_SUCCESS);
     }
 
     /**
      * AccessToken 갱신
      */
     @PostMapping("/token/refresh")
-    public ResponseEntity<RefreshAccessTokenResponseDto> refreshToken(
+    public ResponseEntity<GlobalResponseHandler<RefreshAccessTokenResponseDto>> refreshToken(
             HttpServletRequest request,
             @AuthenticationPrincipal Long memberId) {
 
@@ -94,7 +96,17 @@ public class AuthController {
         RefreshAccessTokenResponseDto responseDto = authFacadeService.refreshAccessToken(memberId, currentRole);
 
         log.info("토큰 갱신 성공: memberId={}", memberId);
-        return ResponseEntity.ok(responseDto);
+        return GlobalResponseHandler.success(ResponseStatus.AUTH_TOKEN_REFRESH_SUCCESS,responseDto);
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<GlobalResponseHandler<Void>> register(@Valid @RequestBody RegisterRequestDto request) {
+        log.info("회원가입 요청: accountNumber={}", request.getAccountNumber());
+
+        // 회원가입 처리
+        authFacadeService.register(request);
+
+        return GlobalResponseHandler.success(ResponseStatus.AUTH_REGISTER_REQUEST_SUCCESS);
     }
 
     // 만료된 토큰으로 부터 role 추출하여 리프레시 로직에 활용
@@ -142,16 +154,5 @@ public class AuthController {
             throw new PresentationException(ExceptionStatus.AUTH_PRESENTATION_INVALID_REQUEST);
         }
         return authHeader.substring(7).trim();
-    }
-
-    @PostMapping("/register")
-    public ResponseEntity<Void> register(@Valid @RequestBody RegisterRequestDto request) {
-        log.info("회원가입 요청: accountNumber={}", request.getAccountNumber());
-
-        // 회원가입 처리
-        authFacadeService.register(request);
-
-        log.info("회원가입 성공: accountNumber={}", request.getAccountNumber());
-        return ResponseEntity.ok().build();
     }
 }
