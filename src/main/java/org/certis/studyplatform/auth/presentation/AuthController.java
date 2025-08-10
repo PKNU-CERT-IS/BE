@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.auth.application.service.AuthFacadeService;
+import org.certis.studyplatform.auth.presentation.dto.request.RegisterRequestDto;
 import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.shared.security.JwtTokenProvider;
 import org.certis.studyplatform.auth.presentation.dto.request.LoginRequestDto;
@@ -141,5 +142,16 @@ public class AuthController {
             throw new PresentationException(ExceptionStatus.AUTH_PRESENTATION_INVALID_REQUEST);
         }
         return authHeader.substring(7).trim();
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<Void> register(@Valid @RequestBody RegisterRequestDto request) {
+        log.info("회원가입 요청: accountNumber={}", request.getAccountNumber());
+
+        // 회원가입 처리
+        authFacadeService.register(request);
+
+        log.info("회원가입 성공: accountNumber={}", request.getAccountNumber());
+        return ResponseEntity.ok().build();
     }
 }

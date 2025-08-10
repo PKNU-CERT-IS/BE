@@ -8,7 +8,7 @@ public enum MemberRole {
     MEMBER("회원"),
     LEADER("스터디/프로젝트장"),
     STAFF("임원진"),
-    PENDING("승인 대기"),
+    NONE("승인 대기"),
     NORMAL("mock 체크용");
 
     private final String description;

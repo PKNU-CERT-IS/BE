@@ -1,5 +1,6 @@
 package org.certis.studyplatform.member.application.object.command;
 
+import org.certis.studyplatform.auth.presentation.dto.request.RegisterRequestDto;
 import org.certis.studyplatform.member.domain.MemberRole;
 
 import java.time.OffsetDateTime;
@@ -62,5 +63,19 @@ public record CreateMemberCommand(
         if (gender == null || gender.trim().isEmpty()) {
             throw new IllegalArgumentException("성별은 필수입니다");
         }
+    }
+
+    public static CreateMemberCommand createMemberCommandForNewAuthMember(RegisterRequestDto requestDto){
+        return new CreateMemberCommand(requestDto.getName(),
+                requestDto.getStudentNumber(),
+                requestDto.getGrade(),
+                MemberRole.NONE,
+                requestDto.getMajor(),
+                null,
+                null,
+                null,
+                null,
+                requestDto.getBirthday(),
+                requestDto.getGender());
     }
 }

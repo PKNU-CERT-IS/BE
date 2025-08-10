@@ -42,41 +42,20 @@ public record RawPasswordVo(String value) {
                     "너무 간단한 비밀번호입니다");
         }
 
-        // 4. 연속된 문자 체크 (3자리 이상)
-        if (hasConsecutiveCharacters(password, 3)) {
-            throw new DomainException(ExceptionStatus.AUTH_DOMAIN_WEAK_PASSWORD,
-                    "연속된 문자가 3자리 이상 포함될 수 없습니다");
-        }
 
-        // 5. 반복 문자 체크 (같은 문자 3개 이상)
+        // 4. 반복 문자 체크 (같은 문자 3개 이상)
         if (hasRepeatingCharacters(password, 3)) {
             throw new DomainException(ExceptionStatus.AUTH_DOMAIN_WEAK_PASSWORD,
                     "같은 문자가 3개 이상 연속될 수 없습니다");
         }
 
-        // 6. 키보드 패턴 체크
+        // 5. 키보드 패턴 체크
         if (hasKeyboardPattern(password)) {
             throw new DomainException(ExceptionStatus.AUTH_DOMAIN_WEAK_PASSWORD,
                     "키보드 패턴을 사용할 수 없습니다");
         }
     }
 
-    /**
-     * 연속된 문자 체크 (abc, 123 등)
-     */
-    private static boolean hasConsecutiveCharacters(String password, int length) {
-        for (int i = 0; i <= password.length() - length; i++) {
-            boolean isConsecutive = true;
-            for (int j = 1; j < length; j++) {
-                if (password.charAt(i + j) != password.charAt(i + j - 1) + 1) {
-                    isConsecutive = false;
-                    break;
-                }
-            }
-            if (isConsecutive) return true;
-        }
-        return false;
-    }
 
     /**
      * 반복 문자 체크 (aaa, 111 등)
@@ -97,17 +76,17 @@ public record RawPasswordVo(String value) {
     }
 
     /**
-     * 키보드 패턴 체크 (qwerty, asdf 등)
+     * 키보드 패턴 체크 (qwerty, asdf 등) 나중에 추가나 따로 패턴 라이브러리 사용하는게 좋을
      */
     private static boolean hasKeyboardPattern(String password) {
         String[] patterns = {
                 "qwerty", "qwertyuiop", "asdf", "asdfghjkl", "zxcv", "zxcvbnm",
-                "1234", "12345", "123456", "1234567890"
+                "1234", "12345", "123456", "1234567890",
         };
 
         String lowerPassword = password.toLowerCase();
         for (String pattern : patterns) {
-            if (lowerPassword.contains(pattern) && pattern.length() >= 4) {
+            if (lowerPassword.contains(pattern)) {
                 return true;
             }
         }
