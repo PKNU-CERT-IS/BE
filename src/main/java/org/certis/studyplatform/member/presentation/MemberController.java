@@ -42,7 +42,7 @@ public class MemberController {
     private final MemberFacadeService memberFacadeService;
     
     /**
-     * 회원 생성
+     * 회원 생성 -> auth 에 만들어 놓았습니다.
      * 
      * @param request 회원 생성 요청 DTO
      * @return 생성된 회원 정보 (VO 직접 반환)

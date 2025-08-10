@@ -2,6 +2,7 @@ package org.certis.studyplatform.auth.application.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.certis.studyplatform.auth.application.object.command.CreateAuthCommand;
 import org.certis.studyplatform.auth.application.object.command.GenerateTokenCommand;
 import org.certis.studyplatform.auth.application.object.command.LogoutCommand;
 import org.certis.studyplatform.auth.application.object.command.RefreshTokenCommand;
@@ -12,9 +13,13 @@ import org.certis.studyplatform.auth.domain.model.vo.AuthInfoVo;
 import org.certis.studyplatform.auth.domain.model.vo.RefreshTokenVo;
 import org.certis.studyplatform.auth.domain.model.vo.TokenInfoVo;
 import org.certis.studyplatform.auth.presentation.dto.request.LoginRequestDto;
+import org.certis.studyplatform.auth.presentation.dto.request.RegisterRequestDto;
 import org.certis.studyplatform.auth.presentation.dto.response.RefreshAccessTokenResponseDto;
 import org.certis.studyplatform.auth.presentation.dto.response.TokenRequestDto;
+import org.certis.studyplatform.member.application.command.MemberCommandService;
+import org.certis.studyplatform.member.application.object.command.CreateMemberCommand;
 import org.certis.studyplatform.member.domain.MemberRole;
+import org.certis.studyplatform.member.domain.vo.MemberCreatedVo;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +30,7 @@ public class AuthFacadeService {
 
     private final AuthQueryService authQueryService;
     private final AuthCommandService authCommandService;
+    private final MemberCommandService memberCommandService;
 
    // 로그인
     @Transactional
@@ -85,6 +91,21 @@ public class AuthFacadeService {
         RefreshAccessTokenResponseDto responseDto = new RefreshAccessTokenResponseDto(newAccessToken.value());
         log.info("토큰 갱신 성공: memberId={}", memberId);
         return responseDto;
+    }
+
+    @Transactional
+    public void register(RegisterRequestDto requestDto) {
+        // 1. DTO → Command 변환
+        CreateMemberCommand createMemberCommand = CreateMemberCommand.createMemberCommandForNewAuthMember(requestDto);
+
+        // 2. Member 생성 → ID 획득
+        MemberCreatedVo member = memberCommandService.createMember(createMemberCommand);
+
+        // 3. Auth 생성 (Member ID 포함)
+        CreateAuthCommand authCmdWithId = CreateAuthCommand.of(
+                member.id().value(), requestDto.getAccountNumber(), requestDto.getPassword()
+        );
+        authCommandService.createAuth(authCmdWithId);
     }
 
 }

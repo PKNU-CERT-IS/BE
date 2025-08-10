@@ -6,6 +6,7 @@ import org.certis.studyplatform.member.domain.vo.*;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
 
@@ -81,8 +82,11 @@ public class MemberInfrastructureEntityMapper {
                 .description(creationVo.description())
                 .profileImage(creationVo.profileImage() != null ?
                         creationVo.profileImage().value() : null)
-                .birthday(birthday != null ? birthday.value().atOffset(OffsetDateTime.now().getOffset()) :
-                        OffsetDateTime.now().minusYears(20))
+                .birthday(
+                        birthday != null
+                                ? birthday.value()
+                                : OffsetDateTime.now(ZoneOffset.of("+09:00")).minusYears(20)
+                )
                 .gender(gender != null ? gender.value() : "UNKNOWN")
                 .build();
     }
@@ -159,8 +163,11 @@ public class MemberInfrastructureEntityMapper {
                 .skills(convertSkillsToArray(skills))
                 .major(major.value())
                 .description(description)
-                .birthday(birthday != null ? birthday.value().atOffset(OffsetDateTime.now().getOffset()) :
-                        OffsetDateTime.now().minusYears(20))
+                .birthday(
+                        birthday != null
+                                ? birthday.value()
+                                : OffsetDateTime.now(ZoneOffset.of("+09:00")).minusYears(20)
+                )
                 .gender(gender != null ? gender.value() : "UNKNOWN")
                 .createdAt(createdAt)
                 .updatedAt(updatedAt)
@@ -305,9 +312,14 @@ public class MemberInfrastructureEntityMapper {
      */
     private String[] extractSkillsArray(SkillsVo skillsVo) {
         if (skillsVo == null) {
-            throw new IllegalArgumentException("SkillsVo는 필수입니다");
+            return new String[0]; // 빈 배열 반환
         }
-        return skillsVo.values().toArray(new String[0]);
+
+        List<String> values = skillsVo.values();
+        if (values == null) {
+            return new String[0];
+        }
+        return values.toArray(new String[0]);
     }
     
     /**

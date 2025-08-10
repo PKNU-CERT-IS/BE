@@ -2,25 +2,28 @@ package org.certis.studyplatform.auth.domain.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.certis.studyplatform.auth.application.object.command.CreateAuthCommand;
 import org.certis.studyplatform.auth.application.object.command.LogoutCommand;
 import org.certis.studyplatform.auth.application.object.query.ValidateCredentialsQuery;
 import org.certis.studyplatform.auth.application.object.query.ValidateRefreshTokenQuery;
-import org.certis.studyplatform.auth.domain.model.vo.AccountNumberVo;
-import org.certis.studyplatform.auth.domain.model.vo.AuthInfoVo;
-import org.certis.studyplatform.auth.domain.model.vo.RawPasswordVo;
-import org.certis.studyplatform.auth.domain.model.vo.RefreshTokenVo;
+import org.certis.studyplatform.auth.domain.model.vo.*;
+import org.certis.studyplatform.auth.domain.repository.AuthCommandRepository;
 import org.certis.studyplatform.auth.domain.repository.AuthQueryRepository;
 import org.certis.studyplatform.auth.domain.repository.RedisRefreshTokenRepository;
+import org.certis.studyplatform.auth.infrastructure.persistence.AuthJpaRepository;
 import org.certis.studyplatform.exception.ApplicationException;
 import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.exception.InfrastructureException;
+import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.vo.MemberIdVo;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+
+import static org.postgresql.util.PasswordUtil.encodePassword;
 
 @Slf4j
 @Service
@@ -29,6 +32,7 @@ public class AuthDomainService {
 
     private final RedisRefreshTokenRepository refreshTokenRepository;
     private final AuthQueryRepository authQueryRepository;
+    private final AuthCommandRepository authCommandRepository;
     private final PasswordEncoder passwordEncoder;
 
     public void saveRefreshToken(RefreshTokenVo refreshTokenVo) {
@@ -72,8 +76,17 @@ public class AuthDomainService {
 
     public AuthInfoVo findAuthByAccountNumber(ValidateCredentialsQuery validateCredentialsQuery){
         AccountNumberVo accountNumberVo = AccountNumberVo.of(validateCredentialsQuery.accountNumber());
-        return authQueryRepository.findByAccountNumber(accountNumberVo)
+
+        // 계정이 존재하지 않을 시 예외 처리
+        AuthInfoVo authInfoVo =  authQueryRepository.findByAccountNumber(accountNumberVo)
                 .orElseThrow(() -> new ApplicationException(ExceptionStatus.AUTH_DOMAIN_ACCOUNT_NOT_FOUND));
+
+        // 계정의 상태가 NONE 상태일 시 회원 로그인 차단
+        if(authInfoVo.role() == MemberRole.NONE){
+            throw new DomainException(ExceptionStatus.AUTH_DOMAIN_ACCOUNT_NOT_APPROVED);
+        }
+
+        return  authInfoVo;
     }
 
     public void validatePassword(AuthInfoVo authInfoVo, RawPasswordVo rawPasswordVo) {
@@ -83,4 +96,45 @@ public class AuthDomainService {
         }
     }
 
+    public void createAuth(CreateAuthCommand createAuthCommand){
+        AccountNumberVo accountNumberVo = AccountNumberVo.of(createAuthCommand.accountNumber());
+        RawPasswordVo rawPasswordVo = RawPasswordVo.of(createAuthCommand.password());
+
+
+        // 계정번호 중복 체크
+        validateAccountNumberDuplication(accountNumberVo);
+        log.debug("✅ Account number duplication check passed");
+
+
+        // 비밀번호 암호화
+        log.debug("🔐 Encoding password...");
+        EncodedPasswordVo encodedPasswordVo = encodePassword(rawPasswordVo);
+        log.debug("✅ Password encoded successfully");
+
+        log.debug("🔗 Creating AuthCreationVo...");
+        AuthCreationVo authCreationVo = AuthCreationVo.of(
+                createAuthCommand.memberId(),
+                accountNumberVo,
+                encodedPasswordVo
+        );
+        log.debug("✅ AuthCreationVo created successfully");
+
+        // 회원가입 정보 저장
+        authCommandRepository.save(authCreationVo);
+    }
+
+
+    private void validateAccountNumberDuplication(AccountNumberVo accountNumberVo) {
+        if (authQueryRepository.existsByAccountNumber(accountNumberVo)) {
+            log.warn("❌ Duplicate account number detected: {}", accountNumberVo.accountNumber());
+            throw new DomainException(ExceptionStatus.AUTH_DOMAIN_DUPLICATE_ACCOUNT_NUMBER,
+                    "이미 존재하는 계정번호입니다: " + accountNumberVo.accountNumber());
+        }
+    }
+
+    // 비밀번호 암호화
+    private EncodedPasswordVo encodePassword(RawPasswordVo rawPasswordVo) {
+        String encodedPassword = passwordEncoder.encode(rawPasswordVo.value());
+        return EncodedPasswordVo.of(encodedPassword);
+    }
 }
