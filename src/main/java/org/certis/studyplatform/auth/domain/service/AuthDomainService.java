@@ -33,7 +33,6 @@ public class AuthDomainService {
     private final RedisRefreshTokenRepository refreshTokenRepository;
     private final AuthQueryRepository authQueryRepository;
     private final AuthCommandRepository authCommandRepository;
-    private final AuthJpaRepository authJpaRepository;
     private final PasswordEncoder passwordEncoder;
 
     public void saveRefreshToken(RefreshTokenVo refreshTokenVo) {
@@ -126,7 +125,7 @@ public class AuthDomainService {
 
 
     private void validateAccountNumberDuplication(AccountNumberVo accountNumberVo) {
-        if (authJpaRepository.existsByAccountNumber(accountNumberVo.accountNumber())) {
+        if (authQueryRepository.existsByAccountNumber(accountNumberVo)) {
             log.warn("❌ Duplicate account number detected: {}", accountNumberVo.accountNumber());
             throw new DomainException(ExceptionStatus.AUTH_DOMAIN_DUPLICATE_ACCOUNT_NUMBER,
                     "이미 존재하는 계정번호입니다: " + accountNumberVo.accountNumber());

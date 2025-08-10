@@ -151,12 +151,12 @@ public record MemberCreationVo(
             return this;
         }
 
-        public Builder profileImage(BirthdayVo birthday) {
+        public Builder birthday(BirthdayVo birthday) {
             this.birthday = birthday;
             return this;
         }
 
-        public Builder profileImage(GenderVo gender) {
+        public Builder gender(GenderVo gender) {
             this.gender = gender;
             return this;
         }

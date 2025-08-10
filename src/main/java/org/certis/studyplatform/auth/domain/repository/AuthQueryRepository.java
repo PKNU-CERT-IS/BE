@@ -11,6 +11,6 @@ public interface AuthQueryRepository {
         Optional<AuthInfoVo> findByAccountNumber(AccountNumberVo accountNumberVo);
 
         // 계정 번호 존재 여부
-        boolean existsByAccountNumber(String accountNumber);
+        boolean existsByAccountNumber(AccountNumberVo accountNumberVo);
 
 }
