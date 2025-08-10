@@ -6,6 +6,7 @@ import org.certis.studyplatform.member.domain.vo.*;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
@@ -110,7 +111,7 @@ public class MemberDomainCommandMapper {
      * LocalDateTime → BirthdayVo 변환
      * VO 생성 시 생년월일 검증 규칙 자동 적용
      */
-    public BirthdayVo toBirthdayVo(LocalDateTime birthday) {
+    public BirthdayVo toBirthdayVo(OffsetDateTime birthday) {
         // BirthdayVo 생성자에서 검증 수행 (null 허용, 날짜 범위 검증 등)
         return birthday != null ? new BirthdayVo(birthday) : null;
     }

@@ -2,6 +2,7 @@ package org.certis.studyplatform.member.application.object.command;
 
 import org.certis.studyplatform.member.domain.MemberRole;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
@@ -29,7 +30,9 @@ public record CreateMemberCommand(
         String description,             // → String (선택적, 2000자 이하)
         List<String> skills,            // → SkillsVo (1-20개, 중복제거, 각 50자 이하)
         String email,                   // → EmailVo (선택적, 이메일 형식)
-        String profileImage             // → ProfileImageVo (선택적, URL 형식)
+        String profileImage,             // → ProfileImageVo (선택적, URL 형식)
+        OffsetDateTime birthday,
+        String gender
 ) {
     /**
      * 생성 시점 기본 검증 (Domain 검증 전 빠른 실패)
@@ -49,8 +52,15 @@ public record CreateMemberCommand(
         if (major == null || major.trim().isEmpty()) {
             throw new IllegalArgumentException("전공은 필수입니다");
         }
-        if (skills == null || skills.isEmpty()) {
-            throw new IllegalArgumentException("기술 스택은 최소 1개 이상 필요합니다");
+//        if (skills == null || skills.isEmpty()) { 회원가입시 skill은 null
+//            throw new IllegalArgumentException("기술 스택은 최소 1개 이상 필요합니다");
+//        }
+
+        if (birthday == null) {
+            throw new IllegalArgumentException("생년월일은 필수입니다");
+        }
+        if (gender == null || gender.trim().isEmpty()) {
+            throw new IllegalArgumentException("성별은 필수입니다");
         }
     }
 }

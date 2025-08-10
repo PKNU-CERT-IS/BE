@@ -36,6 +36,9 @@ public enum ExceptionStatus {
 
     // Auth - Domain Layer
     AUTH_DOMAIN_INVALID_ACCOUNT_NUMBER_LENGTH(HttpStatus.BAD_REQUEST, "계정번호는 6자 이상 20자 이하여야 합니다"),
+    AUTH_DOMAIN_DUPLICATE_ACCOUNT_NUMBER(HttpStatus.CONFLICT, "이미 존재하는 계정번호입니다"),
+    AUTH_DOMAIN_WEAK_PASSWORD(HttpStatus.BAD_REQUEST, "비밀번호 정책을 만족하지 않습니다"),
+
 
     // Auth - Infrastructure (JWT token 관련)
     AUTH_INFRASTRUCTURE_INVALID_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 엑세스 토큰입니다"),
@@ -49,6 +52,10 @@ public enum ExceptionStatus {
 
     // Auth - Infrastructure Layer (Redis 관련)
     AUTH_INFRASTRUCTURE_REDIS_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Redis 저장소 처리 중 오류가 발생했습니다"),
+
+    // Auth - Infrastructure Layer
+    AUTH_INFRASTRUCTURE_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 존재하는 인증정보입니다"),
+    AUTH_INFRASTRUCTURE_DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "인증정보 데이터베이스 오류가 발생했습니다"),
 
     // Auth - Presentation Layer
     AUTH_PRESENTATION_INVALID_REQUEST(HttpStatus.BAD_REQUEST, "인증 요청 데이터가 유효하지 않습니다"),

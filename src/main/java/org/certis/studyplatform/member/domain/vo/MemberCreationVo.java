@@ -19,7 +19,10 @@ public record MemberCreationVo(
         SkillsVo skills,                  // 기술 스택 (필수)
         String description,               // 설명 (선택적)
         EmailVo email,                    // 이메일 (선택적)
-        ProfileImageVo profileImage       // 프로필 이미지 (선택적)
+        ProfileImageVo profileImage,      // 프로필 이미지 (선택적)
+        BirthdayVo birthday,
+        GenderVo gender
+
 ) {
     
     public MemberCreationVo {
@@ -49,21 +52,39 @@ public record MemberCreationVo(
     public static MemberCreationVo from(NameVo name, StudentNumberVo studentNumber, 
                                         GradeVo grade, RoleVo role, MajorVo major, 
                                         SkillsVo skills, String description,
-                                        EmailVo email, ProfileImageVo profileImage) {
+                                        EmailVo email, ProfileImageVo profileImage, BirthdayVo birthday, GenderVo gender) {
         return new MemberCreationVo(name, studentNumber, grade, role, major, 
-                                   skills, description, email, profileImage);
+                                   skills, description, email, profileImage, birthday,gender);
     }
     
     /**
-     * 팩토리 메서드 (필수 필드만)
+     * 팩토리 메서드 (필수 필드만 -> 이럴때는 of 보다는 메서드이름을 특정지을 수 있게 만드는게 좋다고 하더라구요)
      */
     public static MemberCreationVo of(NameVo name, StudentNumberVo studentNumber, 
                                       GradeVo grade, RoleVo role, MajorVo major, 
-                                      SkillsVo skills) {
+                                      SkillsVo skills,BirthdayVo birthday, GenderVo gender) {
         return new MemberCreationVo(name, studentNumber, grade, role, major, 
-                                   skills, null, null, null);
+                                   skills, null, null, null,birthday,gender);
     }
-    
+
+
+    /**
+     * 회원가입 전용 팩토리 메서드
+     * skills, description, email, profileImage는 null로 설정
+     */
+    public static MemberCreationVo forRegistration(NameVo name, StudentNumberVo studentNumber,
+                                                   GradeVo grade, RoleVo role, MajorVo major,
+                                                   BirthdayVo birthday, GenderVo gender) {
+        return new MemberCreationVo(
+                name, studentNumber, grade, role, major,
+                null,        // skills -> null
+                null,        // description -> null
+                null,        // email -> null
+                null,        // profileImage -> null
+                birthday, gender
+        );
+    }
+
     /**
      * Builder 패턴
      */
@@ -81,6 +102,8 @@ public record MemberCreationVo(
         private String description;
         private EmailVo email;
         private ProfileImageVo profileImage;
+        private BirthdayVo birthday;
+        private GenderVo gender;
         
         public Builder name(NameVo name) {
             this.name = name;
@@ -126,10 +149,21 @@ public record MemberCreationVo(
             this.profileImage = profileImage;
             return this;
         }
+
+        public Builder profileImage(BirthdayVo birthday) {
+            this.birthday = birthday;
+            return this;
+        }
+
+        public Builder profileImage(GenderVo gender) {
+            this.gender = gender;
+            return this;
+        }
+
         
         public MemberCreationVo build() {
             return new MemberCreationVo(name, studentNumber, grade, role, major, 
-                                       skills, description, email, profileImage);
+                                       skills, description, email, profileImage,birthday,gender);
         }
     }
     
