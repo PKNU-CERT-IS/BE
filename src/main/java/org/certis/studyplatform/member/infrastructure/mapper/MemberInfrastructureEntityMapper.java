@@ -312,9 +312,14 @@ public class MemberInfrastructureEntityMapper {
      */
     private String[] extractSkillsArray(SkillsVo skillsVo) {
         if (skillsVo == null) {
-            throw new IllegalArgumentException("SkillsVo는 필수입니다");
+            return new String[0]; // 빈 배열 반환
         }
-        return skillsVo.values().toArray(new String[0]);
+
+        List<String> values = skillsVo.values();
+        if (values == null) {
+            return new String[0];
+        }
+        return values.toArray(new String[0]);
     }
     
     /**

@@ -15,6 +15,7 @@ import org.certis.studyplatform.exception.ApplicationException;
 import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.exception.InfrastructureException;
+import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.vo.MemberIdVo;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -76,8 +77,17 @@ public class AuthDomainService {
 
     public AuthInfoVo findAuthByAccountNumber(ValidateCredentialsQuery validateCredentialsQuery){
         AccountNumberVo accountNumberVo = AccountNumberVo.of(validateCredentialsQuery.accountNumber());
-        return authQueryRepository.findByAccountNumber(accountNumberVo)
+
+        // 계정이 존재하지 않을 시 예외 처리
+        AuthInfoVo authInfoVo =  authQueryRepository.findByAccountNumber(accountNumberVo)
                 .orElseThrow(() -> new ApplicationException(ExceptionStatus.AUTH_DOMAIN_ACCOUNT_NOT_FOUND));
+
+        // 계정의 상태가 NONE 상태일 시 회원 로그인 차단
+        if(authInfoVo.role() == MemberRole.NONE){
+            throw new DomainException(ExceptionStatus.AUTH_DOMAIN_ACCOUNT_NOT_APPROVED);
+        }
+
+        return  authInfoVo;
     }
 
     public void validatePassword(AuthInfoVo authInfoVo, RawPasswordVo rawPasswordVo) {

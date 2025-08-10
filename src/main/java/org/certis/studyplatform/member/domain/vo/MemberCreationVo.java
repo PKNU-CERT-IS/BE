@@ -2,6 +2,7 @@ package org.certis.studyplatform.member.domain.vo;
 
 import org.certis.studyplatform.member.domain.MemberRole;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -41,9 +42,9 @@ public record MemberCreationVo(
         if (major == null) {
             throw new IllegalArgumentException("전공은 필수입니다");
         }
-        if (skills == null) {
-            throw new IllegalArgumentException("기술 스택은 필수입니다");
-        }
+//        if (skills == null) {
+//            throw new IllegalArgumentException("기술 스택은 필수입니다");
+//        }
     }
     
     /**
@@ -210,7 +211,7 @@ public record MemberCreationVo(
      * 기술 스택 목록 반환
      */
     public List<String> getSkillsValues() {
-        return skills.values();
+        return  skills != null ? skills.values() : Collections.emptyList();
     }
     
     /**
