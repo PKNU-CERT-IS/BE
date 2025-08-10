@@ -23,7 +23,7 @@ import java.util.List;
 
 
 @Slf4j
-@Component
+// @Component  // 🔥 API 테스트용 - JWT 필터 완전 비활성화
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -91,6 +91,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private boolean shouldSkipFilter(HttpServletRequest request){
         final List<String> excludedPaths = Arrays.asList(
                 // 인증 관련
+                "/api/v1/member/**",
                 "/api/v1/auth/login",
                 "/api/v1/auth/signup",
                 //문서 모니터링

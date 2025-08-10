@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import org.certis.studyplatform.member.domain.Member;
 import org.certis.studyplatform.member.domain.MemberRole;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
@@ -16,75 +16,47 @@ import java.util.List;
  * 
  * 검색 결과와 페이지네이션 정보 포함
  */
+import lombok.Builder;
+import lombok.Getter;
+import org.springframework.data.domain.Page;
+
+import java.util.List;
+
 @Getter
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class MemberSearchResponseDto {
-    
-    /**
-     * 검색된 회원 목록
-     */
-    private List<MemberSummaryDto> members;
-    
-    /**
-     * 페이지네이션 정보
-     */
-    private PageInfoDto pageInfo;
-    
-    /**
-     * 검색 조건 정보
-     */
-    private SearchInfoDto searchInfo;
-    
-    /**
-     * 회원 요약 정보
-     */
-    @Getter
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class MemberSummaryDto {
-        private Long id;
-        private String name;
-        private String description;
-        private String studentNumber;
-        private String grade;
-        private MemberRole role;
-        private String major;
-        private List<String> skills;
-        
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
-        private ZonedDateTime createdAt;
+
+    private final List<MemberSummaryResponseDto> members;
+
+    private final int currentPage;
+
+    private final int totalPages;
+
+    private final long totalElements;
+
+    private final boolean hasNext;
+
+    private final boolean hasPrevious;
+
+    public static MemberSearchResponseDto of(Page<MemberSummaryResponseDto> memberPage) {
+        return MemberSearchResponseDto.builder()
+                .members(memberPage.getContent())
+                .currentPage(memberPage.getNumber())
+                .totalPages(memberPage.getTotalPages())
+                .totalElements(memberPage.getTotalElements())
+                .hasNext(memberPage.hasNext())
+                .hasPrevious(memberPage.hasPrevious())
+                .build();
     }
-    
-    /**
-     * 페이지네이션 정보
-     */
-    @Getter
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class PageInfoDto {
-        private int currentPage;
-        private int pageSize;
-        private int totalPages;
-        private long totalElements;
-        private boolean hasNext;
-        private boolean hasPrevious;
+
+    // toString for logging
+    @Override
+    public String toString() {
+        return "MemberSearchResponseDto{" +
+                "membersCount=" + (members != null ? members.size() : 0) +
+                ", currentPage=" + currentPage +
+                ", totalPages=" + totalPages +
+                ", totalElements=" + totalElements +
+                '}';
     }
-    
-    /**
-     * 검색 조건 정보
-     */
-    @Getter
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class SearchInfoDto {
-        private String grade;
-        private MemberRole role;
-        private String keyword;
-        private int resultCount;
-    }
-} 
+}

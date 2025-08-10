@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.certis.studyplatform.member.domain.MemberRole;
 
+import java.util.List;
+
 /**
  * 회원 검색 요청 DTO
  * 
@@ -35,6 +37,8 @@ public class MemberSearchRequestDto {
      * 이름, 전공, 기술 스택에서 검색
      */
     private String keyword;
+
+    private List<String> skiils;
     
     /**
      * 기본 필드 검증 - 모든 필터가 비어있는지 확인

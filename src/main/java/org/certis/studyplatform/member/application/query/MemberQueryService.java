@@ -2,129 +2,60 @@ package org.certis.studyplatform.member.application.query;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.certis.studyplatform.exception.DomainException;
-import org.certis.studyplatform.exception.ExceptionStatus;
-import org.certis.studyplatform.member.domain.Member;
-import org.certis.studyplatform.member.domain.MemberRole;
-import org.certis.studyplatform.member.domain.repository.MemberQueryRepository;
-import org.certis.studyplatform.member.domain.repository.MemberQueryRepository.MemberSearchCriteria;
+import org.certis.studyplatform.member.application.object.query.GetMemberByIdQuery;
+import org.certis.studyplatform.member.application.object.query.GetMembersQuery;
+import org.certis.studyplatform.member.application.object.query.SearchMembersQuery;
+import org.certis.studyplatform.member.domain.service.MemberDomainService;
+import org.certis.studyplatform.member.domain.vo.MemberSummaryVo; // Uses VO
+import org.certis.studyplatform.member.domain.vo.MemberVo;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Member Query Service
  * 
- * CQRS Query 측면의 통합 서비스 (Application Layer)
- * 모든 회원 관련 읽기 작업을 담당
- * jOOQ 기반 MemberQueryRepository 사용
- * 
- * 책임:
- * - Query 처리 오케스트레이션
- * - 읽기 전용 트랜잭션 관리
- * - 성능 최적화된 읽기 작업
- * - Cross-cutting concerns (로깅, 캐싱, 보안 등)
- * 
- * Clean Architecture 의존성:
- * Application → Domain (Repository Interface) → Infrastructure (Repository Impl)
+ * ✅ Query Object를 받아서 조회 작업을 수행하고, 그 결과를 VO로 반환합니다.
+ * ✅ 오직 '읽기(Read)' 작업과 관련된 책임만 가집니다.
+ * ✅ 새로운 매퍼 시스템 사용
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional(readOnly = true)
 public class MemberQueryService {
-    
-    private final MemberQueryRepository memberQueryRepository;
-    
+
+    private final MemberDomainService memberDomainService;
+
     /**
-     * 회원 검색
-     * 
-     * @param keyword 검색 키워드
-     * @param grade 학년 필터
-     * @param role 역할 필터
-     * @param pageable 페이징 정보
-     * @return 검색된 회원 목록과 페이징 정보
+     * ✅ Query Object를 받아서 단건 회원 조회
      */
-    public Page<Member> searchMembers(String keyword, String grade, MemberRole role, Pageable pageable) {
-        log.info("Application: Searching members with criteria - keyword: {}, grade: {}, role: {}", 
-                keyword, grade, role);
-        
-        // 검색 조건 구성
-        MemberSearchCriteria criteria = MemberSearchCriteria.builder()
-                .keyword(keyword)
-                .grade(grade)
-                .role(role)
-                .build();
-        
-        // 검색 조건이 모두 비어있으면 예외 발생
-        if (criteria.isEmpty()) {
-            throw new DomainException(ExceptionStatus.MEMBER_PRESENTATION_INVALID_REQUEST, 
-                    "최소 하나의 검색 조건이 필요합니다");
-        }
-        
-        // jOOQ를 통한 최적화된 검색 작업
-        Page<Member> searchResult = memberQueryRepository.findMembers(criteria, pageable);
-        
-        log.info("Application: Found {} members out of {} total", 
-                searchResult.getNumberOfElements(), 
-                searchResult.getTotalElements());
-        
-        return searchResult;
+    public MemberVo getMemberById(GetMemberByIdQuery query) {
+        log.info("Query: Getting member with ID: {}", query.id());
+
+        MemberVo memberVo = memberDomainService.getMemberVo(query);
+
+        log.info("Query: Member VO found: {}", memberVo.name());
+        return memberVo;
     }
-    
+
     /**
-     * 회원 상세 정보 조회
-     * 
-     * @param memberId 회원 ID
-     * @return 회원 상세 정보
+     * ✅ Query Object를 받아서 회원 검색
      */
-    public Member getMemberById(Long memberId) {
-        log.info("Application: Getting member with ID: {}", memberId);
-        
-        // jOOQ를 통한 최적화된 read 작업
-        Member member = memberQueryRepository.findMemberById(memberId)
-                .orElseThrow(() -> new DomainException(ExceptionStatus.MEMBER_INFRASTRUCTURE_NOT_FOUND, 
-                        "회원을 찾을 수 없습니다: " + memberId));
-        
-        log.info("Application: Member found: {}", member.getName().value());
-        
-        return member;
+    public Page<MemberSummaryVo> searchMembers(SearchMembersQuery query) {
+        log.info("Query: Searching members with criteria - keyword: {}, grade: {}, role: {}",
+                query.keyword(), query.grade(), query.role());
+
+        return memberDomainService.searchMemberVos(query);
     }
-    
+
     /**
-     * 필터링된 회원 목록 조회
-     * 
-     * @param nameFilter 이름 필터
-     * @param roleFilter 역할 필터
-     * @param gradeFilter 학년 필터
-     * @param skillFilter 기술 필터
-     * @param pageable 페이징 정보
-     * @return 페이징된 회원 목록
+     * ✅ Query Object를 받아서 전체 회원 조회
      */
-    public Page<Member> findMembers(String nameFilter, MemberRole roleFilter,
-                                   String gradeFilter, String skillFilter, 
-                                   Pageable pageable) {
-        log.info("Application: Finding members with filters - name: {}, role: {}, grade: {}, skill: {}", 
-                nameFilter, roleFilter, gradeFilter, skillFilter);
-        
-        // jOOQ를 통한 최적화된 read 작업
-        Page<Member> members = memberQueryRepository.findMembers(
-            nameFilter, roleFilter, gradeFilter, skillFilter, pageable
-        );
-        
-        log.info("Application: Found {} members", members.getTotalElements());
-        
-        return members;
+    public Page<MemberSummaryVo> getAllMembers(GetMembersQuery query) {
+        log.info("Query: Getting all members with pagination - page: {}, size: {}",
+                query.pageable().getPageNumber(), query.pageable().getPageSize());
+
+        return memberDomainService.getAllMemberVos(query);
     }
-    
-    /**
-     * 전체 회원 목록 조회
-     * 
-     * @param pageable 페이징 정보
-     * @return 페이징된 회원 목록
-     */
-    public Page<Member> findAllMembers(Pageable pageable) {
-        log.info("Application: Finding all members");
-        
-        return findMembers(null, null, null, null, pageable);
-    }
-} 
+}

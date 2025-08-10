@@ -10,7 +10,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 /**
  * Project Entity
@@ -51,30 +51,30 @@ public class ProjectEntity {
     private String description;
 
     @Column(name = "started_at", nullable = false)
-    private ZonedDateTime startedAt;
+    private OffsetDateTime startedAt;
 
     @Column(name = "ended_at", nullable = false)
-    private ZonedDateTime endedAt;
+    private OffsetDateTime endedAt;
 
     @Column(name = "max_participants_number", nullable = false)
     private Integer maxParticipantsNumber;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
-    private ZonedDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
-    private ZonedDateTime updatedAt;
+    private OffsetDateTime updatedAt;
 
     @Column(name = "deleted_at")
-    private ZonedDateTime deletedAt;
+    private OffsetDateTime deletedAt;
 
     @Builder(toBuilder = true)
     private ProjectEntity(Long id, Long memberId, String title, String content,
                          Object skills, String difficulty, String category, String description,
-                         ZonedDateTime startedAt, ZonedDateTime endedAt, Integer maxParticipantsNumber,
-                         ZonedDateTime createdAt, ZonedDateTime updatedAt, ZonedDateTime deletedAt) {
+                         OffsetDateTime startedAt, OffsetDateTime endedAt, Integer maxParticipantsNumber,
+                         OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
         this.id = id;
         this.memberId = memberId;
         this.title = title;

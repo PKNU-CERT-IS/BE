@@ -97,6 +97,47 @@ public enum ExceptionStatus {
     MEMBER_INFRASTRUCTURE_EXTERNAL_SERVICE_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "회원 관련 외부 서비스 오류가 발생했습니다"),
 
     // =================================================================
+    // PROFILE DOMAIN EXCEPTIONS
+    // =================================================================
+
+    // Profile - Presentation Layer
+    PROFILE_PRESENTATION_INVALID_REQUEST(HttpStatus.BAD_REQUEST, "프로필 요청 데이터가 유효하지 않습니다"),
+    PROFILE_PRESENTATION_UNAUTHORIZED_ACCESS(HttpStatus.UNAUTHORIZED, "프로필에 대한 접근 권한이 없습니다"),
+
+    // Profile - Application Layer
+    PROFILE_APPLICATION_BUSINESS_RULE_VIOLATION(HttpStatus.UNPROCESSABLE_ENTITY, "프로필 비즈니스 규칙 위반입니다"),
+    PROFILE_APPLICATION_COMMAND_EXECUTION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "프로필 명령 실행에 실패했습니다"),
+    PROFILE_APPLICATION_QUERY_EXECUTION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "프로필 조회 실행에 실패했습니다"),
+    PROFILE_APPLICATION_FACADE_OPERATION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "프로필 비즈니스 작업 실행에 실패했습니다"),
+
+    // Profile - Domain Layer
+    PROFILE_DOMAIN_RULE_VIOLATION(HttpStatus.UNPROCESSABLE_ENTITY, "프로필 도메인 규칙 위반입니다"),
+    PROFILE_DOMAIN_AGGREGATE_CONSISTENCY_VIOLATION(HttpStatus.UNPROCESSABLE_ENTITY, "프로필 애그리게이트 일관성 위반입니다"),
+    PROFILE_DOMAIN_EVENT_PROCESSING_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "프로필 도메인 이벤트 처리에 실패했습니다"),
+    PROFILE_DOMAIN_UPDATE_NOT_ALLOWED(HttpStatus.FORBIDDEN, "자신의 프로필만 수정할 수 있습니다"),
+    PROFILE_DOMAIN_DUPLICATE_PROFILE(HttpStatus.CONFLICT, "이미 존재하는 프로필입니다"),
+    PROFILE_DOMAIN_INVALID_STATUS(HttpStatus.UNPROCESSABLE_ENTITY, "유효하지 않은 프로필 상태입니다"),
+    PROFILE_DOMAIN_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 프로필입니다."),
+
+    // Profile - Domain VO Validation
+    PROFILE_DOMAIN_INVALID_NAME(HttpStatus.BAD_REQUEST, "유효하지 않은 프로필 이름입니다"),
+    PROFILE_DOMAIN_INVALID_DESCRIPTION(HttpStatus.BAD_REQUEST, "유효하지 않은 프로필 설명입니다"),
+    PROFILE_DOMAIN_INVALID_IMAGE_URL(HttpStatus.BAD_REQUEST, "유효하지 않은 프로필 이미지 URL입니다"),
+    PROFILE_DOMAIN_INVALID_CONTACT_INFO(HttpStatus.BAD_REQUEST, "유효하지 않은 연락처 정보입니다"),
+    PROFILE_DOMAIN_INVALID_SOCIAL_LINKS(HttpStatus.BAD_REQUEST, "유효하지 않은 소셜 링크입니다"),
+    PROFILE_DOMAIN_INAPPROPRIATE_CONTENT(HttpStatus.BAD_REQUEST, "부적절한 내용이 포함되어 있습니다"),
+    PROFILE_DOMAIN_INVALID_PRIVACY_SETTING(HttpStatus.BAD_REQUEST, "유효하지 않은 프라이버시 설정입니다"),
+
+    // Profile - Infrastructure Layer
+    PROFILE_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "프로필을 찾을 수 없습니다"),
+    PROFILE_INFRASTRUCTURE_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 존재하는 프로필입니다"),
+    PROFILE_INFRASTRUCTURE_DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "프로필 데이터베이스 오류가 발생했습니다"),
+    PROFILE_INFRASTRUCTURE_RESOURCE_CONFLICT(HttpStatus.CONFLICT, "프로필 리소스 충돌이 발생했습니다"),
+    PROFILE_INFRASTRUCTURE_EXTERNAL_SERVICE_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "프로필 관련 외부 서비스 오류가 발생했습니다"),
+    PROFILE_INFRASTRUCTURE_IMAGE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "프로필 이미지 업로드에 실패했습니다"),
+    PROFILE_INFRASTRUCTURE_IMAGE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "프로필 이미지 삭제에 실패했습니다"),
+
+    // =================================================================
     // PROJECT DOMAIN EXCEPTIONS
     // =================================================================
     

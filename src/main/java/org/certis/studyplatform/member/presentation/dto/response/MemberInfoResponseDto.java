@@ -1,10 +1,9 @@
 package org.certis.studyplatform.member.presentation.dto.response;
 
-import org.certis.studyplatform.member.domain.Member;
 import lombok.*;
 import org.certis.studyplatform.member.domain.MemberRole;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
@@ -28,25 +27,6 @@ public class MemberInfoResponseDto {
     private MemberRole role;
     private List<String> skills;
     private String major;
-    private ZonedDateTime createdAt;
-    private ZonedDateTime updatedAt;
-
-    /**
-     * Domain Member로부터 DTO 생성
-     */
-    public static MemberInfoResponseDto fromDomain(Member member) {
-        return MemberInfoResponseDto.builder()
-                .id(member.getId() != null ? member.getId() : null)
-                .name(member.getName().value())
-                .description(member.getDescription())
-                .studentNumber(member.getStudentNumber().value())
-                .grade(member.getGrade().value())
-                .role(member.getRole())
-                .major(member.getMajor().value())
-                .skills(member.getSkills().values())
-                .profileImage(member.getProfileImage() != null ? member.getProfileImage().value() : null)
-                .createdAt(member.getCreatedAt())
-                .updatedAt(member.getUpdatedAt())
-                .build();
-    }
+    private OffsetDateTime createdAt;
+    private OffsetDateTime updatedAt;
 }

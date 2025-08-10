@@ -84,10 +84,10 @@
 //        java.util.List<String> requiredSkills,
 //        Integer participantLimit,
 //        Integer currentParticipants,
-//        java.time.ZonedDateTime startDate,
-//        java.time.ZonedDateTime endDate,
-//        java.time.ZonedDateTime createdAt,
-//        java.time.ZonedDateTime updatedAt,
+//        java.time.OffsetDateTime startDate,
+//        java.time.OffsetDateTime endDate,
+//        java.time.OffsetDateTime createdAt,
+//        java.time.OffsetDateTime updatedAt,
 //        String status // "모집중", "진행중", "완료"
 //    ) {}
 //
@@ -103,8 +103,8 @@
 //        String difficulty,
 //        Integer participantLimit,
 //        Integer currentParticipants,
-//        java.time.ZonedDateTime startDate,
-//        java.time.ZonedDateTime endDate,
+//        java.time.OffsetDateTime startDate,
+//        java.time.OffsetDateTime endDate,
 //        String status
 //    ) {}
 //

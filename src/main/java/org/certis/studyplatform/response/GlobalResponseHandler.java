@@ -5,7 +5,7 @@ import lombok.Getter;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 /**
  * 전역 응답 처리기
@@ -15,7 +15,7 @@ import java.time.ZonedDateTime;
 @Getter
 @Builder
 public class GlobalResponseHandler<T> {
-    private final ZonedDateTime timestamp;
+    private final OffsetDateTime timestamp;
     private final int statusCode;
     private final String message;
     private final T data;
@@ -26,7 +26,7 @@ public class GlobalResponseHandler<T> {
     public static <T> ResponseEntity<GlobalResponseHandler<T>> success(ResponseStatus status, T data) {
         return ResponseEntity.status(status.getStatusCode())
                 .body(GlobalResponseHandler.<T>builder()
-                        .timestamp(ZonedDateTime.now())
+                        .timestamp(OffsetDateTime.now())
                         .statusCode(status.getStatusCode())
                         .message(status.getMessage())
                         .data(data)
@@ -39,7 +39,7 @@ public class GlobalResponseHandler<T> {
     public static ResponseEntity<GlobalResponseHandler<Void>> success(ResponseStatus status) {
         return ResponseEntity.status(status.getStatusCode())
                 .body(GlobalResponseHandler.<Void>builder()
-                        .timestamp(ZonedDateTime.now())
+                        .timestamp(OffsetDateTime.now())
                         .statusCode(status.getStatusCode())
                         .message(status.getMessage())
                         .data(null)
@@ -57,7 +57,7 @@ public class GlobalResponseHandler<T> {
         return ResponseEntity.status(status.getStatusCode())
                 .header("Set-Cookie", cookie.toString())
                 .body(GlobalResponseHandler.<T>builder()
-                        .timestamp(ZonedDateTime.now())
+                        .timestamp(OffsetDateTime.now())
                         .statusCode(status.getStatusCode())
                         .message(status.getMessage())
                         .data(data)
@@ -74,7 +74,7 @@ public class GlobalResponseHandler<T> {
         return ResponseEntity.status(status.getStatusCode())
                 .header("Set-Cookie", cookie.toString())
                 .body(GlobalResponseHandler.<Void>builder()
-                        .timestamp(ZonedDateTime.now())
+                        .timestamp(OffsetDateTime.now())
                         .statusCode(status.getStatusCode())
                         .message(status.getMessage())
                         .data(null)
@@ -91,7 +91,7 @@ public class GlobalResponseHandler<T> {
     ) {
         return ResponseEntity.status(statusCode)
                 .body(GlobalResponseHandler.builder()
-                        .timestamp(ZonedDateTime.now())
+                        .timestamp(OffsetDateTime.now())
                         .statusCode(statusCode)
                         .message(message)
                         .data(errorDetails)

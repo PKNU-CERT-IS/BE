@@ -7,7 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 /**
  * Blog View Entity
@@ -32,10 +32,10 @@ public class BlogViewEntity {
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
-    private ZonedDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     @Builder(toBuilder = true)
-    private BlogViewEntity(Long id, Long blogId, Integer viewNumber, ZonedDateTime createdAt) {
+    private BlogViewEntity(Long id, Long blogId, Integer viewNumber, OffsetDateTime createdAt) {
         this.id = id;
         this.blogId = blogId;
         this.viewNumber = viewNumber;

@@ -11,9 +11,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
-import org.certis.studyplatform.member.domain.Member;
-
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 
 @Entity
@@ -54,27 +52,27 @@ public class MemberEntity {
     private String major;
 
     @Column(name = "birthday", nullable = false)
-    private ZonedDateTime birthday;
+    private OffsetDateTime birthday;
 
     @Column(name = "gender", nullable = false)
     private String gender;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
-    private ZonedDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
-    private ZonedDateTime updatedAt;
+    private OffsetDateTime updatedAt;
 
     @Column(name = "deleted_at")
-    private ZonedDateTime deletedAt;
+    private OffsetDateTime deletedAt;
 
     @Builder(toBuilder = true)
     private MemberEntity(Long id, String name, String description, String studentNumber, String profileImage,
                          String grade, MemberRole role, String[] skills, String major,
-                         ZonedDateTime birthday, String gender,
-                         ZonedDateTime createdAt, ZonedDateTime updatedAt, ZonedDateTime deletedAt) {
+                         OffsetDateTime birthday, String gender,
+                         OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -89,5 +87,32 @@ public class MemberEntity {
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.deletedAt = deletedAt;
+    }
+
+    // =================================================================
+    // equals, hashCode, toString
+    // =================================================================
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        MemberEntity that = (MemberEntity) obj;
+        return id != null && id.equals(that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return id != null ? id.hashCode() : 0;
+    }
+
+    @Override
+    public String toString() {
+        return "MemberEntity{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", studentNumber='" + studentNumber + '\'' +
+                ", createdAt=" + createdAt +
+                '}';
     }
 } 

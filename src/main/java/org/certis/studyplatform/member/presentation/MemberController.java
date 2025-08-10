@@ -3,15 +3,14 @@ package org.certis.studyplatform.member.presentation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.member.application.MemberFacadeService;
-import org.certis.studyplatform.member.domain.Member;
-import org.certis.studyplatform.member.presentation.dto.request.CreateMemberRequestDto;
+import org.certis.studyplatform.member.domain.vo.MemberVo;
+import org.certis.studyplatform.member.domain.vo.MemberCreatedVo;
+import org.certis.studyplatform.member.domain.vo.MemberUpdatedVo;
+import org.certis.studyplatform.member.domain.vo.MemberSummaryVo;
+import org.certis.studyplatform.member.presentation.dto.request.MemberCreateRequestDto;
 import org.certis.studyplatform.member.presentation.dto.request.MemberSearchRequestDto;
-import org.certis.studyplatform.member.presentation.dto.response.MemberSearchResponseDto;
-import org.certis.studyplatform.member.presentation.dto.request.UpdateMemberProfileRequestDto;
-import org.certis.studyplatform.member.presentation.dto.request.UpdateMemberSkillsRequestDto;
-import org.certis.studyplatform.member.presentation.dto.response.MemberInfoResponseDto;
+import org.certis.studyplatform.member.presentation.dto.request.MemberUpdateRequestDto;
 import org.certis.studyplatform.response.GlobalResponseHandler;
 import org.certis.studyplatform.response.ResponseStatus;
 import org.springframework.data.domain.Page;
@@ -28,11 +27,14 @@ import org.springframework.web.bind.annotation.*;
  * Global Response Handler를 사용한 일관된 API 응답 제공
  * Clean Architecture 계층별 예외 처리
  * 
+ * ✅ RequestDTO → Facade → VO → Controller (VO 직접 반환) 패턴 적용
+ * ✅ 통합 수정 엔드포인트: PUT /api/v1/members/{id}
+ * 
  * 의존성 흐름:
  * Presentation → Application (Facade) → Application (Services) → Domain → Infrastructure
  */
 @RestController
-@RequestMapping("/api/v1/members")
+@RequestMapping("/api/v1/member")
 @RequiredArgsConstructor
 @Slf4j
 public class MemberController {
@@ -42,120 +44,64 @@ public class MemberController {
     /**
      * 회원 생성
      * 
-     * @param request 회원 생성 요청 DTO (Bean Validation으로 최초 검증)
-     * @return 생성된 회원 정보
+     * @param request 회원 생성 요청 DTO
+     * @return 생성된 회원 정보 (VO 직접 반환)
      */
     @PostMapping
-    public ResponseEntity<GlobalResponseHandler<MemberInfoResponseDto>> createMember(
-            @Valid @RequestBody CreateMemberRequestDto request) {
+    public ResponseEntity<GlobalResponseHandler<MemberCreatedVo>> createMember(
+            @Valid @RequestBody MemberCreateRequestDto request) {
         log.info("REST: Creating member - {}", request.getName());
         
-        // DTO 검증 (DTO에서는 기본적인 null/empty 체크만)
-        if (!request.hasRequiredFields()) {
-            throw new org.certis.studyplatform.exception.PresentationException(
-                ExceptionStatus.PRESENTATION_VALIDATION_INVALID_REQUEST_DATA,
-                "필수 필드가 누락되었습니다"
-            );
-        }
+        // RequestDTO를 Facade에 전달하고 VO로 받음
+        MemberCreatedVo createdVo = memberFacadeService.createMember(request);
         
-        // Facade를 통한 생성 실행
-        Member createdMember = memberFacadeService.createMember(
-                request.getName(),
-                request.getStudentNumber(),
-                request.getGrade(),
-                request.getSkills(),
-                request.getRole(),
-                request.getMajor(),
-                request.getDescription()
-        );
+        log.info("REST: Member created successfully - ID: {}", createdVo.id());
         
-        // Domain Entity를 Response DTO로 변환
-        MemberInfoResponseDto response = MemberInfoResponseDto.builder()
-                .id(createdMember.getId() != null ? createdMember.getId() : null)
-                .name(createdMember.getName().value())
-                .description(createdMember.getDescription())
-                .studentNumber(createdMember.getStudentNumber().value())
-                .grade(createdMember.getGrade().value())
-                .role(createdMember.getRole())
-                .major(createdMember.getMajor().value())
-                .skills(createdMember.getSkills().values())
-                .profileImage(createdMember.getProfileImage() != null ? createdMember.getProfileImage().value() : null)
-                .createdAt(createdMember.getCreatedAt())
-                .updatedAt(createdMember.getUpdatedAt())
-                .build();
-        
-        log.info("REST: Member created successfully - ID: {}", response.getId());
-        
-        return GlobalResponseHandler.success(ResponseStatus.MEMBER_CREATE_SUCCESS, response);
+        return GlobalResponseHandler.success(ResponseStatus.MEMBER_CREATE_SUCCESS, createdVo);
     }
     
     /**
      * 회원 상세 조회
      * 
      * @param id 회원 ID
-     * @return 회원 상세 정보
+     * @return 회원 상세 정보 (VO 직접 반환)
      */
     @GetMapping("/{id}")
-    public ResponseEntity<GlobalResponseHandler<MemberInfoResponseDto>> getMember(@PathVariable Long id) {
+    public ResponseEntity<GlobalResponseHandler<MemberVo>> getMember(@PathVariable Long id) {
         log.info("REST: Getting member - {}", id);
         
-        // Facade를 통한 조회
-        Member member = memberFacadeService.getMemberById(id);
+        // Facade를 통한 조회 (VO로 받음)
+        MemberVo memberVo = memberFacadeService.getMemberDetail(id);
         
-        // Domain Entity를 Response DTO로 변환
-        MemberInfoResponseDto response = MemberInfoResponseDto.builder()
-                .id(member.getId())
-                .name(member.getName().value())
-                .description(member.getDescription())
-                .studentNumber(member.getStudentNumber().value())
-                .grade(member.getGrade().value())
-                .role(member.getRole())
-                .major(member.getMajor().value())
-                .skills(member.getSkills().values())
-                .profileImage(member.getProfileImage() != null ? member.getProfileImage().value() : null)
-                .createdAt(member.getCreatedAt())
-                .updatedAt(member.getUpdatedAt())
-                .build();
-        
-        return GlobalResponseHandler.success(ResponseStatus.MEMBER_FIND_SUCCESS, response);
+        return GlobalResponseHandler.success(ResponseStatus.MEMBER_FIND_SUCCESS, memberVo);
     }
     
     /**
-     * 회원 프로필 수정
+     * 회원 정보 통합 수정
+     * 
+     * 프로필, 기술스택, 기본정보를 하나의 엔드포인트에서 처리
      * 
      * @param id 회원 ID
-     * @param request 프로필 수정 요청 DTO
-     * @return 성공 응답
+     * @param request 회원 정보 수정 요청 DTO (통합)
+     * @return 수정된 회원 정보 (VO 직접 반환)
      */
-    @PutMapping("/{id}/profile")
-    public ResponseEntity<GlobalResponseHandler<Void>> updateMemberProfile(
+    @PutMapping("/{id}")
+    public ResponseEntity<GlobalResponseHandler<MemberUpdatedVo>> updateMember(
             @PathVariable Long id, 
-            @Valid @RequestBody UpdateMemberProfileRequestDto request) {
-        log.info("REST: Updating member profile - {}", id);
+            @Valid @RequestBody MemberUpdateRequestDto request) {
+        log.info("REST: Updating member - ID: {}, fields: name={}, profileImage={}, grade={}, role={}, major={}, skills={}",
+                id,
+                request.getName() != null,
+                request.getProfileImage() != null,
+                request.getGrade() != null,
+                request.getRole() != null,
+                request.getMajor() != null,
+                request.getSkills() != null);
         
-        // Facade를 통한 수정
-        memberFacadeService.updateMemberProfile(id, request.getName(), request.getProfileImageUrl());
+        // RequestDTO를 Facade에 전달하고 VO로 받음
+        MemberUpdatedVo updatedVo = memberFacadeService.updateMember(id, request);
         
-        return GlobalResponseHandler.success(ResponseStatus.MEMBER_PROFILE_UPDATE_SUCCESS);
-    }
-    
-    /**
-     * 회원 기술 스택 수정
-     * 
-     * @param id 회원 ID
-     * @param request 기술 스택 수정 요청 DTO
-     * @return 성공 응답
-     */
-    @PutMapping("/{id}/skills")
-    public ResponseEntity<GlobalResponseHandler<Void>> updateMemberSkills(
-            @PathVariable Long id, 
-            @Valid @RequestBody UpdateMemberSkillsRequestDto request) {
-        log.info("REST: Updating member skills - {}", id);
-        
-        // Facade를 통한 수정
-        memberFacadeService.updateMemberSkills(id, request.getSkills());
-        
-        return GlobalResponseHandler.success(ResponseStatus.MEMBER_SKILLS_UPDATE_SUCCESS);
+        return GlobalResponseHandler.success(ResponseStatus.MEMBER_UPDATE_SUCCESS, updatedVo);
     }
     
     /**
@@ -175,94 +121,73 @@ public class MemberController {
     }
     
     /**
-     * 회원 검색 (v1 API)
+     * 회원 검색
      * 
-     * @param searchRequest 검색 조건 (grade, role, keyword)
-     * @param pageable 페이징 정보 (page, size, sort)
-     * @return 검색된 회원 목록과 페이징 정보
+     * @param searchRequest 검색 조건 DTO
+     * @param pageable 페이징 정보
+     * @return 검색된 회원 목록과 페이징 정보 (VO 직접 반환)
      */
     @GetMapping("/search")
-    public ResponseEntity<GlobalResponseHandler<MemberSearchResponseDto>> searchMembers(
+    public ResponseEntity<GlobalResponseHandler<Page<MemberSummaryVo>>> searchMembers(
             MemberSearchRequestDto searchRequest,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         
         log.info("REST: Searching members - grade: {}, role: {}, keyword: {}, page: {}, size: {}", 
-                searchRequest.getSafeGrade(), 
-                searchRequest.getSafeRole(), 
-                searchRequest.getSafeKeyword(),
+                searchRequest.getGrade(), 
+                searchRequest.getRole(), 
+                searchRequest.getKeyword(),
                 pageable.getPageNumber(),
                 pageable.getPageSize());
         
-        // 검색 조건이 없으면 BadRequest (DTO에서 기본 검증만 하므로 여기서 체크)
-        if (!searchRequest.hasAnyFilter()) {
-            log.warn("REST: No search criteria provided");
-            // Global Exception Handler가 처리하도록 예외 발생
-            throw new org.certis.studyplatform.exception.PresentationException(
-                ExceptionStatus.PRESENTATION_VALIDATION_INVALID_REQUEST_DATA,
-                "최소 하나의 검색 조건(grade, role, keyword)이 필요합니다"
-            );
-        }
-        
-        // Facade를 통한 검색 실행
-        Page<Member> result = memberFacadeService.searchMembers(
-                searchRequest.getSafeKeyword(),
-                searchRequest.getSafeGrade(),
-                searchRequest.getRole(),
-                pageable
-        );
-        
-        // Domain Entity를 Presentation DTO로 변환
-        MemberSearchResponseDto response = buildSearchResponse(result, searchRequest);
+        // RequestDTO를 Facade에 전달하고 VO로 받음
+        Page<MemberSummaryVo> result = memberFacadeService.searchMembers(searchRequest);
         
         log.info("REST: Search completed - found {} results", result.getTotalElements());
         
-        return GlobalResponseHandler.success(ResponseStatus.MEMBER_SEARCH_SUCCESS, response);
+        return GlobalResponseHandler.success(ResponseStatus.MEMBER_SEARCH_SUCCESS, result);
     }
     
     /**
-     * Page<Member>를 MemberSearchResponseDto로 변환
+     * 키워드로 회원 검색
      * 
-     * @param result Domain Layer 검색 결과
-     * @param searchRequest 원본 검색 요청
-     * @return Presentation Layer 응답 DTO
+     * @param keyword 검색 키워드
+     * @param pageable 페이징 정보
+     * @return 검색된 회원 목록과 페이징 정보 (VO 직접 반환)
      */
-    private MemberSearchResponseDto buildSearchResponse(Page<Member> result, MemberSearchRequestDto searchRequest) {
-        // 회원 목록 변환
-        var memberSummaries = result.getContent().stream()
-                .map(member -> MemberSearchResponseDto.MemberSummaryDto.builder()
-                        .id(member.getId())
-                        .name(member.getName().value())
-                        .studentNumber(member.getStudentNumber().value())
-                        .grade(member.getGrade().value())
-                        .role(member.getRole())
-                        .major(member.getMajor().value())
-                        .skills(member.getSkills().values())
-                        .createdAt(member.getCreatedAt())
-                        .build())
-                .toList();
+    @GetMapping("/search/keyword")
+    public ResponseEntity<GlobalResponseHandler<Page<MemberSummaryVo>>> searchMembersByKeyword(
+            @RequestParam String keyword,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         
-        // 페이지네이션 정보 구성
-        var pageInfo = MemberSearchResponseDto.PageInfoDto.builder()
-                .currentPage(result.getNumber())
-                .pageSize(result.getSize())
-                .totalPages(result.getTotalPages())
-                .totalElements(result.getTotalElements())
-                .hasNext(result.hasNext())
-                .hasPrevious(result.hasPrevious())
-                .build();
+        log.info("REST: Searching members by keyword - keyword: {}, page: {}, size: {}", 
+                keyword, pageable.getPageNumber(), pageable.getPageSize());
         
-        // 검색 조건 정보 구성
-        var searchInfo = MemberSearchResponseDto.SearchInfoDto.builder()
-                .grade(searchRequest.getSafeGrade())
-                .role(searchRequest.getSafeRole())
-                .keyword(searchRequest.getSafeKeyword())
-                .resultCount(result.getNumberOfElements())
-                .build();
+        // Facade를 통한 키워드 검색
+        Page<MemberSummaryVo> result = memberFacadeService.searchMembersByKeyword(keyword, pageable);
         
-        return MemberSearchResponseDto.builder()
-                .members(memberSummaries)
-                .pageInfo(pageInfo)
-                .searchInfo(searchInfo)
-                .build();
+        log.info("REST: Keyword search completed - found {} results", result.getTotalElements());
+        
+        return GlobalResponseHandler.success(ResponseStatus.MEMBER_SEARCH_SUCCESS, result);
+    }
+    
+    /**
+     * 전체 회원 조회
+     * 
+     * @param pageable 페이징 정보
+     * @return 전체 회원 목록과 페이징 정보 (VO 직접 반환)
+     */
+    @GetMapping
+    public ResponseEntity<GlobalResponseHandler<Page<MemberSummaryVo>>> getAllMembers(
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        
+        log.info("REST: Getting all members - page: {}, size: {}", 
+                pageable.getPageNumber(), pageable.getPageSize());
+        
+        // Facade를 통한 전체 조회
+        Page<MemberSummaryVo> result = memberFacadeService.getAllMembers(pageable);
+        
+        log.info("REST: All members retrieved - found {} results", result.getTotalElements());
+        
+        return GlobalResponseHandler.success(ResponseStatus.MEMBER_SEARCH_SUCCESS, result);
     }
 }
