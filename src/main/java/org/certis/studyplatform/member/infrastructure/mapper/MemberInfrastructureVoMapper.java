@@ -161,7 +161,7 @@ public class MemberInfrastructureVoMapper {
      */
     public BirthdayVo toBirthdayVo(MemberEntity entity) {
         return entity.getBirthday() != null ?
-                BirthdayVo.of(entity.getBirthday().toLocalDateTime()) : null;
+                BirthdayVo.of(entity.getBirthday()) : null;
     }
 
     /**

@@ -85,22 +85,6 @@ public class MemberCommandRepositoryImpl implements MemberCommandRepository {
             log.info("🎉 Infrastructure: Member created successfully with ID: {}", result.id().value());
             return result;
 
-        } catch (org.springframework.dao.DataIntegrityViolationException e) {
-            // ================================================================
-            // 데이터 무결성 위반 처리 (학번 중복 등)
-            // JPA 예외를 Domain 예외로 변환
-            // ================================================================
-            
-            log.error("❌ Data integrity violation during member creation", e);
-            
-            if (e.getMessage() != null && e.getMessage().contains("student_number")) {
-                throw new InfrastructureException(ExceptionStatus.MEMBER_INFRASTRUCTURE_ALREADY_EXISTS,
-                        "이미 존재하는 학번입니다: " + memberCreationVo.getStudentNumberValue());
-            }
-            
-            throw new InfrastructureException(ExceptionStatus.MEMBER_INFRASTRUCTURE_DATABASE_ERROR,
-                    "데이터 무결성 위반으로 회원 생성에 실패했습니다", e);
-                    
         } catch (Exception e) {
             log.error("❌ Unexpected error during member creation", e);
             throw new InfrastructureException(ExceptionStatus.MEMBER_INFRASTRUCTURE_DATABASE_ERROR,

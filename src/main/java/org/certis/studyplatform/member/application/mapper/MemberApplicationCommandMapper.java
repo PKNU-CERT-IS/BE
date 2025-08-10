@@ -32,7 +32,9 @@ public class MemberApplicationCommandMapper {
             requestDto.getDescription(),
             requestDto.getSkills(),
             requestDto.getEmail(),
-            requestDto.getProfileImage()
+            requestDto.getProfileImage(),
+                requestDto.getBirthday(),
+                requestDto.getGender()
         );
     }
 

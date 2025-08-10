@@ -2,6 +2,7 @@ package org.certis.studyplatform.auth.application.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.certis.studyplatform.auth.application.object.command.CreateAuthCommand;
 import org.certis.studyplatform.auth.application.object.command.GenerateTokenCommand;
 import org.certis.studyplatform.auth.application.object.command.LogoutCommand;
 import org.certis.studyplatform.auth.application.object.command.RefreshTokenCommand;
@@ -32,7 +33,6 @@ public class AuthCommandService {
 
         // refreshToken 생성
         RefreshTokenVo refreshToken = jwtTokenProvider.generateRefreshToken(generateTokenCommand.memberId());
-
 
         // Redis에 refreshToken 저장
         authDomainService.saveRefreshToken(refreshToken);
@@ -67,6 +67,18 @@ public class AuthCommandService {
 
         log.info("AccessToken 갱신 완료: memberId={}", refreshTokenCommand.memberId());
         return newAccessToken;
+    }
+
+    @Transactional
+    public void createAuth(CreateAuthCommand createAuthCommand) {
+        log.info("🎯 Auth Command Service: Creating auth for memberId: {}, accountNumber: {}",
+                createAuthCommand.memberId(), createAuthCommand.accountNumber());
+
+        // Domain Service 호출 (비즈니스 로직 위임)
+        authDomainService.createAuth(createAuthCommand);
+
+        log.info("✅ Auth Command Service: Auth created successfully for memberId: {}",
+                createAuthCommand.memberId());
     }
 
 }

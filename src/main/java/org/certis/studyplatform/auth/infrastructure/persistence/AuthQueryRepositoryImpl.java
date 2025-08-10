@@ -51,11 +51,11 @@ public class AuthQueryRepositoryImpl implements AuthQueryRepository {
 
 
     @Override
-    public boolean existsByAccountNumber(String accountNumber) {
+    public boolean existsByAccountNumber(AccountNumberVo accountNumberVo) {
         return dsl.fetchExists(
                 dsl.selectOne()
                         .from(table("auth"))
-                        .where(field("account_number").eq(accountNumber)
+                        .where(field("account_number").eq(accountNumberVo.accountNumber())
                                 .and(field("deleted_at").isNull()))
         );
     }

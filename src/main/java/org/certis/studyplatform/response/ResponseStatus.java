@@ -127,6 +127,7 @@ public enum ResponseStatus {
     AUTH_VERIFY_SUCCESS(HttpStatus.OK, "성공적으로 인증되었습니다"),
     AUTH_PASSWORD_CHANGE_SUCCESS(HttpStatus.OK, "비밀번호가 성공적으로 변경되었습니다"),
     AUTH_REGISTER_SUCCESS(HttpStatus.CREATED, "회원가입이 성공적으로 완료되었습니다"),
+    AUTH_REGISTER_REQUEST_SUCCESS(HttpStatus.CREATED, "회원가입 요청이 성공적으로 완료되었습니다"),
     AUTH_EMAIL_VERIFY_SUCCESS(HttpStatus.OK, "이메일 인증이 성공적으로 완료되었습니다"),
     AUTH_PASSWORD_RESET_SUCCESS(HttpStatus.OK, "비밀번호 재설정이 성공적으로 완료되었습니다"),
 

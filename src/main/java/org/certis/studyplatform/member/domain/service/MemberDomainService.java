@@ -80,10 +80,8 @@ public class MemberDomainService {
         // 학년 VO 변환 (유효한 학년 값 검증 자동 수행)
         GradeVo gradeVo = memberDomainMapper.toGradeVo(command.grade());
         log.debug("✅ GradeVo created: {}", gradeVo.value());
-        
-        // 기술스택 VO 변환 (개수, 중복제거, 길이 검증 자동 수행)
-        SkillsVo skillsVo = memberDomainMapper.toSkillsVo(command.skills());
-        log.debug("✅ SkillsVo created with {} skills", skillsVo.values().size());
+
+        SkillsVo skillsVo = null; // 회원가입에서는 항상 null
         
         // 역할 VO 변환 (길이, 형식 검증 자동 수행)
         RoleVo roleVo = memberDomainMapper.toRoleVo(command.role());
@@ -102,22 +100,18 @@ public class MemberDomainService {
         if (emailVo != null) log.debug("✅ EmailVo created: {}", emailVo.value());
         if (profileImageVo != null) log.debug("✅ ProfileImageVo created");
 
+        BirthdayVo birthdayVo = BirthdayVo.of(command.birthday());
+        GenderVo genderVo = GenderVo.of(command.gender());
+
         // ================================================================
         // STEP 2: 개별 VO들을 복합 VO로 조합
         // MemberCreationVo는 회원 생성에 필요한 모든 VO를 포함하는 복합 VO
         // ================================================================
         
         log.debug("🔗 Composing individual VOs into MemberCreationVo...");
-        MemberCreationVo creationVo = MemberCreationVo.from(
-                nameVo, 
-                studentNumberVo, 
-                gradeVo, 
-                roleVo, 
-                majorVo, 
-                skillsVo, 
-                command.description(),
-                emailVo,
-                profileImageVo
+        // 수정 필요 (회원가입 전용 팩토리 사용)
+        MemberCreationVo creationVo = MemberCreationVo.forRegistration(
+                nameVo, studentNumberVo, gradeVo, roleVo, majorVo, birthdayVo, genderVo
         );
         log.debug("✅ MemberCreationVo composed successfully");
 
@@ -422,7 +416,9 @@ public class MemberDomainService {
         validateGradeRoleConsistency(creationVo.grade(), creationVo.role());
 
         // 전공과 기술 스택 간의 비즈니스 규칙 검증
-        validateMajorSkillsConsistency(creationVo.major(), creationVo.skills());
+        if (creationVo.skills() != null) {
+            validateMajorSkillsConsistency(creationVo.major(), creationVo.skills());
+        }
     }
 
     private void validateNameBusinessRules(NameVo name) {

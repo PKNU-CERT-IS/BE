@@ -40,6 +40,9 @@ public class MemberCommandService {
 
         MemberCreatedVo savedMember = memberDomainService.createMember(command);
 
+        log.info("✅ Member Command Service: Member created successfully with ID: {}",
+                savedMember.id());
+
         return savedMember;
     }
 

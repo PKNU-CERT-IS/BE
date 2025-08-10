@@ -42,7 +42,9 @@ public class MemberApplicationMapper {
                 dto.getDescription(),
                 Optional.ofNullable(dto.getSkills()).orElse(List.of()),
                 dto.getEmail(),
-                dto.getProfileImage()
+                dto.getProfileImage(),
+                dto.getBirthday(),
+                dto.getGender()
         );
     }
 
