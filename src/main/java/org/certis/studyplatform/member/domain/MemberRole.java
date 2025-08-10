@@ -5,11 +5,14 @@ import lombok.Getter;
 @Getter
 public enum MemberRole {
     ADMIN("관리자"),
-    MEMBER("회원"),
-    LEADER("스터디/프로젝트장"),
+    CHAIRMAN("회장"),
+    VICECHAIRMAN("부회장"),
     STAFF("임원진"),
-    PENDING("승인 대기"),
-    NORMAL("mock 체크용");
+    LEADER("스터디/프로젝트장"),
+    PLAYER("참여자"),
+    UPSOLVER("업솔버"),
+    NORMAL("일반회원"), // 기존 데이터 호환성을 위해 추가
+    NONE("미지정");
 
     private final String description;
 
@@ -28,15 +31,57 @@ public enum MemberRole {
         return MemberRole.valueOf(normalizedRole);
     }
 
+    /**
+     * 문자열로부터 MemberRole 찾기 (안전한 변환)
+     */
+    public static MemberRole fromString(String roleString) {
+        if (roleString == null || roleString.trim().isEmpty()) {
+            return NONE;
+        }
+
+        String trimmed = roleString.trim().toUpperCase();
+        
+        try {
+            return MemberRole.valueOf(trimmed);
+        } catch (IllegalArgumentException e) {
+            // 기존 데이터 호환성을 위한 매핑
+            return switch (trimmed) {
+                case "MEMBER" -> NORMAL; // 기존 MEMBER를 NORMAL로 매핑
+                case "PENDING" -> NONE; // 기존 PENDING을 NONE으로 매핑
+                default -> NONE;
+            };
+        }
+    }
+
     public boolean isAdmin(){
         return this == ADMIN;
     }
 
     public boolean isStaff(){
-        return this == STAFF;
+        return this == STAFF || this == CHAIRMAN || this == VICECHAIRMAN;
     }
 
     public boolean isLeader(){
         return this == LEADER;
+    }
+
+    public boolean isChairman(){
+        return this == CHAIRMAN;
+    }
+
+    public boolean isViceChairman(){
+        return this == VICECHAIRMAN;
+    }
+
+    public boolean isPlayer(){
+        return this == PLAYER;
+    }
+
+    public boolean isUpSolver(){
+        return this == UPSOLVER;
+    }
+
+    public boolean isNormal(){
+        return this == NORMAL;
     }
 }

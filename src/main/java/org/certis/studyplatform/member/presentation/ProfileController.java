@@ -2,7 +2,7 @@ package org.certis.studyplatform.member.presentation;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.certis.studyplatform.common.security.CurrentUser;
+import org.certis.studyplatform.shared.security.CurrentUser;
 import org.certis.studyplatform.member.application.ProfileFacadeService;
 import org.certis.studyplatform.member.presentation.dto.request.ProfileUpdateRequestDto;
 import org.certis.studyplatform.member.presentation.dto.response.ProfileInfoResponseDto;
@@ -45,6 +45,7 @@ public class ProfileController {
      * 프로필 정보 조회
      * GET /api/v1/profile/me/{memberId}
      */
+    // TODO: 원시타입에서 DTO 로 변환 필요
     @GetMapping("/me/{memberId}")
     public ResponseEntity<GlobalResponseHandler<ProfileInfoResponseDto>> getProfile(
             @PathVariable Long memberId) {
@@ -78,6 +79,7 @@ public class ProfileController {
      * 스터디 내용 조회
      * GET /api/v1/profile/{memberId}/study
      */
+    // TODO: 원시타입에서 DTO 로 변환 필요
     @GetMapping("/{memberId}/study")
     public ResponseEntity<GlobalResponseHandler<List<ProfileStudyResponseDto>>> getStudies(
             @PathVariable Long memberId) {
@@ -94,6 +96,7 @@ public class ProfileController {
      * 프로젝트 내용 조회
      * GET /api/v1/profile/{memberId}/project
      */
+    // TODO: 원시타입에서 DTO 로 변환 필요
     @GetMapping("/{memberId}/project")
     public ResponseEntity<GlobalResponseHandler<List<ProfileProjectResponseDto>>> getProjects(
             @PathVariable Long memberId) {
@@ -110,6 +113,7 @@ public class ProfileController {
      * 블로그 내용 조회
      * GET /api/v1/profile/{memberId}/blog
      */
+    // TODO: 원시타입에서 DTO 로 변환 필요
     @GetMapping("/{memberId}/blog")
     public ResponseEntity<GlobalResponseHandler<List<ProfileBlogResponseDto>>> getBlogs(
             @PathVariable Long memberId) {

@@ -1,6 +1,10 @@
 package org.certis.studyplatform.member.domain.vo;
 
+import org.certis.studyplatform.member.domain.MemberGrade;
+import org.certis.studyplatform.member.domain.MemberRole;
+
 import java.time.OffsetDateTime;
+import java.util.List;
 
 /**
  * 프로필 Value Object (Record)
@@ -9,34 +13,46 @@ import java.time.OffsetDateTime;
  * Record를 사용하여 불변성, equals, hashCode, toString 자동 제공
  */
 public record ProfileVo(
-        Long id,
         Long memberId,
         String name,
         String description,
         String profileImage,
-        OffsetDateTime createdAt,
-        OffsetDateTime updatedAt
+        List<OffsetDateTime> todaySchedules,
+        Integer penaltyCount,
+        OffsetDateTime gracePeriod,
+        MemberRole memberRole,
+        MemberGrade memberGrade,
+        List<String> skills,
+        OffsetDateTime createdAt
 ) {
+
+    /**
+     * 방어적 복사를 위한 정규화 생성자
+     */
+    public ProfileVo {
+        // List들의 불변성 보장
+        todaySchedules = todaySchedules != null ? List.copyOf(todaySchedules) : List.of();
+        skills = skills != null ? List.copyOf(skills) : List.of();
+    }
 
     /**
      * 정적 팩토리 메서드
      */
-    public static ProfileVo of(Long id, Long memberId, String name, String description, 
-                               String profileImage, OffsetDateTime createdAt, OffsetDateTime updatedAt) {
-        return new ProfileVo(id, memberId, name, description, profileImage, createdAt, updatedAt);
+    public static ProfileVo of(Long memberId, String name, String description,
+                               String profileImage, List<OffsetDateTime> todaySchedules,
+                               Integer penaltyCount, OffsetDateTime gracePeriod,
+                               MemberRole memberRole,
+                               MemberGrade memberGrade,
+                               List<String> skills,
+                               OffsetDateTime createdAt) {
+        return new ProfileVo(memberId, name, description, profileImage, todaySchedules,
+                penaltyCount, gracePeriod, memberRole, memberGrade, skills, createdAt);
     }
     
     // =================================================================
     // Getter 메서드들
     // =================================================================
-    
-    /**
-     * ID 반환
-     */
-    public Long getId() {
-        return id;
-    }
-    
+
     /**
      * 회원 ID 반환
      */
@@ -71,13 +87,6 @@ public record ProfileVo(
     public OffsetDateTime getCreatedAt() {
         return createdAt;
     }
-    
-    /**
-     * 수정일시 반환
-     */
-    public OffsetDateTime getUpdatedAt() {
-        return updatedAt;
-    }
 
     /**
      * 프로필 이미지가 있는지 확인
@@ -94,20 +103,34 @@ public record ProfileVo(
     }
 
     /**
-     * 최근에 업데이트되었는지 확인 (7일 이내)
-     */
-    public boolean isRecentlyUpdated() {
-        if (updatedAt == null) return false;
-        OffsetDateTime weekAgo = OffsetDateTime.now().minusDays(7);
-        return updatedAt.isAfter(weekAgo);
-    }
-
-    /**
      * 새로 생성된 프로필인지 확인 (30일 이내)
      */
     public boolean isRecentlyCreated() {
         if (createdAt == null) return false;
         OffsetDateTime monthAgo = OffsetDateTime.now().minusDays(30);
         return createdAt.isAfter(monthAgo);
+    }
+
+    /**
+     * 특정 기술을 보유하고 있는지 확인
+     */
+    public boolean hasSkill(String skill) {
+        return skills.contains(skill);
+    }
+
+    /**
+     * 유예기간이 활성화되어 있는지 확인
+     */
+    public boolean isInGracePeriod() {
+        if (gracePeriod == null) return false;
+        return OffsetDateTime.now().isBefore(gracePeriod);
+    }
+
+    /**
+     * 유예기간이 만료되었는지 확인
+     */
+    public boolean isGracePeriodExpired() {
+        if (gracePeriod == null) return true;
+        return OffsetDateTime.now().isAfter(gracePeriod);
     }
 } 

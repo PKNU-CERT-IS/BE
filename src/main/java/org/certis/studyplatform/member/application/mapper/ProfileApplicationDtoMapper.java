@@ -35,6 +35,13 @@ public class ProfileApplicationDtoMapper {
                 .name(profileVo.name())
                 .description(profileVo.description())
                 .profileImage(profileVo.profileImage())
+                .todaySchedules(profileVo.todaySchedules())
+                .penaltyCount(profileVo.penaltyCount())
+                .gracePeriod(profileVo.gracePeriod())
+                .memberRole(profileVo.memberRole())
+                .memberGrade(profileVo.memberGrade())
+                .skills(profileVo.skills())
+                .createdAt(profileVo.createdAt())
                 .build();
     }
 
@@ -52,9 +59,10 @@ public class ProfileApplicationDtoMapper {
                 .studyId(studyVo.studyId())
                 .title(studyVo.title())
                 .description(studyVo.description())
-                .status(studyVo.status())
+                .studyStatus(studyVo.studyStatus())
                 .studyStartDate(studyVo.studyStartDate())
                 .studyEndDate(studyVo.studyEndDate())
+                .tags(studyVo.tags())
                 .build();
     }
 
@@ -83,9 +91,10 @@ public class ProfileApplicationDtoMapper {
                 .projectId(projectVo.projectId())
                 .title(projectVo.title())
                 .description(projectVo.description())
-                .status(projectVo.status())
+                .projectStatus(projectVo.projectStatus())
                 .projectStartDate(projectVo.projectStartDate())
                 .projectEndDate(projectVo.projectEndDate())
+                .tags(projectVo.tags())
                 .build();
     }
 
@@ -113,10 +122,13 @@ public class ProfileApplicationDtoMapper {
         return ProfileBlogResponseDto.builder()
                 .blogId(blogVo.blogId())
                 .title(blogVo.title())
+                .description(blogVo.description())
+                .projectStatus(blogVo.projectStatus())
+                .blogStartDate(blogVo.blogStartDate())
+                .blogEndDate(blogVo.blogEndDate())
                 .tags(blogVo.tags())
                 .viewCount(blogVo.viewCount())
                 .likeCount(blogVo.likeCount())
-                .createdAt(blogVo.createdAt())
                 .build();
     }
 

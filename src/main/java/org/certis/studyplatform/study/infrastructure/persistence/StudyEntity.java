@@ -90,4 +90,77 @@ public class StudyEntity {
         this.updatedAt = updatedAt;
         this.deletedAt = deletedAt;
     }
+
+    /**
+     * 현재 시각을 기준으로 스터디 상태를 동적으로 계산
+     * 
+     * 로직:
+     * 1. deletedAt이 null이 아니면 REJECTED
+     * 2. 현재 시각이 startedAt보다 이전이면 READY
+     * 3. 현재 시각이 startedAt과 endedAt 사이면 INPROGRESS
+     * 4. 현재 시각이 endedAt보다 이후이고 deletedAt이 null이면 COMPLETED
+     */
+    public StudyStatus getCurrentStatus() {
+        return calculateStudyStatus(OffsetDateTime.now());
+    }
+
+    /**
+     * 특정 시각을 기준으로 스터디 상태를 계산 (테스트용)
+     */
+    public StudyStatus calculateStudyStatus(OffsetDateTime currentTime) {
+        // 삭제된 스터디는 REJECTED
+        if (deletedAt != null) {
+            return StudyStatus.REJECTED;
+        }
+
+        // 시작 전이면 READY
+        if (currentTime.isBefore(startedAt)) {
+            return StudyStatus.READY;
+        }
+
+        // 종료 후면 COMPLETED
+        if (currentTime.isAfter(endedAt)) {
+            return StudyStatus.COMPLETED;
+        }
+
+        // 진행 중이면 INPROGRESS
+        return StudyStatus.INPROGRESS;
+    }
+
+    /**
+     * 스터디가 활성 상태인지 확인 (READY 또는 INPROGRESS)
+     */
+    public boolean isActive() {
+        StudyStatus status = getCurrentStatus();
+        return status.isActive();
+    }
+
+    /**
+     * 스터디가 시작되었는지 확인
+     */
+    public boolean isStarted() {
+        return OffsetDateTime.now().isAfter(startedAt) || OffsetDateTime.now().isEqual(startedAt);
+    }
+
+    /**
+     * 스터디가 종료되었는지 확인
+     */
+    public boolean isEnded() {
+        return OffsetDateTime.now().isAfter(endedAt);
+    }
+
+    /**
+     * 스터디가 삭제(중단)되었는지 확인
+     */
+    public boolean isDeleted() {
+        return deletedAt != null;
+    }
+
+    /**
+     * 스터디 기간 내에 있는지 확인
+     */
+    public boolean isWithinStudyPeriod() {
+        OffsetDateTime now = OffsetDateTime.now();
+        return !now.isBefore(startedAt) && !now.isAfter(endedAt) && !isDeleted();
+    }
 } 

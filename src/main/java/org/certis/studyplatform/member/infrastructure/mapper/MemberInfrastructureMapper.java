@@ -1,11 +1,15 @@
 package org.certis.studyplatform.member.infrastructure.mapper;
 
 import lombok.RequiredArgsConstructor;
-import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberEntity;
+import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.vo.*;
+import org.certis.studyplatform.member.domain.MemberGrade;
+import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberEntity;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Member Infrastructure Mapper (Facade)
@@ -213,15 +217,25 @@ public class MemberInfrastructureMapper {
         if (entity == null) {
             return null;
         }
-        
+
+        List<String> skills = entity.getSkills() != null ?
+                Arrays.asList(entity.getSkills()) : List.of();
+
+        MemberGrade memberGrade = MemberGrade.fromGradeString(entity.getGrade());
+        MemberRole memberRole = entity.getRole() != null ? entity.getRole() : MemberRole.NONE; // Safe conversion
+
         return new ProfileVo(
-                entity.getId(),                    // id
-                entity.getId(),                    // memberId (Profile의 memberId는 Member의 id와 동일)
-                entity.getName(),                  // name
-                entity.getDescription(),           // description
-                entity.getProfileImage(),          // profileImage
-                entity.getCreatedAt(),             // createdAt
-                entity.getUpdatedAt()              // updatedAt
+                entity.getId(),
+                entity.getName(),
+                entity.getDescription(),
+                entity.getProfileImage(),
+                List.of(), // todaySchedules (TODO: 실제 스케줄 데이터 조회)
+                0,         // penaltyCount (TODO: 실제 벌점 데이터 조회)
+                null,      // gracePeriod (도메인 서비스에서 계산됨)
+                memberRole,
+                memberGrade,
+                skills,
+                entity.getCreatedAt()
         );
     }
 
@@ -234,7 +248,7 @@ public class MemberInfrastructureMapper {
         if (existingEntity == null || profileVo == null) {
             throw new IllegalArgumentException("Entity and ProfileVo cannot be null");
         }
-        
+
         return existingEntity.toBuilder()
                 .name(profileVo.name())
                 .description(profileVo.description())
@@ -251,7 +265,7 @@ public class MemberInfrastructureMapper {
         if (existingEntity == null) {
             throw new IllegalArgumentException("Entity cannot be null");
         }
-        
+
         return existingEntity.toBuilder()
                 .description(null)
                 .profileImage(null)
@@ -267,7 +281,7 @@ public class MemberInfrastructureMapper {
         if (entity == null) {
             return false;
         }
-        
+
         // Profile 정보가 있다고 판단하는 기준:
         // 1. 이름이 있고 (필수)
         // 2. 설명이나 프로필 이미지 중 하나라도 있는 경우
@@ -279,13 +293,13 @@ public class MemberInfrastructureMapper {
      * MemberEntity의 특정 Profile 필드들만 업데이트
      * ProfileCommandRepositoryImpl의 개별 필드 업데이트 메서드에서 사용
      */
-    public MemberEntity updateProfileFields(MemberEntity existingEntity, 
-                                           String description, 
+    public MemberEntity updateProfileFields(MemberEntity existingEntity,
+                                           String description,
                                            String profileImageUrl) {
         if (existingEntity == null) {
             throw new IllegalArgumentException("Entity cannot be null");
         }
-        
+
         return existingEntity.toBuilder()
                 .description(description)
                 .profileImage(profileImageUrl)

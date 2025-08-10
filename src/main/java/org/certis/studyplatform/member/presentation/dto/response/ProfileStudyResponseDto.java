@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.certis.studyplatform.study.infrastructure.persistence.StudyStatus;
 
 import java.time.OffsetDateTime;
 
@@ -20,12 +21,8 @@ public class ProfileStudyResponseDto {
     private Long studyId;
     private String title;
     private String description;
-    private String status; // RECRUITING, IN_PROGRESS, COMPLETED, CANCELLED
-    private String role; // LEADER, MEMBER
-    private OffsetDateTime joinedAt;
+    private StudyStatus studyStatus;
     private OffsetDateTime studyStartDate;
     private OffsetDateTime studyEndDate;
-    private Integer memberCount;
-    private Integer maxMembers;
     private String[] tags;
 }
