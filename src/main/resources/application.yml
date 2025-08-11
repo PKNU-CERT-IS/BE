@@ -38,8 +38,6 @@ spring:
         connection:
           provider_disables_autocommit: true
 
-
-
   # ✅ Redis 설정
   redis:
     host: ${REDIS_HOST:localhost}
@@ -66,9 +64,9 @@ spring:
       separator: ";"
       continue-on-error: false
       schema-locations:
-        - classpath:db/V0__Drop_all_tables.sql
         - classpath:db/schema.sql
       data-locations:
+        - classpath:db/V0__Drop_all_tables.sql
         - classpath:db/V2__Insert_member_data.sql
         - classpath:db/V3__Insert_auth_data.sql
         - classpath:db/V4__Insert_member_penalty_data.sql
@@ -91,22 +89,6 @@ spring:
         - classpath:db/V21__Insert_study_meeting.sql
         - classpath:db/V22__Insert_study_participant.sql
         - classpath:db/V23__Insert_study_tag.sql
-
-  # ✅ Email 설정
-  mail:
-    host: ${MAIL_HOST:smtp.gmail.com}
-    port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-    properties:
-      mail:
-        smtp:
-          auth: ${MAIL_SMTP_AUTH:true}
-          starttls:
-            enable: ${MAIL_SMTP_STARTTLS_ENABLE:true}
-          connectiontimeout: ${MAIL_CONNECTION_TIMEOUT:5000}
-          timeout: ${MAIL_TIMEOUT:3000}
-          writetimeout: ${MAIL_WRITE_TIMEOUT:5000}
 
   # ✅ 파일 업로드 설정
   servlet:

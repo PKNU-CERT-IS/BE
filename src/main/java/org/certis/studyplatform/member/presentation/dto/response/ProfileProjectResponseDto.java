@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.certis.studyplatform.project.infrastructure.persistence.ProjectStatus;
 
 import java.time.OffsetDateTime;
 
@@ -20,13 +21,8 @@ public class ProfileProjectResponseDto {
     private Long projectId;
     private String title;
     private String description;
-    private String status; // PLANNING, IN_PROGRESS, COMPLETED, ON_HOLD, CANCELLED
-    private String role; // PROJECT_LEADER, TECH_LEADER, MEMBER
-    private OffsetDateTime joinedAt;
+    private ProjectStatus projectStatus;
     private OffsetDateTime projectStartDate;
     private OffsetDateTime projectEndDate;
-    private String repositoryUrl;
-    private String deployUrl;
-    private Integer memberCount;
-    private String[] techStack;
+    private String[] tags;
 }

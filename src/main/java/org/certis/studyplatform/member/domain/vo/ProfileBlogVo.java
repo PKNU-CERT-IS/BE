@@ -1,7 +1,9 @@
 package org.certis.studyplatform.member.domain.vo;
 
+import org.certis.studyplatform.project.infrastructure.persistence.ProjectStatus;
+
 import java.time.OffsetDateTime;
-import java.util.List;
+import java.util.Arrays;
 
 /**
  * 블로그 프로필 Value Object (Record)
@@ -12,136 +14,116 @@ import java.util.List;
 public record ProfileBlogVo(
         Long blogId,
         String title,
-        String summary, // 요약 또는 첫 몇 줄
-        String status, // DRAFT, PUBLISHED, PRIVATE
-        OffsetDateTime createdAt,
-        OffsetDateTime publishedAt,
-        OffsetDateTime updatedAt,
+        String description,
+        ProjectStatus projectStatus,
+        OffsetDateTime blogStartDate,
+        OffsetDateTime blogEndDate,
+        String[] tags,
         Integer viewCount,
-        Integer likeCount,
-        Integer commentCount,
-        List<String> categories,
-        List<String> tags,
-        String thumbnailUrl
+        Integer likeCount
 ) {
 
     /**
      * 방어적 복사를 위한 정규화 생성자
      */
     public ProfileBlogVo {
-        // List들의 불변성 보장
-        categories = categories != null ? List.copyOf(categories) : List.of();
-        tags = tags != null ? List.copyOf(tags) : List.of();
+        // 배열의 불변성 보장
+        tags = tags != null ? tags.clone() : new String[0];
 
         // 카운트 필드들의 기본값 설정
         viewCount = viewCount != null ? viewCount : 0;
         likeCount = likeCount != null ? likeCount : 0;
-        commentCount = commentCount != null ? commentCount : 0;
     }
 
     /**
      * 편의 생성자 - 최소 필드만
      */
-    public ProfileBlogVo(Long blogId, String title, String summary, String status,
-                         OffsetDateTime createdAt, OffsetDateTime updatedAt) {
-        this(blogId, title, summary, status, createdAt, null, updatedAt,
-                0, 0, 0, List.of(), List.of(), null);
+    public ProfileBlogVo(Long blogId, String title, String description, ProjectStatus projectStatus,
+                         OffsetDateTime blogStartDate, OffsetDateTime blogEndDate, String[] tags) {
+        this(blogId, title, description, projectStatus, blogStartDate, blogEndDate, tags, 0, 0);
     }
 
     /**
      * 발행된 블로그인지 확인
      */
     public boolean isPublished() {
-        return "PUBLISHED".equals(status);
+        return ProjectStatus.COMPLETED.equals(projectStatus);
     }
 
     /**
-     * 임시저장 상태인지 확인
+     * 진행 중인 블로그인지 확인
      */
-    public boolean isDraft() {
-        return "DRAFT".equals(status);
+    public boolean isInProgress() {
+        return ProjectStatus.INPROGRESS.equals(projectStatus);
     }
 
     /**
-     * 비공개 블로그인지 확인
+     * 준비 단계인지 확인
      */
-    public boolean isPrivate() {
-        return "PRIVATE".equals(status);
+    public boolean isReady() {
+        return ProjectStatus.READY.equals(projectStatus);
     }
 
     /**
-     * 카테고리 배열 반환 (Presentation Layer 호환)
+     * 중단된 블로그인지 확인
      */
-    public String[] getCategoriesArray() {
-        return categories.toArray(new String[0]);
+    public boolean isRejected() {
+        return ProjectStatus.REJECTED.equals(projectStatus);
     }
 
     /**
-     * 태그 배열 반환 (Presentation Layer 호환)
+     * 활성 상태인지 확인
+     */
+    public boolean isActive() {
+        return projectStatus != null && projectStatus.isActive();
+    }
+
+    /**
+     * tags를 String 배열로 반환
      */
     public String[] getTagsArray() {
-        return tags.toArray(new String[0]);
+        return tags.clone();
     }
 
     /**
-     * 최근에 업데이트되었는지 확인 (7일 이내)
-     */
-    public boolean isRecentlyUpdated() {
-        if (updatedAt == null) return false;
-        OffsetDateTime weekAgo = OffsetDateTime.now().minusDays(7);
-        return updatedAt.isAfter(weekAgo);
-    }
-
-    /**
-     * 최근에 발행되었는지 확인 (30일 이내)
-     */
-    public boolean isRecentlyPublished() {
-        if (publishedAt == null) return false;
-        OffsetDateTime monthAgo = OffsetDateTime.now().minusDays(30);
-        return publishedAt.isAfter(monthAgo);
-    }
-
-    /**
-     * 인기 블로그인지 확인 (조회수 기준)
-     */
-    public boolean isPopular() {
-        return viewCount >= 100;
-    }
-
-    /**
-     * 높은 참여도를 가진 블로그인지 확인 (좋아요 + 댓글)
-     */
-    public boolean isHighEngagement() {
-        return (likeCount + commentCount) >= 20;
-    }
-
-    /**
-     * 썸네일이 있는지 확인
-     */
-    public boolean hasThumbnail() {
-        return thumbnailUrl != null && !thumbnailUrl.trim().isEmpty();
-    }
-
-    /**
-     * 특정 카테고리에 속하는지 확인
-     */
-    public boolean belongsToCategory(String category) {
-        return categories.stream()
-                .anyMatch(cat -> cat.equalsIgnoreCase(category));
-    }
-
-    /**
-     * 특정 태그를 가지고 있는지 확인
+     * 특정 태그가 포함되어 있는지 확인
      */
     public boolean hasTag(String tag) {
-        return tags.stream()
-                .anyMatch(t -> t.equalsIgnoreCase(tag));
+        if (tag == null || tags == null) {
+            return false;
+        }
+        return Arrays.asList(tags).contains(tag);
     }
 
     /**
-     * 총 상호작용 수 반환 (조회수 + 좋아요 + 댓글)
+     * 특정 기술을 사용하는지 확인
      */
-    public int getTotalInteractions() {
-        return viewCount + likeCount + commentCount;
+    public boolean usesTechnology(String technology) {
+        if (technology == null || tags == null) {
+            return false;
+        }
+        return Arrays.stream(tags)
+                .anyMatch(tech -> tech.equalsIgnoreCase(technology));
+    }
+
+    /**
+     * 조회수가 특정 수치 이상인지 확인
+     */
+    public boolean hasMinimumViews(int minimumViews) {
+        return viewCount >= minimumViews;
+    }
+
+    /**
+     * 좋아요 수가 특정 수치 이상인지 확인
+     */
+    public boolean hasMinimumLikes(int minimumLikes) {
+        return likeCount >= minimumLikes;
+    }
+
+    /**
+     * 인기 블로그인지 확인 (조회수 100 이상 또는 좋아요 10 이상)
+     */
+    public boolean isPopular() {
+        return viewCount >= 100 || likeCount >= 10;
     }
 }

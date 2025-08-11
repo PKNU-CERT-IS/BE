@@ -7,9 +7,15 @@ import org.certis.studyplatform.member.domain.vo.*;
 import org.certis.studyplatform.member.infrastructure.mapper.MemberInfrastructureMapper;
 import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberEntity;
 import org.certis.studyplatform.member.infrastructure.persistence.jpa.MemberJpaRepository;
+import org.certis.studyplatform.project.infrastructure.persistence.ProjectStatus;
+import org.certis.studyplatform.study.infrastructure.persistence.StudyStatus;
+import org.certis.studyplatform.shared.util.GracePeriodCalculator;
+import org.certis.studyplatform.shared.util.GracePeriodCalculator.ActivityInfo;
 import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,6 +29,7 @@ import java.util.Optional;
  * - JPA를 사용한 실제 데이터베이스 조회
  * - Entity ↔ Profile Domain 객체 변환
  * - 읽기 전용 최적화 쿼리
+ * - 목 데이터를 통한 gracePeriod 계산
  */
 @Repository
 @RequiredArgsConstructor
@@ -37,11 +44,47 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
         log.debug("Command Infrastructure: Finding profile by member ID: {}", memberIdVo.toLong());
 
         try {
-            return memberJpaRepository.findById(memberIdVo.toLong())
-                    .filter(memberInfrastructureMapper::hasProfileInformation) // Profile 정보가 있는 경우만
-                    .map(memberInfrastructureMapper::toProfile);
+            Optional<MemberEntity> memberEntityOpt = memberJpaRepository.findById(memberIdVo.toLong());
+            
+            if (memberEntityOpt.isEmpty()) {
+                log.debug("Member not found for ID: {}", memberIdVo.toLong());
+                return Optional.empty();
+            }
+            
+            MemberEntity memberEntity = memberEntityOpt.get();
+            
+            // Profile 정보가 있는지 확인
+            if (!memberInfrastructureMapper.hasProfileInformation(memberEntity)) {
+                log.debug("Member {} does not have profile information", memberIdVo.toLong());
+                return Optional.empty();
+            }
+            
+            // 기본 ProfileVo 생성 (gracePeriod는 null)
+            ProfileVo baseProfile = memberInfrastructureMapper.toProfile(memberEntity);
+            
+            // 목 데이터를 통해 gracePeriod 계산
+            OffsetDateTime gracePeriod = calculateGracePeriodFromMockData(memberIdVo.toLong());
+            
+            // gracePeriod가 포함된 새로운 ProfileVo 생성
+            ProfileVo profileWithGracePeriod = new ProfileVo(
+                baseProfile.memberId(),
+                baseProfile.name(),
+                baseProfile.description(),
+                baseProfile.profileImage(),
+                baseProfile.todaySchedules(),
+                baseProfile.penaltyCount(),
+                gracePeriod, // 계산된 gracePeriod
+                baseProfile.memberRole(),
+                baseProfile.memberGrade(),
+                baseProfile.skills(),
+                baseProfile.createdAt()
+            );
+            
+            return Optional.of(profileWithGracePeriod);
+            
         } catch (Exception e) {
-            log.error("Error finding profile by member ID {}: {}", memberIdVo.toLong(), e.getMessage());
+            log.error("Error finding profile by member ID {}: {}", memberIdVo.toLong(), e.getMessage(), e);
+            // 예외를 다시 던지지 않고 빈 Optional 반환하여 트랜잭션 롤백 방지
             return Optional.empty();
         }
     }
@@ -53,8 +96,11 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
 
         // TODO: 실제 Study Entity와 연관관계 설정 후 구현
         // StudyParticipant 테이블과 조인하여 해당 회원이 참여한 스터디 목록 조회
-        // 현재는 빈 리스트 반환
-        return List.of();
+        // 새로운 VO 구조: ProfileStudyVo(studyId, title, description, ProjectStatus projectStatus, 
+        //                                studyStartDate, studyEndDate, List<String> tags)
+        
+        // 목데이터 반환
+        return createMockStudies(memberIdVo.toLong());
     }
 
     @Override
@@ -64,8 +110,11 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
 
         // TODO: 실제 Project Entity와 연관관계 설정 후 구현
         // ProjectParticipant 테이블과 조인하여 해당 회원이 참여한 프로젝트 목록 조회
-        // 현재는 빈 리스트 반환
-        return List.of();
+        // 새로운 VO 구조: ProfileProjectVo(projectId, title, description, ProjectStatus projectStatus,
+        //                                  studyStartDate, studyEndDate, List<String> tags)
+        
+        // 목데이터 반환
+        return createMockProjects(memberIdVo.toLong());
     }
 
     @Override
@@ -75,8 +124,11 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
 
         // TODO: 실제 Blog Entity와 연관관계 설정 후 구현
         // Blog 테이블에서 작성자 ID로 해당 회원이 작성한 블로그 목록 조회
-        // 현재는 빈 리스트 반환
-        return List.of();
+        // 새로운 VO 구조: ProfileBlogVo(blogId, title, description, ProjectStatus projectStatus,
+        //                               studyStartDate, studyEndDate, String[] tags, viewCount, likeCount)
+        
+        // 목데이터 반환
+        return createMockBlogs(memberIdVo.toLong());
     }
 
     @Override
@@ -98,8 +150,8 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
         log.debug("Query Infrastructure: Counting studies for member ID: {}", memberIdVo.toLong());
         
         // TODO: 실제 Study Entity와 연관관계 설정 후 구현
-        // 현재는 임시로 0 반환
-        return 0L;
+        // 목데이터 기준으로 카운트 반환
+        return createMockStudies(memberIdVo.toLong()).size();
     }
 
     @Override
@@ -108,8 +160,8 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
         log.debug("Query Infrastructure: Counting projects for member ID: {}", memberIdVo.toLong());
         
         // TODO: 실제 Project Entity와 연관관계 설정 후 구현
-        // 현재는 임시로 0 반환
-        return 0L;
+        // 목데이터 기준으로 카운트 반환
+        return createMockProjects(memberIdVo.toLong()).size();
     }
 
     @Override
@@ -118,8 +170,8 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
         log.debug("Query Infrastructure: Counting blogs for member ID: {}", memberIdVo.toLong());
         
         // TODO: 실제 Blog Entity와 연관관계 설정 후 구현
-        // 현재는 임시로 0 반환
-        return 0L;
+        // 목데이터 기준으로 카운트 반환
+        return createMockBlogs(memberIdVo.toLong()).size();
     }
 
     @Override
@@ -128,7 +180,215 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
         log.debug("Query Infrastructure: Getting activity summary for member ID: {}", memberIdVo.toLong());
 
         // TODO: 실제 Study, Project, Blog Entity와 연관관계 설정 후 구현
-        // 현재는 임시로 0 반환
-        return new ActivitySummaryVo(0L, 0L, 0L);
+        // 목데이터 기준으로 활동 요약 반환
+        long studyCount = countStudiesByMemberId(memberIdVo);
+        long projectCount = countProjectsByMemberId(memberIdVo);
+        long blogCount = countBlogsByMemberId(memberIdVo);
+        
+        return new ActivitySummaryVo(studyCount, projectCount, blogCount);
+    }
+
+    /**
+     * 목 데이터를 기반으로 gracePeriod 계산
+     * 
+     * @param memberId 회원 ID
+     * @return 계산된 유예기간 (없으면 null)
+     */
+    private OffsetDateTime calculateGracePeriodFromMockData(Long memberId) {
+        try {
+            log.debug("Calculating grace period for member ID: {}", memberId);
+            
+            // 목 스터디와 프로젝트 데이터 조회
+            List<ProfileStudyVo> studies = createMockStudies(memberId);
+            List<ProfileProjectVo> projects = createMockProjects(memberId);
+            
+            log.debug("Found {} studies and {} projects for member {}", studies.size(), projects.size(), memberId);
+            
+            // VO를 ActivityInfo로 변환
+            List<ActivityInfo> activities = new ArrayList<>();
+            OffsetDateTime now = OffsetDateTime.now();
+            
+            // 스터디를 ActivityInfo로 변환
+            for (ProfileStudyVo study : studies) {
+                if (study.studyStartDate() != null && study.studyEndDate() != null) {
+                    // 실제 날짜 기반으로 진행 중인지 판단
+                    boolean isOngoing = !now.isBefore(study.studyStartDate()) && now.isBefore(study.studyEndDate());
+                    ActivityInfo activityInfo = new ActivityInfo(
+                        study.studyStartDate(),
+                        study.studyEndDate(),
+                        isOngoing
+                    );
+                    activities.add(activityInfo);
+                    
+                    log.debug("Added study activity: {} ({} to {}, ongoing: {}, status: {})", 
+                            study.title(), study.studyStartDate(), study.studyEndDate(), isOngoing, study.studyStatus());
+                }
+            }
+            
+            // 프로젝트를 ActivityInfo로 변환
+            for (ProfileProjectVo project : projects) {
+                if (project.projectStartDate() != null && project.projectEndDate() != null) {
+                    // 실제 날짜 기반으로 진행 중인지 판단
+                    boolean isOngoing = !now.isBefore(project.projectStartDate()) && now.isBefore(project.projectEndDate());
+                    ActivityInfo activityInfo = new ActivityInfo(
+                        project.projectStartDate(),
+                        project.projectEndDate(),
+                        isOngoing
+                    );
+                    activities.add(activityInfo);
+                    
+                    log.debug("Added project activity: {} ({} to {}, ongoing: {}, status: {})", 
+                            project.title(), project.projectStartDate(), project.projectEndDate(), isOngoing, project.projectStatus());
+                }
+            }
+            
+            // 진행 중인 활동과 완료된 활동 분류
+            long ongoingCount = activities.stream().filter(ActivityInfo::isOngoing).count();
+            long completedCount = activities.stream().filter(a -> !a.isOngoing()).count();
+            
+            log.debug("Activity summary for member {}: {} ongoing, {} completed", memberId, ongoingCount, completedCount);
+            
+            // GracePeriodCalculator를 사용하여 유예기간 계산
+            OffsetDateTime gracePeriod = GracePeriodCalculator.calculateGracePeriod(activities);
+            
+            if (gracePeriod != null) {
+                if (ongoingCount > 0) {
+                    log.info("Calculated grace period for member {} based on ONGOING activities: {} (from {} total activities)", 
+                            memberId, gracePeriod, activities.size());
+                } else {
+                    log.info("Calculated grace period for member {} based on COMPLETED activities: {} (from {} total activities)", 
+                            memberId, gracePeriod, activities.size());
+                }
+            } else {
+                log.info("No grace period calculated for member {} (no valid activities)", memberId);
+            }
+            
+            return gracePeriod;
+            
+        } catch (Exception e) {
+            log.warn("Failed to calculate grace period for member {}: {}", memberId, e.getMessage());
+            return null; // 계산 실패 시 null 반환
+        }
+    }
+
+    // =================================================================
+    // 목데이터 생성 메서드들
+    // =================================================================
+
+    /**
+     * 스터디 목데이터 생성
+     */
+    private List<ProfileStudyVo> createMockStudies(Long memberId) {
+        OffsetDateTime now = OffsetDateTime.now();
+        
+        return List.of(
+            new ProfileStudyVo(
+                1L,
+                "Spring Boot 스터디",
+                "Spring Boot 기초부터 심화까지 학습하는 스터디입니다.",
+                StudyStatus.INPROGRESS, // 현재 진행 중
+                now.minusWeeks(2), // 2주 전 시작 (현재 진행 중)
+                now.plusWeeks(2),  // 2주 후 종료 예정 (4주 기간 → 1주 유예)
+                new String[]{"Spring Boot", "Java", "JPA"}
+            ),
+            new ProfileStudyVo(
+                2L,
+                "React 프론트엔드 스터디",
+                "React를 활용한 모던 웹 개발 스터디입니다.",
+                StudyStatus.COMPLETED, // 완료됨
+                now.minusWeeks(8), // 8주 전 시작
+                now.minusWeeks(2), // 2주 전 종료 (6주 기간 → 2주 유예)
+                new String[]{"React", "JavaScript", "TypeScript"}
+            ),
+            new ProfileStudyVo(
+                3L,
+                "알고리즘 문제해결 스터디",
+                "코딩테스트 대비 알고리즘 문제 해결 스터디입니다.",
+                StudyStatus.READY, // 아직 시작 안함
+                now.plusWeeks(1),   // 1주 후 시작 예정 (아직 진행 중 아님)
+                now.plusWeeks(4),   // 4주 후 종료 예정 (3주 기간)
+                new String[]{"Algorithm", "Problem Solving", "Python"}
+            )
+        );
+    }
+
+    /**
+     * 프로젝트 목데이터 생성
+     */
+    private List<ProfileProjectVo> createMockProjects(Long memberId) {
+        OffsetDateTime now = OffsetDateTime.now();
+        
+        return List.of(
+            new ProfileProjectVo(
+                1L,
+                "학습 플랫폼 개발 프로젝트",
+                "온라인 학습 플랫폼을 개발하는 프로젝트입니다.",
+                ProjectStatus.INPROGRESS, // 현재 진행 중
+                now.minusWeeks(3), // 3주 전 시작 (현재 진행 중)
+                now.plusWeeks(1),  // 1주 후 종료 예정 (4주 기간 → 1주 유예)
+                new String[]{"Spring Boot", "React", "PostgreSQL"}
+            ),
+            new ProfileProjectVo(
+                2L,
+                "전자상거래 웹사이트",
+                "전자상거래 웹사이트 구축 프로젝트입니다.",
+                ProjectStatus.COMPLETED, // 완료됨
+                now.minusWeeks(16), // 16주 전 시작
+                now.minusWeeks(4),  // 4주 전 종료 (12주 기간 → 2주 유예)
+                new String[]{"Node.js", "Vue.js", "MongoDB"}
+            ),
+            new ProfileProjectVo(
+                3L,
+                "모바일 앱 개발",
+                "크로스 플랫폼 모바일 앱 개발 프로젝트입니다.",
+                ProjectStatus.READY, // 아직 시작 안함
+                now.plusWeeks(2),  // 2주 후 시작 예정 (아직 진행 중 아님)
+                now.plusWeeks(6),  // 6주 후 종료 예정 (4주 기간)
+                new String[]{"React Native", "Firebase", "TypeScript"}
+            )
+        );
+    }
+
+    /**
+     * 블로그 목데이터 생성
+     */
+    private List<ProfileBlogVo> createMockBlogs(Long memberId) {
+        OffsetDateTime now = OffsetDateTime.now();
+        
+        return List.of(
+            new ProfileBlogVo(
+                1L,
+                "Spring Boot 시작하기",
+                "Spring Boot 프레임워크의 기본 개념과 설정 방법을 소개합니다.",
+                ProjectStatus.COMPLETED, // 발행됨
+                now.minusWeeks(4), // 4주 전 시작 (2주 작성 기간)
+                now.minusWeeks(2), // 2주 전 완료
+                new String[]{"Spring Boot", "Java", "Tutorial"},
+                150,
+                25
+            ),
+            new ProfileBlogVo(
+                2L,
+                "React Hooks 완전 정복",
+                "React Hooks의 모든 것을 다루는 포괄적인 가이드입니다.",
+                ProjectStatus.INPROGRESS, // 작성 중
+                now.minusWeeks(3), // 3주 전 시작
+                now.plusWeeks(1),  // 1주 후 완료 예정 (4주 작성 기간)
+                new String[]{"React", "JavaScript", "Hooks"},
+                89,
+                12
+            ),
+            new ProfileBlogVo(
+                3L,
+                "알고리즘 문제 해결 전략",
+                "효율적인 알고리즘 문제 해결 방법론을 제시합니다.",
+                ProjectStatus.READY, // 준비 중
+                now.plusWeeks(1),   // 1주 후 시작 예정
+                now.plusWeeks(3),   // 3주 후 완료 예정 (2주 작성 기간)
+                new String[]{"Algorithm", "Problem Solving", "Coding Test"},
+                0,
+                0
+            )
+        );
     }
 }

@@ -6,7 +6,7 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: validate # Flyway가 스키마 관리하므로 validate만 수행
     show-sql: true
     format-sql: true
     properties:
@@ -16,36 +16,20 @@ spring:
           lob:
             non_contextual_creation: true
 
-  # ✅ SQL 초기화 설정 - Mock Data Setup (Embedded용)
+  # ✅ SQL 초기화 설정 - Flyway 사용으로 비활성화
   sql:
     init:
-      mode: always
-      schema-locations: classpath:db/schema.sql
-      data-locations:
-        - classpath:db/V1__Flush_all_data.sql
-        - classpath:db/V2__Insert_member_data.sql
-        - classpath:db/V3__Insert_auth_data.sql
-        - classpath:db/V4__Insert_member_penalty_data.sql
-        - classpath:db/V5__Insert_member_contact_data.sql
-        - classpath:db/V6__Insert_study_data.sql
-        - classpath:db/V7__Insert_project_data.sql
-        - classpath:db/V8__Insert_blog_data.sql
-        - classpath:db/V9__Insert_board_data.sql
-        - classpath:db/V10__Insert_schedule_data.sql
-        - classpath:db/V11__Insert_blog_tag.sql
-        - classpath:db/V12__Insert_blog_view.sql
-        - classpath:db/V13__Insert_board_attached.sql
-        - classpath:db/V14__Insert_board_like.sql
-        - classpath:db/V15__Insert_board_report.sql
-        - classpath:db/V16__Insert_board_view.sql
-        - classpath:db/V17__Insert_project_attached.sql
-        - classpath:db/V18__Insert_project_participant.sql
-        - classpath:db/V19__Insert_project_tag.sql
-        - classpath:db/V20__Insert_schedule_attached.sql
-        - classpath:db/V21__Insert_study_meeting.sql
-        - classpath:db/V22__Insert_study_participant.sql
-        - classpath:db/V23__Insert_study_tag.sql
-      continue-on-error: false
+      mode: never # Flyway가 모든 DB 초기화를 담당
+
+  # ✅ Flyway 설정 (embedded 환경용)
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
+    validate-on-migrate: true
+    clean-disabled: false # 개발 환경에서는 clean 허용
+    group: true
 
 logging:
   level:
@@ -53,3 +37,4 @@ logging:
     org.hibernate.SQL: DEBUG
     io.zonky.test.db.postgres: INFO
     org.springframework.jdbc.datasource.init: DEBUG
+    org.flywaydb.core: DEBUG

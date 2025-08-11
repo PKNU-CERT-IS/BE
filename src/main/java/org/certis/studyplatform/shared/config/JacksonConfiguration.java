@@ -1,4 +1,4 @@
-package org.certis.studyplatform.common.config;
+package org.certis.studyplatform.shared.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Primary;
  * Jackson ObjectMapper Configuration
  *
  * JSON 직렬화/역직렬화를 위한 ObjectMapper Bean 설정
- * Profile/Member Mapper에서 사용
+ * 전체 애플리케이션에서 공통으로 사용되는 설정
  */
 @Configuration
 public class JacksonConfiguration {
@@ -40,4 +40,4 @@ public class JacksonConfiguration {
 
         return mapper;
     }
-}
+} 
