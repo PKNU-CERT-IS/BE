@@ -4,20 +4,20 @@ import lombok.Getter;
 
 @Getter
 public enum MemberRole {
-    ADMIN("관리자"),
-    CHAIRMAN("회장"),
-    VICECHAIRMAN("부회장"),
-    STAFF("임원진"),
-    LEADER("스터디/프로젝트장"),
-    PLAYER("참여자"),
-    UPSOLVER("업솔버"),
-    NORMAL("일반회원"), // 기존 데이터 호환성을 위해 추가
-    NONE("미지정");
+    ADMIN(0, "최고관리자"),
+    CHAIRMAN(1, "회장"),
+    VICECHAIRMAN(2, "부회장"),
+    STAFF(3, "임원진"),
+    PLAYER(4, "일반회원"),
+    UPSOLVER(4, "문제해결자"), // PLAYER와 동급
+    NONE(5, "승인 대기");
 
+    private final int level;
     private final String description;
 
-    MemberRole(String description){
-        this.description = description;
+    MemberRole(int level, String description){
+        this.level = level;
+         this.description = description;
     }
 
     // ROLE_ 접두사 를 추가하는 함수 (Spring Security용)
@@ -31,57 +31,15 @@ public enum MemberRole {
         return MemberRole.valueOf(normalizedRole);
     }
 
-    /**
-     * 문자열로부터 MemberRole 찾기 (안전한 변환)
-     */
-    public static MemberRole fromString(String roleString) {
-        if (roleString == null || roleString.trim().isEmpty()) {
-            return NONE;
-        }
-
-        String trimmed = roleString.trim().toUpperCase();
-        
-        try {
-            return MemberRole.valueOf(trimmed);
-        } catch (IllegalArgumentException e) {
-            // 기존 데이터 호환성을 위한 매핑
-            return switch (trimmed) {
-                case "MEMBER" -> NORMAL; // 기존 MEMBER를 NORMAL로 매핑
-                case "PENDING" -> NONE; // 기존 PENDING을 NONE으로 매핑
-                default -> NONE;
-            };
-        }
+    // 권한 등급 비교 : 자신과 같거나 자신보다 낮은 level의 사용자의 role을 변경 가능
+    public boolean canChangeRole(MemberRole role){
+        return role.level > this.level;
     }
 
-    public boolean isAdmin(){
-        return this == ADMIN;
+
+    // staff 이상의 관리자 권한인가? (admin 페이지 접근 가능 판별)
+    public boolean isStaffOrAbove() {
+        return this.level <= STAFF.level;
     }
 
-    public boolean isStaff(){
-        return this == STAFF || this == CHAIRMAN || this == VICECHAIRMAN;
-    }
-
-    public boolean isLeader(){
-        return this == LEADER;
-    }
-
-    public boolean isChairman(){
-        return this == CHAIRMAN;
-    }
-
-    public boolean isViceChairman(){
-        return this == VICECHAIRMAN;
-    }
-
-    public boolean isPlayer(){
-        return this == PLAYER;
-    }
-
-    public boolean isUpSolver(){
-        return this == UPSOLVER;
-    }
-
-    public boolean isNormal(){
-        return this == NORMAL;
-    }
 }

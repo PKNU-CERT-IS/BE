@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.certis.studyplatform.common.security.CurrentUser;
 import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.exception.InfrastructureException;
 import org.certis.studyplatform.member.domain.MemberRole;
@@ -74,11 +75,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             Long memberId = jwtTokenProvider.getUserIdFromToken(accessToken);
             MemberRole role = jwtTokenProvider.getRoleFromAccessToken(accessToken);
 
+            CurrentUser  currentUser = new CurrentUser(
+                    memberId,
+                    null,   // 추후 리펙토링
+                    null,            // 추후 리펙토링
+                    null,            // 추후 리펙토링
+                    role.name()
+            );
+
             UsernamePasswordAuthenticationToken authenticationToken =
                     new UsernamePasswordAuthenticationToken(
-                            memberId,
+                            currentUser,
                             null,
-                            Collections.singletonList(new SimpleGrantedAuthority(role.toAuthorityString())) // ROLE_ 정보 저장
+                            currentUser.getAuthorities() // ROLE_ 정보 저장
                     );
             // spring security 에 인증 정보 설정
             SecurityContextHolder.getContext().setAuthentication(authenticationToken);

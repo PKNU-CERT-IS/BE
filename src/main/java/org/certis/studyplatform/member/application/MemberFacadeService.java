@@ -1,10 +1,12 @@
 package org.certis.studyplatform.member.application;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.member.application.command.*;
 import org.certis.studyplatform.member.application.object.command.CreateMemberCommand;
 import org.certis.studyplatform.member.application.object.command.DeleteMemberCommand;
+import org.certis.studyplatform.member.application.object.command.UpdateMemberAdminFieldsCommand;
 import org.certis.studyplatform.member.application.object.command.UpdateMemberCommand;
 import org.certis.studyplatform.member.application.object.query.GetMemberByIdQuery;
 import org.certis.studyplatform.member.application.object.query.GetMembersQuery;
@@ -13,11 +15,10 @@ import org.certis.studyplatform.member.application.query.*;
 import org.certis.studyplatform.member.application.mapper.MemberApplicationMapper;
 import org.certis.studyplatform.member.application.mapper.MemberApplicationCommandMapper;
 import org.certis.studyplatform.member.application.mapper.MemberApplicationQueryMapper;
-import org.certis.studyplatform.member.domain.vo.MemberCreatedVo;
-import org.certis.studyplatform.member.domain.vo.MemberUpdatedVo;
-import org.certis.studyplatform.member.domain.vo.MemberVo;
-import org.certis.studyplatform.member.domain.vo.MemberSummaryVo;
+import org.certis.studyplatform.member.domain.MemberRole;
+import org.certis.studyplatform.member.domain.vo.*;
 import org.certis.studyplatform.member.presentation.dto.request.*;
+import org.certis.studyplatform.member.presentation.dto.response.AdminMemberUpdateResponseDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -178,5 +179,24 @@ public class MemberFacadeService {
     private Pageable createPageable(Integer page, Integer size, String sortBy, String sortDirection) {
         // 기존 구현 유지
         return null; // 실제 구현은 기존 코드 유지
+    }
+
+    public AdminMemberUpdateResponseDto updateMemberAdminFields(Long executorId,
+                                                                MemberRole executorRole,
+                                                                AdminMemberUpdateRequestDto request) {
+        UpdateMemberAdminFieldsCommand command =
+                UpdateMemberAdminFieldsCommand.of(executorId,
+                        executorRole,
+                        request.getTargetMemberId(),
+                        request.getNewRole(),
+                        request.getNewGrade());
+
+        AdminMemberUpdateResultVo adminMemberUpdateResultVo = memberCommandService.updateMemberAdminFields(command);
+
+        return AdminMemberUpdateResponseDto.builder()
+                .memberId(adminMemberUpdateResultVo.memberId())
+                .newRole(adminMemberUpdateResultVo.newRole())
+                .newGrade(adminMemberUpdateResultVo.newGrade())
+                .build();
     }
 }
