@@ -1,123 +1,8 @@
-spring:
-  application:
-    name: ${APP_NAME:study-platform}
+# ===========================================
+# CERT-IS 통합 애플리케이션 설정
+# 환경변수를 통한 설정 관리
+# ===========================================
 
-  config:
-    import: "optional:file:.env[.properties]"
-
-  profiles:
-    active: ${SPRING_PROFILES_ACTIVE:local}
-
-  # ✅ PostgreSQL 설정 - 환경변수 필수
-  datasource:
-    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
-    driver-class-name: org.postgresql.Driver
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
-    hikari:
-      auto-commit: false
-      maximum-pool-size: ${HIKARI_MAX_POOL_SIZE:20}
-      minimum-idle: ${HIKARI_MIN_IDLE:5}
-      connection-timeout: ${HIKARI_CONNECTION_TIMEOUT:30000}
-      idle-timeout: ${HIKARI_IDLE_TIMEOUT:600000}
-      max-lifetime: ${HIKARI_MAX_LIFETIME:1800000}
-      leak-detection-threshold: 60000
-
-  jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
-    hibernate:
-      ddl-auto: ${DDL_AUTO:validate}
-    show-sql: ${SHOW_SQL:false}
-    format-sql: ${FORMAT_SQL:false}
-    properties:
-      hibernate:
-        format_sql: ${FORMAT_SQL:false}
-        jdbc:
-          lob:
-            non_contextual_creation: true
-        connection:
-          provider_disables_autocommit: true
-
-
-
-  # ✅ Redis 설정
-  redis:
-    host: ${REDIS_HOST:localhost}
-    port: ${REDIS_PORT:6379}
-    password: ${REDIS_PASSWORD:}
-    timeout: ${REDIS_TIMEOUT:3000ms}
-    lettuce:
-      pool:
-        max-active: ${REDIS_MAX_ACTIVE:8}
-        max-idle: ${REDIS_MAX_IDLE:8}
-        min-idle: ${REDIS_MIN_IDLE:0}
-        max-wait: ${REDIS_MAX_WAIT:-1ms}
-
-  cache:
-    type: redis
-    redis:
-      time-to-live: ${CACHE_TTL:600000}
-      cache-null-values: false
-
-  # ✅ SQL 초기화 설정
-  sql:
-    init:
-      mode: ${SQL_INIT_MODE:never}
-      separator: ";"
-      continue-on-error: false
-      schema-locations:
-        - classpath:db/V0__Drop_all_tables.sql
-        - classpath:db/schema.sql
-      data-locations:
-        - classpath:db/V2__Insert_member_data.sql
-        - classpath:db/V3__Insert_auth_data.sql
-        - classpath:db/V4__Insert_member_penalty_data.sql
-        - classpath:db/V5__Insert_member_contact_data.sql
-        - classpath:db/V6__Insert_study_data.sql
-        - classpath:db/V7__Insert_project_data.sql
-        - classpath:db/V8__Insert_blog_data.sql
-        - classpath:db/V9__Insert_board_data.sql
-        - classpath:db/V10__Insert_schedule_data.sql
-        - classpath:db/V11__Insert_blog_tag.sql
-        - classpath:db/V12__Insert_blog_view.sql
-        - classpath:db/V13__Insert_board_attached.sql
-        - classpath:db/V14__Insert_board_like.sql
-        - classpath:db/V15__Insert_board_report.sql
-        - classpath:db/V16__Insert_board_view.sql
-        - classpath:db/V17__Insert_project_attached.sql
-        - classpath:db/V18__Insert_project_participant.sql
-        - classpath:db/V19__Insert_project_tag.sql
-        - classpath:db/V20__Insert_schedule_attached.sql
-        - classpath:db/V21__Insert_study_meeting.sql
-        - classpath:db/V22__Insert_study_participant.sql
-        - classpath:db/V23__Insert_study_tag.sql
-
-  # ✅ Email 설정
-  mail:
-    host: ${MAIL_HOST:smtp.gmail.com}
-    port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-    properties:
-      mail:
-        smtp:
-          auth: ${MAIL_SMTP_AUTH:true}
-          starttls:
-            enable: ${MAIL_SMTP_STARTTLS_ENABLE:true}
-          connectiontimeout: ${MAIL_CONNECTION_TIMEOUT:5000}
-          timeout: ${MAIL_TIMEOUT:3000}
-          writetimeout: ${MAIL_WRITE_TIMEOUT:5000}
-
-  # ✅ 파일 업로드 설정
-  servlet:
-    multipart:
-      enabled: true
-      max-file-size: ${MAX_FILE_SIZE:10MB}
-      max-request-size: ${MAX_REQUEST_SIZE:10MB}
-      file-size-threshold: ${FILE_SIZE_THRESHOLD:2KB}
-      location: ${MULTIPART_LOCATION:${java.io.tmpdir}}
-
-# 🔥 Tomcat 서버 설정
 server:
   port: ${SERVER_PORT:8080}
   servlet:
@@ -125,115 +10,109 @@ server:
       charset: UTF-8
       enabled: true
       force: true
-    session:
-      timeout: ${SESSION_TIMEOUT:30m}
-      cookie:
-        max-age: ${SESSION_COOKIE_MAX_AGE:1800}
-        http-only: true
-        secure: ${SESSION_COOKIE_SECURE:false}
-        same-site: strict
 
-  # 🔥 Tomcat 상세 설정
-  tomcat:
-    threads:
-      max: ${TOMCAT_MAX_THREADS:200}
-      min-spare: ${TOMCAT_MIN_SPARE:10}
-    max-connections: ${TOMCAT_MAX_CONNECTIONS:8192}
-    accept-count: ${TOMCAT_ACCEPT_COUNT:100}
-    connection-timeout: ${TOMCAT_CONNECTION_TIMEOUT:20000}
-    keep-alive-timeout: ${TOMCAT_KEEP_ALIVE_TIMEOUT:60000}
-    max-keep-alive-requests: ${TOMCAT_MAX_KEEP_ALIVE_REQUESTS:100}
-    max-http-form-post-size: ${TOMCAT_MAX_HTTP_FORM_POST_SIZE:2MB}
-    max-swallow-size: ${TOMCAT_MAX_SWALLOW_SIZE:2MB}
-    compression: ${TOMCAT_COMPRESSION:on}
-    compress-min-size: ${TOMCAT_COMPRESS_MIN_SIZE:2048}
-    compressible-mime-types: ${TOMCAT_COMPRESSIBLE_MIME_TYPES:text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json,application/xml}
-    accesslog:
-      enabled: ${TOMCAT_ACCESS_LOG_ENABLED:true}
-      directory: ${TOMCAT_ACCESS_LOG_DIR:logs}
-      file-date-format: ${TOMCAT_ACCESS_LOG_FILE_DATE_FORMAT:.yyyy-MM-dd}
-      pattern: ${TOMCAT_ACCESS_LOG_PATTERN:'%t %a "%r" %s (%D ms)'}
-      prefix: ${TOMCAT_ACCESS_LOG_PREFIX:access_log}
-      suffix: ${TOMCAT_ACCESS_LOG_SUFFIX:.log}
-    resource:
-      allow-caching: ${TOMCAT_RESOURCE_ALLOW_CACHING:true}
-      cache-ttl: ${TOMCAT_RESOURCE_CACHE_TTL:3600000}
+spring:
+  # ✅ 데이터소스 설정 - 환경변수 기반
+  datasource:
+    driver-class-name: ${DB_DRIVER_CLASS:org.postgresql.Driver}
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/certis_local}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+      minimum-idle: ${DB_MIN_IDLE:2}
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
 
-  http2:
-    enabled: ${HTTP2_ENABLED:true}
+  # ✅ JPA 설정 - 환경변수 기반
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:update} # update: 테이블 구조 변경만 반영, 데이터 유지
+    show-sql: ${JPA_SHOW_SQL:true}
+    format-sql: ${JPA_FORMAT_SQL:true}
+    defer-datasource-initialization: ${JPA_DEFER_DATASOURCE_INIT:true} # JPA 테이블 생성 후 데이터 삽입
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          lob:
+            non_contextual_creation: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
 
-  error:
-    include-message: ${ERROR_INCLUDE_MESSAGE:never}
-    include-binding-errors: ${ERROR_INCLUDE_BINDING_ERRORS:never}
-    include-stacktrace: ${ERROR_INCLUDE_STACKTRACE:never}
-    include-exception: false
+  # ✅ SQL 초기화 설정 - DatabaseInitializationService로 대체
+  sql:
+    init:
+      mode: always # DatabaseInitializationService에서 트랜잭션 기반으로 처리
+      separator: ";"
+      continue-on-error: false
+      encoding: utf-8
 
-# ✅ 관리 및 모니터링
-management:
-  server:
-    port: ${MANAGEMENT_PORT:8081}
-  endpoints:
-    web:
-      exposure:
-        include: ${MANAGEMENT_ENDPOINTS:health,info,metrics,prometheus}
-      base-path: ${MANAGEMENT_BASE_PATH:/actuator}
-  endpoint:
-    health:
-      enabled: ${MANAGEMENT_HEALTH_ENABLED:true}
-      show-details: ${MANAGEMENT_HEALTH_SHOW_DETAILS:when-authorized}
-    metrics:
-      enabled: ${MANAGEMENT_METRICS_ENABLED:true}
-  metrics:
-    export:
-      prometheus:
-        enabled: ${PROMETHEUS_ENABLED:true}
+  # ✅ 파일 업로드 설정
+  servlet:
+    multipart:
+      max-file-size: ${FILE_MAX_SIZE:10MB}
+      max-request-size: ${FILE_MAX_REQUEST_SIZE:50MB}
 
-# ✅ 로깅 설정
+  # ✅ 개발 도구 설정
+  devtools:
+    restart:
+      enabled: ${SPRING_DEVTOOLS_RESTART_ENABLED:true}
+    livereload:
+      enabled: true
+
+  # ✅ Jackson 설정
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+      fail-on-empty-beans: false
+    deserialization:
+      fail-on-unknown-properties: false
+    property-naming-strategy: SNAKE_CASE
+    time-zone: Asia/Seoul
+
+# ✅ 로깅 설정 - 환경변수 기반
 logging:
   level:
     root: ${LOG_LEVEL_ROOT:INFO}
-    org.certis.studyplatform: ${LOG_LEVEL_APP:DEBUG}
-    org.hibernate.SQL: ${LOG_LEVEL_SQL:INFO}
-    org.hibernate.type.descriptor.sql.BasicBinder: ${LOG_LEVEL_HIBERNATE_BINDER:WARN}
-    org.springframework.jdbc.datasource.init: ${LOG_LEVEL_SQL_INIT:INFO}
-    org.springframework.security: ${LOG_LEVEL_SECURITY:INFO}
-    org.certis.studyplatform.auth: ${LOG_LEVEL_AUTH:DEBUG}
-    org.apache.tomcat: ${LOG_LEVEL_TOMCAT:INFO}
-    org.apache.catalina: ${LOG_LEVEL_CATALINA:INFO}
+    org.certis.studyplatform: ${LOG_LEVEL_CERTIS:DEBUG}
+    org.hibernate.SQL: ${LOG_LEVEL_HIBERNATE:INFO}
+    org.hibernate.type.descriptor.sql.BasicBinder: ${LOG_LEVEL_HIBERNATE_BINDER:TRACE}
+    org.springframework.web: ${LOG_LEVEL_SPRING_WEB:DEBUG}
   pattern:
-    console: "${LOG_PATTERN_CONSOLE:%clr(%d{ISO8601}){faint} %clr(%-5level) %clr([%15.15thread]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n%wEx}"
-    file: "${LOG_PATTERN_FILE:%d{ISO8601} %-5level [%thread] %-40.40logger{39} : %m%n%wEx}"
-  file:
-    name: ${LOG_FILE:logs/study-platform.log}
-    max-size: ${LOG_FILE_MAX_SIZE:100MB}
-    max-history: ${LOG_FILE_MAX_HISTORY:30}
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
-# ✅ JWT 설정
-jwt:
-  secret: ${JWT_SECRET}
-  access-token-expiration: ${JWT_ACCESS_EXPIRATION_MILLIS:3600000}
-  refresh-token-expiration: ${JWT_REFRESH_EXPIRATION_MILLIS:604800000}
-  issuer: ${JWT_ISSUER:study-platform}
-
-# ✅ 커스텀 애플리케이션 설정
+# ✅ 애플리케이션 커스텀 설정
 app:
-  upload:
-    directory: ${UPLOAD_DIRECTORY:./uploads}
-    max-file-size: ${APP_MAX_FILE_SIZE:10485760}
-    allowed-extensions: ${ALLOWED_EXTENSIONS:jpg,jpeg,png,gif,pdf,doc,docx,txt}
+  jwt:
+    secret: ${JWT_SECRET:dev-secret-key-change-in-production}
+    access-token-expiry: ${JWT_ACCESS_TOKEN_EXPIRY:3600000}
+    refresh-token-expiry: ${JWT_REFRESH_TOKEN_EXPIRY:86400000}
 
-  security:
-    cors:
-      allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:8080}
-      allowed-methods: ${CORS_ALLOWED_METHODS:GET,POST,PUT,DELETE,OPTIONS}
-      allowed-headers: ${CORS_ALLOWED_HEADERS:*}
-      allow-credentials: ${CORS_ALLOW_CREDENTIALS:true}
-      max-age: ${CORS_MAX_AGE:3600}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001}
+    allowed-methods: GET,POST,PUT,DELETE,PATCH,OPTIONS
+    allowed-headers: "*"
+    allow-credentials: true
 
-  rate-limit:
-    enabled: ${RATE_LIMIT_ENABLED:true}
-    requests-per-minute: ${RATE_LIMIT_REQUESTS_PER_MINUTE:100}
+  file:
+    upload-dir: ${FILE_UPLOAD_DIR:./uploads}
+    max-size: ${FILE_MAX_SIZE:10MB}
 
-  cache:
-    default-ttl: ${CACHE_DEFAULT_TTL:3600}
-    view-count-ttl: ${CACHE_VIEW_COUNT_TTL:300}
+# ✅ JWT 설정 - JwtTokenProvider와 호환
+jwt:
+  secret: ${JWT_SECRET:dev-secret-key-change-in-production}
+  access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRY:3600000}
+  refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRY:86400000}
+
+# ✅ Management 엔드포인트 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ${MANAGEMENT_ENDPOINTS:health,info,metrics}
+  endpoint:
+    health:
+      show-details: ${MANAGEMENT_HEALTH_DETAILS:when-authorized}

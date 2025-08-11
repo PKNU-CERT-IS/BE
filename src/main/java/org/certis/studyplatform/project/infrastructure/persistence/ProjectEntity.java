@@ -39,7 +39,7 @@ public class ProjectEntity {
     private String content;
 
     @Column(name = "skills", nullable = false, columnDefinition = "text[]")
-    private Object skills;
+    private String[] skills;
 
     @Column(name = "difficulty", nullable = false)
     private String difficulty;
@@ -72,7 +72,7 @@ public class ProjectEntity {
 
     @Builder(toBuilder = true)
     private ProjectEntity(Long id, Long memberId, String title, String content,
-                         Object skills, String difficulty, String category, String description,
+                         String[] skills, String difficulty, String category, String description,
                          OffsetDateTime startedAt, OffsetDateTime endedAt, Integer maxParticipantsNumber,
                          OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
         this.id = id;

@@ -1,4 +1,4 @@
-package org.certis.studyplatform.board.infrastructure.persistence;
+package org.certis.studyplatform.study.infrastructure.persistence;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -13,21 +13,24 @@ import org.hibernate.annotations.Where;
 import java.time.OffsetDateTime;
 
 /**
- * Board Entity
+ * Study Meeting Entity
  * 
- * 게시판 게시글을 저장하는 JPA Entity
+ * 스터디 회의록을 저장하는 JPA Entity
  */
 @Entity
-@Table(name = "board")
+@Table(name = "study_meeting")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-@SQLDelete(sql = "UPDATE board SET deleted_at = NOW() WHERE id = ?")
+@SQLDelete(sql = "UPDATE study_meeting SET deleted_at = NOW() WHERE id = ?")
 @Where(clause = "deleted_at IS NULL")
-public class BoardEntity {
+public class StudyMeetingEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "study_id", nullable = false)
+    private Long studyId;
 
     @Column(name = "member_id", nullable = false)
     private Long memberId;
@@ -38,11 +41,8 @@ public class BoardEntity {
     @Column(name = "content", nullable = false)
     private String content;
 
-    @Column(name = "category", nullable = false)
-    private String category;
-
-    @Column(name = "description", nullable = false)
-    private String description;
+    @Column(name = "participants", nullable = false, columnDefinition = "text[]")
+    private String[] participants;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -56,16 +56,16 @@ public class BoardEntity {
     private OffsetDateTime deletedAt;
 
     @Builder(toBuilder = true)
-    private BoardEntity(Long id, Long memberId, String title, String content,
-                       String category, String description,
-                       OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
+    private StudyMeetingEntity(Long id, Long studyId, Long memberId, String title,
+                              String content, String[] participants,
+                              OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
         this.id = id;
+        this.studyId = studyId;
         this.memberId = memberId;
         this.title = title;
         this.content = content;
-        this.category = category;
-        this.description = description;
-                this.createdAt = createdAt;
+        this.participants = participants;
+        this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.deletedAt = deletedAt;
     }

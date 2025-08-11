@@ -69,10 +69,10 @@ public class MemberEntity {
     private OffsetDateTime deletedAt;
 
     @Builder(toBuilder = true)
-    private MemberEntity(Long id, String name, String description, String studentNumber, String profileImage,
-                         String grade, MemberRole role, String[] skills, String major,
-                         OffsetDateTime birthday, String gender,
-                         OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
+    private MemberEntity(Long id, String name, String description, String studentNumber,
+                        String profileImage, String grade, MemberRole role, String[] skills,
+                        String major, OffsetDateTime birthday, String gender,
+                        OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
         this.id = id;
         this.name = name;
         this.description = description;

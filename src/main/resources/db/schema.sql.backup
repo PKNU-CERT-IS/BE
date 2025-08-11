@@ -45,12 +45,12 @@ CREATE TABLE member_penalty (
 );
 
 CREATE TABLE auth (
+    member_id BIGINT NOT NULL PRIMARY KEY,
     account_number VARCHAR NOT NULL UNIQUE,
     password VARCHAR NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMPTZ,
-    member_id BIGINT NOT NULL UNIQUE,
     CONSTRAINT fk_auth_member FOREIGN KEY (member_id) REFERENCES member(id)
 );
 
