@@ -31,4 +31,16 @@ public record RoleVo(MemberRole role) {
                     "역할은 필수입니다");
         }
     }
+
+    public  void validateCanManageRole(RoleVo targetCurrentRole, RoleVo newRole) {
+        // 1. 대상자의 현재 권한보다 높은 등급인가?
+        if (!this.role.canChangeRole(targetCurrentRole.role)) {
+            throw new DomainException(ExceptionStatus.MEMBER_DOMAIN_INSUFFICIENT_AUTHORITY);
+        }
+
+        // 2. 부여하려는 새 권한보다 높은 등급인가?
+        if (!this.role.canChangeRole(newRole.role)) {
+            throw new DomainException(ExceptionStatus.MEMBER_DOMAIN_INSUFFICIENT_AUTHORITY);
+        }
+    }
 } 

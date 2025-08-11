@@ -73,13 +73,12 @@ public enum ExceptionStatus {
     // Member - Presentation Layer
     MEMBER_PRESENTATION_INVALID_REQUEST(HttpStatus.BAD_REQUEST, "회원 요청 데이터가 유효하지 않습니다"),
     MEMBER_PRESENTATION_UNAUTHORIZED_ACCESS(HttpStatus.UNAUTHORIZED, "회원 정보에 대한 접근 권한이 없습니다"),
-    
     // Member - Application Layer  
     MEMBER_APPLICATION_BUSINESS_RULE_VIOLATION(HttpStatus.UNPROCESSABLE_ENTITY, "회원 비즈니스 규칙 위반입니다"),
     MEMBER_APPLICATION_COMMAND_EXECUTION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "회원 명령 실행에 실패했습니다"),
     MEMBER_APPLICATION_QUERY_EXECUTION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "회원 조회 실행에 실패했습니다"),
     MEMBER_APPLICATION_FACADE_OPERATION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "회원 비즈니스 작업 실행에 실패했습니다"),
-    
+    MEMBER_APPLICATION_CANNOT_CHANGE_OWN_ADMIN_FIELDS(HttpStatus.FORBIDDEN,"자신의 권한을 바꿀 수 없습니다." ),
     // Member - Domain Layer
     MEMBER_DOMAIN_RULE_VIOLATION(HttpStatus.UNPROCESSABLE_ENTITY, "회원 도메인 규칙 위반입니다"),
     MEMBER_DOMAIN_AGGREGATE_CONSISTENCY_VIOLATION(HttpStatus.UNPROCESSABLE_ENTITY, "회원 애그리게이트 일관성 위반입니다"),
@@ -87,6 +86,8 @@ public enum ExceptionStatus {
     MEMBER_DOMAIN_DUPLICATE_STUDENT_NUMBER(HttpStatus.CONFLICT, "이미 존재하는 학번입니다"),
     MEMBER_DOMAIN_DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 존재하는 이메일입니다"),
     MEMBER_DOMAIN_INVALID_STATUS(HttpStatus.UNPROCESSABLE_ENTITY, "유효하지 않은 회원 상태입니다"),
+    MEMBER_DOMAIN_INSUFFICIENT_AUTHORITY(HttpStatus.FORBIDDEN, "유효하지 않은 권한 접근입니다"),
+    MEMBER_DOMAIN_NOT_FOUND(HttpStatus.NOT_FOUND, "회원을 찾을 수 없습니다"),
     
     // Member - Domain VO Validation
     MEMBER_DOMAIN_INVALID_NAME(HttpStatus.BAD_REQUEST, "유효하지 않은 이름입니다"),

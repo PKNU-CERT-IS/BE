@@ -4,21 +4,20 @@ import lombok.Getter;
 
 @Getter
 public enum MemberRole {
-    ADMIN(0, "관리자"),
-    MEMBER(4, "회원"),
-    LEADER(3, "스터디/프로젝트장"),
-    STAFF(2, "임원진"),
-    NONE(5, "승인 대기"),
-    NORMAL(4, "mock 체크용"),
-    UPSOLVER(4, "업솔버"), // 목데이터용 추가
-    PLAYER(4, "플레이어"); // 목데이터용 추가
+    ADMIN(0, "최고관리자"),
+    CHAIRMAN(1, "회장"),
+    VICECHAIRMAN(2, "부회장"),
+    STAFF(3, "임원진"),
+    PLAYER(4, "일반회원"),
+    UPSOLVER(4, "문제해결자"), // PLAYER와 동급
+    NONE(5, "승인 대기");
 
     private final int level;
     private final String description;
 
     MemberRole(int level, String description){
         this.level = level;
-        this.description = description;
+         this.description = description;
     }
 
     // ROLE_ 접두사 를 추가하는 함수 (Spring Security용)
