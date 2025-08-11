@@ -5,8 +5,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.member.application.mapper.MemberApplicationMapper;
 import org.certis.studyplatform.member.application.object.command.CreateMemberCommand;
 import org.certis.studyplatform.member.application.object.command.DeleteMemberCommand;
+import org.certis.studyplatform.member.application.object.command.UpdateMemberAdminFieldsCommand;
 import org.certis.studyplatform.member.application.object.command.UpdateMemberCommand;
 import org.certis.studyplatform.member.domain.service.MemberDomainService;
+import org.certis.studyplatform.member.domain.vo.AdminMemberUpdateResultVo;
 import org.certis.studyplatform.member.domain.vo.MemberCreatedVo;
 import org.certis.studyplatform.member.domain.vo.MemberUpdatedVo;
 import org.springframework.context.ApplicationEventPublisher;
@@ -78,5 +80,21 @@ public class MemberCommandService {
         log.info("Command: Deleting member with ID: {}", command.id());
         memberDomainService.deleteMember(command);
         log.info("Member deleted successfully: {}", command.id());
+    }
+
+    // 회원 정보 ( grade, role ) 수정
+    // Admin
+    @Transactional
+    public AdminMemberUpdateResultVo updateMemberAdminFields(UpdateMemberAdminFieldsCommand command) {
+        log.info("Command Service: 관리자 회원 필드 업데이트 시작 - 실행자: {}, 대상자: {}",
+                command.executorId(), command.targetMemberId());
+
+        // ✅ Domain Service 호출
+        AdminMemberUpdateResultVo adminMemberUpdateResultVo = memberDomainService.updateMemberAdminFields(command);
+
+        log.info("Command Service: 관리자 회원 필드 업데이트 완료 - 대상자: {}",
+                command.targetMemberId());
+
+        return adminMemberUpdateResultVo;
     }
 }

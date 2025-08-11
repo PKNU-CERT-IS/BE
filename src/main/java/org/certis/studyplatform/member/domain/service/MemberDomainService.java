@@ -5,11 +5,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.member.application.object.command.CreateMemberCommand;
+import org.certis.studyplatform.member.application.object.command.UpdateMemberAdminFieldsCommand;
 import org.certis.studyplatform.member.application.object.command.UpdateMemberCommand;
 import org.certis.studyplatform.member.application.object.command.DeleteMemberCommand;
 import org.certis.studyplatform.member.application.object.query.GetMemberByIdQuery;
 import org.certis.studyplatform.member.application.object.query.SearchMembersQuery;
 import org.certis.studyplatform.member.application.object.query.GetMembersQuery;
+import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.vo.*;
 import org.certis.studyplatform.member.domain.repository.command.MemberCommandRepository;
 import org.certis.studyplatform.member.domain.repository.query.MemberQueryRepository;
@@ -470,5 +472,44 @@ public class MemberDomainService {
         // 삭제 제약 조건 검증
         // 예: 진행 중인 프로젝트가 있는지, 팀장인지 등
         // 구체적인 비즈니스 규칙에 따라 구현
+    }
+
+    // 어드민 필드
+    public AdminMemberUpdateResultVo updateMemberAdminFields(UpdateMemberAdminFieldsCommand command) {
+        log.info("Domain: 관리자 필드 변경 시작 - 실행자: {}, 대상자: {}",
+                command.executorId(), command.targetMemberId());
+
+        MemberIdVo targetIdVo = new MemberIdVo(command.targetMemberId());
+        MemberVo targetMember = memberQueryRepository.findById(targetIdVo)
+                .orElseThrow(() -> new DomainException(ExceptionStatus.MEMBER_DOMAIN_NOT_FOUND));
+
+        MemberUpdateVo.Builder updateBuilder = MemberUpdateVo.builder();
+
+        if(command.newRole() != null) {
+            RoleVo currentRoleVo = RoleVo.of(targetMember.role());
+            RoleVo newRoleVo = RoleVo.of(command.newRole());
+            RoleVo executorRoleVo = RoleVo.of(command.executorRole());
+
+            // ✅ 핵심: 권한 검증 (실행자가 대상자의 권한을 변경할 수 있는가?)
+            executorRoleVo.validateCanManageRole(currentRoleVo, newRoleVo);
+            updateBuilder.role(newRoleVo);
+        }
+
+        if (command.newGrade() != null && !command.newGrade().trim().isEmpty()) {
+            GradeVo newGradeVo = GradeVo.of(command.newGrade());
+            updateBuilder.grade(newGradeVo);
+        }
+
+        MemberUpdateVo memberUpdateVo = updateBuilder.build();
+
+        memberCommandRepository.updateMember(targetIdVo, memberUpdateVo);
+        log.info("Domain: 관리자 필드 변경 완료 - 대상자: {}", command.targetMemberId());
+
+
+        return AdminMemberUpdateResultVo.of(
+                command.targetMemberId(),
+                memberUpdateVo.getRoleValue(),
+                memberUpdateVo.getGradeValue()
+        );
     }
 }
