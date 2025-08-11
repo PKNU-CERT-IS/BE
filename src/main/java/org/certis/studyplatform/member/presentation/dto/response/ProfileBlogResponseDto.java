@@ -4,9 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.certis.studyplatform.project.infrastructure.persistence.ProjectStatus;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 
 /**
  * 프로필용 블로그 응답 DTO
@@ -20,15 +20,11 @@ public class ProfileBlogResponseDto {
 
     private Long blogId;
     private String title;
-    private String summary; // 요약 또는 첫 몇 줄
-    private String status; // DRAFT, PUBLISHED, PRIVATE
-    private OffsetDateTime createdAt;
-    private OffsetDateTime publishedAt;
-    private OffsetDateTime updatedAt;
+    private String description;
+    private ProjectStatus projectStatus;
+    private OffsetDateTime blogStartDate;
+    private OffsetDateTime blogEndDate;
+    private String[] tags;
     private Integer viewCount;
     private Integer likeCount;
-    private Integer commentCount;
-    private List<String> categories;
-    private List<String> tags;
-    private String thumbnailUrl;
 }

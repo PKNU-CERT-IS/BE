@@ -14,6 +14,7 @@ import org.certis.studyplatform.member.domain.repository.query.ProfileQueryRepos
 import org.certis.studyplatform.member.domain.vo.*;
 import org.springframework.stereotype.Service;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -41,6 +42,7 @@ public class ProfileDomainService {
 
     private final ProfileCommandRepository profileCommandRepository;
     private final ProfileQueryRepository profileQueryRepository;
+    private final GracePeriodCalculationService gracePeriodCalculationService;
 
     // ================================================================
     // COMMAND OPERATIONS (쓰기 작업)
@@ -92,10 +94,49 @@ public class ProfileDomainService {
 
         MemberIdVo memberIdVo = new MemberIdVo(query.memberId());
 
-        Optional<ProfileVo> profileVo = profileQueryRepository.findByMemberId(memberIdVo);
+        Optional<ProfileVo> profileVoOpt = profileQueryRepository.findByMemberId(memberIdVo);
+        
+        if (profileVoOpt.isEmpty()) {
+            log.info("Domain: Profile not found for member ID: {}", memberIdVo);
+            return null;
+        }
 
-        log.info("Domain: Profile VO found for member ID: {}", memberIdVo);
-        return profileVo.orElse(null);
+        ProfileVo originalProfile = profileVoOpt.get();
+        
+        // Infrastructure에서 이미 gracePeriod가 계산된 경우 그대로 반환
+        if (originalProfile.gracePeriod() != null) {
+            log.info("Domain: Profile VO found for member ID: {} with pre-calculated grace period: {}", 
+                    memberIdVo, originalProfile.gracePeriod());
+            return originalProfile;
+        }
+        
+        // gracePeriod가 없는 경우에만 계산 (fallback)
+        log.debug("Domain: Grace period not calculated, calculating from domain service for member ID: {}", memberIdVo);
+        
+        // 유예기간 계산을 위해 스터디와 프로젝트 정보 조회
+        List<ProfileStudyVo> studies = profileQueryRepository.findStudiesByMemberId(memberIdVo);
+        List<ProfileProjectVo> projects = profileQueryRepository.findProjectsByMemberId(memberIdVo);
+        
+        // 유예기간 계산
+        OffsetDateTime gracePeriod = gracePeriodCalculationService.calculateGracePeriod(studies, projects);
+        
+        // 유예기간이 포함된 새로운 ProfileVo 생성
+        ProfileVo profileWithGracePeriod = new ProfileVo(
+            originalProfile.memberId(),
+            originalProfile.name(),
+            originalProfile.description(),
+            originalProfile.profileImage(),
+            originalProfile.todaySchedules(),
+            originalProfile.penaltyCount(),
+            gracePeriod, // 계산된 유예기간
+            originalProfile.memberRole(),
+            originalProfile.memberGrade(),
+            originalProfile.skills(),
+            originalProfile.createdAt()
+        );
+
+        log.info("Domain: Profile VO found for member ID: {} with calculated grace period: {}", memberIdVo, gracePeriod);
+        return profileWithGracePeriod;
     }
 
     /**

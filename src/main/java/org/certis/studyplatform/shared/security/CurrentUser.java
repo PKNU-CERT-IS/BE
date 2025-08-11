@@ -1,4 +1,4 @@
-package org.certis.studyplatform.common.security;
+package org.certis.studyplatform.shared.security;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -102,4 +102,4 @@ public class CurrentUser implements UserDetails {
                 ", role='" + role + '\'' +
                 '}';
     }
-}
+} 
