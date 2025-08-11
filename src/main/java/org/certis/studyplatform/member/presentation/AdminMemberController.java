@@ -3,7 +3,7 @@ package org.certis.studyplatform.member.presentation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.certis.studyplatform.common.security.CurrentUser;
+import org.certis.studyplatform.shared.security.CurrentUser;
 import org.certis.studyplatform.exception.ApplicationException;
 import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.member.application.MemberFacadeService;
