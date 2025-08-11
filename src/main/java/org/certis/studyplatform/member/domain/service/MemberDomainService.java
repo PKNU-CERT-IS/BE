@@ -489,6 +489,7 @@ public class MemberDomainService {
             RoleVo currentRoleVo = RoleVo.of(targetMember.role());
             RoleVo newRoleVo = RoleVo.of(command.newRole());
             RoleVo executorRoleVo = RoleVo.of(command.executorRole());
+
             // ✅ 핵심: 권한 검증 (실행자가 대상자의 권한을 변경할 수 있는가?)
             executorRoleVo.validateCanManageRole(currentRoleVo, newRoleVo);
             updateBuilder.role(newRoleVo);

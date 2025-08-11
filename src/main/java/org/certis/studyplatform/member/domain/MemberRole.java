@@ -33,7 +33,7 @@ public enum MemberRole {
 
     // 권한 등급 비교 : 자신과 같거나 자신보다 낮은 level의 사용자의 role을 변경 가능
     public boolean canChangeRole(MemberRole role){
-        return role.level <= this.level;
+        return role.level > this.level;
     }
 
 

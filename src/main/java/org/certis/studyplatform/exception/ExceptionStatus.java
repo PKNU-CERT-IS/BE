@@ -91,7 +91,7 @@ public enum ExceptionStatus {
     
     // Member - Domain VO Validation
     MEMBER_DOMAIN_INVALID_NAME(HttpStatus.BAD_REQUEST, "유효하지 않은 이름입니다"),
-    MEMBER_DOMAIN_INVALID_STUDENT_NUMBER(HttpStatus.BAD_REQUEST,x "유효하지 않은 학번입니다"),
+    MEMBER_DOMAIN_INVALID_STUDENT_NUMBER(HttpStatus.BAD_REQUEST, "유효하지 않은 학번입니다"),
     MEMBER_DOMAIN_INVALID_EMAIL(HttpStatus.BAD_REQUEST, "유효하지 않은 이메일입니다"),
     MEMBER_DOMAIN_INVALID_GRADE(HttpStatus.BAD_REQUEST, "유효하지 않은 학년입니다"),
     MEMBER_DOMAIN_INVALID_MAJOR(HttpStatus.BAD_REQUEST, "유효하지 않은 전공입니다"),
