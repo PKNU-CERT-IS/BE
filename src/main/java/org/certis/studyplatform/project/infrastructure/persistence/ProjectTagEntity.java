@@ -1,4 +1,4 @@
-package org.certis.studyplatform.board.infrastructure.persistence;
+package org.certis.studyplatform.project.infrastructure.persistence;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -13,36 +13,27 @@ import org.hibernate.annotations.Where;
 import java.time.OffsetDateTime;
 
 /**
- * Board Entity
+ * Project Tag Entity
  * 
- * 게시판 게시글을 저장하는 JPA Entity
+ * 프로젝트 태그를 저장하는 JPA Entity
  */
 @Entity
-@Table(name = "board")
+@Table(name = "project_tag")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-@SQLDelete(sql = "UPDATE board SET deleted_at = NOW() WHERE id = ?")
+@SQLDelete(sql = "UPDATE project_tag SET deleted_at = NOW() WHERE id = ?")
 @Where(clause = "deleted_at IS NULL")
-public class BoardEntity {
+public class ProjectTagEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "member_id", nullable = false)
-    private Long memberId;
-
-    @Column(name = "title", nullable = false)
-    private String title;
+    @Column(name = "project_id", nullable = false)
+    private Long projectId;
 
     @Column(name = "content", nullable = false)
     private String content;
-
-    @Column(name = "category", nullable = false)
-    private String category;
-
-    @Column(name = "description", nullable = false)
-    private String description;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -56,16 +47,12 @@ public class BoardEntity {
     private OffsetDateTime deletedAt;
 
     @Builder(toBuilder = true)
-    private BoardEntity(Long id, Long memberId, String title, String content,
-                       String category, String description,
-                       OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
+    private ProjectTagEntity(Long id, Long projectId, String content,
+                            OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
         this.id = id;
-        this.memberId = memberId;
-        this.title = title;
+        this.projectId = projectId;
         this.content = content;
-        this.category = category;
-        this.description = description;
-                this.createdAt = createdAt;
+        this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.deletedAt = deletedAt;
     }

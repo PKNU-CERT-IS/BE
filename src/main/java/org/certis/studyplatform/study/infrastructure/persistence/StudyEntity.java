@@ -42,7 +42,7 @@ public class StudyEntity {
     private String type;
 
     @Column(name = "skills", nullable = false, columnDefinition = "text[]")
-    private Object skills;
+    private String[] skills;
 
     @Column(name = "category", nullable = false)
     private String category;
@@ -72,7 +72,7 @@ public class StudyEntity {
 
     @Builder(toBuilder = true)
     private StudyEntity(Long id, Long memberId, String title, String content,
-                       String type, Object skills, String category, String description,
+                       String type, String[] skills, String category, String description,
                        OffsetDateTime startedAt, OffsetDateTime endedAt, Integer maxParticipantsNumber,
                        OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
         this.id = id;

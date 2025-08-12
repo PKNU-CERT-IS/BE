@@ -16,9 +16,13 @@ public class TestEmbeddedPostgresConfig {
     @Bean
     @Primary
     public DataSource testDataSource() throws IOException {
-        return EmbeddedPostgres.builder()
-                .setPort(5432) // 랜덤 포트 사용 (테스트 격리)
-                .start()
-                .getPostgresDatabase();
+        // 랜덤 포트 사용으로 테스트 격리 및 충돌 방지
+        EmbeddedPostgres postgres = EmbeddedPostgres.builder()
+                .setPort(0) // 0 = 랜덤 포트 사용
+                .start();
+        
+        System.out.println("🧪 Test Embedded PostgreSQL started on port: " + postgres.getPort());
+        
+        return postgres.getPostgresDatabase();
     }
 } 

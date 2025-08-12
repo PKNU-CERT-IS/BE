@@ -6,67 +6,52 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
 import java.time.OffsetDateTime;
 
 /**
- * Board Entity
+ * Board Report Entity
  * 
- * 게시판 게시글을 저장하는 JPA Entity
+ * 게시판 신고를 저장하는 JPA Entity
  */
 @Entity
-@Table(name = "board")
+@Table(name = "board_report")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-@SQLDelete(sql = "UPDATE board SET deleted_at = NOW() WHERE id = ?")
+@SQLDelete(sql = "UPDATE board_report SET deleted_at = NOW() WHERE id = ?")
 @Where(clause = "deleted_at IS NULL")
-public class BoardEntity {
+public class BoardReportEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "board_id", nullable = false)
+    private Long boardId;
+
     @Column(name = "member_id", nullable = false)
     private Long memberId;
 
-    @Column(name = "title", nullable = false)
-    private String title;
-
     @Column(name = "content", nullable = false)
     private String content;
-
-    @Column(name = "category", nullable = false)
-    private String category;
-
-    @Column(name = "description", nullable = false)
-    private String description;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
-    private OffsetDateTime updatedAt;
-
     @Column(name = "deleted_at")
     private OffsetDateTime deletedAt;
 
     @Builder(toBuilder = true)
-    private BoardEntity(Long id, Long memberId, String title, String content,
-                       String category, String description,
-                       OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
+    private BoardReportEntity(Long id, Long boardId, Long memberId, String content,
+                             OffsetDateTime createdAt, OffsetDateTime deletedAt) {
         this.id = id;
+        this.boardId = boardId;
         this.memberId = memberId;
-        this.title = title;
         this.content = content;
-        this.category = category;
-        this.description = description;
-                this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
+        this.createdAt = createdAt;
         this.deletedAt = deletedAt;
     }
 } 
