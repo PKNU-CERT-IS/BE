@@ -244,11 +244,37 @@ public enum ExceptionStatus {
     // =================================================================
     // SCHEDULE DOMAIN EXCEPTIONS  
     // =================================================================
-    
-    // Schedule - Infrastructure Layer
-    SCHEDULE_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "일정을 찾을 수 없습니다"),
-    SCHEDULE_INFRASTRUCTURE_DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "일정 데이터베이스 오류가 발생했습니다"),
-    SCHEDULE_INFRASTRUCTURE_RESOURCE_CONFLICT(HttpStatus.CONFLICT, "일정 시간 충돌이 발생했습니다"),
+
+    // Schedule - Presentation Layer
+    SCHEDULE_PRESENTATION_INVALID_REQUEST(HttpStatus.BAD_REQUEST, "스케줄 요청 데이터가 유효하지 않습니다"),
+    SCHEDULE_PRESENTATION_UNAUTHORIZED_ACCESS(HttpStatus.UNAUTHORIZED, "스케줄에 대한 접근 권한이 없습니다"),
+
+    // Schedule - Application Layer
+    SCHEDULE_APPLICATION_BUSINESS_RULE_VIOLATION(HttpStatus.UNPROCESSABLE_ENTITY, "스케줄 비즈니스 규칙 위반입니다"),
+    SCHEDULE_APPLICATION_COMMAND_EXECUTION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "스케줄 명령 실행에 실패했습니다"),
+    SCHEDULE_APPLICATION_QUERY_EXECUTION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "스케줄 조회 실행에 실패했습니다"),
+    SCHEDULE_APPLICATION_DELETE_PERMISSION_DENIED(HttpStatus.FORBIDDEN, "스케줄 삭제 권한이 없습니다"),
+
+    // Schedule - Domain Layer
+    SCHEDULE_DOMAIN_INVALID_ID(HttpStatus.UNPROCESSABLE_ENTITY, "유효하지 않은 스케줄 ID입니다"),
+    SCHEDULE_DOMAIN_INVALID_TITLE(HttpStatus.UNPROCESSABLE_ENTITY, "스케줄 제목이 유효하지 않습니다"),
+    SCHEDULE_DOMAIN_INVALID_DESCRIPTION(HttpStatus.UNPROCESSABLE_ENTITY, "스케줄 설명이 유효하지 않습니다"),
+    SCHEDULE_DOMAIN_INVALID_TYPE(HttpStatus.UNPROCESSABLE_ENTITY, "스케줄 타입이 유효하지 않습니다"),
+    SCHEDULE_DOMAIN_INVALID_PLACE(HttpStatus.UNPROCESSABLE_ENTITY, "스케줄 장소가 유효하지 않습니다"),
+    SCHEDULE_DOMAIN_INVALID_TIME(HttpStatus.UNPROCESSABLE_ENTITY, "스케줄 시간이 유효하지 않습니다"),
+    SCHEDULE_DOMAIN_INVALID_TIME_ORDER(HttpStatus.UNPROCESSABLE_ENTITY, "시작 시간이 종료 시간보다 늦을 수 없습니다"),
+    SCHEDULE_DOMAIN_INVALID_PAST_TIME(HttpStatus.UNPROCESSABLE_ENTITY, "과거 시간으로 스케줄을 생성할 수 없습니다"),
+    SCHEDULE_DOMAIN_INVALID_STATUS(HttpStatus.UNPROCESSABLE_ENTITY, "유효하지 않은 스케줄 상태입니다"),
+    SCHEDULE_DOMAIN_TIME_CONFLICT(HttpStatus.CONFLICT, "스케줄 시간이 중복됩니다"),
+    SCHEDULE_DOMAIN_ALREADY_PROCESSED(HttpStatus.CONFLICT, "이미 처리된 스케줄입니다"),
+    SCHEDULE_DOMAIN_NOT_PENDING(HttpStatus.UNPROCESSABLE_ENTITY, "대기 상태가 아닌 스케줄은 처리할 수 없습니다"),
+    SCHEDULE_DOMAIN_NOT_APPROVED(HttpStatus.UNPROCESSABLE_ENTITY, "승인되지 않은 스케줄입니다"),
+
+    // Schedule - Infrastructure Layer (새로 추가)
+    SCHEDULE_INFRASTRUCTURE_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 존재하는 스케줄입니다"),
+    SCHEDULE_INFRASTRUCTURE_RESOURCE_CONFLICT(HttpStatus.CONFLICT, "스케줄 리소스 충돌이 발생했습니다"),
+    SCHEDULE_INFRASTRUCTURE_STATUS_NOT_FOUND(HttpStatus.NOT_FOUND, "스케줄 상태를 찾을 수 없습니다"),
+    SCHEDULE_INFRASTRUCTURE_STATUS_DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "스케줄 상태 데이터베이스 오류가 발생했습니다"),
 
     // =================================================================
     // FILE & NOTIFICATION EXCEPTIONS

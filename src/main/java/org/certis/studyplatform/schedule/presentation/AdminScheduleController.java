@@ -47,11 +47,11 @@ public class AdminScheduleController {
 
    // 스케줄 삭제
     @DeleteMapping("/delete")
-    public ResponseEntity<GlobalResponseHandler<Void>> deleteApprovedSchedule(
+    public ResponseEntity<GlobalResponseHandler<Void>> deleteSchedule(
             @AuthenticationPrincipal CurrentUser currentUser,
             @Valid @RequestBody AdminScheduleDeleteRequestDto requestDto) {
 
-        scheduleFacadeService.deleteApprovedSchedule(currentUser.getId(),requestDto);
+        scheduleFacadeService.deleteSchedule(currentUser.getId(),requestDto);
 
         return GlobalResponseHandler.success(ResponseStatus.SCHEDULE_DELETE_SUCCESS);
     }

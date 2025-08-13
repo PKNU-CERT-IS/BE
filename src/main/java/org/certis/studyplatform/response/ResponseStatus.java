@@ -116,6 +116,8 @@ public enum ResponseStatus {
     SCHEDULE_FIND_SUCCESS(HttpStatus.OK, "일정을 성공적으로 조회했습니다"),
     SCHEDULE_UPDATE_SUCCESS(HttpStatus.OK, "일정이 성공적으로 갱신되었습니다"),
     SCHEDULE_DELETE_SUCCESS(HttpStatus.OK, "일정이 성공적으로 삭제되었습니다"),
+    SCHEDULE_APPROVE_SUCCESS(HttpStatus.OK, "스케줄이 성공적으로 승인되었습니다"),
+    SCHEDULE_REJECT_SUCCESS(HttpStatus.OK, "스케줄이 성공적으로 거절되었습니다"),
     SCHEDULE_LIST_SUCCESS(HttpStatus.OK, "일정 목록을 성공적으로 조회했습니다"),
     SCHEDULE_SEARCH_SUCCESS(HttpStatus.OK, "일정 검색을 성공적으로 완료했습니다"),
     SCHEDULE_REMINDER_SET_SUCCESS(HttpStatus.OK, "일정 알림이 성공적으로 설정되었습니다"),

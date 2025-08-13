@@ -5,17 +5,33 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="177d3300-bc44-4b7c-8fae-30ebad035897" name="변경" comment="">
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/application/service/ScheduleFacadeService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/presentation/AdminScheduleController.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/presentation/ScheduleController.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/presentation/dto/request/AdminScheduleCreateRequestDto.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/presentation/dto/request/AdminScheduleDeleteRequestDto.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/presentation/dto/request/AdminScheduleUpdateRequestDto.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/presentation/dto/request/ClubRoomUsageDeleteRequestDto.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/presentation/dto/request/ClubRoomUsageRequestDto.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/presentation/dto/response/AdminScheduleResponseDto.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/presentation/dto/response/ScheduleResponseDto.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/application/mapper/ScheduleApplicationMapper.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/application/object/command/ApproveOrRejectScheduleRequestCommand.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/application/object/command/CreateClubRoomUsageCommand.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/application/object/command/CreateScheduleByAdminCommand.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/application/object/command/DeleteClubRoomUsageCommand.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/application/object/command/DeleteScheduleCommand.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/application/object/query/GetAllApprovedScheduleRequestsQuery.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/application/object/query/GetMyRequestsQuery.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/application/object/query/GetPendingScheduleRequestsQuery.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/application/service/ScheduleCommandService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/application/service/ScheduleQueryService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/domain/model/vo/AdminScheduleVo.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/domain/model/vo/ScheduleDateTimeVo.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/domain/model/vo/ScheduleDescriptionVo.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/domain/model/vo/ScheduleIdVo.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/domain/model/vo/SchedulePlaceVo.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/domain/model/vo/ScheduleStatusVo.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/domain/model/vo/ScheduleTitleVo.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/domain/model/vo/ScheduleTypeVo.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/domain/model/vo/ScheduleVo.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/domain/service/ScheduleDomainService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/ExceptionStatus.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/ExceptionStatus.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/response/ResponseStatus.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/response/ResponseStatus.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/application/service/ScheduleFacadeService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/application/service/ScheduleFacadeService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/presentation/AdminScheduleController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/presentation/AdminScheduleController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/presentation/ScheduleController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/presentation/ScheduleController.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,6 +41,7 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
+        <option value="Record" />
         <option value="Class" />
       </list>
     </option>
@@ -40,7 +57,6 @@
     <ConfirmationsSetting value="2" id="Add" />
   </component>
   <component name="ProjectViewState">
-    <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent"><![CDATA[{

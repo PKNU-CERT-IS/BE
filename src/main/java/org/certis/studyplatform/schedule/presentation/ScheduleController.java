@@ -36,14 +36,23 @@ public class ScheduleController {
     }
 
 
-    //  내 동방 예약 요청 조회 (월별)
+    //  스케줄 조회 (월별)
     @GetMapping("/requests")
-    public ResponseEntity<GlobalResponseHandler<List<ScheduleResponseDto>>> getMyScheduleRequests(
-            @AuthenticationPrincipal CurrentUser currentUser,
+    public ResponseEntity<GlobalResponseHandler<List<ScheduleResponseDto>>> getAllApprovedScheduleRequests(
             @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ssXXX") OffsetDateTime date) {
 
-        List<ScheduleResponseDto> schedules = scheduleFacadeService.getMyScheduleRequests(
-                currentUser.getId(), date);
+        List<ScheduleResponseDto> schedules = scheduleFacadeService.getAllApprovedScheduleRequests(date);
+
+        return GlobalResponseHandler.success(ResponseStatus.SCHEDULE_FIND_SUCCESS, schedules);
+    }
+
+    // 스케줄 조회 ( 회원 자신의 것 )
+    @GetMapping("/me/request")
+    public ResponseEntity<GlobalResponseHandler<List<ScheduleResponseDto>>> getMyRequests(
+            @AuthenticationPrincipal CurrentUser currentUser) {
+
+        List<ScheduleResponseDto> schedules = scheduleFacadeService.getMyRequests(
+                currentUser.getId());
 
         return GlobalResponseHandler.success(ResponseStatus.SCHEDULE_FIND_SUCCESS, schedules);
     }
