@@ -31,10 +31,7 @@ public class ScheduleCommandService {
      */
     public void deleteClubRoomUsage(DeleteClubRoomUsageCommand command) {
         log.info("Command Service: Deleting club room usage for member ID: {}, schedule ID: {}",
-                command.memberId(), command.scheduleId());
-
-        // 도메인 서비스에서 해당  권한 검증 (자신의 요청만 삭제 가능)
-        scheduleDomainService.validateDeletePermission(command);
+                command.memberId(), command.scheduleId());;
 
         // Domain Service 호출 - 연관 데이터 함께 삭제
         scheduleDomainService.deleteClubRoomUsage(command);
