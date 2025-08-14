@@ -274,6 +274,7 @@ public enum ExceptionStatus {
     SCHEDULE_INFRASTRUCTURE_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 존재하는 스케줄입니다"),
     SCHEDULE_INFRASTRUCTURE_RESOURCE_CONFLICT(HttpStatus.CONFLICT, "스케줄 리소스 충돌이 발생했습니다"),
     SCHEDULE_INFRASTRUCTURE_STATUS_NOT_FOUND(HttpStatus.NOT_FOUND, "스케줄 상태를 찾을 수 없습니다"),
+    SCHEDULE_INFRASTRUCTURE_DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "스케줄 데이터베이스 오류가 발생했습니다"),
     SCHEDULE_INFRASTRUCTURE_STATUS_DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "스케줄 상태 데이터베이스 오류가 발생했습니다"),
 
     // =================================================================

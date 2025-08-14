@@ -130,19 +130,25 @@ public class ScheduleDomainService {
     public List<ScheduleVo> getAllApprovedScheduleRequests(GetAllApprovedScheduleRequestsQuery query) {
         log.info("Domain: Getting all approved schedule requests for date: {}", query.date());
 
-        return scheduleQueryRepository.findAllApprovedByMonth(query);
+        ScheduleDateVo scheduleDateVo = ScheduleDateVo.of(query.date());
+
+        return scheduleQueryRepository.findAllApprovedByMonth(scheduleDateVo);
     }
 
     public List<ScheduleVo> getMyRequests(GetMyRequestsQuery query) {
         log.info("Domain: Getting my requests for member ID: {}", query.memberId());
 
-        return scheduleQueryRepository.findAllByMemberId(query);
+        MemberIdVo memberIdVo  = MemberIdVo.of(query.memberId());
+
+        return scheduleQueryRepository.findAllByMemberId(memberIdVo);
     }
 
     public List<AdminScheduleVo> getPendingScheduleRequests(GetPendingScheduleRequestsQuery query) {
         log.info("Domain: Getting pending schedule requests for admin ID: {}", query.adminId());
 
-        return scheduleQueryRepository.findPendingSchedulesWithMemberInfo(query);
+        MemberIdVo memberIdVo = MemberIdVo.of(query.adminId());
+
+        return scheduleQueryRepository.findPendingSchedulesWithMemberInfo(memberIdVo);
     }
 
     private ScheduleVo createScheduleVo(Long memberId, String title, String description,
@@ -155,7 +161,7 @@ public class ScheduleDomainService {
         SchedulePlaceVo placeVo = SchedulePlaceVo.of(place);
         ScheduleDateTimeVo dateTimeVo = ScheduleDateTimeVo.of(startedAt, endedAt);
 
-        return ScheduleVo.of(null, titleVo.value(), descriptionVo.value(), typeVo.value(),
+        return ScheduleVo.of(null, memberId, titleVo.value(), descriptionVo.value(), typeVo.value(),
                 placeVo.value(), dateTimeVo.startedAt(), dateTimeVo.endedAt(),
                 null, null);
     }

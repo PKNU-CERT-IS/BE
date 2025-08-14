@@ -5,6 +5,7 @@ import org.certis.studyplatform.schedule.application.object.query.GetAllApproved
 import org.certis.studyplatform.schedule.application.object.query.GetMyRequestsQuery;
 import org.certis.studyplatform.schedule.application.object.query.GetPendingScheduleRequestsQuery;
 import org.certis.studyplatform.schedule.domain.model.vo.AdminScheduleVo;
+import org.certis.studyplatform.schedule.domain.model.vo.ScheduleDateVo;
 import org.certis.studyplatform.schedule.domain.model.vo.ScheduleIdVo;
 import org.certis.studyplatform.schedule.domain.model.vo.ScheduleVo;
 
@@ -17,13 +18,13 @@ public interface ScheduleQueryRepository {
     Optional<ScheduleVo> findById(ScheduleIdVo scheduleId);
 
     // 모든 승인된 스케줄 조회 (월별, 캘린더용)
-    List<ScheduleVo> findAllApprovedByMonth(GetAllApprovedScheduleRequestsQuery query);
+    List<ScheduleVo> findAllApprovedByMonth(ScheduleDateVo scheduleDateVo);
 
     // 회원의 모든 요청 조회
-    List<ScheduleVo> findAllByMemberId(GetMyRequestsQuery query);
+    List<ScheduleVo> findAllByMemberId(MemberIdVo memberIdVo);
 
     // 대기중인 스케줄 요청 조회 (어드민용) - 회원정보 포함
-    List<AdminScheduleVo> findPendingSchedulesWithMemberInfo(GetPendingScheduleRequestsQuery query);
+    List<AdminScheduleVo> findPendingSchedulesWithMemberInfo(MemberIdVo memberIdVo);
 
     // 스케줄 존재 여부 확인
     boolean existsById(ScheduleIdVo scheduleId);

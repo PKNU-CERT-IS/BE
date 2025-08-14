@@ -10,7 +10,6 @@ import org.certis.studyplatform.auth.domain.model.vo.*;
 import org.certis.studyplatform.auth.domain.repository.AuthCommandRepository;
 import org.certis.studyplatform.auth.domain.repository.AuthQueryRepository;
 import org.certis.studyplatform.auth.domain.repository.RedisRefreshTokenRepository;
-import org.certis.studyplatform.auth.infrastructure.persistence.AuthJpaRepository;
 import org.certis.studyplatform.exception.ApplicationException;
 import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
