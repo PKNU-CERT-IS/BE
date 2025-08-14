@@ -89,7 +89,7 @@ public class ScheduleCommandRepositoryImpl implements ScheduleCommandRepository 
 
         try {
             ScheduleStatusEntity existingStatus = scheduleStatusJpaRepository
-                    .findById(scheduleId.value())
+                    .findByScheduleId(scheduleId.value())
                     .orElseThrow(() -> new InfrastructureException(
                             ExceptionStatus.SCHEDULE_INFRASTRUCTURE_STATUS_NOT_FOUND,
                             "Schedule status not found: " + scheduleId.value()));

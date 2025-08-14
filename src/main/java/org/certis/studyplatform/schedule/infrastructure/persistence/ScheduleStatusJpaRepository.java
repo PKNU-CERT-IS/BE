@@ -5,7 +5,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.Optional;
+
 public interface ScheduleStatusJpaRepository extends JpaRepository<ScheduleStatusEntity, Long>  {
+
+    // 스케줄 조회 후 영속생 객체를 활용하여 정보 변환을 위한 조회
+    Optional<ScheduleStatusEntity> findByScheduleId(Long scheduleId);  // 이 메서드 추가
 
     // 스케줄 id로 상태 테이블 삭제
     @Modifying

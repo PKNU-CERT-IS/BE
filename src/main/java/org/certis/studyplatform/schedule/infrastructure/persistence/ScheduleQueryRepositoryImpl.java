@@ -40,16 +40,16 @@ public class ScheduleQueryRepositoryImpl implements ScheduleQueryRepository {
         try {
             @NotNull Result<Record10<Object, Object, Object, Object, Object, Object, Object, Object, Object, Object>> records = dsl
                     .select(
-                            field("s.id"),
-                            field("s.member_id"),
-                            field("s.title"),
-                            field("s.description"),
-                            field("s.type"),
-                            field("s.place"),
-                            field("s.started_at"),
-                            field("s.ended_at"),
-                            field("s.created_at"),
-                            field("ss.status")
+                            field("s.id").as("id"),
+                            field("s.member_id").as("member_id"),
+                            field("s.title").as("title"),
+                            field("s.description").as("description"),
+                            field("s.type").as("type"),
+                            field("s.place").as("place"),
+                            field("s.started_at").as("started_at"),
+                            field("s.ended_at").as("ended_at"),
+                            field("s.created_at").as("created_at"),
+                            field("ss.status").as("status")
                     )
                     .from(table("schedule").as("s"))
                     .leftJoin(table("schedule_status").as("ss"))
@@ -81,16 +81,16 @@ public class ScheduleQueryRepositoryImpl implements ScheduleQueryRepository {
 
             @NotNull Result<Record10<Object, Object, Object, Object, Object, Object, Object, Object, Object, Object>> records = dsl
                     .select(
-                            field("s.id"),
-                            field("s.member_id"),
-                            field("s.title"),
-                            field("s.description"),
-                            field("s.type"),
-                            field("s.place"),
-                            field("s.started_at"),
-                            field("s.ended_at"),
-                            field("s.created_at"),
-                            field("ss.status")
+                            field("s.id").as("id"),
+                            field("s.member_id").as("member_id"),
+                            field("s.title").as("title"),
+                            field("s.description").as("description"),
+                            field("s.type").as("type"),
+                            field("s.place").as("place"),
+                            field("s.started_at").as("started_at"),
+                            field("s.ended_at").as("ended_at"),
+                            field("s.created_at").as("created_at"),
+                            field("ss.status").as("status")
                     )
                     .from(table("schedule").as("s"))
                     .join(table("schedule_status").as("ss"))
@@ -121,16 +121,16 @@ public class ScheduleQueryRepositoryImpl implements ScheduleQueryRepository {
         try {
             @NotNull Result<Record10<Object, Object, Object, Object, Object, Object, Object, Object, Object, Object>> records = dsl
                     .select(
-                            field("s.id"),
-                            field("s.member_id"),
-                            field("s.title"),
-                            field("s.description"),
-                            field("s.type"),
-                            field("s.place"),
-                            field("s.started_at"),
-                            field("s.ended_at"),
-                            field("s.created_at"),
-                            field("ss.status")
+                            field("s.id").as("id"),
+                            field("s.member_id").as("member_id"),
+                            field("s.title").as("title"),
+                            field("s.description").as("description"),
+                            field("s.type").as("type"),
+                            field("s.place").as("place"),
+                            field("s.started_at").as("started_at"),
+                            field("s.ended_at").as("ended_at"),
+                            field("s.created_at").as("created_at"),
+                            field("ss.status").as("status")
                     )
                     .from(table("schedule").as("s"))
                     .leftJoin(table("schedule_status").as("ss"))
@@ -160,14 +160,14 @@ public class ScheduleQueryRepositoryImpl implements ScheduleQueryRepository {
             @NotNull Result<Record11<Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object>> records = dsl
                     .select(
                             field("s.id").as("schedule_id"),
-                            field("s.title"),
-                            field("s.description"),
-                            field("s.type"),
-                            field("s.place"),
-                            field("s.started_at"),
-                            field("s.ended_at"),
-                            field("s.created_at"),
-                            field("ss.status"),
+                            field("s.title").as("title"),
+                            field("s.description").as("description"),
+                            field("s.type").as("type"),
+                            field("s.place").as("place"),
+                            field("s.started_at").as("started_at"),
+                            field("s.ended_at").as("ended_at"),
+                            field("s.created_at").as("created_at"),
+                            field("ss.status").as("status"),
                             field("m.id").as("member_id"),
                             field("m.name").as("member_name")
                     )
