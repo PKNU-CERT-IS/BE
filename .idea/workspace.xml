@@ -4,153 +4,54 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1e8d0ef5-02d7-418e-8f28-2f6f954f100e" name="변경" comment="Refactor: Change profile methods flow for mapper refactor #8">
+    <list default="true" id="177d3300-bc44-4b7c-8fae-30ebad035897" name="변경" comment="">
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/domain/model/ScheduleStatus.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/auth/domain/service/AuthDomainService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/auth/domain/service/AuthDomainService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/ExceptionStatus.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/ExceptionStatus.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/MemberCreationVo.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/MemberCreationVo.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/mapper/MemberInfrastructureEntityMapper.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/mapper/MemberInfrastructureEntityMapper.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/presentation/MemberController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/presentation/MemberController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/domain/model/vo/ScheduleStatusVo.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/domain/model/vo/ScheduleStatusVo.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/infrastructure/persistence/ScheduleCommandRepositoryImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/infrastructure/persistence/ScheduleCommandRepositoryImpl.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
-  <component name="ExternalProjectsData">
-    <projectState path="$PROJECT_DIR$">
-      <ProjectState />
-    </projectState>
-  </component>
-  <component name="ExternalProjectsManager">
-    <system id="GRADLE">
-      <state>
-        <task path="$PROJECT_DIR$">
-          <activation />
-        </task>
-        <projects_view>
-          <tree_state>
-            <expand>
-              <path>
-                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
-                <item name="certis" type="f1a62948:ProjectNode" />
-              </path>
-              <path>
-                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
-                <item name="certis" type="f1a62948:ProjectNode" />
-                <item name="Tasks" type="e4a08cd1:TasksNode" />
-              </path>
-              <path>
-                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
-                <item name="certis" type="f1a62948:ProjectNode" />
-                <item name="Tasks" type="e4a08cd1:TasksNode" />
-                <item name="build" type="c8890929:TasksNode$1" />
-              </path>
-            </expand>
-            <select />
-          </tree_state>
-        </projects_view>
-      </state>
-    </system>
-  </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="Spring REST Controller" />
-        <option value="Spring Service" />
-        <option value="Spring Repository" />
-        <option value="Spring Configuration" />
-        <option value="Spring Component" />
-        <option value="spring-beans.schema" />
-        <option value="Enum" />
         <option value="Interface" />
+        <option value="Record" />
         <option value="Class" />
-        <option value="Record" />
-        <option value="Record" />
+        <option value="Enum" />
       </list>
     </option>
   </component>
   <component name="Git.Settings">
-    <option name="RECENT_BRANCH_BY_REPOSITORY">
-      <map>
-        <entry key="$PROJECT_DIR$" value="be/dev/refactor-mapper-strategy#7" />
-      </map>
-    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="KubernetesApiPersistence"><![CDATA[{}]]></component>
-  <component name="KubernetesApiProvider"><![CDATA[{
-  "isMigrated": true
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 3
 }]]></component>
-  <component name="MavenImportPreferences">
-    <option name="importingSettings">
-      <MavenImportingSettings>
-        <option name="jdkForImporter" value="corretto-21" />
-      </MavenImportingSettings>
-    </option>
-  </component>
-  <component name="ProjectColorInfo">{
-  &quot;associatedIndex&quot;: 5
-}</component>
-  <component name="ProjectId" id="30ccVSGdMmlzZHQUmj2kroiWIhQ" />
+  <component name="ProjectId" id="31BWTu4zGUOzeNplItgUYsq2Ec4" />
   <component name="ProjectLevelVcsManager">
     <ConfirmationsSetting value="2" id="Add" />
   </component>
   <component name="ProjectViewState">
-    <option name="flattenModules" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
-    "ASKED_ADD_EXTERNAL_FILES": "true",
     "Gradle.BE [:org.certis.studyplatform.StudyPlatformApplication.main()].executor": "Run",
-    "Gradle.certis [:StudyPlatformApplication.main()].executor": "Run",
-    "Gradle.certis 빌드.executor": "Run",
     "Gradle.소스 다운로드.executor": "Run",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RequestMappingsPanelOrder0": "0",
-    "RequestMappingsPanelOrder1": "1",
-    "RequestMappingsPanelWidth0": "75",
-    "RequestMappingsPanelWidth1": "75",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "SONARLINT_PRECOMMIT_ANALYSIS": "true",
-    "Spring Boot.StudyPlatformApplication.executor": "Run",
-    "git-widget-placeholder": "be/dev/feat,refactor-auth-register#11",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "/Users/woonggimin/Documents/Cert-Is/BE",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "onboarding.tips.debug.path": "C:/Users/SSAFY/IdeaProjects/cert-is/src/main/java/org/cert-is/Main.java",
-    "project.structure.last.edited": "SDK",
-    "project.structure.proportion": "0.15",
-    "project.structure.side.proportion": "0.2",
-    "settings.editor.selected.configurable": "reference.settings.project.maven.importing",
-    "vue.rearranger.settings.migration": "true",
-    "애플리케이션.StudyPlatformApplication.executor": "Run"
+    "git-widget-placeholder": "be/dev/feat-schedule-logic#17"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
-    <key name="CopyFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/src/main/resources" />
-      <recent name="C:\Users\SSAFY\IdeaProjects\certIs\src\main\java\org\certIs\studyplatform\admin" />
-      <recent name="C:\Users\SSAFY\IdeaProjects\certIs\src\main\java\org\certIs\studyplatform\auth" />
-      <recent name="C:\Users\SSAFY\IdeaProjects\certIs\src\main\java\org\certIs\studyplatform\blog" />
-      <recent name="C:\Users\SSAFY\IdeaProjects\certIs\src\main\java\org\certIs\studyplatform\board" />
-    </key>
-    <key name="MoveFile.RECENT_KEYS">
-      <recent name="C:\Users\SSAFY\IdeaProjects\certis" />
-      <recent name="C:\Users\SSAFY\IdeaProjects\certIs\src\main\java\org\certIs\certis\exception" />
-    </key>
     <key name="CopyClassDialog.RECENTS_KEY">
-      <recent name="org.certis.studyplatform.auth.infrastructure.persistence" />
+      <recent name="org.certis.studyplatform.schedule.presentation.dto" />
     </key>
   </component>
-  <component name="RunManager" selected="Spring Boot.StudyPlatformApplication">
+  <component name="RunManager">
     <configuration name="StudyPlatformApplication" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="org.certis.studyplatform.StudyPlatformApplication" />
       <module name="certis.main" />
@@ -164,164 +65,24 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
-    <configuration name="StudyPlatformApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
-      <option name="ALTERNATIVE_JRE_PATH" value="corretto-21" />
-      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
-      <option name="FRAME_DEACTIVATION_UPDATE_POLICY" value="UpdateClassesAndResources" />
-      <module name="certis.main" />
-      <option name="SPRING_BOOT_MAIN_CLASS" value="org.certis.studyplatform.StudyPlatformApplication" />
-      <extension name="net.ashald.envfile">
-        <option name="IS_ENABLED" value="false" />
-        <option name="IS_SUBST" value="false" />
-        <option name="IS_PATH_MACRO_SUPPORTED" value="false" />
-        <option name="IS_IGNORE_MISSING_FILES" value="false" />
-        <option name="IS_ENABLE_EXPERIMENTAL_INTEGRATIONS" value="false" />
-        <ENTRIES>
-          <ENTRY IS_ENABLED="true" PARSER="runconfig" IS_EXECUTABLE="false" />
-        </ENTRIES>
-      </extension>
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
-    <list>
-      <item itemvalue="Spring Boot.StudyPlatformApplication" />
-      <item itemvalue="애플리케이션.StudyPlatformApplication" />
-    </list>
     <recent_temporary>
       <list>
         <item itemvalue="애플리케이션.StudyPlatformApplication" />
       </list>
     </recent_temporary>
   </component>
-  <component name="SharedIndexes">
-    <attachedChunks>
-      <set>
-        <option value="bundled-jdk-9f38398b9061-39b83d9b5494-intellij.indexing.shared.core-IU-241.15989.150" />
-        <option value="bundled-js-predefined-1d06a55b98c1-91d5c284f522-JavaScript-IU-241.15989.150" />
-      </set>
-    </attachedChunks>
-  </component>
-  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="애플리케이션 수준" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
-    <task active="true" id="Default" summary="디폴트 작업">
-      <changelist id="1e8d0ef5-02d7-418e-8f28-2f6f954f100e" name="변경" comment="" />
-      <created>1753930326889</created>
-      <option name="number" value="Default" />
-      <option name="presentableId" value="Default" />
-      <updated>1753930326889</updated>
-      <workItem from="1753930328294" duration="1180000" />
-      <workItem from="1753931755282" duration="13955000" />
-      <workItem from="1753958813591" duration="11934000" />
-      <workItem from="1754230476092" duration="28000" />
-      <workItem from="1754230720885" duration="266000" />
-      <workItem from="1754231353341" duration="44000" />
-      <workItem from="1754231551942" duration="20000" />
-      <workItem from="1754231909868" duration="684000" />
-      <workItem from="1754530853826" duration="2403000" />
-      <workItem from="1754533765035" duration="1350000" />
-      <workItem from="1754539042895" duration="2058000" />
-      <workItem from="1754712315442" duration="30950000" />
-      <workItem from="1754898595751" duration="7203000" />
-    </task>
-    <task id="LOCAL-00001" summary="Build: Change Internal DB to postgres #1">
-      <option name="closed" value="true" />
-      <created>1754052921952</created>
-      <option name="number" value="00001" />
-      <option name="presentableId" value="LOCAL-00001" />
-      <option name="project" value="LOCAL" />
-      <updated>1754052921952</updated>
-    </task>
-    <task id="LOCAL-00002" summary="Refactor: Mapper strategy for each layer #8">
-      <option name="closed" value="true" />
-      <created>1754559858400</created>
-      <option name="number" value="00002" />
-      <option name="presentableId" value="LOCAL-00002" />
-      <option name="project" value="LOCAL" />
-      <updated>1754559858400</updated>
-    </task>
-    <task id="LOCAL-00003" summary="Refactor: Temp deprecate domain layer entity(object) #8">
-      <option name="closed" value="true" />
-      <created>1754754426025</created>
-      <option name="number" value="00003" />
-      <option name="presentableId" value="LOCAL-00003" />
-      <option name="project" value="LOCAL" />
-      <updated>1754754426025</updated>
-    </task>
-    <task id="LOCAL-00004" summary="Refactor: Make &amp; Rename data object mappers each occasion #8">
-      <option name="closed" value="true" />
-      <created>1754754617656</created>
-      <option name="number" value="00004" />
-      <option name="presentableId" value="LOCAL-00004" />
-      <option name="project" value="LOCAL" />
-      <updated>1754754617656</updated>
-    </task>
-    <task id="LOCAL-00005" summary="Feat: Make Domain layer mapper in member domain #8">
-      <option name="closed" value="true" />
-      <created>1754754738942</created>
-      <option name="number" value="00005" />
-      <option name="presentableId" value="LOCAL-00005" />
-      <option name="project" value="LOCAL" />
-      <updated>1754754738942</updated>
-    </task>
-    <task id="LOCAL-00006" summary="Feat: Create VO, DTO, command &amp; query objects #8">
-      <option name="closed" value="true" />
-      <created>1754754905175</created>
-      <option name="number" value="00006" />
-      <option name="presentableId" value="LOCAL-00006" />
-      <option name="project" value="LOCAL" />
-      <updated>1754754905175</updated>
-    </task>
-    <task id="LOCAL-00007" summary="Feat: Create VO, DTO, command &amp; query objects #8">
-      <option name="closed" value="true" />
-      <created>1754754921297</created>
-      <option name="number" value="00007" />
-      <option name="presentableId" value="LOCAL-00007" />
-      <option name="project" value="LOCAL" />
-      <updated>1754754921297</updated>
-    </task>
-    <task id="LOCAL-00008" summary="Refactor: Change member methods flow for mapper refactor #8">
-      <option name="closed" value="true" />
-      <created>1754755012350</created>
-      <option name="number" value="00008" />
-      <option name="presentableId" value="LOCAL-00008" />
-      <option name="project" value="LOCAL" />
-      <updated>1754755012350</updated>
-    </task>
-    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
-  <component name="TypeScriptGeneratedFilesManager">
-    <option name="version" value="3" />
-  </component>
-  <component name="VcsManagerConfiguration">
-    <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Fix: Build Error By rollback miss #1" />
-    <MESSAGE value="Fix: Compile error for rollback issue #1" />
-    <MESSAGE value="Build: Change Internal DB to postgres #1" />
-    <MESSAGE value="Refactor: Mapper strategy for each layer #8" />
-    <MESSAGE value="Refactor: Temp deprecate domain layer entity(object) #8" />
-    <MESSAGE value="Refactor: Make &amp; Rename data object mappers each occasion #8" />
-    <MESSAGE value="Refactor: Delete unused mappers #8" />
-    <MESSAGE value="Feat: Make Domain layer mapper in member domain #8" />
-    <MESSAGE value="Feat: Create VO, DTO, command &amp; query objects #8" />
-    <MESSAGE value="Refactor: Change member methods flow for mapper refactor #8" />
-    <MESSAGE value="Refactor: Change profile methods flow for mapper refactor #8" />
-    <option name="LAST_COMMIT_MESSAGE" value="Refactor: Change profile methods flow for mapper refactor #8" />
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/main/java/org/cert-is/Main.java</url>
-          <line>13</line>
-          <option name="timeStamp" value="1" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
-  </component>
-  <component name="XSLT-Support.FileAssociations.UIState">
-    <expand />
-    <select />
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
 </project>
