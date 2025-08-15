@@ -2,48 +2,39 @@ package org.certis.studyplatform.schedule.domain.model.vo;
 
 import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
+import org.certis.studyplatform.schedule.domain.model.ScheduleStatus;
 
-public record ScheduleStatusVo(String value) {
-
-    private static final String PENDING = "PENDING";
-    private static final String APPROVED = "APPROVED";
-    private static final String REJECTED = "REJECTED";
+public record ScheduleStatusVo(ScheduleStatus status) {
 
     public static ScheduleStatusVo of(String status) {
-        return new ScheduleStatusVo(status);
+        return new ScheduleStatusVo(ScheduleStatus.isScheduleStatus(status));
     }
 
     public static ScheduleStatusVo pending() {
-        return new ScheduleStatusVo(PENDING);
+        return new ScheduleStatusVo(ScheduleStatus.PENDING);
     }
 
     public static ScheduleStatusVo approved() {
-        return new ScheduleStatusVo(APPROVED);
+        return new ScheduleStatusVo(ScheduleStatus.APPROVED);
     }
 
     public static ScheduleStatusVo rejected() {
-        return new ScheduleStatusVo(REJECTED);
-    }
-
-    public ScheduleStatusVo {
-        validateStatus(value);
-    }
-
-    private void validateStatus(String value) {
-        if ((!PENDING.equals(value) && !APPROVED.equals(value) && !REJECTED.equals(value))) {
-            throw new DomainException(ExceptionStatus.SCHEDULE_DOMAIN_INVALID_STATUS);
-        }
+        return new ScheduleStatusVo(ScheduleStatus.REJECTED);
     }
 
     public boolean isPending() {
-        return PENDING.equals(value);
+        return status == ScheduleStatus.PENDING;
     }
 
     public boolean isApproved() {
-        return APPROVED.equals(value);
+        return status == ScheduleStatus.APPROVED;
     }
 
     public boolean isRejected() {
-        return REJECTED.equals(value);
+        return status == ScheduleStatus.REJECTED;
+    }
+
+    public String value(){
+        return status.getValue();
     }
 }
