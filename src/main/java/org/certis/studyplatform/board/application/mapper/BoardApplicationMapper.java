@@ -5,10 +5,7 @@ import org.certis.studyplatform.board.application.object.command.AttachmentComma
 import org.certis.studyplatform.board.application.object.command.CreateBoardCommand;
 import org.certis.studyplatform.board.application.object.command.UpdateBoardCommand;
 import org.certis.studyplatform.board.application.object.query.SearchBoardsQuery;
-import org.certis.studyplatform.board.domain.model.vo.AttachmentVo;
-import org.certis.studyplatform.board.domain.model.vo.BoardLikeVo;
-import org.certis.studyplatform.board.domain.model.vo.BoardSummaryVo;
-import org.certis.studyplatform.board.domain.model.vo.BoardVo;
+import org.certis.studyplatform.board.domain.model.vo.*;
 import org.certis.studyplatform.board.presentation.dto.request.AttachmentRequestDto;
 import org.certis.studyplatform.board.presentation.dto.request.BoardCreateRequestDto;
 import org.certis.studyplatform.board.presentation.dto.request.BoardSearchRequestDto;
@@ -123,39 +120,6 @@ public class BoardApplicationMapper {
     }
 
     /**
-     * BoardVo → BoardDetailResponseDto 변환
-     * Redis에서 좋아요 상태를 별도로 확인해야 함
-     */
-    public BoardDetailResponseDto toBoardDetailResponseDto(BoardVo boardVo, Long viewerId) {
-        // TODO: Redis에서 좋아요 상태 확인 로직 필요
-        // 현재는 임시로 false 설정
-        boolean isLikedByCurrentUser = false;
-
-        // TODO: Redis에서 통계 정보 조회 로직 필요
-        // 현재는 임시로 0 설정
-        Long likeCount = 0L;
-        Long viewCount = 0L;
-
-        return BoardDetailResponseDto.builder()
-                .boardId(boardVo.id())
-                .title(boardVo.title())
-                .content(boardVo.content())
-                .description(boardVo.description())
-                .category(boardVo.category())
-                .createdAt(boardVo.createdAt())
-                .updatedAt(boardVo.updatedAt())
-                .author(AuthorResponseDto.builder()
-                        .memberId(boardVo.authorId())
-                        .name("TODO: 작성자 이름 조회 필요") // TODO: 작성자 정보 조회
-                        .build())
-                .attachments(toAttachmentResponseDtoList(boardVo.attachments()))
-                .likeCount(likeCount)
-                .viewCount(viewCount)
-                .isLikedByCurrentUser(isLikedByCurrentUser)
-                .build();
-    }
-
-    /**
      * List<AttachmentVo> → List<AttachmentResponseDto> 변환
      */
     private List<AttachmentResponseDto> toAttachmentResponseDtoList(List<AttachmentVo> attachments) {
@@ -188,6 +152,26 @@ public class BoardApplicationMapper {
         return BoardLikeResponseDto.builder()
                 .isLiked(vo.isLiked())
                 .likeCount(vo.likeCount())
+                .build();
+    }
+
+    public BoardDetailResponseDto toBoardDetailResponseDto(BoardDetailVo boardDetailVo) {
+        return BoardDetailResponseDto.builder()
+                .boardId(boardDetailVo.id())
+                .title(boardDetailVo.title())
+                .content(boardDetailVo.content())
+                .description(boardDetailVo.description())
+                .category(boardDetailVo.category())
+                .createdAt(boardDetailVo.createdAt())
+                .updatedAt(boardDetailVo.updatedAt())
+                .author(AuthorResponseDto.builder()
+                        .memberId(boardDetailVo.authorId())
+                        .name(boardDetailVo.authorName())
+                        .build())
+                .attachments(toAttachmentResponseDtoList(boardDetailVo.attachments()))
+                .likeCount(boardDetailVo.likeCount())
+                .viewCount(boardDetailVo.viewCount())
+                .isLikedByCurrentUser(boardDetailVo.isLikedByCurrentUser())
                 .build();
     }
 }

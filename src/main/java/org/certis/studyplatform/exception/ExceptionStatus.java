@@ -247,6 +247,7 @@ public enum ExceptionStatus {
     BOARD_INFRASTRUCTURE_DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "게시글 데이터베이스 오류가 발생했습니다"),
     BOARD_INFRASTRUCTURE_FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "첨부파일 업로드에 실패했습니다"),
     BOARD_INFRASTRUCTURE_RESOURCE_CONFLICT(HttpStatus.CONFLICT, "게시글 리소스 충돌이 발생했습니다"),
+    BOARD_INFRASTRUCTURE_REDIS_ERROR(HttpStatus.INTERNAL_SERVER_ERROR,"레디스 데이터베이스에 오류가 발생했습니다." ),
 
     // Comment - Infrastructure Layer
     COMMENT_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "댓글을 찾을 수 없습니다"),

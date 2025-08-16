@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.board.application.object.query.GetBoardDetailQuery;
 import org.certis.studyplatform.board.application.object.query.SearchBoardsQuery;
+import org.certis.studyplatform.board.domain.model.vo.BoardDetailVo;
 import org.certis.studyplatform.board.domain.model.vo.BoardSummaryVo;
 import org.certis.studyplatform.board.domain.model.vo.BoardVo;
 import org.certis.studyplatform.board.domain.service.BoardDomainService;
@@ -42,12 +43,12 @@ public class BoardQueryService {
      * @param query 상세 조회 조건 (조회자 정보 포함)
      * @return 게시글 상세 정보
      */
-    public BoardVo getBoardDetail(GetBoardDetailQuery query) {
+    public BoardDetailVo getBoardDetail(GetBoardDetailQuery query) {
         log.info("Query Service: Getting board detail - ID: {}, viewerId: {}",
                 query.boardId(), query.viewerId());
 
         // Domain Service에 Query 전달 → VO 반환 (조회수 증가 포함)
-        BoardVo result = boardDomainService.getBoardDetail(query);
+        BoardDetailVo result = boardDomainService.getBoardDetail(query);
 
         log.info("Query Service: Board detail retrieved - ID: {}, title: {}",
                 result.id(), result.title());

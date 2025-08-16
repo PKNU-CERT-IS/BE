@@ -9,6 +9,7 @@ import org.certis.studyplatform.board.application.object.command.ToggleLikeComma
 import org.certis.studyplatform.board.application.object.command.UpdateBoardCommand;
 import org.certis.studyplatform.board.application.object.query.GetBoardDetailQuery;
 import org.certis.studyplatform.board.application.object.query.SearchBoardsQuery;
+import org.certis.studyplatform.board.domain.model.vo.BoardDetailVo;
 import org.certis.studyplatform.board.domain.model.vo.BoardLikeVo;
 import org.certis.studyplatform.board.domain.model.vo.BoardSummaryVo;
 import org.certis.studyplatform.board.domain.model.vo.BoardVo;
@@ -68,10 +69,10 @@ public class BoardFacadeService {
         GetBoardDetailQuery query = GetBoardDetailQuery.of(boardId, memberId);
 
         // 2. Query Service 호출 → VO 반환 (조회수 증가 포함)
-        BoardVo boardVo = boardQueryService.getBoardDetail(query);
+        BoardDetailVo boardDetailVo = boardQueryService.getBoardDetail(query);
 
         // 3. VO → ResponseDTO 변환 (좋아요 상태 포함)
-        BoardDetailResponseDto result = boardApplicationMapper.toBoardDetailResponseDto(boardVo, memberId);
+        BoardDetailResponseDto result = boardApplicationMapper.toBoardDetailResponseDto(boardDetailVo);
 
         log.info("Facade: Board detail retrieved - ID: {}", boardId);
         return result;
