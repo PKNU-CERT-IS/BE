@@ -2,7 +2,6 @@ package org.certis.studyplatform.board.presentation;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.board.application.service.BoardFacadeService;
 import org.certis.studyplatform.board.presentation.dto.request.BoardCreateRequestDto;
 import org.certis.studyplatform.board.presentation.dto.request.BoardSearchRequestDto;
@@ -13,9 +12,9 @@ import org.certis.studyplatform.board.presentation.dto.response.BoardListRespons
 import org.certis.studyplatform.response.GlobalResponseHandler;
 import org.certis.studyplatform.response.ResponseStatus;
 import org.certis.studyplatform.shared.security.CurrentUser;
+import org.certis.studyplatform.shared.security.MockCurrentUserProvider;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -24,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 public class BoardController {
 
     private final BoardFacadeService boardFacadeService;
+    private final MockCurrentUserProvider mockCurrentUserProvider;
 
     // 게시글 키워드 검색 조회
     @GetMapping("/keyword")
@@ -37,9 +37,12 @@ public class BoardController {
    // 게시글 id 에 의한 상세 페이지 정보 조회
     @GetMapping("/detail/{id}")
     public ResponseEntity<GlobalResponseHandler<BoardDetailResponseDto>> getBoardDetail(
-            @PathVariable Long id,
-            @AuthenticationPrincipal CurrentUser currentUser) {
-        BoardDetailResponseDto boardDetail = boardFacadeService.getBoardDetail(id, currentUser);
+            @PathVariable Long id
+//            , @AuthenticationPrincipal CurrentUser currentUser
+    ) {
+        CurrentUser currentUser = mockCurrentUserProvider.getMockCurrentUser();
+
+        BoardDetailResponseDto boardDetail = boardFacadeService.getBoardDetail(id, currentUser.getId());
 
         return GlobalResponseHandler.success(ResponseStatus.BOARD_FIND_SUCCESS, boardDetail);
     }
@@ -47,9 +50,12 @@ public class BoardController {
     // 게시글 생성
     @PostMapping("/create")
     public ResponseEntity<GlobalResponseHandler<Void>> createBoard(
-            @Valid @RequestBody BoardCreateRequestDto request,
-            @AuthenticationPrincipal CurrentUser currentUser) {
-        boardFacadeService.createBoard(request, currentUser);
+            @Valid @RequestBody BoardCreateRequestDto request
+//            , @AuthenticationPrincipal CurrentUser currentUser
+    ) {
+        CurrentUser currentUser = mockCurrentUserProvider.getMockCurrentUser();
+
+        boardFacadeService.createBoard(request, currentUser.getId());
 
         return GlobalResponseHandler.success(ResponseStatus.BOARD_CREATE_SUCCESS);
     }
@@ -58,9 +64,12 @@ public class BoardController {
     @PutMapping("/edit/{id}")
     public ResponseEntity<GlobalResponseHandler<Void>> updateBoard(
             @PathVariable Long id,
-            @Valid @RequestBody BoardUpdateRequestDto request,
-            @AuthenticationPrincipal CurrentUser currentUser) {
-        boardFacadeService.updateBoard(id, request, currentUser);
+            @Valid @RequestBody BoardUpdateRequestDto request
+//            , @AuthenticationPrincipal CurrentUser currentUser
+    ) {
+        CurrentUser currentUser = mockCurrentUserProvider.getMockCurrentUser();
+
+        boardFacadeService.updateBoard(id, request, currentUser.getId());
 
         return GlobalResponseHandler.success(ResponseStatus.BOARD_UPDATE_SUCCESS);
     }
@@ -68,9 +77,13 @@ public class BoardController {
     // 게시글 삭제
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<GlobalResponseHandler<Void>> deleteBoard(
-            @PathVariable Long id,
-            @AuthenticationPrincipal CurrentUser currentUser) {
-        boardFacadeService.deleteBoard(id, currentUser);
+            @PathVariable Long id
+//            , @AuthenticationPrincipal CurrentUser currentUser
+    ) {
+
+        CurrentUser currentUser = mockCurrentUserProvider.getMockCurrentUser();
+
+        boardFacadeService.deleteBoard(id, currentUser.getId(),currentUser.getRole());
 
         return GlobalResponseHandler.success(ResponseStatus.BOARD_DELETE_SUCCESS);
     }
@@ -78,9 +91,12 @@ public class BoardController {
     // 게시글 좋아요 토글
     @PostMapping("/like/{id}")
     public ResponseEntity<GlobalResponseHandler<BoardLikeResponseDto>> toggleLike(
-            @PathVariable Long id,
-            @AuthenticationPrincipal CurrentUser currentUser) {
-        BoardLikeResponseDto likeResponse = boardFacadeService.toggleLike(id, currentUser);
+            @PathVariable Long id
+//            , @AuthenticationPrincipal CurrentUser currentUser
+    ) {
+        CurrentUser currentUser = mockCurrentUserProvider.getMockCurrentUser();
+
+        BoardLikeResponseDto likeResponse = boardFacadeService.toggleLike(id, currentUser.getId());
 
         return GlobalResponseHandler.success(ResponseStatus.BOARD_LIKE_SUCCESS, likeResponse);
     }
