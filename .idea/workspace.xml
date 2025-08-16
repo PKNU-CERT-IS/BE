@@ -5,28 +5,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="177d3300-bc44-4b7c-8fae-30ebad035897" name="변경" comment="">
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/application/mapper/BoardApplicationMapper.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/application/object/command/AttachmentCommand.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/application/object/command/CreateBoardCommand.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/application/object/command/DeleteBoardCommand.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/application/object/command/ToggleLikeCommand.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/application/object/command/UpdateBoardCommand.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/application/object/query/GetBoardDetailQuery.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/application/object/query/SearchBoardsQuery.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/application/service/BoardCommandService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/application/service/BoardQueryService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/domain/model/vo/AttachmentVo.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/domain/model/vo/BoardCategoryVo.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/domain/model/vo/BoardContentVo.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/domain/model/vo/BoardDescriptionVo.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/domain/model/vo/BoardIdVo.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/domain/model/vo/BoardLikeVo.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/domain/model/vo/BoardSummaryVo.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/domain/model/vo/BoardTitleVo.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/domain/model/vo/BoardVo.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/application/sync/BoardSyncService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/domain/model/vo/BoardCreatedVo.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/domain/model/vo/BoardCreationVo.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/domain/model/vo/BoardSearchVo.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/domain/model/vo/BoardStatsVo.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/domain/model/vo/BoardUpdateVo.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/domain/model/vo/IncrementViewVo.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/domain/model/vo/ToggleLikeVo.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/infrastructure/scheduler/BoardSyncScheduler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/application/service/BoardFacadeService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/application/service/BoardFacadeService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/presentation/BoardController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/presentation/BoardController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/ExceptionStatus.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/ExceptionStatus.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -39,8 +27,9 @@
       <list>
         <option value="Interface" />
         <option value="Enum" />
-        <option value="Record" />
+        <option value="package-info" />
         <option value="Class" />
+        <option value="Record" />
       </list>
     </option>
   </component>

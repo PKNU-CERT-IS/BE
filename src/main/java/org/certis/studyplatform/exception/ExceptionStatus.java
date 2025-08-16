@@ -237,6 +237,10 @@ public enum ExceptionStatus {
     BOARD_DOMAIN_INVALID_AUTHOR(HttpStatus.BAD_REQUEST, "유효하지 않은 작성자입니다"),
     BOARD_DOMAIN_LIKE_SELF_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "본인 게시글에는 좋아요를 할 수 없습니다"),
     BOARD_DOMAIN_INVALID_LIKE_STATUS(HttpStatus.BAD_REQUEST, "유효하지 않은 좋아요 상태입니다"),
+    BOARD_DOMAIN_INVALID_SEARCH(HttpStatus.BAD_REQUEST, "유효하지 않은 검색어입니다"),
+    BOARD_DOMAIN_INVALID_PAGE(HttpStatus.BAD_REQUEST, "유효하지 않은 페이지 번호입니다"),
+    BOARD_DOMAIN_INVALID_PAGE_SIZE(HttpStatus.BAD_REQUEST, "유효하지 않은 페이지 크기입니다"),
+
 
     // Board - Infrastructure Layer
     BOARD_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다"),
