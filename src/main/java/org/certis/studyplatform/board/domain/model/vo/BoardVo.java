@@ -15,9 +15,15 @@ public record BoardVo(
         List<AttachmentVo> attachments
 ) {
 
-    public static BoardVo of(Long id, String title, String content, String description,
-                             String category, Long authorId, OffsetDateTime createdAt,
-                             OffsetDateTime updatedAt, List<AttachmentVo> attachments) {
+    public static BoardVo of( Long id,
+                              String title,
+                              String content,
+                              String description,
+                              String category,
+                              Long authorId,
+                              OffsetDateTime createdAt,
+                              OffsetDateTime updatedAt,
+                              List<AttachmentVo> attachments) {
         // 개별 VO 생성으로 검증 수행
         BoardIdVo.of(id);
         BoardTitleVo.of(title);

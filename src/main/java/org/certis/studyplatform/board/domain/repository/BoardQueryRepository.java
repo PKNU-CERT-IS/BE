@@ -1,9 +1,6 @@
 package org.certis.studyplatform.board.domain.repository;
 
-import org.certis.studyplatform.board.domain.model.vo.BoardIdVo;
-import org.certis.studyplatform.board.domain.model.vo.BoardSearchVo;
-import org.certis.studyplatform.board.domain.model.vo.BoardSummaryVo;
-import org.certis.studyplatform.board.domain.model.vo.BoardVo;
+import org.certis.studyplatform.board.domain.model.vo.*;
 import org.springframework.data.domain.Page;
 
 import java.util.List;
@@ -24,4 +21,7 @@ public interface BoardQueryRepository {
     Long getLikeCountFromDB(BoardIdVo boardIdVo);
 
     Long getViewCountFromDB(BoardIdVo boardIdVo);
+
+    List<AttachmentVo> findAttachmentsByBoardId(BoardIdVo boardIdVo);
+
 }

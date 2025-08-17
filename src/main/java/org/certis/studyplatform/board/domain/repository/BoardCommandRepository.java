@@ -4,7 +4,7 @@ import org.certis.studyplatform.board.domain.model.vo.BoardCreationVo;
 import org.certis.studyplatform.board.domain.model.vo.BoardIdVo;
 import org.certis.studyplatform.board.domain.model.vo.BoardUpdateVo;
 
-public interface BoardCommandRepository {
+public interface BoardCommandRepository  {
 
     // 생성된 게시글 ID
     BoardIdVo createBoard(BoardCreationVo creationVo);

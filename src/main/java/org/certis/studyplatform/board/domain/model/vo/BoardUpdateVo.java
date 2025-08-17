@@ -7,7 +7,7 @@ import java.util.List;
  * 게시글 수정용 VO
  */
 public record BoardUpdateVo(
-        Long id,
+        Long boardId,
         String title,
         String content,
         String description,
@@ -15,16 +15,16 @@ public record BoardUpdateVo(
         List<AttachmentVo> attachments
 ) {
 
-    public static BoardUpdateVo of(Long id, String title, String content, String description,
+    public static BoardUpdateVo of(Long boardId, String title, String content, String description,
                                    String category, List<AttachmentVo> attachments) {
         // 개별 VO 생성으로 검증 수행
-        BoardIdVo.of(id);
+        BoardIdVo.of(boardId);
         BoardTitleVo.of(title);
         BoardContentVo.of(content);
         BoardDescriptionVo.of(description);
         BoardCategoryVo.of(category);
 
-        return new BoardUpdateVo(id, title, content, description, category,
+        return new BoardUpdateVo(boardId, title, content, description, category,
                 attachments != null ? attachments : List.of());
     }
 }
