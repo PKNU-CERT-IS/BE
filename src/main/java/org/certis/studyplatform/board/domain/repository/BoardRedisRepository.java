@@ -8,7 +8,7 @@ import java.util.List;
 public interface BoardRedisRepository {
 
     // 초기 설정 ( 조회수, 좋아요 수 )
-    void initializeStats(Long boardId);
+    void initializeStats(BoardIdVo boardIdVo);
 
     // 설정 삭제 ( 조회수, 좋아요 수 )
     void deleteStats(BoardIdVo boardIdVo);

@@ -7,7 +7,7 @@ import org.certis.studyplatform.board.domain.model.vo.BoardUpdateVo;
 public interface BoardCommandRepository {
 
     // 생성된 게시글 ID
-    Long createBoard(BoardCreationVo creationVo);
+    BoardIdVo createBoard(BoardCreationVo creationVo);
 
     // 게시글 수정
     void updateBoard(BoardUpdateVo updateVo);

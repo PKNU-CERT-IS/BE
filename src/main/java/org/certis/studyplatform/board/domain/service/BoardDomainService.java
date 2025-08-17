@@ -56,12 +56,12 @@ public class BoardDomainService {
         );
 
         // 2. 게시글 + 첨부파일 저장
-        Long boardId = boardCommandRepository.createBoard(creationVo);
+        BoardIdVo boardIdVo = boardCommandRepository.createBoard(creationVo);
 
         // 3. Redis 초기 통계 설정
-        boardRedisRepository.initializeStats(boardId);
+        boardRedisRepository.initializeStats(boardIdVo);
 
-        log.info("Domain: Board created successfully - ID: {}", boardId);
+        log.info("Domain: Board created successfully - ID: {}", boardIdVo.value());
     }
 
     /**
