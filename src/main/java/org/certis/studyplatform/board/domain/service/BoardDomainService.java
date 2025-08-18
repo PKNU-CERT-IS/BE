@@ -75,7 +75,6 @@ public class BoardDomainService {
 
         // 1. 게시글 존재 및 권한 확인
         BoardIdVo boardIdVo = BoardIdVo.of(command.boardId());
-
         BoardVo existingBoard = boardQueryRepository.findById(boardIdVo)
                 .orElseThrow(() -> new DomainException(ExceptionStatus.BOARD_INFRASTRUCTURE_NOT_FOUND));
 
@@ -98,7 +97,7 @@ public class BoardDomainService {
         );
 
         // 3. 게시글 수정 + 첨부파일 차등 처리
-        boardCommandRepository.updateBoard(updateVo);
+        boardCommandRepository.updateBoard(updateVo, existingBoard);
 
         log.info("Domain: Board updated successfully - ID: {}", command.boardId());
     }
@@ -285,15 +284,17 @@ public class BoardDomainService {
     private void syncSingleBoardStats(Long boardId) {
         log.debug("Domain: Syncing stats for board: {}", boardId);
 
-        // 1. VO 변환
+        // 1. VO 변환 jooq 조회
         BoardIdVo boardIdVo = BoardIdVo.of(boardId);
+        BoardVo existingBoard = boardQueryRepository.findById(boardIdVo)
+                .orElseThrow(() -> new DomainException(ExceptionStatus.BOARD_INFRASTRUCTURE_NOT_FOUND));
 
         // 2. Redis에서 최신 통계 조회
         Long redisLikeCount = boardRedisRepository.getLikeCount(boardIdVo);
         Long redisViewCount = boardRedisRepository.getViewCount(boardIdVo);
 
         // 3. RDB 업데이트
-        boardCommandRepository.updateBoardStats(boardIdVo, redisLikeCount, redisViewCount);
+        boardCommandRepository.updateBoardStats(boardIdVo, redisLikeCount, redisViewCount, existingBoard.authorId());
 
         log.debug("Domain: Stats synced for board: {} - Likes: {}, Views: {}",
                 boardId, redisLikeCount, redisViewCount);

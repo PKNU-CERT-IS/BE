@@ -15,6 +15,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 
 @Repository
@@ -25,7 +26,6 @@ public class BoardCommandRepositoryImpl implements BoardCommandRepository {
     private final BoardJpaRepository boardJpaRepository;
     private final BoardAttachedJpaRepository boardAttachedJpaRepository;
     private final BoardInfrastructureMapper boardInfrastructureMapper;
-    private final BoardQueryRepository boardQueryRepository;
     private final BoardLikeJpaRepository boardLikeJpaRepository;
     private final BoardViewJpaRepository boardViewJpaRepository;
 
@@ -68,14 +68,10 @@ public class BoardCommandRepositoryImpl implements BoardCommandRepository {
 
     @Override
     @Transactional
-    public void updateBoard(BoardUpdateVo updateVo) {
+    public void updateBoard(BoardUpdateVo updateVo, BoardVo existingBoard) { // 기존 데이터를 파라미터로 받음
             log.info("🔄 Infrastructure: Starting board update - ID: {}", updateVo.boardId());
 
             try {
-                BoardIdVo boardIdVo = BoardIdVo.of(updateVo.boardId());
-                BoardVo existingBoard = boardQueryRepository.findById(boardIdVo)
-                        .orElseThrow(() -> new DomainException(ExceptionStatus.BOARD_INFRASTRUCTURE_NOT_FOUND));
-
                 BoardEntity boardEntity = BoardEntity.builder()
                         .id(updateVo.boardId()) // 기존 ID 유지
                         .memberId(existingBoard.authorId()) // 기존 작성자 유지
@@ -90,7 +86,8 @@ public class BoardCommandRepositoryImpl implements BoardCommandRepository {
                 boardJpaRepository.save(boardEntity);
                 log.debug("💾 Board updated successfully - ID: {}", updateVo.boardId());
 
-                updateAttachments(updateVo.boardId(), updateVo.attachments(), existingBoard.authorId());
+                updateAttachments(updateVo.boardId(), updateVo.attachments(),
+                        existingBoard.authorId(), existingBoard.attachments());
 
                 log.info("✅ Infrastructure: Board updated successfully - ID: {}", updateVo.boardId());
 
@@ -106,10 +103,7 @@ public class BoardCommandRepositoryImpl implements BoardCommandRepository {
         log.info("🗑️ Infrastructure: Starting board deletion - ID: {}", boardIdVo.value());
 
         try {
-            BoardVo existingBoard = boardQueryRepository.findById(boardIdVo)
-                    .orElseThrow(() -> new DomainException(ExceptionStatus.BOARD_INFRASTRUCTURE_NOT_FOUND));
             boardJpaRepository.deleteById(boardIdVo.value());
-
             boardAttachedJpaRepository.softDeleteByBoardId(boardIdVo.value());
             log.debug("🗑️ Attachments deleted for board: {}", boardIdVo.value());
             log.info("✅ Infrastructure: Board deleted successfully - ID: {}", boardIdVo.value());
@@ -121,14 +115,13 @@ public class BoardCommandRepositoryImpl implements BoardCommandRepository {
         }
     }
 
-    public void updateBoardStats(BoardIdVo boardIdVo, Long redisLikeCount, Long redisViewCount) {
+    @Override
+    @Transactional
+    public void updateBoardStats(BoardIdVo boardIdVo, Long redisLikeCount, Long redisViewCount, Long authorId) {
         log.debug("📊 Infrastructure: Updating board stats - ID: {}, likes: {}, views: {}",
                 boardIdVo.value(), redisLikeCount, redisViewCount);
 
         try {
-            BoardVo existingBoard = boardQueryRepository.findById(boardIdVo)
-                    .orElseThrow(() -> new DomainException(ExceptionStatus.BOARD_INFRASTRUCTURE_NOT_FOUND));
-
             BoardLikeEntity likeEntity = boardLikeJpaRepository.findLatestByBoardId(boardIdVo.value());
 
             // 존재시 업데이트 존재하지 않을 시 새로운 통계 생성
@@ -139,11 +132,13 @@ public class BoardCommandRepositoryImpl implements BoardCommandRepository {
                         .build();
                 boardLikeJpaRepository.save(updatedLikeEntity);
             } else {
+
                 BoardLikeEntity newLikeEntity = BoardLikeEntity.builder()
                         .boardId(boardIdVo.value())
-                        .memberId(existingBoard.authorId())
+                        .memberId(authorId)
                         .likeNumber(redisLikeCount.intValue())
                         .build();
+
                 boardLikeJpaRepository.save(newLikeEntity);
             }
 
@@ -169,20 +164,18 @@ public class BoardCommandRepositoryImpl implements BoardCommandRepository {
 
         } catch (Exception e) {
             log.error("❌ Infrastructure: Failed to update board stats - ID: {}", boardIdVo.value(), e);
-            throw new DomainException(ExceptionStatus.BOARD_INFRASTRUCTURE_UPDATE_FAILED)
+            throw new DomainException(ExceptionStatus.BOARD_INFRASTRUCTURE_UPDATE_FAILED);
         }
     }
 
-    private void updateAttachments(Long boardId, List<AttachmentVo> newAttachments, Long memberId) {
+    private void updateAttachments(Long boardId, List<AttachmentVo> newAttachments,
+                                   Long memberId, List<AttachmentVo> existingAttachments) {
         log.debug("📎 Starting attachment differential processing for board: {}", boardId);
 
         try {
-            BoardIdVo boardIdVo = BoardIdVo.of(boardId);
-            List<AttachmentVo> existingAttachments = boardQueryRepository.findAttachmentsByBoardId(boardIdVo);
-
             List<Long> newAttachmentIds = newAttachments.stream()
                     .map(AttachmentVo::id)
-                    .filter(id -> id != null)
+                    .filter(Objects::nonNull)
                     .toList();
 
             List<Long> attachmentIdsToDelete = existingAttachments.stream()
