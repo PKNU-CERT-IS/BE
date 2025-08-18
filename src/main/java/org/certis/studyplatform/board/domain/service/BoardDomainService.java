@@ -76,7 +76,7 @@ public class BoardDomainService {
         // 1. 게시글 존재 및 권한 확인
         BoardIdVo boardIdVo = BoardIdVo.of(command.boardId());
         BoardVo existingBoard = boardQueryRepository.findById(boardIdVo)
-                .orElseThrow(() -> new DomainException(ExceptionStatus.BOARD_INFRASTRUCTURE_NOT_FOUND));
+                .orElseThrow(() -> new DomainException(ExceptionStatus.BOARD_DOMAIN_INVALID_ID));
 
         if (!existingBoard.isAuthor(command.requesterId())) {
             throw new DomainException(ExceptionStatus.BOARD_DOMAIN_AUTHOR_MISMATCH);
@@ -114,7 +114,7 @@ public class BoardDomainService {
         // 1. 게시글 존재 및 권한 확인
         BoardIdVo boardIdVo = BoardIdVo.of(command.boardId());
         BoardVo existingBoard = boardQueryRepository.findById(boardIdVo)
-                .orElseThrow(() -> new DomainException(ExceptionStatus.BOARD_INFRASTRUCTURE_NOT_FOUND));
+                .orElseThrow(() -> new DomainException(ExceptionStatus.BOARD_DOMAIN_INVALID_ID));
 
         boolean isAuthor = existingBoard.isAuthor(command.requesterId());
 
@@ -146,7 +146,7 @@ public class BoardDomainService {
         // 1. 게시글 존재 확인
         BoardIdVo boardIdVo = BoardIdVo.of(command.boardId());
         BoardVo existingBoard = boardQueryRepository.findById(boardIdVo)
-                .orElseThrow(() -> new DomainException(ExceptionStatus.BOARD_INFRASTRUCTURE_NOT_FOUND));
+                .orElseThrow(() -> new DomainException(ExceptionStatus.BOARD_DOMAIN_INVALID_ID));
 
         // 2. 본인 게시글 좋아요 방지
         if (existingBoard.isAuthor(command.memberId())) {
@@ -217,7 +217,7 @@ public class BoardDomainService {
         // 1. 게시글 존재 확인 및 조회 (첨부파일 포함)
         BoardIdVo boardIdVo = BoardIdVo.of(query.boardId());
         BoardVo board = boardQueryRepository.findByIdWithAttachments(boardIdVo)
-                .orElseThrow(() -> new DomainException(ExceptionStatus.BOARD_INFRASTRUCTURE_NOT_FOUND));
+                .orElseThrow(() -> new DomainException(ExceptionStatus.BOARD_DOMAIN_INVALID_ID));
 
         // 2. Redis에서 조회수 증가 (실패 시 에러 반환)
         IncrementViewVo viewVo = IncrementViewVo.of(query.boardId(), query.viewerId());

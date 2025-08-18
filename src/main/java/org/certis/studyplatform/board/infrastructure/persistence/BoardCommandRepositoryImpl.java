@@ -170,32 +170,23 @@ public class BoardCommandRepositoryImpl implements BoardCommandRepository {
 
     private void updateAttachments(Long boardId, List<AttachmentVo> newAttachments,
                                    Long memberId, List<AttachmentVo> existingAttachments) {
-        log.debug("📎 Starting attachment differential processing for board: {}", boardId);
+        log.debug("📎 Starting attachment processing for board: {}", boardId);
 
         try {
-            List<Long> newAttachmentIds = newAttachments.stream()
-                    .map(AttachmentVo::id)
-                    .filter(Objects::nonNull)
-                    .toList();
+            // 기존 첨부파일 전체 삭제 (소프트 딜리트)
+            List<BoardAttachedEntity> existingEntities = boardAttachedJpaRepository.findByBoardIdAndDeletedAtIsNull(boardId);
 
-            List<Long> attachmentIdsToDelete = existingAttachments.stream()
-                    .map(AttachmentVo::id)
-                    .filter(id -> !newAttachmentIds.contains(id))
-                    .toList();
-
-            if (!attachmentIdsToDelete.isEmpty()) {
-                boardAttachedJpaRepository.deleteAllById(attachmentIdsToDelete);
-                log.debug("🗑️ Deleted {} existing attachments", attachmentIdsToDelete.size());
+            if (!existingEntities.isEmpty()) {
+                boardAttachedJpaRepository.deleteAll(existingEntities);
+                boardAttachedJpaRepository.flush();
+                log.debug("🗑️ Deleted {} existing attachments", existingEntities.size());
             }
 
-            List<AttachmentVo> newAttachmentsToSave = newAttachments.stream()
-                    .filter(attachment -> attachment.id() == null) // ID가 없는 것 = 새로 추가된 것
-                    .toList();
-
-            if (!newAttachmentsToSave.isEmpty()) {
+            // 새로운 첨부파일 전체 저장
+            if (!newAttachments.isEmpty()) {
                 List<BoardAttachedEntity> newAttachmentEntities =
                         boardInfrastructureMapper.toBoardAttachedEntityList(
-                                newAttachmentsToSave,
+                                newAttachments,
                                 boardId,
                                 memberId
                         );
@@ -204,7 +195,7 @@ public class BoardCommandRepositoryImpl implements BoardCommandRepository {
                 log.debug("💾 Saved {} new attachments", newAttachmentEntities.size());
             }
 
-            log.debug("✅ Attachment differential processing completed");
+            log.debug("✅ Attachment processing completed");
 
         } catch (Exception e) {
             log.error("❌ Failed to update attachments for board: {}", boardId, e);

@@ -88,7 +88,7 @@ public class BoardController {
         return GlobalResponseHandler.success(ResponseStatus.BOARD_DELETE_SUCCESS);
     }
 
-    // 게시글 좋아요 토글
+    // 게시글 좋아요 토글 ( Redis 활용 )
     @PostMapping("/like/{id}")
     public ResponseEntity<GlobalResponseHandler<BoardLikeResponseDto>> toggleLike(
             @PathVariable Long id
@@ -98,6 +98,11 @@ public class BoardController {
 
         BoardLikeResponseDto likeResponse = boardFacadeService.toggleLike(id, currentUser.getId());
 
-        return GlobalResponseHandler.success(ResponseStatus.BOARD_LIKE_SUCCESS, likeResponse);
+        if(likeResponse.isLiked()){
+            return GlobalResponseHandler.success(ResponseStatus.BOARD_LIKE_SUCCESS, likeResponse);
+        }
+        else{
+            return GlobalResponseHandler.success(ResponseStatus.BOARD_UNLIKE_SUCCESS, likeResponse);
+        }
     }
 }
