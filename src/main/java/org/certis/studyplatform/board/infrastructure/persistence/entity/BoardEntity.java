@@ -1,4 +1,4 @@
-package org.certis.studyplatform.board.infrastructure.persistence;
+package org.certis.studyplatform.board.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -13,39 +13,36 @@ import org.hibernate.annotations.Where;
 import java.time.OffsetDateTime;
 
 /**
- * Board Attached Entity
+ * Board Entity
  * 
- * 게시판 첨부파일을 저장하는 JPA Entity
+ * 게시판 게시글을 저장하는 JPA Entity
  */
 @Entity
-@Table(name = "board_attached")
+@Table(name = "board")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-@SQLDelete(sql = "UPDATE board_attached SET deleted_at = NOW() WHERE id = ?")
+@SQLDelete(sql = "UPDATE board SET deleted_at = NOW() WHERE id = ?")
 @Where(clause = "deleted_at IS NULL")
-public class BoardAttachedEntity {
+public class BoardEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "board_id", nullable = false)
-    private Long boardId;
-
     @Column(name = "member_id", nullable = false)
     private Long memberId;
 
-    @Column(name = "name", nullable = false)
-    private String name;
+    @Column(name = "title", nullable = false)
+    private String title;
 
-    @Column(name = "type", nullable = false)
-    private String type;
+    @Column(name = "content", nullable = false)
+    private String content;
 
-    @Column(name = "size", nullable = false)
-    private String size;
+    @Column(name = "category", nullable = false)
+    private String category;
 
-    @Column(name = "attached_url", nullable = false)
-    private String attachedUrl;
+    @Column(name = "description", nullable = false)
+    private String description;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -59,17 +56,16 @@ public class BoardAttachedEntity {
     private OffsetDateTime deletedAt;
 
     @Builder(toBuilder = true)
-    private BoardAttachedEntity(Long id, Long boardId, Long memberId, String name,
-                               String type, String size, String attachedUrl,
-                               OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
+    private BoardEntity(Long id, Long memberId, String title, String content,
+                       String category, String description,
+                       OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
         this.id = id;
-        this.boardId = boardId;
         this.memberId = memberId;
-        this.name = name;
-        this.type = type;
-        this.size = size;
-        this.attachedUrl = attachedUrl;
-        this.createdAt = createdAt;
+        this.title = title;
+        this.content = content;
+        this.category = category;
+        this.description = description;
+                this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.deletedAt = deletedAt;
     }
