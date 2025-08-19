@@ -1,18 +1,16 @@
 package org.certis.studyplatform.board.domain.model.vo;
 
 public record BoardStatsVo(
-        Long boardId,
         Long likeCount,
-        Long viewCount
+        Long viewCount,
+        Long likeId,    // Like Entity ID (업데이트용)
+        Long viewId     // View Entity ID (업데이트용)
 ) {
+    public static BoardStatsVo of(Long likeCount, Long viewCount, Long likeId, Long viewId) {
+        return new BoardStatsVo(likeCount, viewCount, likeId, viewId);
+    }
 
-    public static BoardStatsVo of(Long boardId, Long likeCount, Long viewCount) {
-        BoardIdVo.of(boardId);
-
-        return new BoardStatsVo(
-                boardId,
-                likeCount != null ? likeCount : 0L,
-                viewCount != null ? viewCount : 0L
-        );
+    public static BoardStatsVo empty() {
+        return new BoardStatsVo(0L, 0L, null, null);
     }
 }

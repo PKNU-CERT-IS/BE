@@ -1,9 +1,6 @@
 package org.certis.studyplatform.board.domain.repository;
 
-import org.certis.studyplatform.board.domain.model.vo.BoardCreationVo;
-import org.certis.studyplatform.board.domain.model.vo.BoardIdVo;
-import org.certis.studyplatform.board.domain.model.vo.BoardUpdateVo;
-import org.certis.studyplatform.board.domain.model.vo.BoardVo;
+import org.certis.studyplatform.board.domain.model.vo.*;
 
 public interface BoardCommandRepository  {
 
@@ -17,5 +14,5 @@ public interface BoardCommandRepository  {
     void deleteBoard(BoardIdVo boardIdVo);
 
     // 게시글 통계 업데이트 (Redis → RDB 동기화)
-    void updateBoardStats(BoardIdVo boardIdVo, Long redisLikeCount, Long redisViewCount, Long authorId);
+    void updateBoardStats(BoardStatsUpdateVo statsUpdateVo);
 }

@@ -24,4 +24,8 @@ public interface BoardQueryRepository {
 
     List<AttachmentVo> findAttachmentsByBoardId(BoardIdVo boardIdVo);
 
+    // 게시글 현재 통계 조회
+    BoardStatsVo getBoardStats(BoardIdVo boardIdVo);
+
+
 }

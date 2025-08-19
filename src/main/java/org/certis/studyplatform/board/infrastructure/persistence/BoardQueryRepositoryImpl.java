@@ -235,6 +235,51 @@ public class BoardQueryRepositoryImpl implements BoardQueryRepository {
         }
     }
 
+    @Override
+    public BoardStatsVo getBoardStats(BoardIdVo boardIdVo) {
+        log.debug("🔍 Infrastructure: Getting board stats - ID: {}", boardIdVo.value());
+
+        try {
+            // Like 통계 조회
+            Record likeRecord = dsl.select(
+                            field("id", Long.class),
+                            field("like_number", Long.class)
+                    )
+                    .from(table("board_like"))
+                    .where(field("board_id").eq(boardIdVo.value()))
+                    .orderBy(field("updated_at").desc())
+                    .limit(1)
+                    .fetchOne();
+
+            // View 통계 조회
+            Record viewRecord = dsl.select(
+                            field("id", Long.class),
+                            field("view_number", Long.class)
+                    )
+                    .from(table("board_view"))
+                    .where(field("board_id").eq(boardIdVo.value()))
+                    .orderBy(field("updated_at").desc())
+                    .limit(1)
+                    .fetchOne();
+
+            Long likeCount = likeRecord != null ? likeRecord.get("like_number", Long.class) : 0L;
+            Long viewCount = viewRecord != null ? viewRecord.get("view_number", Long.class) : 0L;
+            Long likeId = likeRecord != null ? likeRecord.get("id", Long.class) : null;
+            Long viewId = viewRecord != null ? viewRecord.get("id", Long.class) : null;
+
+            BoardStatsVo result = BoardStatsVo.of(likeCount, viewCount, likeId, viewId);
+
+            log.debug("🔍 Found board stats: likes={}, views={}, likeId={}, viewId={}",
+                    likeCount, viewCount, likeId, viewId);
+
+            return result;
+
+        } catch (Exception e) {
+            log.error("❌ Failed to get board stats: {}", boardIdVo.value(), e);
+            return BoardStatsVo.empty();
+        }
+    }
+
     private BoardVo recordToBoardVo(Record record) {
         return BoardVo.of(
                 record.get("id", Long.class),

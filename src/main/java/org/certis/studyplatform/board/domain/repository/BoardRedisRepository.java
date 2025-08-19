@@ -1,7 +1,6 @@
 package org.certis.studyplatform.board.domain.repository;
 
 import org.certis.studyplatform.board.domain.model.vo.BoardIdVo;
-import org.certis.studyplatform.board.domain.model.vo.BoardStatsVo;
 
 import java.util.List;
 

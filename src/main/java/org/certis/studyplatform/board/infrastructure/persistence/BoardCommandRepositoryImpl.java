@@ -117,54 +117,73 @@ public class BoardCommandRepositoryImpl implements BoardCommandRepository {
 
     @Override
     @Transactional
-    public void updateBoardStats(BoardIdVo boardIdVo, Long redisLikeCount, Long redisViewCount, Long authorId) {
-        log.debug("📊 Infrastructure: Updating board stats - ID: {}, likes: {}, views: {}",
-                boardIdVo.value(), redisLikeCount, redisViewCount);
+    public void updateBoardStats(BoardStatsUpdateVo statsUpdateVo) {
+        log.debug("📊 Infrastructure: Updating board stats - ID: {}", statsUpdateVo.boardId());
 
         try {
-            BoardLikeEntity likeEntity = boardLikeJpaRepository.findLatestByBoardId(boardIdVo.value());
-
-            // 존재시 업데이트 존재하지 않을 시 새로운 통계 생성
-            if (likeEntity != null) {
-                // 기존 통계 업데이트
-                BoardLikeEntity updatedLikeEntity = likeEntity.toBuilder()
-                        .likeNumber(redisLikeCount.intValue())
-                        .build();
-                boardLikeJpaRepository.save(updatedLikeEntity);
-            } else {
-
-                BoardLikeEntity newLikeEntity = BoardLikeEntity.builder()
-                        .boardId(boardIdVo.value())
-                        .memberId(authorId)
-                        .likeNumber(redisLikeCount.intValue())
-                        .build();
-
-                boardLikeJpaRepository.save(newLikeEntity);
+            // Like 통계 업데이트 (JPA 쓰기 전용)
+            if (statsUpdateVo.isLikeCountChanged()) {
+                updateLikeStatsWithJpa(statsUpdateVo);
             }
 
-            BoardViewEntity viewEntity = boardViewJpaRepository.findLatestByBoardId(boardIdVo.value());
-
-            if (viewEntity != null) {
-                // 기존 통계 업데이트
-                BoardViewEntity updatedViewEntity = viewEntity.toBuilder()
-                        .viewNumber(redisViewCount.intValue())
-                        .build();
-                boardViewJpaRepository.save(updatedViewEntity);
-            } else {
-                // 새로운 통계 생성
-                BoardViewEntity newViewEntity = BoardViewEntity.builder()
-                        .boardId(boardIdVo.value())
-                        .viewNumber(redisViewCount.intValue())
-                        .build();
-                boardViewJpaRepository.save(newViewEntity);
+            // View 통계 업데이트 (JPA 쓰기 전용)
+            if (statsUpdateVo.isViewCountChanged()) {
+                updateViewStatsWithJpa(statsUpdateVo);
             }
 
-            log.debug("✅ Board stats updated successfully - ID: {}, likes: {}, views: {}",
-                    boardIdVo.value(), redisLikeCount, redisViewCount);
+            log.debug("✅ Board stats updated successfully - ID: {}", statsUpdateVo.boardId());
 
         } catch (Exception e) {
-            log.error("❌ Infrastructure: Failed to update board stats - ID: {}", boardIdVo.value(), e);
+            log.error("❌ Infrastructure: Failed to update board stats - ID: {}", statsUpdateVo.boardId(), e);
             throw new DomainException(ExceptionStatus.BOARD_INFRASTRUCTURE_UPDATE_FAILED);
+        }
+    }
+
+    private void updateViewStatsWithJpa(BoardStatsUpdateVo statsUpdateVo) {
+        if (statsUpdateVo.hasExistingViewEntity()) {
+            // 기존 엔티티 업데이트 (ID만으로 바로 업데이트)
+            BoardViewEntity updatedEntity = BoardViewEntity.builder()
+                    .id(statsUpdateVo.viewEntityId())
+                    .boardId(statsUpdateVo.boardId())
+                    .viewNumber(statsUpdateVo.newViewCount().intValue())
+                    .build();
+
+            boardViewJpaRepository.save(updatedEntity);
+            log.debug("📊 Updated view entity: id={}", statsUpdateVo.viewEntityId());
+        } else {
+            // 새 엔티티 생성
+            BoardViewEntity newEntity = BoardViewEntity.builder()
+                    .boardId(statsUpdateVo.boardId())
+                    .viewNumber(statsUpdateVo.newViewCount().intValue())
+                    .build();
+
+            boardViewJpaRepository.save(newEntity);
+            log.debug("📊 Created new view entity for board: {}", statsUpdateVo.boardId());
+        }
+    }
+
+    private void updateLikeStatsWithJpa(BoardStatsUpdateVo statsUpdateVo) {
+        if (statsUpdateVo.hasExistingLikeEntity()) {
+            // 기존 엔티티 업데이트 (ID만으로 바로 업데이트)
+            BoardLikeEntity updatedEntity = BoardLikeEntity.builder()
+                    .id(statsUpdateVo.likeEntityId())  // 기존 ID 설정
+                    .boardId(statsUpdateVo.boardId())
+                    .memberId(statsUpdateVo.authorId())
+                    .likeNumber(statsUpdateVo.newLikeCount().intValue())
+                    .build();
+
+            boardLikeJpaRepository.save(updatedEntity);  // JPA가 ID 있으면 UPDATE 실행
+            log.debug("📊 Updated like entity: id={}", statsUpdateVo.likeEntityId());
+        } else {
+            // 새 엔티티 생성
+            BoardLikeEntity newEntity = BoardLikeEntity.builder()
+                    .boardId(statsUpdateVo.boardId())
+                    .memberId(statsUpdateVo.authorId())
+                    .likeNumber(statsUpdateVo.newLikeCount().intValue())
+                    .build();
+
+            boardLikeJpaRepository.save(newEntity);  // JPA가 ID 없으면 INSERT 실행
+            log.debug("📊 Created new like entity for board: {}", statsUpdateVo.boardId());
         }
     }
 

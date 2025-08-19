@@ -284,7 +284,7 @@ public class BoardDomainService {
     private void syncSingleBoardStats(Long boardId) {
         log.debug("Domain: Syncing stats for board: {}", boardId);
 
-        // 1. VO 변환 jooq 조회
+        // 1. 게시글 조회 (JOOQ - Query Repository)
         BoardIdVo boardIdVo = BoardIdVo.of(boardId);
         BoardVo existingBoard = boardQueryRepository.findById(boardIdVo)
                 .orElseThrow(() -> new DomainException(ExceptionStatus.BOARD_INFRASTRUCTURE_NOT_FOUND));
@@ -293,11 +293,27 @@ public class BoardDomainService {
         Long redisLikeCount = boardRedisRepository.getLikeCount(boardIdVo);
         Long redisViewCount = boardRedisRepository.getViewCount(boardIdVo);
 
-        // 3. RDB 업데이트
-        boardCommandRepository.updateBoardStats(boardIdVo, redisLikeCount, redisViewCount, existingBoard.authorId());
+        // 🔧 3. 기존 통계 조회 (JOOQ - Query Repository)
+        BoardStatsVo currentStats = boardQueryRepository.getBoardStats(boardIdVo);
 
-        log.debug("Domain: Stats synced for board: {} - Likes: {}, Views: {}",
-                boardId, redisLikeCount, redisViewCount);
+        // 🔧 4. 통계 업데이트 VO 생성
+        BoardStatsUpdateVo statsUpdateVo = BoardStatsUpdateVo.of(
+                boardIdVo.value(),
+                existingBoard.authorId(),
+                redisLikeCount,
+                redisViewCount,
+                currentStats.likeCount(),
+                currentStats.viewCount(),
+                currentStats.likeId(),   // 기존 Like Entity ID
+                currentStats.viewId()    // 기존 View Entity ID
+        );
+
+        // 5. Command Repository로 업데이트 (JPA)
+        boardCommandRepository.updateBoardStats(statsUpdateVo);
+
+        log.debug("Domain: Stats synced for board: {} - Likes: {} → {}, Views: {} → {}",
+                boardId, currentStats.likeCount(), redisLikeCount,
+                currentStats.viewCount(), redisViewCount);
     }
 
     // ================================================================
