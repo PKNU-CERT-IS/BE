@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
+import org.certis.studyplatform.member.application.command.GetMemberTokenInfoQuery;
 import org.certis.studyplatform.member.application.object.command.CreateMemberCommand;
 import org.certis.studyplatform.member.application.object.command.UpdateMemberAdminFieldsCommand;
 import org.certis.studyplatform.member.application.object.command.UpdateMemberCommand;
@@ -511,5 +512,16 @@ public class MemberDomainService {
                 memberUpdateVo.getRoleValue(),
                 memberUpdateVo.getGradeValue()
         );
+    }
+
+    public MemberTokenInfoVo getMemberTokenInfoVo(GetMemberTokenInfoQuery query) {
+        log.info("🔍 Domain: Starting member token info lookup with ID: {}", query.memberId());
+
+        // ID VO 변환 (양수 검증, null 검증 자동 수행)
+        MemberIdVo memberIdVo = memberDomainMapper.toMemberIdVo(query.memberId());
+
+        return memberQueryRepository.findTokenInfoById(query.memberId())
+                .orElseThrow(() -> new DomainException(ExceptionStatus.MEMBER_INFRASTRUCTURE_NOT_FOUND,
+                        "회원 정보를 찾을 수 없습니다: " + query.memberId()));
     }
 }

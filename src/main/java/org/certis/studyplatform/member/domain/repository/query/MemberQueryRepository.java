@@ -100,4 +100,6 @@ public interface MemberQueryRepository {
      * @return 존재 여부
      */
     boolean existsById(Long memberId);
+
+    Optional<MemberTokenInfoVo> findTokenInfoById(Long memberId);
 }

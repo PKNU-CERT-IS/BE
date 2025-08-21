@@ -21,14 +21,14 @@ public class AuthQueryService {
     private final AuthDomainService authDomainService;
 
     // 로그인 자격 증명 ( 계정 존재 + 계정 id, password 일치 )
-    public AuthInfoVo validateCredentials(ValidateCredentialsQuery validateCredentialsQuery) {
-        AuthInfoVo auth = authDomainService.findAuthByAccountNumber(validateCredentialsQuery);
+    public AuthInfoVo validateCredentials(ValidateCredentialsQuery query) {
+        AuthInfoVo auth = authDomainService.findAuthByAccountNumber(query);
 
-        RawPasswordVo rawPasswordVo = RawPasswordVo.of(validateCredentialsQuery.rawPassword());
+        RawPasswordVo rawPasswordVo = RawPasswordVo.of(query.rawPassword());
 
         authDomainService.validatePassword(auth,rawPasswordVo);
 
-        log.debug("로그인 자격 증명 검증 성공: accountNumber={}", validateCredentialsQuery.accountNumber());
+        log.debug("로그인 자격 증명 검증 성공: accountNumber={}", query.accountNumber());
         return auth;
     }
 
