@@ -2,6 +2,8 @@ package org.certis.studyplatform.member.infrastructure.persistence;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.certis.studyplatform.exception.ExceptionStatus;
+import org.certis.studyplatform.exception.InfrastructureException;
 import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.repository.query.MemberQueryRepository;
 import org.certis.studyplatform.member.domain.vo.*;
@@ -340,4 +342,56 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
     public boolean existsById(Long memberId) {
         return findById(new MemberIdVo(memberId)).isPresent();
     }
+
+    @Override
+    public Optional<MemberTokenInfoVo> findTokenInfoById(Long memberId) {
+        log.debug("Infrastructure: JWT 토큰용 회원 정보 조회 시작: memberId={}", memberId);
+
+        if (memberId == null || memberId <= 0) {
+            log.debug("Infrastructure: 유효하지 않은 memberId: {}", memberId);
+            return Optional.empty();
+        }
+
+        try {
+            // jOOQ를 사용한 JOIN 쿼리
+            Record result = dsl.select(
+                            field("m.id", Long.class),
+                            field("m.name", String.class),
+                            field("m.student_number", String.class),
+                            field("m.role", String.class),
+                            field("mc.email", String.class)
+                    )
+                    .from(table("member").as("m"))
+                    .leftJoin(table("member_contact").as("mc"))
+                    .on(field("m.id").eq(field("mc.member_id")))
+                    .where(field("m.id").eq(memberId))
+                    .and(field("m.deleted_at").isNull()) // 삭제되지 않은 회원만
+                    .fetchOne();
+
+            if (result == null) {
+                log.debug("Infrastructure: 회원 정보를 찾을 수 없음: memberId={}", memberId);
+                return Optional.empty();
+            }
+
+            // VO 변환
+            MemberTokenInfoVo tokenInfo = MemberTokenInfoVo.of(
+                    result.get("m.id", Long.class),
+                    result.get("m.name", String.class),
+                    result.get("m.student_number", String.class),
+                    result.get("mc.email", String.class),
+                    MemberRole.valueOf(result.get("m.role", String.class))
+            );
+
+            log.debug("Infrastructure: JWT 토큰용 회원 정보 조회 성공: memberId={}, hasEmail={}",
+                    memberId, tokenInfo.hasEmail());
+
+            return Optional.of(tokenInfo);
+
+        } catch (Exception e) {
+            log.error("Infrastructure: JWT 토큰용 회원 정보 조회 중 오류 발생: memberId={}, error={}",
+                    memberId, e.getMessage(), e);
+            throw new InfrastructureException(ExceptionStatus.MEMBER_INFRASTRUCTURE_NOT_FOUND);
+        }
+    }
+
 }

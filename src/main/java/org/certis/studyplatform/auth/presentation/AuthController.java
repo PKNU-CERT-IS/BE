@@ -90,10 +90,14 @@ public class AuthController {
 
         // 만료된 AccessToken 에서 role 추출 (Command Service를 통해)
         String accessToken = extractTokenFromHeader(request);
+        String username = extractUserNameFromAccessToken(accessToken);
+        String name = extractNameFromAccessToken(accessToken);
+        String email = extractEmailFromAccessToken(accessToken);
         MemberRole currentRole = extractRoleFromAccessToken(accessToken);
 
+
         // 토큰 갱신 ( memberId는 검증된 값 currentRole 도 또한 검증된 값 따라서 dto 감싸는건 과다하다고 생각)
-        RefreshAccessTokenResponseDto responseDto = authFacadeService.refreshAccessToken(memberId, currentRole);
+        RefreshAccessTokenResponseDto responseDto = authFacadeService.refreshAccessToken(memberId,username,name,email, currentRole);
 
         log.info("토큰 갱신 성공: memberId={}", memberId);
         return GlobalResponseHandler.success(ResponseStatus.AUTH_TOKEN_REFRESH_SUCCESS,responseDto);
@@ -114,6 +118,18 @@ public class AuthController {
     // 이유 2. role 정보를 위해 관계형 db에 접근하지 않기 위함
     private MemberRole extractRoleFromAccessToken(String expiredToken) {
         return jwtTokenProvider.getRoleFromAccessToken(expiredToken);
+    }
+
+    private String extractUserNameFromAccessToken(String expiredToken) {
+        return jwtTokenProvider.getUsernameFromToken(expiredToken);
+    }
+
+    private String extractNameFromAccessToken(String expiredToken) {
+        return jwtTokenProvider.getNameFromToken(expiredToken);
+    }
+
+    private String extractEmailFromAccessToken(String expiredToken) {
+        return jwtTokenProvider.getEmailFromToken(expiredToken);
     }
 
     /**
