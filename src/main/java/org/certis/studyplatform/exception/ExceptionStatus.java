@@ -88,6 +88,7 @@ public enum ExceptionStatus {
     MEMBER_DOMAIN_INVALID_STATUS(HttpStatus.UNPROCESSABLE_ENTITY, "유효하지 않은 회원 상태입니다"),
     MEMBER_DOMAIN_INSUFFICIENT_AUTHORITY(HttpStatus.FORBIDDEN, "유효하지 않은 권한 접근입니다"),
     MEMBER_DOMAIN_NOT_FOUND(HttpStatus.NOT_FOUND, "회원을 찾을 수 없습니다"),
+    MEMBER_DOMAIN_INVALID_PENALTY(HttpStatus.UNPROCESSABLE_ENTITY, "잘못된 점수입니다."),
     
     // Member - Domain VO Validation
     MEMBER_DOMAIN_INVALID_NAME(HttpStatus.BAD_REQUEST, "유효하지 않은 이름입니다"),

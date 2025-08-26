@@ -81,5 +81,13 @@ public class MemberQueryService {
     }
 
     public List<MemberSearchForAdminVo> searchMembersForAdmin(SearchMembersForAdminQuery query) {
+
+        log.info("Query: Searching members for admin with keyword={}", query.keyword());
+
+        List<MemberSearchForAdminVo> voList = memberDomainService.searchMembersForAdmin(query);
+
+        log.info("Query: Found {} members for keyword={}", voList.size(), query.keyword());
+
+        return voList;
     }
 }

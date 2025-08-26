@@ -102,4 +102,8 @@ public interface MemberCommandRepository {
      * @return 조건에 맞는 회원 수
      */
     long countByConditions(GradeVo grade, RoleVo role);
+
+    void updatePenalty(MemberIdVo memberIdVo, PenaltyPointsVo penaltyPointsVo);
+
+    void updateGracePeriod(MemberIdVo memberIdVo, GracePeriodVo gracePeriodVo);
 }

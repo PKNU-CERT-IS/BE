@@ -96,8 +96,18 @@ public class MemberCommandService {
     }
 
     public void grantGracePeriod(UpdateGracePeriodCommand command) {
+        log.info("Command: Granting grace period - memberId={}, gracePeriod={}",
+                command.memberId(), command.gracePeriod());
+        memberDomainService.grantGracePeriod(command);
+        log.info("✅ Grace period granted - memberId={}", command.memberId());
+
     }
 
     public void assignPenalty(UpdatePenaltyCommand command) {
+        log.info("Command: Assigning penalty - memberId={}, points={}",
+                command.memberId(), command.penaltyPoints());
+       memberDomainService.assignPenalty(command);
+        log.info("✅ Penalty assigned - memberId={}, points={}",
+                command.memberId(), command.penaltyPoints());
     }
 }

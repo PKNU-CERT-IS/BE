@@ -24,3 +24,4 @@ public class MemberAdminApplicationMapper {
                 .createdAt(vo.createdAt())
                 .build();
 }
+}

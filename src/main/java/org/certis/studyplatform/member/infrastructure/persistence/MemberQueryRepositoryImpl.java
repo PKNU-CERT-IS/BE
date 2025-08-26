@@ -394,4 +394,95 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
         }
     }
 
+    @Override
+    public List<MemberSearchForAdminVo> searchMembersForAdmin(SearchKeywordVo keywordVo) {
+        log.info("Query Infrastructure: Admin member search keyword={}", keywordVo.value());
+
+        // 1. 기본 회원 정보 조회
+        var memberRecords = dsl.select(
+                        field("m.id", Long.class).as("id"),
+                        field("m.name", String.class).as("name"),
+                        field("m.role", String.class).as("role"),
+                        field("m.major", String.class).as("major"),
+                        field("m.student_number", String.class).as("student_number"),
+                        field("m.grade", String.class).as("grade"),
+                        field("m.birthday", OffsetDateTime.class).as("birthday"),
+                        field("m.grace_period", OffsetDateTime.class).as("grace_period"),
+                        field("m.created_at", OffsetDateTime.class).as("created_at"),
+                        field("mc.phone_number", String.class).as("phone_number"),
+                        field("mc.email", String.class).as("email"),
+                        field("mp.penalty_point", Long.class).as("penalty_point")
+                )
+                .from(table("member").as("m"))
+                .leftJoin(table("member_contact").as("mc")).on(field("mc.member_id").eq(field("m.id")))
+                .leftJoin(table("member_penalty").as("mp")).on(field("mp.member_id").eq(field("m.id")))
+                .where(field("m.deleted_at").isNull()
+                        .and(field("m.name").likeIgnoreCase("%" + keywordVo.value() + "%")
+                                .or(field("m.student_number").likeIgnoreCase("%" + keywordVo.value() + "%"))
+                                .or(field("m.major").likeIgnoreCase("%" + keywordVo.value() + "%"))))
+                .fetch();
+
+        if (memberRecords.isEmpty()) {
+            return List.of();
+        }
+
+        // memberId 목록 추출
+        List<Long> memberIds = memberRecords.map(r -> r.get("id", Long.class));
+
+        // 2. 스터디 활동 조회
+        var studyMap = dsl.select(
+                        field("sp.member_id", Long.class).as("member_id"),
+                        field("s.title", String.class).as("title")
+                )
+                .from(table("study_participant").as("sp"))
+                .join(table("study").as("s")).on(field("s.id").eq(field("sp.study_id")))
+                .where(field("sp.member_id").in(memberIds))
+                .and(field("s.deleted_at").isNull())
+                .and(field("s.started_at").le(OffsetDateTime.now()))
+                .and(field("s.ended_at").gt(OffsetDateTime.now()))
+                .fetchGroups(
+                        r -> r.get("member_id", Long.class),
+                        r -> r.get("title", String.class)
+                );
+
+        // 3. 프로젝트 활동 조회
+        var projectMap = dsl.select(
+                        field("pp.member_id", Long.class).as("member_id"),
+                        field("p.title", String.class).as("title")
+                )
+                .from(table("project_participant").as("pp"))
+                .join(table("project").as("p")).on(field("p.id").eq(field("pp.project_id")))
+                .where(field("pp.member_id").in(memberIds))
+                .and(field("p.deleted_at").isNull())
+                .and(field("p.started_at").le(OffsetDateTime.now()))
+                .and(field("p.ended_at").gt(OffsetDateTime.now()))
+                .fetchGroups(
+                        r -> r.get("member_id", Long.class),
+                        r -> r.get("title", String.class)
+                );
+
+        // 4. 최종 매핑
+        return memberRecords.stream()
+                .map(r -> {
+                    Long memberId = r.get("id", Long.class);
+                    return new MemberSearchForAdminVo(
+                            new MemberIdVo(memberId),
+                            r.get("name", String.class),
+                            MemberRole.valueOf(r.get("role", String.class)),
+                            r.get("major", String.class),
+                            r.get("student_number", String.class),
+                            studyMap.getOrDefault(memberId, List.of()),
+                            projectMap.getOrDefault(memberId, List.of()),
+                            r.get("penalty_point", Long.class),
+                            r.get("grace_period", OffsetDateTime.class),
+                            r.get("grade", String.class),
+                            r.get("birthday", OffsetDateTime.class),
+                            r.get("phone_number", String.class),
+                            r.get("email", String.class),
+                            r.get("created_at", OffsetDateTime.class)
+                    );
+                })
+                .toList();
+    }
+
 }
