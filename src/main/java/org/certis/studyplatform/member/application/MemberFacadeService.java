@@ -4,12 +4,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.member.application.command.*;
-import org.certis.studyplatform.member.application.object.command.CreateMemberCommand;
-import org.certis.studyplatform.member.application.object.command.DeleteMemberCommand;
-import org.certis.studyplatform.member.application.object.command.UpdateMemberAdminFieldsCommand;
-import org.certis.studyplatform.member.application.object.command.UpdateMemberCommand;
+import org.certis.studyplatform.member.application.mapper.MemberAdminApplicationMapper;
+import org.certis.studyplatform.member.application.object.command.*;
 import org.certis.studyplatform.member.application.object.query.GetMemberByIdQuery;
 import org.certis.studyplatform.member.application.object.query.GetMembersQuery;
+import org.certis.studyplatform.member.application.object.query.SearchMembersForAdminQuery;
 import org.certis.studyplatform.member.application.object.query.SearchMembersQuery;
 import org.certis.studyplatform.member.application.query.*;
 import org.certis.studyplatform.member.application.mapper.MemberApplicationMapper;
@@ -19,9 +18,13 @@ import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.vo.*;
 import org.certis.studyplatform.member.presentation.dto.request.*;
 import org.certis.studyplatform.member.presentation.dto.response.AdminMemberUpdateResponseDto;
+import org.certis.studyplatform.member.presentation.dto.response.MemberDataForAdminResponseDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +36,7 @@ public class MemberFacadeService {
     private final MemberApplicationMapper memberApplicationMapper;
     private final MemberApplicationCommandMapper memberApplicationCommandMapper;
     private final MemberApplicationQueryMapper memberApplicationQueryMapper;
+    private final MemberAdminApplicationMapper memberAdminApplicationMapper;
 
     // ================================================================
     // COMMAND OPERATIONS - 상태 변경 작업
@@ -184,19 +188,58 @@ public class MemberFacadeService {
     public AdminMemberUpdateResponseDto updateMemberAdminFields(Long executorId,
                                                                 MemberRole executorRole,
                                                                 AdminMemberUpdateRequestDto request) {
-        UpdateMemberAdminFieldsCommand command =
-                UpdateMemberAdminFieldsCommand.of(executorId,
-                        executorRole,
-                        request.getTargetMemberId(),
-                        request.getNewRole(),
-                        request.getNewGrade());
+        return null;
+    }
 
-        AdminMemberUpdateResultVo adminMemberUpdateResultVo = memberCommandService.updateMemberAdminFields(command);
+    @Transactional
+    public List<MemberDataForAdminResponseDto> searchMembersForAdmin(String search) {
+        log.info("Facade: Searching members for admin with keyword: {}", search);
 
-        return AdminMemberUpdateResponseDto.builder()
-                .memberId(adminMemberUpdateResultVo.memberId())
-                .newRole(adminMemberUpdateResultVo.newRole())
-                .newGrade(adminMemberUpdateResultVo.newGrade())
-                .build();
+        // Query Service 호출
+        SearchMembersForAdminQuery query = SearchMembersForAdminQuery.of(search);
+        List<MemberSearchForAdminVo> memberVos = memberQueryService.searchMembersForAdmin(query);
+
+        // VO → DTO 변환
+        List<MemberDataForAdminResponseDto> memberDtos = memberVos.stream()
+                .map(memberAdminApplicationMapper::convertToMemberDataForAdminResponseDto)
+                .toList();
+
+        log.info("Facade: Admin member search completed. Found {} members", memberDtos.size());
+
+        return memberDtos;
+    }
+
+    @Transactional
+    public void grantGracePeriod(GrantGracePeriodRequestDto request) {
+        log.info("Facade: Granting grace period - memberId: {}, gracePeriod: {}",
+                request.getMemberId(), request.getGracePeriod());
+
+        // DTO → Command Object 변환
+        UpdateGracePeriodCommand command = UpdateGracePeriodCommand.of(
+                request.getMemberId(),
+                request.getGracePeriod()
+        );
+
+        // Command Service 호출
+        memberCommandService.grantGracePeriod(command);
+
+        log.info("Facade: Grace period granted successfully for member: {}", request.getMemberId());
+    }
+
+    @Transactional
+    public void assignPenalty(PenaltyRequestDto request) {
+        log.info("Facade: Assigning penalty - memberId: {}, penaltyPoints: {}",
+                request.getMemberId(), request.getPenaltyPoints());
+
+        // DTO → Command Object 변환
+        UpdatePenaltyCommand command = UpdatePenaltyCommand.of(
+                request.getMemberId(),
+                request.getPenaltyPoints()
+        );
+
+        // Command Service 호출
+        memberCommandService.assignPenalty(command);
+
+        log.info("Facade: Penalty assigned successfully for member: {}", request.getMemberId());
     }
 }

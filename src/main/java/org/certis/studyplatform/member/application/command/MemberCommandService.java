@@ -3,10 +3,7 @@ package org.certis.studyplatform.member.application.command;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.member.application.mapper.MemberApplicationMapper;
-import org.certis.studyplatform.member.application.object.command.CreateMemberCommand;
-import org.certis.studyplatform.member.application.object.command.DeleteMemberCommand;
-import org.certis.studyplatform.member.application.object.command.UpdateMemberAdminFieldsCommand;
-import org.certis.studyplatform.member.application.object.command.UpdateMemberCommand;
+import org.certis.studyplatform.member.application.object.command.*;
 import org.certis.studyplatform.member.domain.service.MemberDomainService;
 import org.certis.studyplatform.member.domain.vo.AdminMemberUpdateResultVo;
 import org.certis.studyplatform.member.domain.vo.MemberCreatedVo;
@@ -96,5 +93,11 @@ public class MemberCommandService {
                 command.targetMemberId());
 
         return adminMemberUpdateResultVo;
+    }
+
+    public void grantGracePeriod(UpdateGracePeriodCommand command) {
+    }
+
+    public void assignPenalty(UpdatePenaltyCommand command) {
     }
 }

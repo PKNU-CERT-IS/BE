@@ -43,6 +43,9 @@ public enum ResponseStatus {
     MEMBER_LIST_SUCCESS(HttpStatus.OK, "회원 목록을 성공적으로 조회했습니다"),
     MEMBER_SEARCH_SUCCESS(HttpStatus.OK, "회원 검색을 성공적으로 완료했습니다"),
     MEMBER_ADMIN_PROFILE_UPDATE_SUCCESS(HttpStatus.OK, "관리자권한으로 회원 프로필이 성공적으로 갱신되었습니다"),
+    MEMBER_ADMIN_SEARCH_SUCCESS(HttpStatus.OK, "관리자권한으로 회원 목록을 성공적으로 조회했습니다"),
+    MEMBER_ADMIN_PENALTY_UPDATE_SUCCESS(HttpStatus.OK, "관리자권한으로 회원 벌점이 성공적으로 갱신되었습니다"),
+    MEMBER_ADMIN_GRACE_PERIOD_UPDATE_SUCCESS(HttpStatus.OK, "관리자권한으로 회원 유예기간이 성공적으로 갱신되었습니다"),
 
 
     // =================================================================
