@@ -28,7 +28,6 @@ public class AdminMemberController {
 
     private final MemberFacadeService memberFacadeService;
 
-
     @PostMapping("/update")
 //    @PreAuthorize("hasRole('STAFF') or hasRole('VICECHAIRMAN') or hasRole('CHAIRMAN') or hasRole('ADMIN')") for test
     public ResponseEntity<GlobalResponseHandler<AdminMemberUpdateResponseDto>> updateMemberAdminFields(
@@ -56,4 +55,6 @@ public class AdminMemberController {
 
         return GlobalResponseHandler.success(ResponseStatus.MEMBER_ADMIN_PROFILE_UPDATE_SUCCESS, response);
     }
+
+
 }

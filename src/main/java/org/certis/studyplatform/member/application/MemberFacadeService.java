@@ -39,7 +39,7 @@ public class MemberFacadeService {
     // ================================================================
 
     /**
-     * 회원 생성
+     * 회원 생성ㅈ
      */
     public MemberCreatedVo createMember(MemberCreateRequestDto requestDto) {
         log.info("Facade: Creating member with student number: {}", requestDto.getStudentNumber());

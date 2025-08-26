@@ -57,6 +57,9 @@ public class MemberEntity {
     @Column(name = "gender", nullable = false)
     private String gender;
 
+    @Column(name = "grace_period")
+    private OffsetDateTime grace_period;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
