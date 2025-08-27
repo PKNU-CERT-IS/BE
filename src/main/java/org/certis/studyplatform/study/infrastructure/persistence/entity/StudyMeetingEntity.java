@@ -1,4 +1,4 @@
-package org.certis.studyplatform.study.infrastructure.persistence;
+package org.certis.studyplatform.study.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -8,22 +8,22 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Where;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.time.OffsetDateTime;
 
 /**
- * Study Attached Entity
- * 
- * 스터디 첨부파일을 저장하는 JPA Entity
+ * Study Meeting Entity
+ *
+ * 프로젝트 회의록을 저장하는 JPA Entity
  */
 @Entity
-@Table(name = "study_attached")
+@Table(name = "study_meeting")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-@SQLDelete(sql = "UPDATE study_attached SET deleted_at = NOW() WHERE id = ?")
-@Where(clause = "deleted_at IS NULL")
-public class StudyAttachedEntity {
+@SQLDelete(sql = "UPDATE study_meeting SET deleted_at = NOW() WHERE id = ?")
+@SQLRestriction("deleted_at IS NULL")
+public class StudyMeetingEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -35,17 +35,14 @@ public class StudyAttachedEntity {
     @Column(name = "member_id", nullable = false)
     private Long memberId;
 
-    @Column(name = "attached_url", nullable = false)
-    private String attachedUrl;
+    @Column(name = "title", nullable = false)
+    private String title;
 
-    @Column(name = "name", nullable = false)
-    private String name;
+    @Column(name = "content", nullable = false)
+    private String content;
 
-    @Column(name = "type", nullable = false)
-    private String type;
-
-    @Column(name = "size", nullable = false)
-    private String size;
+    @Column(name = "participants", nullable = false, columnDefinition = "Integer[]")
+    private Long[] participants;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -59,16 +56,15 @@ public class StudyAttachedEntity {
     private OffsetDateTime deletedAt;
 
     @Builder(toBuilder = true)
-    private StudyAttachedEntity(Long id, Long studyId, Long memberId, String attachedUrl,
-                               String name, String type, String size,
+    private StudyMeetingEntity(Long id, Long studyId, Long memberId, String title,
+                               String content, Long[] participants,
                                OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
         this.id = id;
         this.studyId = studyId;
         this.memberId = memberId;
-        this.attachedUrl = attachedUrl;
-        this.name = name;
-        this.type = type;
-        this.size = size;
+        this.title = title;
+        this.content = content;
+        this.participants = participants;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.deletedAt = deletedAt;

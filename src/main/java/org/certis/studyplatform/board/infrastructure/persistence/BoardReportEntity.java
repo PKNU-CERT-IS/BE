@@ -7,13 +7,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Where;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.time.OffsetDateTime;
 
 /**
  * Board Report Entity
- * 
+ *
  * 게시판 신고를 저장하는 JPA Entity
  */
 @Entity
@@ -21,7 +21,7 @@ import java.time.OffsetDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 @SQLDelete(sql = "UPDATE board_report SET deleted_at = NOW() WHERE id = ?")
-@Where(clause = "deleted_at IS NULL")
+@SQLRestriction("deleted_at IS NULL")
 public class BoardReportEntity {
 
     @Id
@@ -54,4 +54,4 @@ public class BoardReportEntity {
         this.createdAt = createdAt;
         this.deletedAt = deletedAt;
     }
-} 
+}

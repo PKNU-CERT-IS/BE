@@ -8,13 +8,13 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Where;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.time.OffsetDateTime;
 
 /**
  * Blog Tag Entity
- * 
+ *
  * 블로그 태그를 저장하는 JPA Entity
  */
 @Entity
@@ -22,7 +22,7 @@ import java.time.OffsetDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 @SQLDelete(sql = "UPDATE blog_tag SET deleted_at = NOW() WHERE id = ?")
-@Where(clause = "deleted_at IS NULL")
+@SQLRestriction("deleted_at IS NULL")
 public class BlogTagEntity {
 
     @Id
@@ -56,4 +56,4 @@ public class BlogTagEntity {
         this.updatedAt = updatedAt;
         this.deletedAt = deletedAt;
     }
-} 
+}

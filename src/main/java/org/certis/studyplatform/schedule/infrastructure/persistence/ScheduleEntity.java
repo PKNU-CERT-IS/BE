@@ -8,13 +8,13 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Where;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.time.OffsetDateTime;
 
 /**
  * Schedule Entity
- * 
+ *
  * 일정을 저장하는 JPA Entity
  */
 @Entity
@@ -22,7 +22,7 @@ import java.time.OffsetDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 @SQLDelete(sql = "UPDATE schedule SET deleted_at = NOW() WHERE id = ?")
-@Where(clause = "deleted_at IS NULL")
+@SQLRestriction("deleted_at IS NULL")
 public class ScheduleEntity {
 
     @Id
@@ -77,4 +77,4 @@ public class ScheduleEntity {
         this.updatedAt = updatedAt;
         this.deletedAt = deletedAt;
     }
-} 
+}

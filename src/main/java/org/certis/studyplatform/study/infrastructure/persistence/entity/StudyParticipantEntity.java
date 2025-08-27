@@ -1,29 +1,30 @@
-package org.certis.studyplatform.study.infrastructure.persistence;
+package org.certis.studyplatform.study.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.certis.studyplatform.study.domain.StudyPariticipantStatus;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Where;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.time.OffsetDateTime;
 
 /**
- * Study Meeting Entity
- * 
- * 스터디 회의록을 저장하는 JPA Entity
+ * Study Participant Entity
+ *
+ * 프로젝트 참가자를 저장하는 JPA Entity
  */
 @Entity
-@Table(name = "study_meeting")
+@Table(name = "study_participant")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-@SQLDelete(sql = "UPDATE study_meeting SET deleted_at = NOW() WHERE id = ?")
-@Where(clause = "deleted_at IS NULL")
-public class StudyMeetingEntity {
+@SQLDelete(sql = "UPDATE study_participant SET deleted_at = NOW() WHERE id = ?")
+@SQLRestriction("deleted_at IS NULL")
+public class StudyParticipantEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -35,14 +36,8 @@ public class StudyMeetingEntity {
     @Column(name = "member_id", nullable = false)
     private Long memberId;
 
-    @Column(name = "title", nullable = false)
-    private String title;
-
-    @Column(name = "content", nullable = false)
-    private String content;
-
-    @Column(name = "participants", nullable = false, columnDefinition = "text[]")
-    private String[] participants;
+    @Enumerated(EnumType.STRING)
+    private StudyPariticipantStatus status;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -56,17 +51,13 @@ public class StudyMeetingEntity {
     private OffsetDateTime deletedAt;
 
     @Builder(toBuilder = true)
-    private StudyMeetingEntity(Long id, Long studyId, Long memberId, String title,
-                              String content, String[] participants,
-                              OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
+    private StudyParticipantEntity(Long id, Long studyId, Long memberId,
+                                   OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
         this.id = id;
         this.studyId = studyId;
         this.memberId = memberId;
-        this.title = title;
-        this.content = content;
-        this.participants = participants;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.deletedAt = deletedAt;
     }
-} 
+}

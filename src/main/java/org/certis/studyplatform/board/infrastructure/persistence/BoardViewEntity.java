@@ -11,7 +11,7 @@ import java.time.OffsetDateTime;
 
 /**
  * Board View Entity
- * 
+ *
  * 게시판 조회수를 저장하는 JPA Entity
  */
 @Entity
@@ -41,4 +41,4 @@ public class BoardViewEntity {
         this.viewNumber = viewNumber;
         this.updatedAt = updatedAt;
     }
-} 
+}

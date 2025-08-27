@@ -11,7 +11,7 @@ import java.time.OffsetDateTime;
 
 /**
  * Blog View Entity
- * 
+ *
  * 블로그 조회수를 저장하는 JPA Entity
  */
 @Entity
@@ -41,4 +41,4 @@ public class BlogViewEntity {
         this.viewNumber = viewNumber;
         this.createdAt = createdAt;
     }
-} 
+}
