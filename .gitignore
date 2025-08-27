@@ -60,3 +60,4 @@ tmp/
 .idea/*
 .gradle/*
 .cursor/*
+.github/instructions/*

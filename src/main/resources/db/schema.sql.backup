@@ -90,6 +90,7 @@ CREATE TABLE project (
     max_participants_number INTEGER NOT NULL,
     github_url VARCHAR,
     external_url VARCHAR,
+    thumbnail_url VARCHAR,
     CONSTRAINT fk_project_member FOREIGN KEY (member_id) REFERENCES member(id)
 );
 
@@ -231,7 +232,7 @@ CREATE TABLE project_meeting (
     member_id BIGINT NOT NULL,
     title VARCHAR NOT NULL,
     content VARCHAR NOT NULL,
-    participants TEXT[] NOT NULL,
+    participants INTEGER[] NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMPTZ,
@@ -301,7 +302,7 @@ CREATE TABLE study_meeting (
     member_id BIGINT NOT NULL,
     title VARCHAR NOT NULL,
     content VARCHAR NOT NULL,
-    participants TEXT[] NOT NULL,
+    participants INTEGER[] NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMPTZ,
