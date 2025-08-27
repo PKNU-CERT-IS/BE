@@ -16,10 +16,14 @@ import org.certis.studyplatform.auth.presentation.dto.request.LoginRequestDto;
 import org.certis.studyplatform.auth.presentation.dto.request.RegisterRequestDto;
 import org.certis.studyplatform.auth.presentation.dto.response.RefreshAccessTokenResponseDto;
 import org.certis.studyplatform.auth.presentation.dto.response.TokenRequestDto;
+import org.certis.studyplatform.member.application.command.GetMemberTokenInfoQuery;
 import org.certis.studyplatform.member.application.command.MemberCommandService;
 import org.certis.studyplatform.member.application.object.command.CreateMemberCommand;
+import org.certis.studyplatform.member.application.query.MemberQueryService;
 import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.vo.MemberCreatedVo;
+import org.certis.studyplatform.member.domain.vo.MemberTokenInfoVo;
+import org.certis.studyplatform.member.domain.vo.MemberVo;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +35,7 @@ public class AuthFacadeService {
     private final AuthQueryService authQueryService;
     private final AuthCommandService authCommandService;
     private final MemberCommandService memberCommandService;
+    private final MemberQueryService  memberQueryService;
 
    // 로그인
     @Transactional
@@ -42,11 +47,21 @@ public class AuthFacadeService {
 
         AuthInfoVo authInfoVo = authQueryService.validateCredentials(validateCredentialsQuery);
 
-        GenerateTokenCommand generateTokenCommand =
-                GenerateTokenCommand.of(authInfoVo.memberId(),authInfoVo.role());
+        GetMemberTokenInfoQuery getMemberTokenInfoQuery = GetMemberTokenInfoQuery.of(authInfoVo.memberId());
+
+        MemberTokenInfoVo infoVo = memberQueryService.getMemberTokenInfo(getMemberTokenInfoQuery);
+
+        GenerateTokenCommand command =
+                GenerateTokenCommand.of(
+                        infoVo.memberId(),
+                        infoVo.studentNumber(),
+                        infoVo.email(),
+                        infoVo.name(),
+                        infoVo.role()
+                );
 
         // 2. 토큰 생성 및 Redis 저장
-        TokenInfoVo tokenInfoVo = authCommandService.executeLogin(generateTokenCommand);
+        TokenInfoVo tokenInfoVo = authCommandService.executeLogin(command);
 
         log.info("로그인 성공: memberId={}",authInfoVo.memberId());
 
@@ -75,7 +90,7 @@ public class AuthFacadeService {
 
    // accessToken 갱신
     @Transactional
-    public RefreshAccessTokenResponseDto refreshAccessToken(Long memberId, MemberRole currentRole) {
+    public RefreshAccessTokenResponseDto refreshAccessToken(Long memberId,String username,String name,String email,MemberRole currentRole) {
         log.info("토큰 갱신 시도: memberId={}", memberId);
 
         ValidateRefreshTokenQuery validateRefreshTokenQuery = ValidateRefreshTokenQuery.of(memberId);
@@ -83,7 +98,7 @@ public class AuthFacadeService {
         // 1. RefreshToken 검증
         RefreshTokenVo refreshToken = authQueryService.validateRefreshToken(validateRefreshTokenQuery);
 
-        RefreshTokenCommand refreshTokenCommand  = RefreshTokenCommand.of(memberId,currentRole);
+        RefreshTokenCommand refreshTokenCommand  = RefreshTokenCommand.of(memberId,username,email,name,currentRole);
 
         // 2. 새 AccessToken 생성
         AccessTokenVo newAccessToken = authCommandService.refreshAccessToken(refreshTokenCommand);

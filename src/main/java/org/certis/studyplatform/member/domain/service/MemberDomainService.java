@@ -4,11 +4,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
-import org.certis.studyplatform.member.application.object.command.CreateMemberCommand;
-import org.certis.studyplatform.member.application.object.command.UpdateMemberAdminFieldsCommand;
-import org.certis.studyplatform.member.application.object.command.UpdateMemberCommand;
-import org.certis.studyplatform.member.application.object.command.DeleteMemberCommand;
+import org.certis.studyplatform.member.application.command.GetMemberTokenInfoQuery;
+import org.certis.studyplatform.member.application.object.command.*;
 import org.certis.studyplatform.member.application.object.query.GetMemberByIdQuery;
+import org.certis.studyplatform.member.application.object.query.SearchMembersForAdminQuery;
 import org.certis.studyplatform.member.application.object.query.SearchMembersQuery;
 import org.certis.studyplatform.member.application.object.query.GetMembersQuery;
 import org.certis.studyplatform.member.domain.MemberRole;
@@ -18,6 +17,10 @@ import org.certis.studyplatform.member.domain.repository.query.MemberQueryReposi
 import org.certis.studyplatform.member.domain.mapper.MemberDomainMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
+
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
 
 /**
  * Member Domain Service - Command/Query 객체 기반
@@ -511,5 +514,87 @@ public class MemberDomainService {
                 memberUpdateVo.getRoleValue(),
                 memberUpdateVo.getGradeValue()
         );
+    }
+
+    public MemberTokenInfoVo getMemberTokenInfoVo(GetMemberTokenInfoQuery query) {
+        log.info("🔍 Domain: Starting member token info lookup with ID: {}", query.memberId());
+
+        // ID VO 변환 (양수 검증, null 검증 자동 수행)
+        MemberIdVo memberIdVo = memberDomainMapper.toMemberIdVo(query.memberId());
+
+        return memberQueryRepository.findTokenInfoById(query.memberId())
+                .orElseThrow(() -> new DomainException(ExceptionStatus.MEMBER_INFRASTRUCTURE_NOT_FOUND,
+                        "회원 정보를 찾을 수 없습니다: " + query.memberId()));
+    }
+
+    public List<MemberSearchForAdminVo> searchMembersForAdmin(SearchMembersForAdminQuery query) {
+        log.info("🔍 Domain: Searching members for admin with keyword={}", query.keyword());
+
+        // STEP 1: Query → VO 변환
+        SearchKeywordVo keywordVo = SearchKeywordVo.of(query.keyword());
+
+        // STEP 2: Repository 호출 (VO 전달)
+        List<MemberSearchForAdminVo> voList = memberQueryRepository.searchMembersForAdmin(keywordVo);
+
+        log.info("✅ Domain: Found {} members for keyword={}", voList.size(), keywordVo.value());
+        return voList;
+    }
+
+    /**
+     * 유예기간 부여 (Command 기반)
+     */
+    public void grantGracePeriod(UpdateGracePeriodCommand command) {
+        log.info("🕒 Domain: Granting grace period - memberId={}, until={}",
+                command.memberId(), command.gracePeriod());
+
+        // STEP 1: Command → VO 변환
+        MemberIdVo memberIdVo = memberDomainMapper.toMemberIdVo(command.memberId());
+        GracePeriodVo gracePeriodVo = GracePeriodVo.of(command.gracePeriod());
+
+        validateMemberExists(memberIdVo);
+
+        // STEP 2: Repository 호출 (VO 전달)
+        memberCommandRepository.updateGracePeriod(memberIdVo, gracePeriodVo);
+
+        log.info("✅ Domain: Grace period granted successfully - memberId={}", command.memberId());
+    }
+
+    /**
+     * 패널티 부여 (Command 기반)
+     */
+    public void assignPenalty(UpdatePenaltyCommand command) {
+        log.info("⚠️ Domain: Assigning penalty - memberId={}, points={}",
+                command.memberId(), command.penaltyPoints());
+
+        // STEP 1: Command → VO 변환
+        MemberIdVo memberIdVo = memberDomainMapper.toMemberIdVo(command.memberId());
+        PenaltyPointsVo penaltyPointsVo = PenaltyPointsVo.of(command.penaltyPoints());
+
+        validateMemberExists(memberIdVo);
+
+        // STEP 2: Repository 호출 (VO 전달)
+        memberCommandRepository.updatePenalty(memberIdVo, penaltyPointsVo);
+
+        log.info("✅ Domain: Penalty assigned successfully - memberId={}, points={}",
+                command.memberId(), command.penaltyPoints());
+    }
+
+    public void applyGracePeriodForGrantingPenalties() {
+        OffsetDateTime now = OffsetDateTime.now();
+        List<MemberWithPenaltyVo> expiredUpsolvers = memberQueryRepository.findExpiredUpsolvers(now);
+
+        for (MemberWithPenaltyVo member : expiredUpsolvers) {
+            Long newPoints = (member.penaltyPoints() != null ? member.penaltyPoints() : 0) + 1;
+            PenaltyPointsVo penaltyVo = PenaltyPointsVo.of(newPoints);
+
+            OffsetDateTime nextGrace = now.plusWeeks(2)
+                    .toLocalDate()
+                    .atStartOfDay()
+                    .atOffset(ZoneOffset.UTC);
+            GracePeriodVo graceVo = GracePeriodVo.of(nextGrace);
+
+            memberCommandRepository.updatePenalty(member.memberId(), penaltyVo);
+            memberCommandRepository.updateGracePeriod(member.memberId(), graceVo);
+        }
     }
 }

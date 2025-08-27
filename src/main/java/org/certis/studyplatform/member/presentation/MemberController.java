@@ -103,22 +103,7 @@ public class MemberController {
         
         return GlobalResponseHandler.success(ResponseStatus.MEMBER_UPDATE_SUCCESS, updatedVo);
     }
-    
-    /**
-     * 회원 삭제
-     * 
-     * @param id 회원 ID
-     * @return 성공 응답
-     */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<GlobalResponseHandler<Void>> deleteMember(@PathVariable Long id) {
-        log.info("REST: Deleting member - {}", id);
-        
-        // Facade를 통한 삭제
-        memberFacadeService.deleteMember(id);
-        
-        return GlobalResponseHandler.success(ResponseStatus.MEMBER_DELETE_SUCCESS);
-    }
+
     
     /**
      * 회원 검색

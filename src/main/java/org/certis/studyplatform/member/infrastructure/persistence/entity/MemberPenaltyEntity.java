@@ -26,7 +26,7 @@ public class MemberPenaltyEntity {
     private Long memberId;
 
     @Column(name = "penalty_point", nullable = false)
-    private Integer penaltyPoint;
+    private Long penaltyPoint;
 
     @Column(name = "penaltied_at", nullable = false)
     private OffsetDateTime penaltiedAt;
@@ -35,16 +35,23 @@ public class MemberPenaltyEntity {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
-    @Column(name = "reason", nullable = false)
-    private String reason;
-
-    @Builder(toBuilder = true)
-    private MemberPenaltyEntity(Long memberId, Integer penaltyPoint, OffsetDateTime penaltiedAt,
-                               OffsetDateTime updatedAt, String reason) {
+    @Builder
+    private MemberPenaltyEntity(Long memberId, Long penaltyPoint, OffsetDateTime penaltiedAt, OffsetDateTime updatedAt) {
         this.memberId = memberId;
         this.penaltyPoint = penaltyPoint;
         this.penaltiedAt = penaltiedAt;
         this.updatedAt = updatedAt;
-        this.reason = reason;
     }
+
+    /**
+     * 패널티 점수 갱신
+     */
+    public void updatePenaltyPoints(Long points) {
+        if (points <= 0) {
+            throw new IllegalArgumentException("패널티 점수는 0보다 커야 합니다");
+        }
+        this.penaltyPoint += points;
+        this.penaltiedAt = OffsetDateTime.now();
+    }
+}
 }
