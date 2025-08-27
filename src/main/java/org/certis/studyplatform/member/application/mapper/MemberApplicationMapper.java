@@ -51,13 +51,13 @@ public class MemberApplicationMapper {
     public UpdateMemberCommand toUpdateCommand(Long id, MemberUpdateRequestDto dto) {
         if (dto == null) return null;
         return new UpdateMemberCommand(
-                id, 
-                dto.getName(), 
+                id,
+                dto.getName(),
                 null, // studentNumber는 업데이트 불가 (불변 필드)
                 dto.getGrade(),
-                dto.getRole(), 
-                dto.getMajor(), 
-                dto.getDescription(), 
+                dto.getRole(),
+                dto.getMajor(),
+                dto.getDescription(),
                 dto.getSkills()
         );
     }

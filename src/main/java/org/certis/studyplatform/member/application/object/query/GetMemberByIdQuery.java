@@ -2,14 +2,14 @@ package org.certis.studyplatform.member.application.object.query;
 
 /**
  * Get Member By ID Query
- * 
+ *
  * Application Layer → Domain Service로 전달되는 Query Object
- * 
+ *
  * 특징:
  * - Primitive Type으로 구성 (VO 변환 전)
  * - Domain Service에서 VO로 변환하여 검증 수행
  * - 불변 Record 구조로 데이터 무결성 보장
- * 
+ *
  * 데이터 흐름:
  * 1. Controller → Facade Service (PathVariable → Query 변환)
  * 2. Facade → Query Service (Query 그대로 전달)
