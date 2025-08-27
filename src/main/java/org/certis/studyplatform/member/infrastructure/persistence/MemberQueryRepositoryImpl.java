@@ -11,8 +11,7 @@ import org.certis.studyplatform.member.infrastructure.mapper.MemberInfrastructur
 import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberEntity;
 import org.certis.studyplatform.member.application.object.query.SearchMembersQuery;
 import org.certis.studyplatform.member.application.object.query.GetMembersQuery;
-import org.jooq.Condition;
-import org.jooq.DSLContext;
+import org.jooq.*;
 import org.jooq.Record;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -21,6 +20,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.jooq.impl.DSL.*;
@@ -396,10 +396,24 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
 
     @Override
     public List<MemberSearchForAdminVo> searchMembersForAdmin(SearchKeywordVo keywordVo) {
-        log.info("Query Infrastructure: Admin member search keyword={}", keywordVo.value());
+        log.info("Query Infrastructure: Admin member search keyword={}",
+                keywordVo != null ? keywordVo.value() : "ALL");
 
-        // 1. 기본 회원 정보 조회
-        var memberRecords = dsl.select(
+        // 1. 기본 조건: 삭제되지 않은 회원
+        Condition condition = field("m.deleted_at").isNull();
+
+        if (keywordVo != null && keywordVo.value() != null && !keywordVo.value().isBlank()) {
+            String keyword = "%" + keywordVo.value().trim() + "%";
+            condition = condition.and(
+                    field("m.name").likeIgnoreCase(keyword)
+                            .or(field("m.student_number").likeIgnoreCase(keyword))
+                            .or(field("m.major").likeIgnoreCase(keyword))
+            );
+        }
+
+        // 2. 기본 회원 정보 조회
+        Result<Record12<Long, String, String, String, String, String, OffsetDateTime, OffsetDateTime, OffsetDateTime, String, String, Long>>
+                memberRecords = dsl.select(
                         field("m.id", Long.class).as("id"),
                         field("m.name", String.class).as("name"),
                         field("m.role", String.class).as("role"),
@@ -416,10 +430,7 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
                 .from(table("member").as("m"))
                 .leftJoin(table("member_contact").as("mc")).on(field("mc.member_id").eq(field("m.id")))
                 .leftJoin(table("member_penalty").as("mp")).on(field("mp.member_id").eq(field("m.id")))
-                .where(field("m.deleted_at").isNull()
-                        .and(field("m.name").likeIgnoreCase("%" + keywordVo.value() + "%")
-                                .or(field("m.student_number").likeIgnoreCase("%" + keywordVo.value() + "%"))
-                                .or(field("m.major").likeIgnoreCase("%" + keywordVo.value() + "%"))))
+                .where(condition)
                 .fetch();
 
         if (memberRecords.isEmpty()) {
@@ -429,8 +440,8 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
         // memberId 목록 추출
         List<Long> memberIds = memberRecords.map(r -> r.get("id", Long.class));
 
-        // 2. 스터디 활동 조회
-        var studyMap = dsl.select(
+        // 3. 스터디 활동 조회
+        Map<Long, List<String>> studyMap = dsl.select(
                         field("sp.member_id", Long.class).as("member_id"),
                         field("s.title", String.class).as("title")
                 )
@@ -445,8 +456,8 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
                         r -> r.get("title", String.class)
                 );
 
-        // 3. 프로젝트 활동 조회
-        var projectMap = dsl.select(
+        // 4. 프로젝트 활동 조회
+        Map<Long, List<String>> projectMap = dsl.select(
                         field("pp.member_id", Long.class).as("member_id"),
                         field("p.title", String.class).as("title")
                 )
@@ -461,7 +472,7 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
                         r -> r.get("title", String.class)
                 );
 
-        // 4. 최종 매핑
+        // 5. 최종 매핑
         return memberRecords.stream()
                 .map(r -> {
                     Long memberId = r.get("id", Long.class);
@@ -484,5 +495,6 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
                 })
                 .toList();
     }
+
 
 }

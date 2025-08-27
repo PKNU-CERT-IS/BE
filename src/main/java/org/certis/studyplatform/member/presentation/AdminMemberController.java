@@ -65,7 +65,7 @@ public class AdminMemberController {
     @GetMapping("/keyword")
     @Operation(summary = "회원 키워드 검색", description = "이름, 학번, 전공으로 회원을 검색합니다")
     public ResponseEntity<GlobalResponseHandler<List<MemberDataForAdminResponseDto>>> searchMembers(
-            @RequestParam(value = "search") String search) {
+            @RequestParam(value = "search", required = false) String search) {
 
         List<MemberDataForAdminResponseDto> result = memberFacadeService.searchMembersForAdmin(search);
 
@@ -97,5 +97,19 @@ public class AdminMemberController {
         return GlobalResponseHandler.success(ResponseStatus.MEMBER_ADMIN_PENALTY_UPDATE_SUCCESS);
     }
 
+    /**
+     * 회원 삭제
+     *
+     * @param id 회원 ID
+     * @return 성공 응답
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<GlobalResponseHandler<Void>> deleteMember(@PathVariable Long id) {
+        log.info("REST: Deleting member - {}", id);
 
+        // Facade를 통한 삭제
+        memberFacadeService.deleteMember(id);
+
+        return GlobalResponseHandler.success(ResponseStatus.MEMBER_DELETE_SUCCESS);
+    }
 }
