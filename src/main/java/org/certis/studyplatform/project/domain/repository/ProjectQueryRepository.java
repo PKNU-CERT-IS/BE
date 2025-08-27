@@ -1,132 +1,120 @@
-//package org.certis.studyplatform.project.domain.repository;
-//
-//import org.certis.studyplatform.member.domain.model.vo.MemberIdVo;
-//import org.certis.studyplatform.project.domain.model.vo.ProjectIdVo;
-//import org.springframework.data.domain.Pageable;
-//
-//import java.util.Optional;
-//
-///**
-// * Project Query Repository Interface
-// *
-// * CQRS Query 측면의 Repository (Read 작업)
-// * Domain Layer의 인터페이스
-// * Infrastructure Layer에서 jOOQ로 구현
-// */
-//public interface ProjectQueryRepository {
-//
-//    /**
-//     * 프로젝트 상세 조회
-//     *
-//     * @param projectId 조회할 프로젝트 ID
-//     * @return 프로젝트 상세 정보
-//     */
-//    Optional<ProjectDetail> findProjectDetailById(ProjectIdVo projectId);
-//
-//    /**
-//     * 프로젝트 목록 조회 (페이징)
-//     *
-//     * @param pageable 페이징 정보
-//     * @return 프로젝트 요약 목록
-//     */
-//    ProjectSearchResult findProjects(ProjectSearchCriteria criteria, Pageable pageable);
-//
-//    /**
-//     * 회원이 생성한 프로젝트 목록 조회
-//     *
-//     * @param creatorId 생성자 ID
-//     * @param pageable 페이징 정보
-//     * @return 프로젝트 요약 목록
-//     */
-//    ProjectSearchResult findProjectsByCreatorId(MemberIdVo creatorId, Pageable pageable);
-//
-//    /**
-//     * 카테고리별 프로젝트 목록 조회
-//     *
-//     * @param category 카테고리
-//     * @param pageable 페이징 정보
-//     * @return 프로젝트 요약 목록
-//     */
-//    ProjectSearchResult findProjectsByCategory(String category, Pageable pageable);
-//
-//    /**
-//     * 난이도별 프로젝트 목록 조회
-//     *
-//     * @param difficulty 난이도
-//     * @param pageable 페이징 정보
-//     * @return 프로젝트 요약 목록
-//     */
-//    ProjectSearchResult findProjectsByDifficulty(String difficulty, Pageable pageable);
-//
-//    /**
-//     * 진행 중인 프로젝트 목록 조회
-//     *
-//     * @param pageable 페이징 정보
-//     * @return 프로젝트 요약 목록
-//     */
-//    ProjectSearchResult findActiveProjects(Pageable pageable);
-//
-//    /**
-//     * ReadModel Classes
-//     */
-//
-//    /**
-//     * 프로젝트 상세 정보 ReadModel
-//     */
-//    record ProjectDetail(
-//        ProjectIdVo id,
-//        MemberIdVo creatorId,
-//        String creatorName,
-//        String title,
-//        String description,
-//        String category,
-//        String difficulty,
-//        java.util.List<String> requiredSkills,
-//        Integer participantLimit,
-//        Integer currentParticipants,
-//        java.time.OffsetDateTime startDate,
-//        java.time.OffsetDateTime endDate,
-//        java.time.OffsetDateTime createdAt,
-//        java.time.OffsetDateTime updatedAt,
-//        String status // "모집중", "진행중", "완료"
-//    ) {}
-//
-//    /**
-//     * 프로젝트 요약 정보 ReadModel
-//     */
-//    record ProjectSummary(
-//        ProjectIdVo id,
-//        MemberIdVo creatorId,
-//        String creatorName,
-//        String title,
-//        String category,
-//        String difficulty,
-//        Integer participantLimit,
-//        Integer currentParticipants,
-//        java.time.OffsetDateTime startDate,
-//        java.time.OffsetDateTime endDate,
-//        String status
-//    ) {}
-//
-//    /**
-//     * 프로젝트 검색 결과 ReadModel
-//     */
-//    record ProjectSearchResult(
-//        java.util.List<ProjectSummary> projects,
-//        long totalElements,
-//        int totalPages,
-//        int currentPage,
-//        int pageSize
-//    ) {}
-//
-//    /**
-//     * 프로젝트 검색 조건 ReadModel
-//     */
-//    record ProjectSearchCriteria(
-//        String keyword,
-//        String category,
-//        String difficulty,
-//        String status,
-//        java.util.List<String> skills
-//    ) {}
-//}
+package org.certis.studyplatform.project.domain.repository;
+
+import org.certis.studyplatform.project.domain.vo.ProjectVo;
+import org.certis.studyplatform.project.domain.vo.ProjectSearchCriteriaVo;
+import org.certis.studyplatform.project.domain.vo.ProjectSearchResultVo;
+import org.springframework.data.domain.Pageable;
+
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * Project Query Repository Interface
+ *
+ * CQRS Query 측면의 Repository (Read 작업)
+ * Domain Layer의 인터페이스
+ * Infrastructure Layer에서 jOOQ로 구현
+ *
+ * ✅ CQRS 패턴 준수:
+ * - 모든 조회 관련 메서드 포함
+ * - Command 작업 시 필요한 검증용 조회 메서드도 포함
+ */
+public interface ProjectQueryRepository {
+
+    /**
+     * 프로젝트 상세 조회
+     *
+     * @param projectId 조회할 프로젝트 ID
+     * @return 프로젝트 상세 정보 (ProjectVo)
+     */
+    Optional<ProjectVo> findProjectDetailById(Long projectId);
+
+    /**
+     * 프로젝트 목록 조회 (페이징)
+     *
+     * @param criteria 검색 조건
+     * @param pageable 페이징 정보
+     * @return 프로젝트 검색 결과
+     */
+    ProjectSearchResultVo findProjects(ProjectSearchCriteriaVo criteria, Pageable pageable);
+
+    /**
+     * 회원이 생성한 프로젝트 목록 조회
+     *
+     * @param memberId 생성자 ID
+     * @param pageable 페이징 정보
+     * @return 프로젝트 검색 결과
+     */
+    ProjectSearchResultVo findProjectsByMemberId(Long memberId, Pageable pageable);
+
+    /**
+     * 카테고리별 프로젝트 목록 조회
+     *
+     * @param category 카테고리
+     * @param pageable 페이징 정보
+     * @return 프로젝트 검색 결과
+     */
+    ProjectSearchResultVo findProjectsByCategory(String category, Pageable pageable);
+
+    /**
+     * 진행 중인 프로젝트 목록 조회
+     *
+     * @param pageable 페이징 정보
+     * @return 프로젝트 검색 결과
+     */
+    ProjectSearchResultVo findActiveProjects(Pageable pageable);
+
+    /**
+     * 키워드로 프로젝트 검색
+     *
+     * @param keyword 검색 키워드
+     * @param pageable 페이징 정보
+     * @return 프로젝트 검색 결과
+     */
+    ProjectSearchResultVo findProjectsByKeyword(String keyword, Pageable pageable);
+
+    /**
+     * 스킬로 프로젝트 검색
+     *
+     * @param skills 스킬 목록
+     * @param pageable 페이징 정보
+     * @return 프로젝트 검색 결과
+     */
+    ProjectSearchResultVo findProjectsBySkills(List<String> skills, Pageable pageable);
+
+    // ================= Domain Service 지원 메소드 =================
+
+    /**
+     * ✅ 프로젝트 단건 조회 (Domain Service용)
+     *
+     * @param projectId 프로젝트 ID
+     * @return ProjectVo
+     */
+    Optional<ProjectVo> findById(Long projectId);
+
+
+    /**
+     * ✅ 프로젝트 종료되지 않은 프로젝트 조회 (Domain Service용)
+     *
+     * @param projectId 프로젝트 ID
+     * @return ProjectVo
+     */
+    Optional<ProjectVo> findByIdAndDeletedAtIsNull(Long projectId);
+
+    /**
+     * ✅ 프로젝트 제목 존재 여부 확인
+     *
+     * @param title 프로젝트 제목
+     * @return 존재 여부
+     */
+    boolean existsByTitle(String title);
+
+    /**
+     * ✅ 프로젝트 제목 중복 확인 (자신 제외)
+     *
+     * @param title 프로젝트 제목
+     * @param projectId 제외할 프로젝트 ID
+     * @return 중복 여부
+     */
+    boolean existsByTitleAndIdNot(String title, Long projectId);
+}
