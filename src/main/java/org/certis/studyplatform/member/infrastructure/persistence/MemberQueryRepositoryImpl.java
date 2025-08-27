@@ -496,5 +496,27 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
                 .toList();
     }
 
+    @Override
+    public List<MemberWithPenaltyVo> findExpiredUpsolvers(OffsetDateTime now) {
+        return dsl.select(
+                        field("m.id", Long.class).as("id"),
+                        field("m.role", String.class).as("role"),
+                        field("m.grace_period", OffsetDateTime.class).as("grace_period"),
+                        field("mp.penalty_point", Long.class).as("penalty_point")
+                )
+                .from(table("member").as("m"))
+                .leftJoin(table("member_penalty").as("mp")).on(field("mp.member_id").eq(field("m.id")))
+                .where(field("m.role").eq("UPSOLVER"))
+                .and(field("m.grace_period").le(now))
+                .and(field("m.deleted_at").isNull())
+                .fetch(record -> new MemberWithPenaltyVo(
+                        new MemberIdVo(record.get("id", Long.class)),
+                        MemberRole.valueOf(record.get("role", String.class)),
+                        record.get("grace_period", OffsetDateTime.class),
+                        record.get("penalty_point", Long.class)
+                ));
+    }
+
+
 
 }

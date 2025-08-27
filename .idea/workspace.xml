@@ -5,10 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="177d3300-bc44-4b7c-8fae-30ebad035897" name="변경" comment="">
-      <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/GracePeriodService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/MemberWithPenaltyVo.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/scheduler/GracePeriodScheduler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/MemberFacadeService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/MemberFacadeService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/repository/query/MemberQueryRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/repository/query/MemberQueryRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/service/MemberDomainService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/service/MemberDomainService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/persistence/MemberQueryRepositoryImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/persistence/MemberQueryRepositoryImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/presentation/AdminMemberController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/presentation/AdminMemberController.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -20,9 +24,9 @@
       <list>
         <option value="package-info" />
         <option value="Enum" />
-        <option value="Class" />
-        <option value="Record" />
         <option value="Interface" />
+        <option value="Record" />
+        <option value="Class" />
       </list>
     </option>
   </component>

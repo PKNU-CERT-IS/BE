@@ -18,6 +18,8 @@ import org.certis.studyplatform.member.domain.mapper.MemberDomainMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 /**
@@ -575,5 +577,24 @@ public class MemberDomainService {
 
         log.info("✅ Domain: Penalty assigned successfully - memberId={}, points={}",
                 command.memberId(), command.penaltyPoints());
+    }
+
+    public void applyGracePeriodForGrantingPenalties() {
+        OffsetDateTime now = OffsetDateTime.now();
+        List<MemberWithPenaltyVo> expiredUpsolvers = memberQueryRepository.findExpiredUpsolvers(now);
+
+        for (MemberWithPenaltyVo member : expiredUpsolvers) {
+            Long newPoints = (member.penaltyPoints() != null ? member.penaltyPoints() : 0) + 1;
+            PenaltyPointsVo penaltyVo = PenaltyPointsVo.of(newPoints);
+
+            OffsetDateTime nextGrace = now.plusWeeks(2)
+                    .toLocalDate()
+                    .atStartOfDay()
+                    .atOffset(ZoneOffset.UTC);
+            GracePeriodVo graceVo = GracePeriodVo.of(nextGrace);
+
+            memberCommandRepository.updatePenalty(member.memberId(), penaltyVo);
+            memberCommandRepository.updateGracePeriod(member.memberId(), graceVo);
+        }
     }
 }
