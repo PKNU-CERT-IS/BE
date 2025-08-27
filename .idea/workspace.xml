@@ -4,6 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
+<<<<<<< HEAD
     <list default="true" id="43acc93b-d20a-4050-859e-313a3f923b97" name="변경" comment="Build: Change Build process jpa mocking after db activate status #25">
       <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/project/application/ProjectParticipantFacadeService.java" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/project/application/command/ProjectParticipantCommandService.java" afterDir="false" />
@@ -150,12 +151,24 @@
       <change beforePath="$PROJECT_DIR$/src/main/resources/db/V6__Insert_study_data.sql" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/db/V6__Insert_study_data.sql" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/resources/db/V7__Insert_project_data.sql" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/db/V7__Insert_project_data.sql" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/resources/db/schema.sql.backup" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/db/schema.sql.backup" afterDir="false" />
+=======
+    <list default="true" id="177d3300-bc44-4b7c-8fae-30ebad035897" name="변경" comment="">
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/GracePeriodService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/MemberWithPenaltyVo.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/scheduler/GracePeriodScheduler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/MemberFacadeService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/MemberFacadeService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/repository/query/MemberQueryRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/repository/query/MemberQueryRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/service/MemberDomainService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/service/MemberDomainService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/persistence/MemberQueryRepositoryImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/persistence/MemberQueryRepositoryImpl.java" afterDir="false" />
+>>>>>>> a7ffab0ffa469c48f76d81b7801ad65fd0743912
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+<<<<<<< HEAD
   <component name="ExternalProjectsData">
     <projectState path="$PROJECT_DIR$">
       <ProjectState />
@@ -212,6 +225,12 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
+=======
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="package-info" />
+>>>>>>> a7ffab0ffa469c48f76d81b7801ad65fd0743912
         <option value="Enum" />
         <option value="Interface" />
         <option value="Record" />
@@ -220,6 +239,7 @@
     </option>
   </component>
   <component name="Git.Settings">
+<<<<<<< HEAD
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
         <entry key="$PROJECT_DIR$" value="be/dev/build-mock-data-insert#15" />
@@ -232,6 +252,14 @@
   &quot;associatedIndex&quot;: 2
 }</component>
   <component name="ProjectId" id="31BQAFxbpOTTLG8CessJ4WBVupr" />
+=======
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 3
+}</component>
+  <component name="ProjectId" id="31BWTu4zGUOzeNplItgUYsq2Ec4" />
+>>>>>>> a7ffab0ffa469c48f76d81b7801ad65fd0743912
   <component name="ProjectLevelVcsManager">
     <ConfirmationsSetting value="2" id="Add" />
   </component>
@@ -240,6 +268,7 @@
   </component>
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
+<<<<<<< HEAD
     &quot;Gradle.ProjectControllerTest.createProject_SuccessfulBusinessScenario.executor&quot;: &quot;Run&quot;,
     &quot;Gradle.ProjectControllerTest.deleteProject_AuthorizationFailure_UnauthorizedUser.executor&quot;: &quot;Run&quot;,
     &quot;Gradle.ProjectControllerTest.executor&quot;: &quot;Run&quot;,
@@ -437,6 +466,33 @@
       <item itemvalue="Gradle.ProjectParticipantControllerTest.registerJoinProject_SuccessfulBusinessScenario" />
       <item itemvalue="Spring Boot.StudyPlatformApplication" />
     </list>
+=======
+    &quot;Gradle.BE [:org.certis.studyplatform.StudyPlatformApplication.main()].executor&quot;: &quot;Run&quot;,
+    &quot;Gradle.소스 다운로드.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;be/dev/feat,refacotr-admin-member-domain-and-penalty-logic#23&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyClassDialog.RECENTS_KEY">
+      <recent name="org.certis.studyplatform.schedule.presentation.dto" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration name="StudyPlatformApplication" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="org.certis.studyplatform.StudyPlatformApplication" />
+      <module name="certis.main" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="org.certis.studyplatform.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+>>>>>>> a7ffab0ffa469c48f76d81b7801ad65fd0743912
     <recent_temporary>
       <list>
         <item itemvalue="Gradle.certis [jooqCodegen]" />
@@ -447,16 +503,8 @@
       </list>
     </recent_temporary>
   </component>
-  <component name="SharedIndexes">
-    <attachedChunks>
-      <set>
-        <option value="bundled-jdk-9f38398b9061-39b83d9b5494-intellij.indexing.shared.core-IU-241.15989.150" />
-        <option value="bundled-js-predefined-1d06a55b98c1-91d5c284f522-JavaScript-IU-241.15989.150" />
-      </set>
-    </attachedChunks>
-  </component>
-  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="애플리케이션 수준" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
+<<<<<<< HEAD
     <task id="LOCAL-00001" summary="Fix: Resolved Currentuser class error by move to other space #8">
       <option name="closed" value="true" />
       <created>1754910793949</created>
@@ -529,5 +577,26 @@
         </breakpoint>
       </breakpoints>
     </breakpoint-manager>
+=======
+    <task active="true" id="Default" summary="디폴트 작업">
+      <changelist id="177d3300-bc44-4b7c-8fae-30ebad035897" name="변경" comment="" />
+      <created>1755355801574</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1755355801574</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+>>>>>>> a7ffab0ffa469c48f76d81b7801ad65fd0743912
   </component>
 </project>
