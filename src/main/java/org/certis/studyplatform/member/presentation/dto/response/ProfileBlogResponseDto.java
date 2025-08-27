@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.certis.studyplatform.project.infrastructure.persistence.ProjectStatus;
+import org.certis.studyplatform.project.domain.ProjectStatus;
 
 import java.time.OffsetDateTime;
 
