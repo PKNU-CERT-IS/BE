@@ -11,8 +11,7 @@ import org.certis.studyplatform.member.infrastructure.mapper.MemberInfrastructur
 import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberEntity;
 import org.certis.studyplatform.member.application.object.query.SearchMembersQuery;
 import org.certis.studyplatform.member.application.object.query.GetMembersQuery;
-import org.jooq.Condition;
-import org.jooq.DSLContext;
+import org.jooq.*;
 import org.jooq.Record;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -21,6 +20,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.jooq.impl.DSL.*;
@@ -393,5 +393,130 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
             throw new InfrastructureException(ExceptionStatus.MEMBER_INFRASTRUCTURE_NOT_FOUND);
         }
     }
+
+    @Override
+    public List<MemberSearchForAdminVo> searchMembersForAdmin(SearchKeywordVo keywordVo) {
+        log.info("Query Infrastructure: Admin member search keyword={}",
+                keywordVo != null ? keywordVo.value() : "ALL");
+
+        // 1. 기본 조건: 삭제되지 않은 회원
+        Condition condition = field("m.deleted_at").isNull();
+
+        if (keywordVo != null && keywordVo.value() != null && !keywordVo.value().isBlank()) {
+            String keyword = "%" + keywordVo.value().trim() + "%";
+            condition = condition.and(
+                    field("m.name").likeIgnoreCase(keyword)
+                            .or(field("m.student_number").likeIgnoreCase(keyword))
+                            .or(field("m.major").likeIgnoreCase(keyword))
+            );
+        }
+
+        // 2. 기본 회원 정보 조회
+        Result<Record12<Long, String, String, String, String, String, OffsetDateTime, OffsetDateTime, OffsetDateTime, String, String, Long>>
+                memberRecords = dsl.select(
+                        field("m.id", Long.class).as("id"),
+                        field("m.name", String.class).as("name"),
+                        field("m.role", String.class).as("role"),
+                        field("m.major", String.class).as("major"),
+                        field("m.student_number", String.class).as("student_number"),
+                        field("m.grade", String.class).as("grade"),
+                        field("m.birthday", OffsetDateTime.class).as("birthday"),
+                        field("m.grace_period", OffsetDateTime.class).as("grace_period"),
+                        field("m.created_at", OffsetDateTime.class).as("created_at"),
+                        field("mc.phone_number", String.class).as("phone_number"),
+                        field("mc.email", String.class).as("email"),
+                        field("mp.penalty_point", Long.class).as("penalty_point")
+                )
+                .from(table("member").as("m"))
+                .leftJoin(table("member_contact").as("mc")).on(field("mc.member_id").eq(field("m.id")))
+                .leftJoin(table("member_penalty").as("mp")).on(field("mp.member_id").eq(field("m.id")))
+                .where(condition)
+                .fetch();
+
+        if (memberRecords.isEmpty()) {
+            return List.of();
+        }
+
+        // memberId 목록 추출
+        List<Long> memberIds = memberRecords.map(r -> r.get("id", Long.class));
+
+        // 3. 스터디 활동 조회
+        Map<Long, List<String>> studyMap = dsl.select(
+                        field("sp.member_id", Long.class).as("member_id"),
+                        field("s.title", String.class).as("title")
+                )
+                .from(table("study_participant").as("sp"))
+                .join(table("study").as("s")).on(field("s.id").eq(field("sp.study_id")))
+                .where(field("sp.member_id").in(memberIds))
+                .and(field("s.deleted_at").isNull())
+                .and(field("s.started_at").le(OffsetDateTime.now()))
+                .and(field("s.ended_at").gt(OffsetDateTime.now()))
+                .fetchGroups(
+                        r -> r.get("member_id", Long.class),
+                        r -> r.get("title", String.class)
+                );
+
+        // 4. 프로젝트 활동 조회
+        Map<Long, List<String>> projectMap = dsl.select(
+                        field("pp.member_id", Long.class).as("member_id"),
+                        field("p.title", String.class).as("title")
+                )
+                .from(table("project_participant").as("pp"))
+                .join(table("project").as("p")).on(field("p.id").eq(field("pp.project_id")))
+                .where(field("pp.member_id").in(memberIds))
+                .and(field("p.deleted_at").isNull())
+                .and(field("p.started_at").le(OffsetDateTime.now()))
+                .and(field("p.ended_at").gt(OffsetDateTime.now()))
+                .fetchGroups(
+                        r -> r.get("member_id", Long.class),
+                        r -> r.get("title", String.class)
+                );
+
+        // 5. 최종 매핑
+        return memberRecords.stream()
+                .map(r -> {
+                    Long memberId = r.get("id", Long.class);
+                    return new MemberSearchForAdminVo(
+                            new MemberIdVo(memberId),
+                            r.get("name", String.class),
+                            MemberRole.valueOf(r.get("role", String.class)),
+                            r.get("major", String.class),
+                            r.get("student_number", String.class),
+                            studyMap.getOrDefault(memberId, List.of()),
+                            projectMap.getOrDefault(memberId, List.of()),
+                            r.get("penalty_point", Long.class),
+                            r.get("grace_period", OffsetDateTime.class),
+                            r.get("grade", String.class),
+                            r.get("birthday", OffsetDateTime.class),
+                            r.get("phone_number", String.class),
+                            r.get("email", String.class),
+                            r.get("created_at", OffsetDateTime.class)
+                    );
+                })
+                .toList();
+    }
+
+    @Override
+    public List<MemberWithPenaltyVo> findExpiredUpsolvers(OffsetDateTime now) {
+        return dsl.select(
+                        field("m.id", Long.class).as("id"),
+                        field("m.role", String.class).as("role"),
+                        field("m.grace_period", OffsetDateTime.class).as("grace_period"),
+                        field("mp.penalty_point", Long.class).as("penalty_point")
+                )
+                .from(table("member").as("m"))
+                .leftJoin(table("member_penalty").as("mp")).on(field("mp.member_id").eq(field("m.id")))
+                .where(field("m.role").eq("UPSOLVER"))
+                .and(field("m.grace_period").le(now))
+                .and(field("m.deleted_at").isNull())
+                .fetch(record -> new MemberWithPenaltyVo(
+                        new MemberIdVo(record.get("id", Long.class)),
+                        MemberRole.valueOf(record.get("role", String.class)),
+                        record.get("grace_period", OffsetDateTime.class),
+                        record.get("penalty_point", Long.class)
+                ));
+    }
+
+
 
 }

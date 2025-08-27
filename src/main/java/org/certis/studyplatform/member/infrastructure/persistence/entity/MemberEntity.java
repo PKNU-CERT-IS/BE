@@ -57,6 +57,9 @@ public class MemberEntity {
     @Column(name = "gender", nullable = false)
     private String gender;
 
+    @Column(name = "grace_period")
+    private OffsetDateTime gracePeriod;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
@@ -71,7 +74,7 @@ public class MemberEntity {
     @Builder(toBuilder = true)
     private MemberEntity(Long id, String name, String description, String studentNumber,
                         String profileImage, String grade, MemberRole role, String[] skills,
-                        String major, OffsetDateTime birthday, String gender,
+                        String major, OffsetDateTime birthday, String gender, OffsetDateTime gracePeriod,
                         OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
         this.id = id;
         this.name = name;
@@ -84,6 +87,7 @@ public class MemberEntity {
         this.major = major;
         this.birthday = birthday;
         this.gender = gender;
+        this.gracePeriod =gracePeriod;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.deletedAt = deletedAt;

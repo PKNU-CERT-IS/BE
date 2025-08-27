@@ -5,14 +5,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.member.application.command.GetMemberTokenInfoQuery;
 import org.certis.studyplatform.member.application.object.query.GetMemberByIdQuery;
 import org.certis.studyplatform.member.application.object.query.GetMembersQuery;
+import org.certis.studyplatform.member.application.object.query.SearchMembersForAdminQuery;
 import org.certis.studyplatform.member.application.object.query.SearchMembersQuery;
 import org.certis.studyplatform.member.domain.service.MemberDomainService;
+import org.certis.studyplatform.member.domain.vo.MemberSearchForAdminVo;
 import org.certis.studyplatform.member.domain.vo.MemberSummaryVo; // Uses VO
 import org.certis.studyplatform.member.domain.vo.MemberTokenInfoVo;
 import org.certis.studyplatform.member.domain.vo.MemberVo;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 /**
  * Member Query Service
@@ -74,5 +78,16 @@ public class MemberQueryService {
         log.info("Query: Member token info found: memberId={}, name={}, hasEmail={}",
                 tokenInfo.memberId(), tokenInfo.name(), tokenInfo.hasEmail());
         return tokenInfo;
+    }
+
+    public List<MemberSearchForAdminVo> searchMembersForAdmin(SearchMembersForAdminQuery query) {
+
+        log.info("Query: Searching members for admin with keyword={}", query.keyword());
+
+        List<MemberSearchForAdminVo> voList = memberDomainService.searchMembersForAdmin(query);
+
+        log.info("Query: Found {} members for keyword={}", voList.size(), query.keyword());
+
+        return voList;
     }
 }
