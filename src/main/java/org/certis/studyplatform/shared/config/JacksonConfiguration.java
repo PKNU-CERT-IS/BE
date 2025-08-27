@@ -1,5 +1,6 @@
 package org.certis.studyplatform.shared.config;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -35,9 +36,9 @@ public class JacksonConfiguration {
         // 알 수 없는 속성 무시 (호환성)
         mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-        // null 값 무시
-        mapper.configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false);
+        // null 값 무시 (Map values에서 null 제외)
+        mapper.setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
 
         return mapper;
     }
-} 
+}
