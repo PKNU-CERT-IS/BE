@@ -1,29 +1,29 @@
-package org.certis.studyplatform.project.infrastructure.persistence;
+package org.certis.studyplatform.study.domain;
 
 import lombok.Getter;
 
 @Getter
-public enum ProjectStatus {
+public enum StudyStatus {
     READY("준비 중"),
-    INPROGRESS("진행 중"), 
+    INPROGRESS("진행 중"),
     COMPLETED("완료"),
     REJECTED("중단됨");
 
     private final String description;
 
-    ProjectStatus(String description) {
+    StudyStatus(String description) {
         this.description = description;
     }
 
     /**
-     * 설명으로부터 ProjectStatus 찾기
+     * 설명으로부터 StudyStatus 찾기
      */
-    public static ProjectStatus fromDescription(String description) {
+    public static StudyStatus fromDescription(String description) {
         if (description == null) {
             return READY;
         }
-        
-        for (ProjectStatus status : values()) {
+
+        for (StudyStatus status : values()) {
             if (status.description.equals(description)) {
                 return status;
             }
@@ -32,17 +32,17 @@ public enum ProjectStatus {
     }
 
     /**
-     * 상태 문자열로부터 ProjectStatus 찾기
+     * 상태 문자열로부터 StudyStatus 찾기
      */
-    public static ProjectStatus fromStatusString(String statusString) {
+    public static StudyStatus fromStatusString(String statusString) {
         if (statusString == null || statusString.trim().isEmpty()) {
             return READY;
         }
 
         String trimmed = statusString.trim().toUpperCase();
-        
+
         try {
-            return ProjectStatus.valueOf(trimmed);
+            return StudyStatus.valueOf(trimmed);
         } catch (IllegalArgumentException e) {
             // 기존 값들과의 호환성
             return switch (trimmed) {
