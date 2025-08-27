@@ -13,7 +13,7 @@ import java.time.OffsetDateTime;
 @Deprecated(forRemoval = true)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Profile {
-    
+
     @Getter
     private Long id;
     @Getter
@@ -30,7 +30,7 @@ public class Profile {
     private OffsetDateTime updatedAt;
 
     // 새 프로필 생성
-    public Profile(Long memberId, String name, String description, 
+    public Profile(Long memberId, String name, String description,
                    String profileImage) {
         this.memberId = memberId;
         this.name = name;
@@ -41,7 +41,7 @@ public class Profile {
     }
 
     // 기존 프로필 복원 (Repository 계층에서 사용)
-    public Profile(Long id, Long memberId, String name, 
+    public Profile(Long id, Long memberId, String name,
                    String description, ProfileImageVo profileImage,
                    OffsetDateTime createdAt, OffsetDateTime updatedAt) {
         this.id = id;
@@ -54,7 +54,7 @@ public class Profile {
     }
 
     @Builder
-    public static Profile create(Long memberId, String name, String description, 
+    public static Profile create(Long memberId, String name, String description,
                                 ProfileImageVo profileImage) {
         return new Profile(memberId, name, description, profileImage != null ? profileImage.value() : null);
     }

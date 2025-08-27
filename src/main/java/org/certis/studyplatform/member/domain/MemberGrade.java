@@ -24,7 +24,7 @@ public enum MemberGrade {
         if (description == null) {
             return NONE;
         }
-        
+
         for (MemberGrade grade : values()) {
             if (grade.description.equals(description)) {
                 return grade;
@@ -42,7 +42,7 @@ public enum MemberGrade {
         }
 
         String trimmed = gradeString.trim().toUpperCase();
-        
+
         // 먼저 enum 값으로 직접 매칭 시도
         try {
             return MemberGrade.valueOf(trimmed);

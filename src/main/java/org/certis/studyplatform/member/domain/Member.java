@@ -142,4 +142,4 @@ public class Member {
     public String getMajorValue() { return major != null ? major.value() : null; }
     public String getProfileImageValue() { return profileImage != null ? profileImage.value() : null;}
     public String getStudentNumberValue() { return studentNumber != null ? studentNumber.value() : null;}
-} 
+}
