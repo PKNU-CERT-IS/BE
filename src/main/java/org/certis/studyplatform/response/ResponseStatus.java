@@ -7,7 +7,7 @@ import org.springframework.http.HttpStatus;
 
 /**
  * 스터디 플랫폼 응답 상태 정의
- * 
+ *
  * 네이밍 규칙: {DOMAIN}_{ACTION}_{STATUS}
  * 예: MEMBER_CREATE_SUCCESS, MEMBER_FIND_SUCCESS, PROJECT_CREATE_SUCCESS
  */
@@ -57,6 +57,18 @@ public enum ResponseStatus {
     PROJECT_LIST_SUCCESS(HttpStatus.OK, "프로젝트 목록을 성공적으로 조회했습니다"),
     PROJECT_SEARCH_SUCCESS(HttpStatus.OK, "프로젝트 검색을 성공적으로 완료했습니다"),
     PROJECT_STATUS_UPDATE_SUCCESS(HttpStatus.OK, "프로젝트 상태가 성공적으로 변경되었습니다"),
+    
+    // Project Meeting Response Codes
+    PROJECT_MEETING_CREATE_SUCCESS(HttpStatus.CREATED, "프로젝트 회의록이 성공적으로 생성되었습니다"),
+    PROJECT_MEETING_FIND_SUCCESS(HttpStatus.OK, "프로젝트 회의록을 성공적으로 조회했습니다"),
+    PROJECT_MEETING_UPDATE_SUCCESS(HttpStatus.OK, "프로젝트 회의록이 성공적으로 수정되었습니다"),
+    PROJECT_MEETING_DELETE_SUCCESS(HttpStatus.OK, "프로젝트 회의록이 성공적으로 삭제되었습니다"),
+
+    PROJECT_PARTICIPANT_JOIN_REGISTERED(HttpStatus.CREATED, "프로젝트 참가 신청이 성공했습니다"),
+    PROJECT_PARTICIPANT_JOIN_CANCELED(HttpStatus.OK, "프로젝트 참가 취소가 성공했습니다"),
+    PROJECT_PARTICIPANT_JOIN_APPROVED(HttpStatus.OK, "프로젝트 참가가 승인되었습니다"),
+    PROJECT_PARTICIPANT_JOIN_REJECTED(HttpStatus.OK, "프로젝트 참가가 거절되었습니다"),
+    PROJECT_PARTICIPANT_SEARCH_SUCCESS(HttpStatus.OK, "프로젝트 참가자 조회에 성공했습니다."),
 
     // =================================================================
     // STUDY DOMAIN RESPONSE CODES
@@ -72,6 +84,15 @@ public enum ResponseStatus {
     STUDY_MINUTES_UPLOAD_SUCCESS(HttpStatus.CREATED, "스터디 회의록이 성공적으로 업로드되었습니다"),
     STUDY_LIST_SUCCESS(HttpStatus.OK, "스터디 목록을 성공적으로 조회했습니다"),
     STUDY_SEARCH_SUCCESS(HttpStatus.OK, "스터디 검색을 성공적으로 완료했습니다"),
+    STUDY_DETAIL_SUCCESS(HttpStatus.OK, "스터디 상세 정보를 성공적으로 조회했습니다"),
+    STUDY_ATTACHMENTS_SUCCESS(HttpStatus.OK, "스터디 첨부파일을 성공적으로 조회했습니다"),
+    STUDY_MEETINGS_SUCCESS(HttpStatus.OK, "스터디 회의록을 성공적으로 조회했습니다"),
+    
+    // Study Meeting Response Codes
+    STUDY_MEETING_CREATE_SUCCESS(HttpStatus.CREATED, "스터디 회의록이 성공적으로 생성되었습니다"),
+    STUDY_MEETING_FIND_SUCCESS(HttpStatus.OK, "스터디 회의록을 성공적으로 조회했습니다"),
+    STUDY_MEETING_UPDATE_SUCCESS(HttpStatus.OK, "스터디 회의록이 성공적으로 수정되었습니다"),
+    STUDY_MEETING_DELETE_SUCCESS(HttpStatus.OK, "스터디 회의록이 성공적으로 삭제되었습니다"),
 
     // =================================================================
     // BOARD DOMAIN RESPONSE CODES
