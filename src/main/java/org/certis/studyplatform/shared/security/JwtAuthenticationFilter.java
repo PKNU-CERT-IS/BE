@@ -24,7 +24,7 @@ import java.util.List;
 
 
 @Slf4j
-// @Component  // 🔥 API 테스트용 - JWT 필터 완전 비활성화
+@Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -45,7 +45,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String accessToken = resolveToken(request);
             if(StringUtils.hasText(accessToken)&& jwtTokenProvider.isValidateToken(accessToken)){
                 if(jwtTokenProvider.isAccessToken(accessToken)){
-                    authenticationUser(accessToken);
+
+                    setAuthenticationUserToContext(accessToken);
                     filterChain.doFilter(request,response);
                     return;
                 }
@@ -65,22 +66,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if(StringUtils.hasText(authorizationHeader) &&
                 authorizationHeader.startsWith("Bearer ")) {
             return authorizationHeader.substring(7).trim();
+
         }
+
         return null;
     }
 
     // Jwt 토큰 정보로 인증 처리
-    private void authenticationUser(String accessToken){
+    private void setAuthenticationUserToContext(String accessToken){
         try{
+            // 토큰에서 사용자 정보 추출
             Long memberId = jwtTokenProvider.getUserIdFromToken(accessToken);
             MemberRole role = jwtTokenProvider.getRoleFromAccessToken(accessToken);
+            String username = jwtTokenProvider.getUsernameFromToken(accessToken);
+            String email = jwtTokenProvider.getEmailFromToken(accessToken);
+            String name = jwtTokenProvider.getNameFromToken(accessToken);
 
-            CurrentUser  currentUser = new CurrentUser(
+            CurrentUser currentUser = new CurrentUser(
                     memberId,
-                    null,   // 추후 리펙토링
-                    null,            // 추후 리펙토링
-                    null,            // 추후 리펙토링
-                    role.name()
+                    username,    // 학번
+                    email,       // 이메일
+                    name,        // 이름
+                    role.name()  // 역할
             );
 
             UsernamePasswordAuthenticationToken authenticationToken =
@@ -90,9 +97,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             currentUser.getAuthorities() // ROLE_ 정보 저장
                     );
             // spring security 에 인증 정보 설정
-            SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-            log.debug("JWT 인증 성공: memberId={}, role={}", memberId, role);
-        }catch (Exception e){
+                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+
+            log.debug("JWT 인증 성공: memberId={}, username={}, name={}, role={}",
+                    memberId, username, name, role);
+
+        } catch (Exception e){
             log.warn("JWT 토큰에서 인증 정보 추출 실패: {}", e.getMessage());
         }
     }

@@ -10,7 +10,6 @@ import org.certis.studyplatform.auth.domain.model.vo.*;
 import org.certis.studyplatform.auth.domain.repository.AuthCommandRepository;
 import org.certis.studyplatform.auth.domain.repository.AuthQueryRepository;
 import org.certis.studyplatform.auth.domain.repository.RedisRefreshTokenRepository;
-import org.certis.studyplatform.auth.infrastructure.persistence.AuthJpaRepository;
 import org.certis.studyplatform.exception.ApplicationException;
 import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
@@ -92,7 +91,7 @@ public class AuthDomainService {
     public void validatePassword(AuthInfoVo authInfoVo, RawPasswordVo rawPasswordVo) {
         if (!authInfoVo.isPasswordMatches(rawPasswordVo.value(), passwordEncoder)) {
             // 비밀번호 불일치 예외
-//            throw new ApplicationException(AUTH_APPLICATION_PASSWORD_MISMATCH); 나중에 password Encoder로 회원가입 로직 짜야함 지금 다 예외처림됨
+//            throw new ApplicationException(ExceptionStatus.AUTH_APPLICATION_PASSWORD_MISMATCH); //나중에 password Encoder로 회원가입 로직 짜야함 지금 다 예외처림됨
         }
     }
 
