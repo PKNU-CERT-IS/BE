@@ -47,7 +47,7 @@ public class MemberCommandRepositoryImpl implements MemberCommandRepository {
             // STEP 1: VO → Entity 변환 (Infrastructure Layer의 핵심 책임)
             // Domain에서 전달받은 VO를 JPA Entity로 변환
             // ================================================================
-            
+
             log.debug("🔄 Converting MemberCreationVo to MemberEntity...");
             log.debug("📋 Input VO details:");
             log.debug("  - Name: {}", memberCreationVo.getNameValue());
@@ -58,7 +58,7 @@ public class MemberCommandRepositoryImpl implements MemberCommandRepository {
             log.debug("  - Skills: {} items", memberCreationVo.getSkillsValues().size());
             log.debug("  - Email: {}", memberCreationVo.getEmailValue());
             log.debug("  - Profile Image: {}", memberCreationVo.getProfileImageValue() != null ? "Present" : "None");
-            
+
             // VO → Entity 변환 (매퍼에 위임)
             MemberEntity entityToSave = memberInfrastructureMapper.toEntity(memberCreationVo);
             log.debug("✅ VO → Entity conversion completed");
@@ -67,7 +67,7 @@ public class MemberCommandRepositoryImpl implements MemberCommandRepository {
             // STEP 2: JPA를 통한 Entity 영속화
             // 변환된 Entity를 데이터베이스에 저장
             // ================================================================
-            
+
             log.debug("💾 Persisting MemberEntity to database...");
             MemberEntity savedEntity = memberJpaRepository.save(entityToSave);
             log.debug("✅ Entity persisted with ID: {}", savedEntity.getId());
@@ -76,7 +76,7 @@ public class MemberCommandRepositoryImpl implements MemberCommandRepository {
             // STEP 3: Entity → VO 변환 (결과 반환용)
             // 저장된 Entity를 다시 VO로 변환하여 Domain Layer로 반환
             // ================================================================
-            
+
             log.debug("🔄 Converting saved MemberEntity to MemberCreatedVo...");
             MemberCreatedVo result = memberInfrastructureMapper.toMemberCreatedVo(savedEntity);
             log.debug("✅ Entity → VO conversion completed");
@@ -101,7 +101,7 @@ public class MemberCommandRepositoryImpl implements MemberCommandRepository {
             // ================================================================
             // STEP 1: 기존 Entity 조회
             // ================================================================
-            
+
             log.debug("🔍 Finding existing MemberEntity with ID: {}", memberId.value());
             MemberEntity existingEntity = memberJpaRepository.findById(memberId.value())
                     .orElseThrow(() -> new DomainException(ExceptionStatus.MEMBER_INFRASTRUCTURE_NOT_FOUND,
@@ -112,18 +112,18 @@ public class MemberCommandRepositoryImpl implements MemberCommandRepository {
             // STEP 2: VO → Entity 업데이트 변환
             // MemberUpdateVo의 정보를 사용하여 기존 Entity 업데이트
             // ================================================================
-            
+
             log.debug("🔄 Updating MemberEntity using MemberUpdateVo...");
             log.debug("📋 Update details:");
             if (memberUpdateVo.hasNameUpdate()) log.debug("  - Name: {} → {}", existingEntity.getName(), memberUpdateVo.getNameValue());
             if (memberUpdateVo.hasGradeUpdate()) log.debug("  - Grade: {} → {}", existingEntity.getGrade(), memberUpdateVo.getGradeValue());
             if (memberUpdateVo.hasRoleUpdate()) log.debug("  - Role: {} → {}", existingEntity.getRole(), memberUpdateVo.getRoleValue());
             if (memberUpdateVo.hasMajorUpdate()) log.debug("  - Major: {} → {}", existingEntity.getMajor(), memberUpdateVo.getMajorValue());
-            if (memberUpdateVo.hasSkillsUpdate()) log.debug("  - Skills: {} items → {} items", 
+            if (memberUpdateVo.hasSkillsUpdate()) log.debug("  - Skills: {} items → {} items",
                     existingEntity.getSkills() != null ? existingEntity.getSkills().length : 0,
                     memberUpdateVo.getSkillsValues() != null ? memberUpdateVo.getSkillsValues().size() : 0);
             if (memberUpdateVo.hasDescriptionUpdate()) log.debug("  - Description updated");
-            
+
             // VO를 사용하여 Entity 업데이트
             MemberEntity updatedEntity = memberInfrastructureMapper.updateEntity(existingEntity, memberUpdateVo);
             log.debug("✅ MemberEntity updated using VO");
@@ -131,7 +131,7 @@ public class MemberCommandRepositoryImpl implements MemberCommandRepository {
             // ================================================================
             // STEP 3: JPA를 통한 Entity 영속화
             // ================================================================
-            
+
             log.debug("💾 Persisting updated MemberEntity to database...");
             MemberEntity savedEntity = memberJpaRepository.save(updatedEntity);
             log.debug("✅ Entity persisted with ID: {}", savedEntity.getId());
@@ -140,7 +140,7 @@ public class MemberCommandRepositoryImpl implements MemberCommandRepository {
             // STEP 4: Entity → VO 변환 (결과 반환용)
             // 저장된 Entity를 MemberUpdatedVo로 변환하여 Domain Layer로 반환
             // ================================================================
-            
+
             log.debug("🔄 Converting saved MemberEntity to MemberUpdatedVo...");
             MemberUpdatedVo result = memberInfrastructureMapper.toMemberUpdatedVo(savedEntity);
             log.debug("✅ Entity → VO conversion completed");
