@@ -28,6 +28,9 @@ public class AuthCommandService {
         // accessToken 생성
         AccessTokenVo accessToken = jwtTokenProvider.generateAccessToken(
                 generateTokenCommand.memberId(),
+                generateTokenCommand.username(),
+                generateTokenCommand.email(),
+                generateTokenCommand.name(),
                 generateTokenCommand.role()
         );
 
@@ -62,6 +65,9 @@ public class AuthCommandService {
         // 새 AccessToken 생성
         AccessTokenVo newAccessToken = jwtTokenProvider.generateAccessToken(
                 refreshTokenCommand.memberId(),
+                refreshTokenCommand.username(),
+                refreshTokenCommand.email(),
+                refreshTokenCommand.name(),
                 refreshTokenCommand.role()
         );
 

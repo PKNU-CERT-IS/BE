@@ -5,11 +5,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.exception.InfrastructureException;
+import org.certis.studyplatform.infrastructure.persistence.jooq.generated.tables.Member;
 import org.certis.studyplatform.member.domain.repository.command.MemberCommandRepository;
 import org.certis.studyplatform.member.domain.vo.*;
 import org.certis.studyplatform.member.infrastructure.mapper.MemberInfrastructureMapper;
 import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberEntity;
+import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberPenaltyEntity;
 import org.certis.studyplatform.member.infrastructure.persistence.jpa.MemberJpaRepository;
+import org.certis.studyplatform.member.infrastructure.persistence.jpa.MemberPenaltyJpaRepository;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +37,7 @@ import java.util.Optional;
 public class MemberCommandRepositoryImpl implements MemberCommandRepository {
 
     private final MemberJpaRepository memberJpaRepository;
+    private final MemberPenaltyJpaRepository memberPenaltyJpaRepository;
     private final MemberInfrastructureMapper memberInfrastructureMapper;
 
     @Override
@@ -326,5 +330,47 @@ public class MemberCommandRepositoryImpl implements MemberCommandRepository {
             log.error("Error counting members by conditions: {}", e.getMessage());
             return 0L;
         }
+    }
+
+    @Override
+    @Transactional
+    public void updatePenalty(MemberIdVo memberIdVo, PenaltyPointsVo penaltyPointsVo) {
+        log.info("Infrastructure: Updating penalty for memberId={}, points={}",
+                memberIdVo.value(), penaltyPointsVo.points());
+
+        // member_penalty 테이블에서 조회
+        MemberPenaltyEntity penaltyEntity = memberPenaltyJpaRepository.findByMemberId(memberIdVo.value())
+                .orElseThrow(() -> new DomainException(ExceptionStatus.MEMBER_INFRASTRUCTURE_NOT_FOUND,
+                        "패널티 정보를 찾을 수 없습니다: " + memberIdVo.value()));
+
+        // 점수 누적 업데이트 (정책: 없으면 예외, 있으면 +=)
+        penaltyEntity.updatePenaltyPoints(penaltyPointsVo.points());
+
+        memberPenaltyJpaRepository.save(penaltyEntity);
+
+        log.info("✅ Infrastructure: Penalty updated successfully for memberId={}, totalPoints={}",
+                memberIdVo.value(), penaltyEntity.getPenaltyPoint());
+    }
+
+
+    @Override
+    @Transactional
+    public void updateGracePeriod(MemberIdVo memberIdVo, GracePeriodVo gracePeriodVo) {
+        log.info("Infrastructure: Updating grace period for memberId={}, until={}",
+                memberIdVo.value(), gracePeriodVo.value());
+
+        MemberEntity member = memberJpaRepository.findById(memberIdVo.value())
+                .orElseThrow(() -> new DomainException(ExceptionStatus.MEMBER_INFRASTRUCTURE_NOT_FOUND,
+                        "회원을 찾을 수 없습니다: " + memberIdVo.value()));
+
+        // MemberEntity에 gracePeriod 업데이트
+        MemberEntity updated = member.toBuilder()
+                .gracePeriod(gracePeriodVo.value())
+                .updatedAt(OffsetDateTime.now())
+                .build();
+
+        memberJpaRepository.save(updated);
+
+        log.info("✅ Infrastructure: Grace period updated successfully for memberId={}", memberIdVo.value());
     }
 }
