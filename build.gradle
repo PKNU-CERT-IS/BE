@@ -216,7 +216,7 @@ jooq {
     configuration {
         jdbc {
             driver = 'org.postgresql.Driver'
-            url = "jdbc:postgresql://${System.getenv('JOOQ_DB_HOST') ?: 'localhost'}:${System.getenv('JOOQ_DB_PORT') ?: '5432'}/${System.getenv('JOOQ_DB_NAME') ?: 'certis_local'}"
+            url = "jdbc:postgresql://${System.getenv('JOOQ_DB_HOST') ?: 'localhost'}:${System.getenv('JOOQ_DB_PORT') ?: '5433'}/${System.getenv('JOOQ_DB_NAME') ?: 'certis_local'}"
             user = System.getenv('JOOQ_DB_USERNAME') ?: 'postgres'
             password = System.getenv('JOOQ_DB_PASSWORD') ?: ''
         }

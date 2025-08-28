@@ -480,25 +480,25 @@ public class DatabaseInitializationService implements CommandLineRunner {
             try {
                 logger.info("🗑️ Starting database flush...");
 
-                List<String> tableNames = Arrays.asList(
-                        "study_meeting_link", "study_participant", "study_meeting", "study_attached",
-                        "schedule_attached", "schedule_status",
-                        "project_meeting_link", "project_participant", "project_attached", "project_meeting",
-                        "board_view", "board_report", "board_like", "board_attached",
-                        "blog_view", "blog_tag", "schedule", "board", "blog",
-                        "project", "study", "member_contact", "member_penalty",
-                        "auth", "member"
-                );
-
-                for (String tableName : tableNames) {
-                    try {
-                        jdbcTemplate.execute("TRUNCATE TABLE " + tableName + " RESTART IDENTITY CASCADE");
-                        logger.debug("🗑️ Truncated table: {}", tableName);
-                    } catch (Exception e) {
-                        logger.warn("⚠️ Failed to truncate table {}: {}", tableName, e.getMessage());
-                    }
-                }
-
+//                List<String> tableNames = Arrays.asList(
+//                        "study_meeting_link", "study_participant", "study_meeting", "study_attached",
+//                        "schedule_attached", "schedule_status",
+//                        "project_meeting_link", "project_participant", "project_attached", "project_meeting",
+//                        "board_view", "board_report", "board_like", "board_attached",
+//                        "blog_view", "blog_tag", "schedule", "board", "blog",
+//                        "project", "study", "member_contact", "member_penalty",
+//                        "auth", "member"
+//                );
+//
+//                for (String tableName : tableNames) {
+//                    try {
+//                        jdbcTemplate.execute("TRUNCATE TABLE " + tableName + " RESTART IDENTITY CASCADE");
+//                        logger.debug("🗑️ Truncated table: {}", tableName);
+//                    } catch (Exception e) {
+//                        logger.warn("⚠️ Failed to truncate table {}: {}", tableName, e.getMessage());
+//                    }
+//                }
+//
                 logger.info("✅ Database flush completed");
                 return null;
 

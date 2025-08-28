@@ -4,22 +4,23 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="542e23ea-3ab4-450e-b010-97a77f56983b" name="변경" comment="Build: Change Build process jpa mocking after db activate status #25">
+    <list default="true" id="542e23ea-3ab4-450e-b010-97a77f56983b" name="변경" comment="Fix: Role 권한 검사 부분 에러 해결 #28">
       <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/object/command/UpdatePenaltyCommand.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/object/command/UpdatePenaltyCommand.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/service/MemberDomainService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/service/MemberDomainService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/PenaltyPointsVo.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/PenaltyPointsVo.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/persistence/MemberCommandRepositoryImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/persistence/MemberCommandRepositoryImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/presentation/dto/request/PenaltyRequestDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/presentation/dto/request/PenaltyRequestDto.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/project/domain/service/ProjectDomainService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/project/domain/service/ProjectDomainService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/shared/config/ApplicationStartupConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/shared/config/ApplicationStartupConfig.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/shared/config/DatabaseInitializationService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/shared/config/DatabaseInitializationService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/db/V1__Create_tables.sql" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/db/V1__Create_tables.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/shared/config/EmbeddedPostgresConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/shared/config/EmbeddedPostgresConfig.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ExternalProjectsData">
+    <projectState path="$PROJECT_DIR$">
+      <ProjectState />
+    </projectState>
   </component>
   <component name="ExternalProjectsManager">
     <system id="GRADLE">
@@ -68,6 +69,16 @@
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
+  <component name="RunManager">
+    <configuration name="StudyPlatformApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <option name="FRAME_DEACTIVATION_UPDATE_POLICY" value="UpdateClassesAndResources" />
+      <module name="certis.main" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="org.certis.studyplatform.StudyPlatformApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -88,6 +99,31 @@
       <workItem from="1756346979924" duration="2851000" />
       <workItem from="1756387073741" duration="810000" />
     </task>
+    <task id="LOCAL-00001" summary="Fix: Member penalty Integer type 통일 #6">
+      <option name="closed" value="true" />
+      <created>1756390026726</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1756390026726</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Chore: Member penalty reason 필드 삭제 #6">
+      <option name="closed" value="true" />
+      <created>1756390058741</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1756390058741</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Fix: Role 권한 검사 부분 에러 해결 #28">
+      <option name="closed" value="true" />
+      <created>1756390113521</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1756390113521</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -95,6 +131,9 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Build: Change Build process jpa mocking after db activate status #25" />
-    <option name="LAST_COMMIT_MESSAGE" value="Build: Change Build process jpa mocking after db activate status #25" />
+    <MESSAGE value="Fix: Member penalty Integer type 통일 #6" />
+    <MESSAGE value="Chore: Member penalty reason 필드 삭제 #6" />
+    <MESSAGE value="Fix: Role 권한 검사 부분 에러 해결 #28" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fix: Role 권한 검사 부분 에러 해결 #28" />
   </component>
 </project>
