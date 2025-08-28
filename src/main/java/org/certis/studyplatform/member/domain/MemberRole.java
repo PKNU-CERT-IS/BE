@@ -38,8 +38,8 @@ public enum MemberRole {
 
 
     // staff 이상의 관리자 권한인가? (admin 페이지 접근 가능 판별)
-    public boolean isStaffOrAbove() {
-        return this.level <= STAFF.level;
+    public static boolean isStaffOrAbove(MemberRole memberRole) {
+        return memberRole.level <= STAFF.level;
     }
 
 }

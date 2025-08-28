@@ -1,4 +1,4 @@
-insert into auth (member_id, account_number, password, created_at, updated_at, deleted_at) values (1, 'TG3467', 1234, '2025-03-26 21:26:27', '2025-05-19 13:44:43', null);
+insert into auth (member_id, account_number, password, created_at, updated_at, deleted_at) values (1, 'TG3467', 123456789, '2025-03-26 21:26:27', '2025-05-19 13:44:43', null);
 insert into auth (member_id, account_number, password, created_at, updated_at, deleted_at) values (2, 'AA6647', 1234, '2025-07-06 21:54:09', '2025-06-04 04:20:44', null);
 insert into auth (member_id, account_number, password, created_at, updated_at, deleted_at) values (3, 'SA3372', 1234, '2025-05-01 23:15:16', '2024-09-05 11:05:06', null);
 insert into auth (member_id, account_number, password, created_at, updated_at, deleted_at) values (4, 'AM5776', 1234, '2024-12-06 07:03:31', '2025-07-22 00:06:36', null);

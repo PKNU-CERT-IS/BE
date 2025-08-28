@@ -88,7 +88,8 @@ public enum ExceptionStatus {
     MEMBER_DOMAIN_INVALID_STATUS(HttpStatus.UNPROCESSABLE_ENTITY, "유효하지 않은 회원 상태입니다"),
     MEMBER_DOMAIN_INSUFFICIENT_AUTHORITY(HttpStatus.FORBIDDEN, "유효하지 않은 권한 접근입니다"),
     MEMBER_DOMAIN_NOT_FOUND(HttpStatus.NOT_FOUND, "회원을 찾을 수 없습니다"),
-
+    MEMBER_DOMAIN_INVALID_PENALTY(HttpStatus.UNPROCESSABLE_ENTITY, "잘못된 점수입니다."),
+    
     // Member - Domain VO Validation
     MEMBER_DOMAIN_INVALID_NAME(HttpStatus.BAD_REQUEST, "유효하지 않은 이름입니다"),
     MEMBER_DOMAIN_INVALID_STUDENT_NUMBER(HttpStatus.BAD_REQUEST, "유효하지 않은 학번입니다"),
@@ -238,12 +239,36 @@ public enum ExceptionStatus {
     BOARD_DOMAIN_RULE_VIOLATION(HttpStatus.UNPROCESSABLE_ENTITY, "게시글 도메인 규칙 위반입니다"),
     BOARD_DOMAIN_ACCESS_DENIED(HttpStatus.FORBIDDEN, "게시글 접근 권한이 없습니다"),
     BOARD_DOMAIN_INVALID_STATUS(HttpStatus.UNPROCESSABLE_ENTITY, "유효하지 않은 게시글 상태입니다"),
+    BOARD_DOMAIN_INVALID_ID(HttpStatus.BAD_REQUEST, "유효하지 않은 게시글 ID입니다"),
+    BOARD_DOMAIN_INVALID_TITLE(HttpStatus.BAD_REQUEST, "유효하지 않은 게시글 제목입니다"),
+    BOARD_DOMAIN_INVALID_CONTENT(HttpStatus.BAD_REQUEST, "유효하지 않은 게시글 내용입니다"),
+    BOARD_DOMAIN_INVALID_DESCRIPTION(HttpStatus.BAD_REQUEST, "유효하지 않은 게시글 설명입니다"),
+    BOARD_DOMAIN_INVALID_CATEGORY(HttpStatus.BAD_REQUEST, "유효하지 않은 게시글 카테고리입니다"),
+    BOARD_DOMAIN_INVALID_ATTACHMENT_ID(HttpStatus.BAD_REQUEST, "유효하지 않은 첨부파일 ID입니다"),
+    BOARD_DOMAIN_INVALID_ATTACHMENT_NAME(HttpStatus.BAD_REQUEST, "유효하지 않은 첨부파일 이름입니다"),
+    BOARD_DOMAIN_INVALID_ATTACHMENT_TYPE(HttpStatus.BAD_REQUEST, "유효하지 않은 첨부파일 타입입니다"),
+    BOARD_DOMAIN_INVALID_ATTACHMENT_SIZE(HttpStatus.BAD_REQUEST, "유효하지 않은 첨부파일 크기입니다"),
+    BOARD_DOMAIN_INVALID_ATTACHMENT_URL(HttpStatus.BAD_REQUEST, "유효하지 않은 첨부파일 URL입니다"),
+    BOARD_DOMAIN_AUTHOR_MISMATCH(HttpStatus.FORBIDDEN, "게시글 작성자만 수정할 수 있습니다"),
+    BOARD_DOMAIN_DELETE_PERMISSION_DENIED(HttpStatus.FORBIDDEN, "게시글 삭제 권한이 없습니다"),
+    BOARD_DOMAIN_INVALID_AUTHOR(HttpStatus.BAD_REQUEST, "유효하지 않은 작성자입니다"),
+    BOARD_DOMAIN_LIKE_SELF_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "본인 게시글에는 좋아요를 할 수 없습니다"),
+    BOARD_DOMAIN_INVALID_LIKE_STATUS(HttpStatus.BAD_REQUEST, "유효하지 않은 좋아요 상태입니다"),
+    BOARD_DOMAIN_INVALID_SEARCH(HttpStatus.BAD_REQUEST, "유효하지 않은 검색어입니다"),
+    BOARD_DOMAIN_INVALID_PAGE(HttpStatus.BAD_REQUEST, "유효하지 않은 페이지 번호입니다"),
+    BOARD_DOMAIN_INVALID_PAGE_SIZE(HttpStatus.BAD_REQUEST, "유효하지 않은 페이지 크기입니다"),
+
 
     // Board - Infrastructure Layer
     BOARD_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다"),
     BOARD_INFRASTRUCTURE_DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "게시글 데이터베이스 오류가 발생했습니다"),
     BOARD_INFRASTRUCTURE_FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "첨부파일 업로드에 실패했습니다"),
     BOARD_INFRASTRUCTURE_RESOURCE_CONFLICT(HttpStatus.CONFLICT, "게시글 리소스 충돌이 발생했습니다"),
+    BOARD_INFRASTRUCTURE_REDIS_ERROR(HttpStatus.INTERNAL_SERVER_ERROR,"레디스 데이터베이스에 오류가 발생했습니다." ),
+    BOARD_INFRASTRUCTURE_CREATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "게시글 생성에 실패했습니다"),
+    BOARD_INFRASTRUCTURE_UPDATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "게시글 수정에 실패했습니다"),
+    BOARD_INFRASTRUCTURE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "게시글 삭제에 실패했습니다"),
+    BOARD_INFRASTRUCTURE_QUERY_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "게시글 조회에 실패했습니다"),
 
     // Comment - Infrastructure Layer
     COMMENT_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "댓글을 찾을 수 없습니다"),
@@ -261,10 +286,37 @@ public enum ExceptionStatus {
     // SCHEDULE DOMAIN EXCEPTIONS
     // =================================================================
 
-    // Schedule - Infrastructure Layer
-    SCHEDULE_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "일정을 찾을 수 없습니다"),
-    SCHEDULE_INFRASTRUCTURE_DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "일정 데이터베이스 오류가 발생했습니다"),
-    SCHEDULE_INFRASTRUCTURE_RESOURCE_CONFLICT(HttpStatus.CONFLICT, "일정 시간 충돌이 발생했습니다"),
+    // Schedule - Presentation Layer
+    SCHEDULE_PRESENTATION_INVALID_REQUEST(HttpStatus.BAD_REQUEST, "스케줄 요청 데이터가 유효하지 않습니다"),
+    SCHEDULE_PRESENTATION_UNAUTHORIZED_ACCESS(HttpStatus.UNAUTHORIZED, "스케줄에 대한 접근 권한이 없습니다"),
+
+    // Schedule - Application Layer
+    SCHEDULE_APPLICATION_BUSINESS_RULE_VIOLATION(HttpStatus.UNPROCESSABLE_ENTITY, "스케줄 비즈니스 규칙 위반입니다"),
+    SCHEDULE_APPLICATION_COMMAND_EXECUTION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "스케줄 명령 실행에 실패했습니다"),
+    SCHEDULE_APPLICATION_QUERY_EXECUTION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "스케줄 조회 실행에 실패했습니다"),
+    SCHEDULE_APPLICATION_DELETE_PERMISSION_DENIED(HttpStatus.FORBIDDEN, "스케줄 삭제 권한이 없습니다"),
+
+    // Schedule - Domain Layer
+    SCHEDULE_DOMAIN_INVALID_ID(HttpStatus.UNPROCESSABLE_ENTITY, "유효하지 않은 스케줄 ID입니다"),
+    SCHEDULE_DOMAIN_INVALID_TITLE(HttpStatus.UNPROCESSABLE_ENTITY, "스케줄 제목이 유효하지 않습니다"),
+    SCHEDULE_DOMAIN_INVALID_DESCRIPTION(HttpStatus.UNPROCESSABLE_ENTITY, "스케줄 설명이 유효하지 않습니다"),
+    SCHEDULE_DOMAIN_INVALID_TYPE(HttpStatus.UNPROCESSABLE_ENTITY, "스케줄 타입이 유효하지 않습니다"),
+    SCHEDULE_DOMAIN_INVALID_PLACE(HttpStatus.UNPROCESSABLE_ENTITY, "스케줄 장소가 유효하지 않습니다"),
+    SCHEDULE_DOMAIN_INVALID_TIME(HttpStatus.UNPROCESSABLE_ENTITY, "스케줄 시간이 유효하지 않습니다"),
+    SCHEDULE_DOMAIN_INVALID_TIME_ORDER(HttpStatus.UNPROCESSABLE_ENTITY, "시작 시간이 종료 시간보다 늦을 수 없습니다"),
+    SCHEDULE_DOMAIN_INVALID_PAST_TIME(HttpStatus.UNPROCESSABLE_ENTITY, "과거 시간으로 스케줄을 생성할 수 없습니다"),
+    SCHEDULE_DOMAIN_INVALID_STATUS(HttpStatus.UNPROCESSABLE_ENTITY, "유효하지 않은 스케줄 상태입니다"),
+    SCHEDULE_DOMAIN_TIME_CONFLICT(HttpStatus.CONFLICT, "스케줄 시간이 중복됩니다"),
+    SCHEDULE_DOMAIN_ALREADY_PROCESSED(HttpStatus.CONFLICT, "이미 처리된 스케줄입니다"),
+    SCHEDULE_DOMAIN_NOT_PENDING(HttpStatus.UNPROCESSABLE_ENTITY, "대기 상태가 아닌 스케줄은 처리할 수 없습니다"),
+    SCHEDULE_DOMAIN_NOT_APPROVED(HttpStatus.UNPROCESSABLE_ENTITY, "승인되지 않은 스케줄입니다"),
+
+    // Schedule - Infrastructure Layer (새로 추가)
+    SCHEDULE_INFRASTRUCTURE_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 존재하는 스케줄입니다"),
+    SCHEDULE_INFRASTRUCTURE_RESOURCE_CONFLICT(HttpStatus.CONFLICT, "스케줄 리소스 충돌이 발생했습니다"),
+    SCHEDULE_INFRASTRUCTURE_STATUS_NOT_FOUND(HttpStatus.NOT_FOUND, "스케줄 상태를 찾을 수 없습니다"),
+    SCHEDULE_INFRASTRUCTURE_DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "스케줄 데이터베이스 오류가 발생했습니다"),
+    SCHEDULE_INFRASTRUCTURE_STATUS_DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "스케줄 상태 데이터베이스 오류가 발생했습니다"),
 
     // =================================================================
     // FILE & NOTIFICATION EXCEPTIONS
@@ -288,7 +340,7 @@ public enum ExceptionStatus {
     SYSTEM_INFRASTRUCTURE_SERVICE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "서비스를 사용할 수 없습니다"),
     SYSTEM_INFRASTRUCTURE_ASYNC_PROCESSING_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "비동기 처리 오류가 발생했습니다"),
     SYSTEM_INFRASTRUCTURE_CACHE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "캐시 처리 오류가 발생했습니다"),
-    SYSTEM_INFRASTRUCTURE_MESSAGING_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "메시징 처리 오류가 발생했습니다");
+    SYSTEM_INFRASTRUCTURE_MESSAGING_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "메시징 처리 오류가 발생했습니다"), ;
 
     private final int statusCode;
     private final String message;
