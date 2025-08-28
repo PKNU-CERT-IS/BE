@@ -584,7 +584,7 @@ public class MemberDomainService {
         List<MemberWithPenaltyVo> expiredUpsolvers = memberQueryRepository.findExpiredUpsolvers(now);
 
         for (MemberWithPenaltyVo member : expiredUpsolvers) {
-            Long newPoints = (member.penaltyPoints() != null ? member.penaltyPoints() : 0) + 1;
+            Integer newPoints = (int)(member.penaltyPoints() != null ? member.penaltyPoints() : 0) + 1;
             PenaltyPointsVo penaltyVo = PenaltyPointsVo.of(newPoints);
 
             OffsetDateTime nextGrace = now.plusWeeks(2)
