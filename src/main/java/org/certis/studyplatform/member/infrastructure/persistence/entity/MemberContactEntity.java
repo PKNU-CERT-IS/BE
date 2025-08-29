@@ -11,7 +11,7 @@ import java.time.OffsetDateTime;
 
 /**
  * Member Contact Entity
- * 
+ *
  * 회원 연락처 정보를 저장하는 JPA Entity
  * Member와 1:1 관계
  */
@@ -51,4 +51,4 @@ public class MemberContactEntity {
         this.phoneNumber = phoneNumber;
         this.updatedAt = updatedAt;
     }
-} 
+}

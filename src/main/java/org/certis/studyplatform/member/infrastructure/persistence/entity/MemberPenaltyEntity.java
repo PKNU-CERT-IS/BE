@@ -11,7 +11,7 @@ import java.time.OffsetDateTime;
 
 /**
  * Member Penalty Entity
- * 
+ *
  * 회원 패널티 정보를 저장하는 JPA Entity
  * Member와 1:1 관계
  */
@@ -53,4 +53,5 @@ public class MemberPenaltyEntity {
         this.penaltyPoint += points;
         this.penaltiedAt = OffsetDateTime.now();
     }
+}
 }

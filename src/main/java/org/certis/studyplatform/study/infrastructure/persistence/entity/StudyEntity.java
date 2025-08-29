@@ -1,0 +1,68 @@
+package org.certis.studyplatform.study.infrastructure.persistence.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.OffsetDateTime;
+
+/**
+ * study JPA Entity
+ *
+ * Clean Architecture Infrastructure Layer
+ * 데이터베이스 테이블과 매핑되는 엔티티
+ */
+@Entity
+@Table(name = "study")
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@SQLDelete(sql = "UPDATE study SET deleted_at = NOW() WHERE id = ?")
+public class StudyEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, name = "member_id")
+    private Long memberId;
+
+    @Column(nullable = false, length = 30)
+    private String title;
+
+    @Column(nullable = false, length = 100)
+    private String description;
+
+    @Column(nullable = false, length = 255)
+    private String content;
+
+    @Column(nullable = false, length = 20)
+    private String category;
+
+    @Column(nullable = false, length = 20)
+    private String subcategory;
+
+    @Column(nullable = false, name = "max_participants_number")
+    private Integer maxParticipantsNumber;
+
+    @Column(nullable = false, name = "started_at")
+    private OffsetDateTime startedAt;
+
+    @Column(nullable = false, name = "ended_at")
+    private OffsetDateTime endedAt;
+
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false, name = "created_at")
+    private OffsetDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(nullable = false, name = "updated_at")
+    private OffsetDateTime updatedAt;
+
+    @Column(name = "deleted_at")
+    private OffsetDateTime deletedAt;
+}
