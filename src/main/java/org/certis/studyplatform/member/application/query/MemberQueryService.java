@@ -20,7 +20,7 @@ import java.util.List;
 
 /**
  * Member Query Service
- * 
+ *
  * ✅ Query Object를 받아서 조회 작업을 수행하고, 그 결과를 VO로 반환합니다.
  * ✅ 오직 '읽기(Read)' 작업과 관련된 책임만 가집니다.
  * ✅ 새로운 매퍼 시스템 사용

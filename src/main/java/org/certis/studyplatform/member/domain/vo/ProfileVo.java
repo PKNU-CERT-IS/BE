@@ -48,7 +48,7 @@ public record ProfileVo(
         return new ProfileVo(memberId, name, description, profileImage, todaySchedules,
                 penaltyCount, gracePeriod, memberRole, memberGrade, skills, createdAt);
     }
-    
+
     // =================================================================
     // Getter 메서드들
     // =================================================================
@@ -59,28 +59,28 @@ public record ProfileVo(
     public Long getMemberId() {
         return memberId;
     }
-    
+
     /**
      * 이름 반환
      */
     public String getName() {
         return name;
     }
-    
+
     /**
      * 설명 반환
      */
     public String getDescription() {
         return description;
     }
-    
+
     /**
      * 프로필 이미지 반환
      */
     public String getProfileImage() {
         return profileImage;
     }
-    
+
     /**
      * 생성일시 반환
      */
@@ -133,4 +133,4 @@ public record ProfileVo(
         if (gracePeriod == null) return true;
         return OffsetDateTime.now().isAfter(gracePeriod);
     }
-} 
+}

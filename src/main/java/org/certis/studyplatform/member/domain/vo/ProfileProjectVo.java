@@ -1,6 +1,6 @@
 package org.certis.studyplatform.member.domain.vo;
 
-import org.certis.studyplatform.project.infrastructure.persistence.ProjectStatus;
+import org.certis.studyplatform.project.domain.ProjectStatus;
 
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -63,7 +63,7 @@ public record ProfileProjectVo(
     public boolean isActive() {
         return projectStatus != null && projectStatus.isActive();
     }
-      
+
     /**
      * 기술 스택 배열 반환 (Presentation Layer 호환)
      */

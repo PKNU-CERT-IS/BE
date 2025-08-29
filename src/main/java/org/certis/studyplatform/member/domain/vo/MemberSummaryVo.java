@@ -7,7 +7,7 @@ import java.util.List;
 
 /**
  * 회원 요약 정보 Value Object
- * 
+ *
  * 회원 목록 조회 시 사용되는 요약 정보를 담는 불변 객체
  * 목록 표시에 필요한 핵심 정보만 포함하여 성능 최적화
  */
@@ -23,7 +23,7 @@ public record MemberSummaryVo(
         ProfileImageVo profileImage,      // 프로필 이미지 (nullable)
         OffsetDateTime createdAt           // 생성일시
 ) {
-    
+
     public MemberSummaryVo {
         if (id == null) {
             throw new IllegalArgumentException("회원 ID는 필수입니다");
@@ -50,7 +50,7 @@ public record MemberSummaryVo(
             throw new IllegalArgumentException("생성일시는 필수입니다");
         }
     }
-    
+
     /**
      * 정적 팩토리 메서드 (모든 필드 포함)
      */
@@ -61,7 +61,7 @@ public record MemberSummaryVo(
         return new MemberSummaryVo(id, name, studentNumber, grade, role, major,
                 description, skills, profileImage, createdAt);
     }
-    
+
     /**
      * 정적 팩토리 메서드 (필수 필드만)
      */
@@ -71,7 +71,7 @@ public record MemberSummaryVo(
         return new MemberSummaryVo(id, name, studentNumber, grade, role, major,
                 null, skills, null, createdAt);
     }
-    
+
     /**
      * 정적 팩토리 메서드 (primitive 값들로)
      */
@@ -92,151 +92,151 @@ public record MemberSummaryVo(
             createdAt
         );
     }
-    
+
     // =================================================================
     // Getter 메서드들
     // =================================================================
-    
+
     /**
      * 회원 ID VO 반환
      */
     public MemberIdVo getId() {
         return id;
     }
-    
+
     /**
      * 이름 VO 반환
      */
     public NameVo getName() {
         return name;
     }
-    
+
     /**
      * 학번 VO 반환
      */
     public StudentNumberVo getStudentNumber() {
         return studentNumber;
     }
-    
+
     /**
      * 학년 VO 반환
      */
     public GradeVo getGrade() {
         return grade;
     }
-    
+
     /**
      * 역할 VO 반환
      */
     public RoleVo getRole() {
         return role;
     }
-    
+
     /**
      * 전공 VO 반환
      */
     public MajorVo getMajor() {
         return major;
     }
-    
+
     /**
      * 설명 반환
      */
     public String getDescription() {
         return description;
     }
-    
+
     /**
      * 기술스택 VO 반환
      */
     public SkillsVo getSkills() {
         return skills;
     }
-    
+
     /**
      * 프로필 이미지 VO 반환
      */
     public ProfileImageVo getProfileImage() {
         return profileImage;
     }
-    
+
     /**
      * 생성일시 반환
      */
     public OffsetDateTime getCreatedAt() {
         return createdAt;
     }
-    
+
     /**
      * 회원 ID 반환
      */
     public Long getMemberId() {
         return id.value();
     }
-    
+
     /**
      * 이름 반환
      */
     public String getNameValue() {
         return name.value();
     }
-    
+
     /**
      * 학번 반환
      */
     public String getStudentNumberValue() {
         return studentNumber.value();
     }
-    
+
     /**
      * 학년 반환
      */
     public String getGradeValue() {
         return grade.value();
     }
-    
+
     /**
      * 역할 반환
      */
     public MemberRole getRoleValue() {
         return role.role();
     }
-    
+
     /**
      * 전공 반환
      */
     public String getMajorValue() {
         return major.value();
     }
-    
+
     /**
      * 기술 스택 목록 반환
      */
     public java.util.List<String> getSkillsValues() {
         return skills.values();
     }
-    
+
     /**
      * 프로필 이미지 URL 반환 (nullable)
      */
     public String getProfileImageValue() {
         return profileImage != null ? profileImage.value() : null;
     }
-    
+
     /**
      * 설명이 있는지 확인
      */
     public boolean hasDescription() {
         return description != null && !description.trim().isEmpty();
     }
-    
+
     /**
      * 프로필 이미지가 있는지 확인
      */
     public boolean hasProfileImage() {
         return profileImage != null;
     }
-    
+
     /**
      * 기술 스택 개수 반환
      */

@@ -38,7 +38,7 @@ public class MemberInfrastructureEntityMapper {
     /**
      * MemberCreationVo → MemberEntity 변환 (새로 생성) - Enhanced VO-Centric
      * Repository에서 신규 Member 생성 시 사용
-     * 
+     *
      * 변환 과정:
      * 1. Domain VO들에서 primitive 값 추출
      * 2. Entity Builder Pattern으로 JPA Entity 생성
@@ -56,17 +56,17 @@ public class MemberInfrastructureEntityMapper {
                 .description(creationVo.description())
 
                 .profileImage(extractProfileImageValue(creationVo.profileImage()))
-                
+
                 // 기본값 필드 (현재 DB 스키마 호환성)
                 .birthday(OffsetDateTime.now().minusYears(20)) // 기본 나이 20세로 설정
                 .gender("UNKNOWN") // 기본 성별
-                
+
                 // 자동 관리 필드 (JPA에서 자동 설정)
                 .createdAt(OffsetDateTime.now())
                 .updatedAt(OffsetDateTime.now())
                 .build();
     }
-    
+
     /**
      * MemberCreationVo → MemberEntity 변환 (생년월일, 성별 포함)
      * 추가 정보와 함께 회원 생성 시 사용
@@ -256,7 +256,7 @@ public class MemberInfrastructureEntityMapper {
     // VO → Primitive 값 추출 헬퍼 메서드들
     // 각 VO에서 안전하게 primitive 값을 추출
     // =================================================================
-    
+
     /**
      * NameVo → String 추출
      */
@@ -266,7 +266,7 @@ public class MemberInfrastructureEntityMapper {
         }
         return nameVo.value();
     }
-    
+
     /**
      * StudentNumberVo → String 추출
      */
@@ -276,7 +276,7 @@ public class MemberInfrastructureEntityMapper {
         }
         return studentNumberVo.value();
     }
-    
+
     /**
      * GradeVo → String 추출
      */
@@ -286,7 +286,7 @@ public class MemberInfrastructureEntityMapper {
         }
         return gradeVo.value();
     }
-    
+
     /**
      * RoleVo → MemberRole 추출
      */
@@ -296,7 +296,7 @@ public class MemberInfrastructureEntityMapper {
         }
         return roleVo.role();
     }
-    
+
     /**
      * MajorVo → String 추출
      */
@@ -306,7 +306,7 @@ public class MemberInfrastructureEntityMapper {
         }
         return majorVo.value();
     }
-    
+
     /**
      * SkillsVo → String[] 추출 (PostgreSQL Array 타입)
      */
@@ -321,14 +321,14 @@ public class MemberInfrastructureEntityMapper {
         }
         return values.toArray(new String[0]);
     }
-    
+
     /**
      * EmailVo → String 추출 (선택적)
      */
     private String extractEmailValue(EmailVo emailVo) {
         return emailVo != null ? emailVo.value() : null;
     }
-    
+
     /**
      * ProfileImageVo → String 추출 (선택적)
      */
