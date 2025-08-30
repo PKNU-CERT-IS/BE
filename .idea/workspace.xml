@@ -4,20 +4,38 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="177d3300-bc44-4b7c-8fae-30ebad035897" name="변경" comment="">
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/GracePeriodService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/MemberWithPenaltyVo.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/scheduler/GracePeriodScheduler.java" afterDir="false" />
+    <list default="true" id="177d3300-bc44-4b7c-8fae-30ebad035897" name="변경" comment="Fix: Role 권한 검사 부분 에러 해결 #28">
+      <change afterPath="$PROJECT_DIR$/src/test/java/org/certis/studyplatform/board/domain/model/vo/AttachmentVoTest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/test/java/org/certis/studyplatform/board/domain/model/vo/BoardContentVoTest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/test/java/org/certis/studyplatform/board/domain/model/vo/BoardCreationVoTest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/test/java/org/certis/studyplatform/board/domain/model/vo/BoardDescriptionVoTest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/test/java/org/certis/studyplatform/board/domain/model/vo/BoardIdVoTest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/test/java/org/certis/studyplatform/board/domain/model/vo/BoardSearchVoTest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/test/java/org/certis/studyplatform/board/domain/model/vo/BoardStatsVoTest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/test/java/org/certis/studyplatform/board/domain/model/vo/BoardTitleVoTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/MemberFacadeService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/MemberFacadeService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/repository/query/MemberQueryRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/repository/query/MemberQueryRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/service/MemberDomainService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/service/MemberDomainService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/persistence/MemberQueryRepositoryImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/persistence/MemberQueryRepositoryImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/domain/model/vo/BoardStatsVo.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/domain/model/vo/BoardStatsVo.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ExternalProjectsData">
+    <projectState path="$PROJECT_DIR$">
+      <ProjectState />
+    </projectState>
+  </component>
+  <component name="ExternalProjectsManager">
+    <system id="GRADLE">
+      <state>
+        <task path="$PROJECT_DIR$">
+          <activation />
+        </task>
+        <projects_view />
+      </state>
+    </system>
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -43,36 +61,159 @@
   <component name="ProjectViewState">
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Gradle.BE [:org.certis.studyplatform.StudyPlatformApplication.main()].executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.소스 다운로드.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;be/dev/feat,refacotr-admin-member-domain-and-penalty-logic#23&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Gradle.AttachmentVoTest.executor": "Run",
+    "Gradle.BE [:org.certis.studyplatform.StudyPlatformApplication.main()].executor": "Run",
+    "Gradle.BoardContentVoTest.executor": "Run",
+    "Gradle.BoardCreationVoTest.executor": "Run",
+    "Gradle.BoardCreationVoTest.givenNegativeAuthorId_whenCreateBoardCreationVo_thenThrowException.executor": "Run",
+    "Gradle.BoardDescriptionVoTest.executor": "Run",
+    "Gradle.BoardIdVoTest.createBoardIdVo_WithNegativeId_ThrowsException.executor": "Run",
+    "Gradle.BoardIdVoTest.createBoardIdVo_WithValidId_Success.executor": "Run",
+    "Gradle.BoardIdVoTest.executor": "Run",
+    "Gradle.BoardSearchVoTest.executor": "Run",
+    "Gradle.BoardSearchVoTest.givenNullValues_whenCreateBoardSearchVo_thenSuccess.executor": "Run",
+    "Gradle.BoardStatsVoTest.executor": "Run",
+    "Gradle.BoardTitleVoTest.executor": "Run",
+    "Gradle.소스 다운로드.executor": "Run",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "be/dev/test-board-domain#32"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyClassDialog.RECENTS_KEY">
       <recent name="org.certis.studyplatform.schedule.presentation.dto" />
     </key>
   </component>
-  <component name="RunManager">
-    <configuration name="StudyPlatformApplication" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
-      <option name="MAIN_CLASS_NAME" value="org.certis.studyplatform.StudyPlatformApplication" />
-      <module name="certis.main" />
-      <extension name="coverage">
-        <pattern>
-          <option name="PATTERN" value="org.certis.studyplatform.*" />
-          <option name="ENABLED" value="true" />
-        </pattern>
-      </extension>
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
+  <component name="RunManager" selected="Gradle.BoardStatsVoTest">
+    <configuration name="AttachmentVoTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" value="" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value=":test" />
+            <option value="--tests" />
+            <option value="&quot;org.certis.studyplatform.board.domain.model.vo.AttachmentVoTest&quot;" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>true</RunAsTest>
+      <method v="2" />
+    </configuration>
+    <configuration name="BoardCreationVoTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" value="" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value=":test" />
+            <option value="--tests" />
+            <option value="&quot;org.certis.studyplatform.board.domain.model.vo.BoardCreationVoTest&quot;" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>true</RunAsTest>
+      <method v="2" />
+    </configuration>
+    <configuration name="BoardCreationVoTest.givenNegativeAuthorId_whenCreateBoardCreationVo_thenThrowException" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" value="" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value=":test" />
+            <option value="--tests" />
+            <option value="&quot;org.certis.studyplatform.board.domain.model.vo.BoardCreationVoTest.givenNegativeAuthorId_whenCreateBoardCreationVo_thenThrowException&quot;" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>true</RunAsTest>
+      <method v="2" />
+    </configuration>
+    <configuration name="BoardSearchVoTest.givenNullValues_whenCreateBoardSearchVo_thenSuccess" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" value="" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value=":test" />
+            <option value="--tests" />
+            <option value="&quot;org.certis.studyplatform.board.domain.model.vo.BoardSearchVoTest.givenNullValues_whenCreateBoardSearchVo_thenSuccess&quot;" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>true</RunAsTest>
+      <method v="2" />
+    </configuration>
+    <configuration name="BoardStatsVoTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" value="" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value=":test" />
+            <option value="--tests" />
+            <option value="&quot;org.certis.studyplatform.board.domain.model.vo.BoardStatsVoTest&quot;" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>true</RunAsTest>
+      <method v="2" />
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="애플리케이션.StudyPlatformApplication" />
+        <item itemvalue="Gradle.BoardStatsVoTest" />
+        <item itemvalue="Gradle.BoardCreationVoTest.givenNegativeAuthorId_whenCreateBoardCreationVo_thenThrowException" />
+        <item itemvalue="Gradle.BoardCreationVoTest" />
+        <item itemvalue="Gradle.AttachmentVoTest" />
+        <item itemvalue="Gradle.BoardSearchVoTest.givenNullValues_whenCreateBoardSearchVo_thenSuccess" />
       </list>
     </recent_temporary>
   </component>
