@@ -1,4 +1,9 @@
 spring:
+  config:
+    activate:
+      on-profile: test
+
+
   datasource:
     # 테스트에서 트랜잭션 제어를 위한 설정
     hikari:
