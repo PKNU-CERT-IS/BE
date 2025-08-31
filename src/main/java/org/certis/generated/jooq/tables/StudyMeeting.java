@@ -86,7 +86,7 @@ public class StudyMeeting extends TableImpl<StudyMeetingRecord> {
     /**
      * The column <code>public.study_meeting.participants</code>.
      */
-    public final TableField<StudyMeetingRecord, Integer[]> PARTICIPANTS = createField(DSL.name("participants"), SQLDataType.INTEGER.array().nullable(false), this, "");
+    public final TableField<StudyMeetingRecord, Long[]> PARTICIPANTS = createField(DSL.name("participants"), SQLDataType.BIGINT.array().nullable(false), this, "");
 
     /**
      * The column <code>public.study_meeting.created_at</code>.

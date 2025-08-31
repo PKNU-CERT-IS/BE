@@ -122,6 +122,7 @@ dependencies {
     // ✅ 테스트 의존성
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.junit.platform:junit-platform-suite'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
     testImplementation('io.zonky.test:embedded-postgres:2.0.7') {
@@ -129,6 +130,8 @@ dependencies {
     }
     testImplementation 'it.ozimov:embedded-redis:0.7.3'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
 }
 
 // ✅ 테스트 설정
