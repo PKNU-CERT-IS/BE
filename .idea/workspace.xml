@@ -5,9 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="177d3300-bc44-4b7c-8fae-30ebad035897" name="변경" comment="Fix: Role 권한 검사 부분 에러 해결 #28">
+      <change afterPath="$PROJECT_DIR$/src/test/java/org/certis/studyplatform/board/domain/model/vo/DomainVoTestSuite.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/java/org/certis/studyplatform/board/domain/service/BoardDomainServiceTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/org/certis/studyplatform/board/domain/service/BoardDomainServiceTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/build.gradle" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -96,6 +97,7 @@
     "Gradle.CreateBoardTest.createBoard_WithValidCommand_Success.executor": "Run",
     "Gradle.CreateBoardTest.executor": "Run",
     "Gradle.DeleteBoardRoleTest.executor": "Run",
+    "Gradle.DeleteBoardTest.deleteBoard_ByAuthorRegardlessOfRole_Success.executor": "Run",
     "Gradle.DeleteBoardTest.executor": "Run",
     "Gradle.ToggleLikeTest.executor": "Run",
     "Gradle.ToggleLikeTest.toggleLike_OnOthersBoard_Success.executor": "Run",
@@ -112,7 +114,7 @@
       <recent name="org.certis.studyplatform.schedule.presentation.dto" />
     </key>
   </component>
-  <component name="RunManager" selected="Gradle.DeleteBoardTest.deleteBoard_ByAuthorRegardlessOfRole_Success">
+  <component name="RunManager" selected="Gradle.BoardDomainServiceTest">
     <configuration name="AttachmentMappingTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
@@ -235,8 +237,8 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Gradle.DeleteBoardTest.deleteBoard_ByAuthorRegardlessOfRole_Success" />
         <item itemvalue="Gradle.BoardDomainServiceTest" />
+        <item itemvalue="Gradle.DeleteBoardTest.deleteBoard_ByAuthorRegardlessOfRole_Success" />
         <item itemvalue="Gradle.ToggleLikeUnlikePathTest" />
         <item itemvalue="Gradle.DeleteBoardRoleTest" />
         <item itemvalue="Gradle.AttachmentMappingTest" />

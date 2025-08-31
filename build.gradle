@@ -31,6 +31,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-mail'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
+
     // 데이터베이스
     // ✅ 개발용 Embedded PostgreSQL - 포트 충돌 방지 개선 (JPA 자동 생성 사용)
     implementation('io.zonky.test:embedded-postgres:2.0.7') {  
@@ -100,6 +101,7 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'org.springframework.batch:spring-batch-test'
+    testImplementation 'org.junit.platform:junit-platform-suite:1.10.0'
 
     // ✅ 테스트용 Embedded PostgreSQL 추가
     testImplementation('io.zonky.test:embedded-postgres:2.0.7') {
