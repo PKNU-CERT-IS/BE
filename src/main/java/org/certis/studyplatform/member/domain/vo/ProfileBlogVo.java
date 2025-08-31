@@ -1,6 +1,6 @@
 package org.certis.studyplatform.member.domain.vo;
 
-import org.certis.studyplatform.project.infrastructure.persistence.ProjectStatus;
+import org.certis.studyplatform.project.domain.ProjectStatus;
 
 import java.time.OffsetDateTime;
 import java.util.Arrays;

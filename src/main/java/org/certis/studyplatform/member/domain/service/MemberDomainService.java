@@ -56,7 +56,7 @@ public class MemberDomainService {
 
     /**
      * 회원 생성 (Command 기반) - Enhanced VO-Centric Flow
-     * 
+     *
      * 데이터 흐름:
      * 1. Command Object (primitive) → VO 변환 (비즈니스 검증 자동 수행)
      * 2. 개별 VO들을 복합 VO로 조합
@@ -71,37 +71,37 @@ public class MemberDomainService {
         // STEP 1: Command → VO 변환 (비즈니스 검증 자동 수행)
         // 각 VO 생성자에서 개별 필드 검증이 자동으로 수행됨
         // ================================================================
-        
+
         log.debug("📝 Converting Command primitives to VOs with validation...");
-        
+
         // 이름 VO 변환 (길이, 형식, null 검증 자동 수행)
         NameVo nameVo = memberDomainMapper.toNameVo(command.name());
         log.debug("✅ NameVo created: {}", nameVo.value());
-        
+
         // 학번 VO 변환 (길이, 형식, 중복 검증 준비)
         StudentNumberVo studentNumberVo = memberDomainMapper.toStudentNumberVo(command.studentNumber());
         log.debug("✅ StudentNumberVo created: {}", studentNumberVo.value());
-        
+
         // 학년 VO 변환 (유효한 학년 값 검증 자동 수행)
         GradeVo gradeVo = memberDomainMapper.toGradeVo(command.grade());
         log.debug("✅ GradeVo created: {}", gradeVo.value());
 
         SkillsVo skillsVo = null; // 회원가입에서는 항상 null
-        
+
         // 역할 VO 변환 (길이, 형식 검증 자동 수행)
         RoleVo roleVo = memberDomainMapper.toRoleVo(command.role());
         log.debug("✅ RoleVo created: {}", roleVo.role());
-        
+
         // 전공 VO 변환 (길이, 형식 검증 자동 수행)
         MajorVo majorVo = memberDomainMapper.toMajorVo(command.major());
         log.debug("✅ MajorVo created: {}", majorVo.value());
-        
+
         // 선택적 필드 VO 변환
-        EmailVo emailVo = command.email() != null ? 
+        EmailVo emailVo = command.email() != null ?
             memberDomainMapper.toEmailVo(command.email()) : null;
-        ProfileImageVo profileImageVo = command.profileImage() != null ? 
+        ProfileImageVo profileImageVo = command.profileImage() != null ?
             memberDomainMapper.toProfileImageVo(command.profileImage()) : null;
-            
+
         if (emailVo != null) log.debug("✅ EmailVo created: {}", emailVo.value());
         if (profileImageVo != null) log.debug("✅ ProfileImageVo created");
 
@@ -112,7 +112,7 @@ public class MemberDomainService {
         // STEP 2: 개별 VO들을 복합 VO로 조합
         // MemberCreationVo는 회원 생성에 필요한 모든 VO를 포함하는 복합 VO
         // ================================================================
-        
+
         log.debug("🔗 Composing individual VOs into MemberCreationVo...");
         // 수정 필요 (회원가입 전용 팩토리 사용)
         MemberCreationVo creationVo = MemberCreationVo.forRegistration(
@@ -124,7 +124,7 @@ public class MemberDomainService {
         // STEP 3: 복합 비즈니스 규칙 검증
         // 개별 VO 검증을 통과한 후, 여러 VO 간의 관계나 외부 상태 검증
         // ================================================================
-        
+
         log.debug("🔍 Validating complex business rules...");
         validateMemberCreation(creationVo);
         log.debug("✅ Complex business rules validation passed");
@@ -133,7 +133,7 @@ public class MemberDomainService {
         // STEP 4: Repository 호출 (VO → Infrastructure → Entity 변환)
         // Infrastructure Layer에서 VO를 Entity로 변환하여 영속화
         // ================================================================
-        
+
         log.debug("💾 Calling repository to persist member (VO → Entity)...");
         MemberCreatedVo createdMember = memberCommandRepository.createMember(creationVo);
         log.info("🎉 Domain: Member created successfully with ID: {}", createdMember.id());
@@ -143,7 +143,7 @@ public class MemberDomainService {
 
     /**
      * 회원 정보 수정 (Command 기반) - Enhanced VO-Centric Flow
-     * 
+     *
      * 데이터 흐름:
      * 1. Command Object (primitive) → VO 변환 (비즈니스 검증 자동 수행)
      * 2. 개별 VO들을 복합 VO로 조합 (Builder Pattern)
@@ -157,7 +157,7 @@ public class MemberDomainService {
         // ================================================================
         // STEP 1: Command → MemberIdVo 변환 (검증 자동 수행)
         // ================================================================
-        
+
         MemberIdVo memberIdVo = memberDomainMapper.toMemberIdVo(command.id());
         log.debug("✅ MemberIdVo created: {}", memberIdVo.value());
 
@@ -168,9 +168,9 @@ public class MemberDomainService {
         // STEP 2: Command → VO 변환 (중복 코드 제거)
         // 각 필드를 개별적으로 VO로 변환 후 Builder에 직접 설정
         // ================================================================
-        
+
         log.debug("📝 Converting Command fields to VOs with validation...");
-        
+
         MemberUpdateVo.Builder updateBuilder = MemberUpdateVo.builder();
 
         // 이름 VO 변환 및 설정 (null-safe)
@@ -217,7 +217,7 @@ public class MemberDomainService {
         // ================================================================
         // STEP 3: 복합 VO 생성 및 검증
         // ================================================================
-        
+
         log.debug("🔗 Building MemberUpdateVo from individual VOs...");
         MemberUpdateVo updateVo = updateBuilder.build();
         log.debug("✅ MemberUpdateVo built successfully");
@@ -231,7 +231,7 @@ public class MemberDomainService {
         // ================================================================
         // STEP 4: 복합 비즈니스 규칙 검증
         // ================================================================
-        
+
         log.debug("🔍 Validating complex business rules for update...");
         validateMemberUpdate(updateVo);
         log.debug("✅ Complex business rules validation passed");
@@ -239,7 +239,7 @@ public class MemberDomainService {
         // ================================================================
         // STEP 5: Repository 호출 (VO → Infrastructure → Entity 변환)
         // ================================================================
-        
+
         log.debug("💾 Calling repository to update member (VO → Entity)...");
         MemberUpdatedVo updatedMember = memberCommandRepository.updateMember(memberIdVo, updateVo);
         log.info("🎉 Domain: Member updated successfully with ID: {}", updatedMember.id());
@@ -267,7 +267,7 @@ public class MemberDomainService {
 
     /**
      * 회원 상세 조회 (Query 기반) - Enhanced VO-Centric Flow
-     * 
+     *
      * 데이터 흐름:
      * 1. Query Object (primitive) → VO 변환 (검증 자동 수행)
      * 2. Repository 호출 (VO 전달 → Infrastructure에서 Entity 조회)
@@ -280,9 +280,9 @@ public class MemberDomainService {
         // STEP 1: Query → VO 변환 (검증 자동 수행)
         // Query Object의 primitive 값을 검증된 VO로 변환
         // ================================================================
-        
+
         log.debug("📝 Converting Query primitive to VO with validation...");
-        
+
         // ID VO 변환 (양수 검증, null 검증 자동 수행)
         MemberIdVo memberIdVo = memberDomainMapper.toMemberIdVo(query.id());
         log.debug("✅ MemberIdVo created: {}", memberIdVo.value());
@@ -291,13 +291,13 @@ public class MemberDomainService {
         // STEP 2: Repository 호출 (VO → Infrastructure → Entity 조회)
         // Infrastructure Layer에서 VO를 사용하여 Entity 조회 후 VO로 변환
         // ================================================================
-        
+
         log.debug("🔍 Calling repository to find member (VO → Entity lookup → VO)...");
-        
+
         return memberQueryRepository.findById(memberIdVo)
                 .map(memberVo -> {
                     log.debug("✅ Member found and converted to VO");
-                    log.debug("📤 Returning MemberVo: name={}, studentNumber={}", 
+                    log.debug("📤 Returning MemberVo: name={}, studentNumber={}",
                             memberVo.name(), memberVo.studentNumber());
                     log.info("🎉 Domain: Member lookup completed successfully for ID: {}", query.id());
                     return memberVo;

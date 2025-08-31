@@ -7,7 +7,7 @@ import org.springframework.http.HttpStatus;
 
 /**
  * 스터디 플랫폼 예외 상태 정의
- * 
+ *
  * 네이밍 규칙: {DOMAIN}_{LAYER}_{ERROR_TYPE}
  * 예: MEMBER_INFRASTRUCTURE_NOT_FOUND, PROJECT_DOMAIN_CAPACITY_EXCEEDED
  */
@@ -69,11 +69,11 @@ public enum ExceptionStatus {
     // =================================================================
     // MEMBER DOMAIN EXCEPTIONS
     // =================================================================
-    
+
     // Member - Presentation Layer
     MEMBER_PRESENTATION_INVALID_REQUEST(HttpStatus.BAD_REQUEST, "회원 요청 데이터가 유효하지 않습니다"),
     MEMBER_PRESENTATION_UNAUTHORIZED_ACCESS(HttpStatus.UNAUTHORIZED, "회원 정보에 대한 접근 권한이 없습니다"),
-    // Member - Application Layer  
+    // Member - Application Layer
     MEMBER_APPLICATION_BUSINESS_RULE_VIOLATION(HttpStatus.UNPROCESSABLE_ENTITY, "회원 비즈니스 규칙 위반입니다"),
     MEMBER_APPLICATION_COMMAND_EXECUTION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "회원 명령 실행에 실패했습니다"),
     MEMBER_APPLICATION_QUERY_EXECUTION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "회원 조회 실행에 실패했습니다"),
@@ -98,7 +98,7 @@ public enum ExceptionStatus {
     MEMBER_DOMAIN_INVALID_MAJOR(HttpStatus.BAD_REQUEST, "유효하지 않은 전공입니다"),
     MEMBER_DOMAIN_INVALID_ROLE(HttpStatus.BAD_REQUEST, "유효하지 않은 역할입니다"),
     MEMBER_DOMAIN_INVALID_SKILLS(HttpStatus.BAD_REQUEST, "유효하지 않은 기술 스택입니다"),
-    
+
     // Member - Infrastructure Layer
     MEMBER_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "회원을 찾을 수 없습니다"),
     MEMBER_INFRASTRUCTURE_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 존재하는 회원입니다"),
@@ -150,22 +150,25 @@ public enum ExceptionStatus {
     // =================================================================
     // PROJECT DOMAIN EXCEPTIONS
     // =================================================================
-    
+
     // Project - Presentation Layer
     PROJECT_PRESENTATION_INVALID_REQUEST(HttpStatus.BAD_REQUEST, "프로젝트 요청 데이터가 유효하지 않습니다"),
     PROJECT_PRESENTATION_UNAUTHORIZED_ACCESS(HttpStatus.UNAUTHORIZED, "프로젝트에 대한 접근 권한이 없습니다"),
-    
+
     // Project - Application Layer
     PROJECT_APPLICATION_BUSINESS_RULE_VIOLATION(HttpStatus.UNPROCESSABLE_ENTITY, "프로젝트 비즈니스 규칙 위반입니다"),
     PROJECT_APPLICATION_COMMAND_EXECUTION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "프로젝트 명령 실행에 실패했습니다"),
     PROJECT_APPLICATION_QUERY_EXECUTION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "프로젝트 조회 실행에 실패했습니다"),
-    
+
     // Project - Domain Layer
+    PROJECT_DOMAIN_NOT_FOUND(HttpStatus.NOT_FOUND, "프로젝트를 찾을 수 없습니다"),
     PROJECT_DOMAIN_RULE_VIOLATION(HttpStatus.UNPROCESSABLE_ENTITY, "프로젝트 도메인 규칙 위반입니다"),
     PROJECT_DOMAIN_CAPACITY_EXCEEDED(HttpStatus.UNPROCESSABLE_ENTITY, "프로젝트 정원을 초과했습니다"),
     PROJECT_DOMAIN_DEADLINE_PASSED(HttpStatus.UNPROCESSABLE_ENTITY, "프로젝트 마감일이 지났습니다"),
     PROJECT_DOMAIN_INVALID_STATUS(HttpStatus.UNPROCESSABLE_ENTITY, "유효하지 않은 프로젝트 상태입니다"),
-    
+    PROJECT_DOMAIN_PERMISSION_DENINED(HttpStatus.FORBIDDEN, "프로젝트에 접근할 권한이 없습니다"),
+
+
     // Project - Domain VO Validation
     PROJECT_DOMAIN_INVALID_ID(HttpStatus.BAD_REQUEST, "유효하지 않은 프로젝트 ID입니다"),
     PROJECT_DOMAIN_INVALID_TITLE(HttpStatus.BAD_REQUEST, "유효하지 않은 프로젝트 제목입니다"),
@@ -174,7 +177,12 @@ public enum ExceptionStatus {
     PROJECT_DOMAIN_INVALID_CATEGORY(HttpStatus.BAD_REQUEST, "유효하지 않은 프로젝트 카테고리입니다"),
     PROJECT_DOMAIN_INVALID_PARTICIPANT_LIMIT(HttpStatus.BAD_REQUEST, "유효하지 않은 참가자 제한 수입니다"),
     PROJECT_DOMAIN_INVALID_DATE_RANGE(HttpStatus.BAD_REQUEST, "유효하지 않은 프로젝트 기간입니다"),
-    
+    PROJECT_DOMAIN_INVALID_DATE(HttpStatus.BAD_REQUEST, "프로젝트 날짜가 유효하지 않습니다"),
+    PROJECT_DOMAIN_INVALID_PARTICIPANTS(HttpStatus.BAD_REQUEST, "프로젝트 참가자 수가 유효하지 않습니다"),
+    PROJECT_DOMAIN_INVALID_PERMISSION(HttpStatus.BAD_REQUEST,"프로젝트에 대한 권한이 없습니다."),
+    PROJECT_DOMAIN_INVALID_CREATOR(HttpStatus.BAD_REQUEST, "유효하지 않은 멤버 정보입니다."),
+    PROJECT_DOMAIN_ACCESS_DENIED(HttpStatus.BAD_REQUEST, "접근 권한이 유효하지 않습니다."),
+
     // Project - Infrastructure Layer
     PROJECT_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "프로젝트를 찾을 수 없습니다"),
     PROJECT_INFRASTRUCTURE_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 존재하는 프로젝트입니다"),
@@ -184,22 +192,30 @@ public enum ExceptionStatus {
     // =================================================================
     // STUDY DOMAIN EXCEPTIONS
     // =================================================================
-    
+
     // Study - Presentation Layer
     STUDY_PRESENTATION_INVALID_REQUEST(HttpStatus.BAD_REQUEST, "스터디 요청 데이터가 유효하지 않습니다"),
     STUDY_PRESENTATION_UNAUTHORIZED_ACCESS(HttpStatus.UNAUTHORIZED, "스터디에 대한 접근 권한이 없습니다"),
-    
+
     // Study - Application Layer
     STUDY_APPLICATION_BUSINESS_RULE_VIOLATION(HttpStatus.UNPROCESSABLE_ENTITY, "스터디 비즈니스 규칙 위반입니다"),
     STUDY_APPLICATION_COMMAND_EXECUTION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "스터디 명령 실행에 실패했습니다"),
     STUDY_APPLICATION_QUERY_EXECUTION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "스터디 조회 실행에 실패했습니다"),
-    
+
     // Study - Domain Layer
     STUDY_DOMAIN_RULE_VIOLATION(HttpStatus.UNPROCESSABLE_ENTITY, "스터디 도메인 규칙 위반입니다"),
     STUDY_DOMAIN_CAPACITY_EXCEEDED(HttpStatus.UNPROCESSABLE_ENTITY, "스터디 정원을 초과했습니다"),
     STUDY_DOMAIN_SESSION_CONFLICT(HttpStatus.CONFLICT, "스터디 세션 시간이 중복됩니다"),
     STUDY_DOMAIN_INVALID_STATUS(HttpStatus.UNPROCESSABLE_ENTITY, "유효하지 않은 스터디 상태입니다"),
-    
+    STUDY_DOMAIN_TITLE_REQUIRED(HttpStatus.BAD_REQUEST, "스터디 제목은 필수입니다"),
+    STUDY_DOMAIN_DATE_INVALID(HttpStatus.BAD_REQUEST, "스터디 시작일은 종료일보다 이전이어야 합니다"),
+    STUDY_DOMAIN_MAX_PARTICIPANTS_INVALID(HttpStatus.BAD_REQUEST, "스터디 최대 참가자 수는 0보다 커야 합니다"),
+    STUDY_DOMAIN_MAX_PARTICIPANTS_TOO_SMALL(HttpStatus.BAD_REQUEST, "스터디 최대 참가자 수는 현재 참가자 수보다 커야 합니다"),
+    STUDY_DOMAIN_DELETE_IN_PROGRESS(HttpStatus.UNPROCESSABLE_ENTITY, "진행 중인 스터디는 삭제할 수 없습니다"),
+    STUDY_DOMAIN_DELETE_HAS_PARTICIPANTS(HttpStatus.UNPROCESSABLE_ENTITY, "참가자가 있는 스터디는 삭제할 수 없습니다"),
+    STUDY_DOMAIN_UPDATE_UNAUTHORIZED(HttpStatus.FORBIDDEN, "스터디 수정 권한이 없습니다"),
+    STUDY_DOMAIN_DELETE_UNAUTHORIZED(HttpStatus.FORBIDDEN, "스터디 삭제 권한이 없습니다"),
+
     // Study - Infrastructure Layer
     STUDY_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "스터디를 찾을 수 없습니다"),
     STUDY_INFRASTRUCTURE_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 존재하는 스터디입니다"),
@@ -209,16 +225,16 @@ public enum ExceptionStatus {
     // =================================================================
     // BOARD DOMAIN EXCEPTIONS
     // =================================================================
-    
+
     // Board - Presentation Layer
     BOARD_PRESENTATION_INVALID_REQUEST(HttpStatus.BAD_REQUEST, "게시글 요청 데이터가 유효하지 않습니다"),
     BOARD_PRESENTATION_UNAUTHORIZED_ACCESS(HttpStatus.UNAUTHORIZED, "게시글에 대한 접근 권한이 없습니다"),
-    
+
     // Board - Application Layer
     BOARD_APPLICATION_BUSINESS_RULE_VIOLATION(HttpStatus.UNPROCESSABLE_ENTITY, "게시글 비즈니스 규칙 위반입니다"),
     BOARD_APPLICATION_COMMAND_EXECUTION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "게시글 명령 실행에 실패했습니다"),
     BOARD_APPLICATION_QUERY_EXECUTION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "게시글 조회 실행에 실패했습니다"),
-    
+
     // Board - Domain Layer
     BOARD_DOMAIN_RULE_VIOLATION(HttpStatus.UNPROCESSABLE_ENTITY, "게시글 도메인 규칙 위반입니다"),
     BOARD_DOMAIN_ACCESS_DENIED(HttpStatus.FORBIDDEN, "게시글 접근 권한이 없습니다"),
@@ -261,13 +277,13 @@ public enum ExceptionStatus {
     // =================================================================
     // BLOG DOMAIN EXCEPTIONS
     // =================================================================
-    
+
     // Blog - Infrastructure Layer
     BLOG_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "블로그 글을 찾을 수 없습니다"),
     BLOG_INFRASTRUCTURE_DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "블로그 데이터베이스 오류가 발생했습니다"),
 
     // =================================================================
-    // SCHEDULE DOMAIN EXCEPTIONS  
+    // SCHEDULE DOMAIN EXCEPTIONS
     // =================================================================
 
     // Schedule - Presentation Layer
@@ -305,14 +321,14 @@ public enum ExceptionStatus {
     // =================================================================
     // FILE & NOTIFICATION EXCEPTIONS
     // =================================================================
-    
+
     // File - Infrastructure Layer
     FILE_INFRASTRUCTURE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다"),
     FILE_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일을 찾을 수 없습니다"),
     FILE_INFRASTRUCTURE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 삭제에 실패했습니다"),
     FILE_INFRASTRUCTURE_STORAGE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "파일 저장소 오류가 발생했습니다"),
-    
-    // Notification - Infrastructure Layer  
+
+    // Notification - Infrastructure Layer
     NOTIFICATION_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다"),
     NOTIFICATION_INFRASTRUCTURE_DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "알림 데이터베이스 오류가 발생했습니다"),
     NOTIFICATION_INFRASTRUCTURE_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "알림 전송에 실패했습니다"),
@@ -333,4 +349,4 @@ public enum ExceptionStatus {
         this.statusCode = status.value();
         this.message = message;
     }
-} 
+}

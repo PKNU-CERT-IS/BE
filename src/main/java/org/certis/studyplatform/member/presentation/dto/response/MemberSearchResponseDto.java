@@ -13,7 +13,7 @@ import java.util.List;
 
 /**
  * 회원 검색 응답 DTO
- * 
+ *
  * 검색 결과와 페이지네이션 정보 포함
  */
 import lombok.Builder;

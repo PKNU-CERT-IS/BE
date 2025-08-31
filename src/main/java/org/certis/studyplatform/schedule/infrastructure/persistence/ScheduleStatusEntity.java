@@ -11,7 +11,7 @@ import java.time.OffsetDateTime;
 
 /**
  * Schedule Status Entity
- * 
+ *
  * 일정 상태를 저장하는 JPA Entity
  */
 @Entity
@@ -41,4 +41,4 @@ public class ScheduleStatusEntity {
         this.status = status;
         this.updatedAt = updatedAt;
     }
-} 
+}

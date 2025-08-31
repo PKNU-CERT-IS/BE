@@ -11,7 +11,7 @@ import java.time.OffsetDateTime;
 
 /**
  * Member Penalty Entity
- * 
+ *
  * 회원 패널티 정보를 저장하는 JPA Entity
  * Member와 1:1 관계
  */
@@ -26,7 +26,7 @@ public class MemberPenaltyEntity {
     private Long memberId;
 
     @Column(name = "penalty_point", nullable = false)
-    private Long penaltyPoint;
+    private Integer penaltyPoint;
 
     @Column(name = "penaltied_at", nullable = false)
     private OffsetDateTime penaltiedAt;
@@ -36,7 +36,7 @@ public class MemberPenaltyEntity {
     private OffsetDateTime updatedAt;
 
     @Builder
-    private MemberPenaltyEntity(Long memberId, Long penaltyPoint, OffsetDateTime penaltiedAt, OffsetDateTime updatedAt) {
+    private MemberPenaltyEntity(Long memberId, Integer penaltyPoint, OffsetDateTime penaltiedAt, OffsetDateTime updatedAt) {
         this.memberId = memberId;
         this.penaltyPoint = penaltyPoint;
         this.penaltiedAt = penaltiedAt;
@@ -46,7 +46,7 @@ public class MemberPenaltyEntity {
     /**
      * 패널티 점수 갱신
      */
-    public void updatePenaltyPoints(Long points) {
+    public void updatePenaltyPoints(Integer points) {
         if (points <= 0) {
             throw new IllegalArgumentException("패널티 점수는 0보다 커야 합니다");
         }

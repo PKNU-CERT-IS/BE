@@ -74,7 +74,7 @@ public class ProfileDomainService {
         ProfileVo savedProfile = profileCommandRepository.save(profileVo.get());
 
         log.info("Domain: My profile updated successfully for member ID: {}", command.memberId());
-        
+
         // 6. Profile domain 객체를 VO로 변환해서 반환
         return savedProfile;
     }
@@ -95,31 +95,31 @@ public class ProfileDomainService {
         MemberIdVo memberIdVo = new MemberIdVo(query.memberId());
 
         Optional<ProfileVo> profileVoOpt = profileQueryRepository.findByMemberId(memberIdVo);
-        
+
         if (profileVoOpt.isEmpty()) {
             log.info("Domain: Profile not found for member ID: {}", memberIdVo);
             return null;
         }
 
         ProfileVo originalProfile = profileVoOpt.get();
-        
+
         // Infrastructure에서 이미 gracePeriod가 계산된 경우 그대로 반환
         if (originalProfile.gracePeriod() != null) {
-            log.info("Domain: Profile VO found for member ID: {} with pre-calculated grace period: {}", 
+            log.info("Domain: Profile VO found for member ID: {} with pre-calculated grace period: {}",
                     memberIdVo, originalProfile.gracePeriod());
             return originalProfile;
         }
-        
+
         // gracePeriod가 없는 경우에만 계산 (fallback)
         log.debug("Domain: Grace period not calculated, calculating from domain service for member ID: {}", memberIdVo);
-        
+
         // 유예기간 계산을 위해 스터디와 프로젝트 정보 조회
         List<ProfileStudyVo> studies = profileQueryRepository.findStudiesByMemberId(memberIdVo);
         List<ProfileProjectVo> projects = profileQueryRepository.findProjectsByMemberId(memberIdVo);
-        
+
         // 유예기간 계산
         OffsetDateTime gracePeriod = gracePeriodCalculationService.calculateGracePeriod(studies, projects);
-        
+
         // 유예기간이 포함된 새로운 ProfileVo 생성
         ProfileVo profileWithGracePeriod = new ProfileVo(
             originalProfile.memberId(),

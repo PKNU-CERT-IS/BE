@@ -119,4 +119,4 @@ public class MemberEntity {
                 ", createdAt=" + createdAt +
                 '}';
     }
-} 
+}

@@ -11,10 +11,10 @@ import java.util.List;
 
 /**
  * 회원 정보 통합 수정 요청 DTO
- * 
+ *
  * Clean Architecture Presentation Layer
  * 프로필, 기술스택, 기본정보를 하나의 DTO로 통합 처리
- * 
+ *
  * ✅ 정적 검증만 포함 (타입, null 체크)
  * ✅ 모든 필드는 선택적 (부분 업데이트 지원)
  * ✅ 비즈니스 규칙 검증은 Domain VO에서 수행
@@ -49,8 +49,8 @@ public class MemberUpdateRequestDto {
      * 업데이트할 필드가 있는지 확인
      */
     public boolean hasUpdateFields() {
-        return name != null || profileImage != null || grade != null || 
-               role != null || major != null || description != null || 
+        return name != null || profileImage != null || grade != null ||
+               role != null || major != null || description != null ||
                (skills != null && !skills.isEmpty());
     }
 
@@ -58,8 +58,8 @@ public class MemberUpdateRequestDto {
      * 프로필 관련 필드만 업데이트하는지 확인
      */
     public boolean isProfileUpdateOnly() {
-        return (name != null || profileImage != null) && 
-               grade == null && role == null && major == null && 
+        return (name != null || profileImage != null) &&
+               grade == null && role == null && major == null &&
                description == null && (skills == null || skills.isEmpty());
     }
 
@@ -67,8 +67,8 @@ public class MemberUpdateRequestDto {
      * 기술 스택만 업데이트하는지 확인
      */
     public boolean isSkillsUpdateOnly() {
-        return name == null && profileImage == null && grade == null && 
-               role == null && major == null && description == null && 
+        return name == null && profileImage == null && grade == null &&
+               role == null && major == null && description == null &&
                skills != null && !skills.isEmpty();
     }
 
@@ -76,7 +76,7 @@ public class MemberUpdateRequestDto {
      * 기본 정보만 업데이트하는지 확인
      */
     public boolean isBasicInfoUpdateOnly() {
-        return (grade != null || role != null || major != null || description != null) && 
+        return (grade != null || role != null || major != null || description != null) &&
                name == null && profileImage == null && (skills == null || skills.isEmpty());
     }
 }
