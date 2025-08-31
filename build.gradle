@@ -211,7 +211,8 @@ bootRun {
     ]
 }
 
-// ✅ jOOQ 설정 (선택적)
+// ✅ jOOQ Code Generation Configuration - 개발 시에만 필요
+// 실제 데이터베이스가 실행 중일 때만 코드 생성 가능
 jooq {
     configuration {
         jdbc {
