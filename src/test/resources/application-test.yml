@@ -1,6 +1,8 @@
 spring:
-  profiles:
-    active: test
+  config:
+    activate:
+      on-profile: test
+
 
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect

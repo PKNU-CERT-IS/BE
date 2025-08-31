@@ -5,9 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="177d3300-bc44-4b7c-8fae-30ebad035897" name="변경" comment="Fix: Role 권한 검사 부분 에러 해결 #28">
-      <change afterPath="$PROJECT_DIR$/src/test/java/org/certis/studyplatform/board/domain/service/BoardDomainServiceTest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/test/java/org/certis/studyplatform/board/presentation/BoardControllerTest.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/presentation/dto/request/AttachmentRequestDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/presentation/dto/request/AttachmentRequestDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/presentation/dto/request/BoardCreateRequestDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/presentation/dto/request/BoardCreateRequestDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/presentation/dto/request/BoardUpdateRequestDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/presentation/dto/request/BoardUpdateRequestDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test/resources/application-test.yml" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/resources/application-test.yml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,7 +30,17 @@
         <task path="$PROJECT_DIR$">
           <activation />
         </task>
-        <projects_view />
+        <projects_view>
+          <tree_state>
+            <expand>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="certis" type="f1a62948:ProjectNode" />
+              </path>
+            </expand>
+            <select />
+          </tree_state>
+        </projects_view>
       </state>
     </system>
   </component>
@@ -58,9 +73,17 @@
     "Gradle.AttachmentVoTest.executor": "Run",
     "Gradle.BE [:org.certis.studyplatform.StudyPlatformApplication.main()].executor": "Run",
     "Gradle.BoardContentVoTest.executor": "Run",
+    "Gradle.BoardControllerTest.createBoard_FullFlow_Success.executor": "Run",
+    "Gradle.BoardControllerTest.deleteBoard_AdminPermission_Success.executor": "Run",
+    "Gradle.BoardControllerTest.executor": "Run",
+    "Gradle.BoardControllerTest.getBoardDetail_CreatedBoard_Success.executor": "Run",
+    "Gradle.BoardControllerTest.searchBoards_FindCreatedBoard_Success.executor": "Run",
+    "Gradle.BoardControllerTest.toggleLike_Fail_AlreadyLiked.executor": "Run",
+    "Gradle.BoardControllerTest.toggleLike_UpdateRedisStats_Success.executor": "Run",
     "Gradle.BoardCreationVoTest.executor": "Run",
     "Gradle.BoardCreationVoTest.givenNegativeAuthorId_whenCreateBoardCreationVo_thenThrowException.executor": "Run",
     "Gradle.BoardDescriptionVoTest.executor": "Run",
+    "Gradle.BoardDomainServiceTest.executor": "Run",
     "Gradle.BoardIdVoTest.createBoardIdVo_WithNegativeId_ThrowsException.executor": "Run",
     "Gradle.BoardIdVoTest.createBoardIdVo_WithValidId_Success.executor": "Run",
     "Gradle.BoardIdVoTest.executor": "Run",
@@ -88,8 +111,8 @@
       <recent name="org.certis.studyplatform.schedule.presentation.dto" />
     </key>
   </component>
-  <component name="RunManager" selected="Gradle.ToggleLikeTest.toggleLike_OnOwnBoard_ThrowsException">
-    <configuration name="DeleteBoardTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+  <component name="RunManager" selected="Gradle.BoardControllerTest">
+    <configuration name="BoardControllerTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -102,7 +125,7 @@
           <list>
             <option value=":test" />
             <option value="--tests" />
-            <option value="&quot;org.certis.studyplatform.board.domain.service.BoardDomainServiceTest$CreateBoardTest$DeleteBoardTest&quot;" />
+            <option value="&quot;org.certis.studyplatform.board.presentation.BoardControllerTest&quot;" />
           </list>
         </option>
         <option name="vmOptions" />
@@ -113,7 +136,7 @@
       <RunAsTest>true</RunAsTest>
       <method v="2" />
     </configuration>
-    <configuration name="ToggleLikeTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+    <configuration name="BoardControllerTest.deleteBoard_AdminPermission_Success" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -126,7 +149,7 @@
           <list>
             <option value=":test" />
             <option value="--tests" />
-            <option value="&quot;org.certis.studyplatform.board.domain.service.BoardDomainServiceTest$CreateBoardTest$ToggleLikeTest&quot;" />
+            <option value="&quot;org.certis.studyplatform.board.presentation.BoardControllerTest.deleteBoard_AdminPermission_Success&quot;" />
           </list>
         </option>
         <option name="vmOptions" />
@@ -137,7 +160,7 @@
       <RunAsTest>true</RunAsTest>
       <method v="2" />
     </configuration>
-    <configuration name="ToggleLikeTest.toggleLike_OnOthersBoard_Success" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+    <configuration name="BoardControllerTest.searchBoards_FindCreatedBoard_Success" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -150,7 +173,7 @@
           <list>
             <option value=":test" />
             <option value="--tests" />
-            <option value="&quot;org.certis.studyplatform.board.domain.service.BoardDomainServiceTest$CreateBoardTest$ToggleLikeTest.toggleLike_OnOthersBoard_Success&quot;" />
+            <option value="&quot;org.certis.studyplatform.board.presentation.BoardControllerTest.searchBoards_FindCreatedBoard_Success&quot;" />
           </list>
         </option>
         <option name="vmOptions" />
@@ -161,7 +184,7 @@
       <RunAsTest>true</RunAsTest>
       <method v="2" />
     </configuration>
-    <configuration name="ToggleLikeTest.toggleLike_OnOwnBoard_ThrowsException" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+    <configuration name="BoardControllerTest.toggleLike_Fail_AlreadyLiked" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -174,7 +197,7 @@
           <list>
             <option value=":test" />
             <option value="--tests" />
-            <option value="&quot;org.certis.studyplatform.board.domain.service.BoardDomainServiceTest$CreateBoardTest$ToggleLikeTest.toggleLike_OnOwnBoard_ThrowsException&quot;" />
+            <option value="&quot;org.certis.studyplatform.board.presentation.BoardControllerTest.toggleLike_Fail_AlreadyLiked&quot;" />
           </list>
         </option>
         <option name="vmOptions" />
@@ -185,7 +208,7 @@
       <RunAsTest>true</RunAsTest>
       <method v="2" />
     </configuration>
-    <configuration name="UpdateBoardTest.updateBoard_ByAuthor_Success" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+    <configuration name="BoardControllerTest.toggleLike_UpdateRedisStats_Success" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -198,7 +221,7 @@
           <list>
             <option value=":test" />
             <option value="--tests" />
-            <option value="&quot;org.certis.studyplatform.board.domain.service.BoardDomainServiceTest$CreateBoardTest$UpdateBoardTest.updateBoard_ByAuthor_Success&quot;" />
+            <option value="&quot;org.certis.studyplatform.board.presentation.BoardControllerTest.toggleLike_UpdateRedisStats_Success&quot;" />
           </list>
         </option>
         <option name="vmOptions" />
@@ -211,11 +234,11 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Gradle.ToggleLikeTest.toggleLike_OnOwnBoard_ThrowsException" />
-        <item itemvalue="Gradle.ToggleLikeTest" />
-        <item itemvalue="Gradle.DeleteBoardTest" />
-        <item itemvalue="Gradle.ToggleLikeTest.toggleLike_OnOthersBoard_Success" />
-        <item itemvalue="Gradle.UpdateBoardTest.updateBoard_ByAuthor_Success" />
+        <item itemvalue="Gradle.BoardControllerTest" />
+        <item itemvalue="Gradle.BoardControllerTest.deleteBoard_AdminPermission_Success" />
+        <item itemvalue="Gradle.BoardControllerTest.toggleLike_Fail_AlreadyLiked" />
+        <item itemvalue="Gradle.BoardControllerTest.toggleLike_UpdateRedisStats_Success" />
+        <item itemvalue="Gradle.BoardControllerTest.searchBoards_FindCreatedBoard_Success" />
       </list>
     </recent_temporary>
   </component>
