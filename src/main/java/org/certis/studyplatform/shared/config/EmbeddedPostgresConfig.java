@@ -1,41 +1,48 @@
 package org.certis.studyplatform.shared.config;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
-import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.springframework.core.annotation.Order;
 
 import javax.sql.DataSource;
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.sql.Connection;
-import java.sql.Statement;
+import java.sql.SQLException;
 
 /**
- * 통합 Embedded PostgreSQL Configuration
- * 
- * 로컬 개발 환경에서 사용할 Embedded PostgreSQL 설정
- * 고정 포트 5433을 사용하여 일관된 개발 환경 제공
- * 
- * 사용법:
- * 1. IDE에서 실행: 자동으로 embedded 프로필 활성화
- * 2. 수동 활성화: SPRING_PROFILES_ACTIVE=embedded 설정
- * 3. .env 파일에서 EMBEDDED_POSTGRES_PORT=5433 설정
+ * 개선된 Embedded PostgreSQL Configuration
+ *
+ * 주요 개선사항:
+ * - 포트 충돌 자동 해결
+ * - 안정적인 예외 처리
+ * - 적절한 로깅
+ * - 단순화된 설정
+ * - autoCommit=false 설정
  */
 @Configuration
-@Profile({"embedded", "local", "default"})
+@Profile({"embedded", "local", "dev", "default"})
 @ConditionalOnProperty(
-    name = "spring.datasource.embedded.enabled", 
-    havingValue = "true", 
-    matchIfMissing = true
+        name = "spring.datasource.embedded.enabled",
+        havingValue = "true",
+        matchIfMissing = true
 )
+@Order(1) // 가장 먼저 초기화
 public class EmbeddedPostgresConfig {
 
-    @Value("${EMBEDDED_POSTGRES_PORT:5433}")  // 고정 포트 5433 사용
-    private int embeddedPort;
+    private static final Logger logger = LoggerFactory.getLogger(EmbeddedPostgresConfig.class);
+
+    @Value("${EMBEDDED_POSTGRES_PORT:5433}")
+    private int preferredPort;
 
     @Value("${EMBEDDED_POSTGRES_DATABASE:certis_local}")
     private String databaseName;
@@ -43,108 +50,171 @@ public class EmbeddedPostgresConfig {
     @Value("${DB_USERNAME:postgres}")
     private String dbUsername;
 
-    @Value("${DB_PASSWORD:}")
+    @Value("${DB_PASSWORD:postgres}")
     private String dbPassword;
+
+    // Hikari Connection Pool 설정값들
+    @Value("${spring.datasource.hikari.maximum-pool-size:10}")
+    private int maximumPoolSize;
+
+    @Value("${spring.datasource.hikari.minimum-idle:2}")
+    private int minimumIdle;
+
+    @Value("${spring.datasource.hikari.connection-timeout:30000}")
+    private long connectionTimeout;
+
+    @Value("${spring.datasource.hikari.idle-timeout:600000}")
+    private long idleTimeout;
+
+    @Value("${spring.datasource.hikari.max-lifetime:1800000}")
+    private long maxLifetime;
+
+    @Value("${spring.datasource.hikari.leak-detection-threshold:60000}")
+    private long leakDetectionThreshold;
 
     @Bean(destroyMethod = "close")
     @Primary
     public EmbeddedPostgres embeddedPostgres() throws IOException {
-        System.out.println("🐘 Starting Embedded PostgreSQL on fixed port: " + embeddedPort);
-        
-        EmbeddedPostgres postgres = EmbeddedPostgres.builder()
-                .setPort(embeddedPort)  // 고정 포트 5433 사용
-                .start();
-        
-        int actualPort = postgres.getPort();
-        System.out.println("✅ Embedded PostgreSQL started successfully on port: " + actualPort);
-        System.out.println("🔗 JDBC URL: " + postgres.getJdbcUrl("postgres", databaseName));
-        
-        return postgres;
+        logger.info("🐘 Starting Embedded PostgreSQL...");
+
+        // 사용 가능한 포트 찾기
+        int availablePort = findAvailablePort(preferredPort);
+
+        try {
+            EmbeddedPostgres postgres = EmbeddedPostgres.builder()
+                    .setPort(availablePort)
+                    .setCleanDataDirectory(false) // 데이터 디렉토리 유지
+                    .start();
+
+            int actualPort = postgres.getPort();
+            logger.info("✅ Embedded PostgreSQL started successfully on port: {}", actualPort);
+            logger.info("📊 Database URL: {}", postgres.getJdbcUrl("postgres", "postgres"));
+
+            // 포트가 변경된 경우 시스템 프로퍼티 업데이트
+            if (actualPort != preferredPort) {
+                updateSystemProperties(actualPort);
+                logger.warn("⚠️  Port changed from {} to {} due to conflict", preferredPort, actualPort);
+            }
+
+            return postgres;
+
+        } catch (IOException e) {
+            logger.error("❌ Failed to start Embedded PostgreSQL: {}", e.getMessage());
+            throw new RuntimeException("Could not start embedded PostgreSQL", e);
+        }
     }
 
     @Bean
     @Primary
-    public DataSource dataSource(EmbeddedPostgres embeddedPostgres) throws Exception {
-        System.out.println("🔧 Configuring DataSource for database: " + databaseName);
-        System.out.println("👤 Using database user: " + dbUsername);
-        
-        // 1. postgres 기본 데이터베이스에 연결하여 설정 작업
-        try (Connection connection = embeddedPostgres.getPostgresDatabase().getConnection()) {
-            try (Statement statement = connection.createStatement()) {
-                
-                // 사용자가 postgres가 아닌 경우 사용자 생성
-                if (!"postgres".equals(dbUsername)) {
-                    var userResult = statement.executeQuery(
-                        "SELECT 1 FROM pg_roles WHERE rolname = '" + dbUsername + "'"
-                    );
-                    if (!userResult.next()) {
-                        String createUserSql = "CREATE USER " + dbUsername;
-                        if (dbPassword != null && !dbPassword.isEmpty()) {
-                            createUserSql += " WITH PASSWORD '" + dbPassword + "'";
-                        }
-                        statement.execute(createUserSql);
-                        System.out.println("👤 User '" + dbUsername + "' created successfully");
-                    } else {
-                        System.out.println("👤 User '" + dbUsername + "' already exists");
-                    }
-                }
-                
-                // 데이터베이스 존재 확인 및 생성
-                var dbResult = statement.executeQuery(
-                    "SELECT 1 FROM pg_database WHERE datname = '" + databaseName + "'"
-                );
-                
-                if (!dbResult.next()) {
-                    String createDbSql = "CREATE DATABASE " + databaseName;
-                    if (!"postgres".equals(dbUsername)) {
-                        createDbSql += " OWNER " + dbUsername;
-                    }
-                    statement.execute(createDbSql);
-                    System.out.println("📁 Database '" + databaseName + "' created successfully");
-                } else {
-                    System.out.println("📁 Database '" + databaseName + "' already exists");
-                }
-                
-                // 사용자에게 데이터베이스 권한 부여
-                if (!"postgres".equals(dbUsername)) {
-                    statement.execute("GRANT ALL PRIVILEGES ON DATABASE " + databaseName + " TO " + dbUsername);
-                    System.out.println("🔑 Granted privileges to user: " + dbUsername);
-                }
-            }
+    public DataSource embeddedDataSource(EmbeddedPostgres embeddedPostgres) {
+        logger.info("🔗 Creating DataSource from Embedded PostgreSQL with autoCommit=false");
+
+        try {
+            // Hikari DataSource 설정으로 autoCommit=false 명시적 설정
+            HikariConfig config = new HikariConfig();
+
+            // 기본 연결 정보
+            config.setJdbcUrl(embeddedPostgres.getJdbcUrl("postgres", dbUsername));
+            config.setUsername(dbUsername);
+            config.setPassword(dbPassword);
+            config.setDriverClassName("org.postgresql.Driver");
+
+            // 커넥션 풀 설정
+            config.setPoolName("EmbeddedPostgresHikariPool");
+            config.setMaximumPoolSize(maximumPoolSize);
+            config.setMinimumIdle(minimumIdle);
+            config.setConnectionTimeout(connectionTimeout);
+            config.setIdleTimeout(idleTimeout);
+            config.setMaxLifetime(maxLifetime);
+            config.setLeakDetectionThreshold(leakDetectionThreshold);
+
+            // ⭐ 중요: autoCommit을 false로 설정
+            config.setAutoCommit(false);
+
+            // 연결 테스트 쿼리
+            config.setConnectionTestQuery("SELECT 1");
+
+            // PostgreSQL 최적화 설정
+            config.addDataSourceProperty("cachePrepStmts", "true");
+            config.addDataSourceProperty("prepStmtCacheSize", "250");
+            config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+            config.addDataSourceProperty("useServerPrepStmts", "true");
+
+            HikariDataSource dataSource = new HikariDataSource(config);
+
+            // 연결 테스트
+            validateConnection(dataSource);
+
+            logger.info("✅ DataSource configured successfully with autoCommit=false");
+            logger.info("📋 Pool Name: {}", config.getPoolName());
+            logger.info("🔧 AutoCommit: {}", config.isAutoCommit());
+            logger.info("📊 Max Pool Size: {}", config.getMaximumPoolSize());
+
+            return dataSource;
+
         } catch (Exception e) {
-            System.err.println("⚠️ Database setup failed: " + e.getMessage());
-            // 실패해도 계속 진행
+            logger.error("❌ Failed to configure DataSource: {}", e.getMessage());
+            throw new RuntimeException("Could not configure DataSource", e);
         }
-        
-        // 2. 커스텀 데이터베이스에 연결하는 DataSource 생성
-        String jdbcUrl = embeddedPostgres.getJdbcUrl("postgres", databaseName);
-        
-        DataSource dataSource = DataSourceBuilder.create()
-                .url(jdbcUrl)
-                .username(dbUsername)
-                .password(dbPassword)
-                .driverClassName("org.postgresql.Driver")
-                .build();
-        
-        System.out.println("✅ DataSource configured with URL: " + jdbcUrl);
-        
-        // 3. 연결 테스트
-        try (Connection testConnection = dataSource.getConnection()) {
-            System.out.println("🔌 Database connection test successful");
-            
-            // 현재 데이터베이스 확인
-            try (Statement statement = testConnection.createStatement()) {
-                var resultSet = statement.executeQuery("SELECT current_database()");
-                if (resultSet.next()) {
-                    String currentDb = resultSet.getString(1);
-                    System.out.println("📍 Connected to database: " + currentDb);
-                }
+    }
+
+    /**
+     * 사용 가능한 포트 찾기
+     */
+    private int findAvailablePort(int startPort) {
+        for (int port = startPort; port <= startPort + 100; port++) {
+            if (isPortAvailable(port)) {
+                return port;
             }
-        } catch (Exception e) {
-            System.err.println("❌ Database connection test failed: " + e.getMessage());
-            throw e;
         }
-        
-        return dataSource;
+        throw new RuntimeException("No available port found starting from " + startPort);
+    }
+
+    /**
+     * 포트 사용 가능 여부 확인
+     */
+    private boolean isPortAvailable(int port) {
+        try (ServerSocket socket = new ServerSocket(port)) {
+            socket.setReuseAddress(true);
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    /**
+     * 시스템 프로퍼티 업데이트 (포트 변경 시)
+     */
+    private void updateSystemProperties(int actualPort) {
+        String newUrl = String.format("jdbc:postgresql://localhost:%d/postgres", actualPort);
+        System.setProperty("spring.datasource.url", newUrl);
+        System.setProperty("EMBEDDED_POSTGRES_PORT", String.valueOf(actualPort));
+
+        logger.info("🔧 Updated system properties for port: {}", actualPort);
+    }
+
+    /**
+     * 데이터베이스 연결 검증
+     */
+    private void validateConnection(DataSource dataSource) {
+        try (Connection connection = dataSource.getConnection()) {
+            if (connection.isValid(5)) {
+                logger.info("🔌 Database connection validated successfully");
+                logger.info("🔧 Connection AutoCommit: {}", connection.getAutoCommit());
+
+                // 데이터베이스 정보 로깅
+                var metaData = connection.getMetaData();
+                logger.debug("📋 Database: {} {}",
+                        metaData.getDatabaseProductName(),
+                        metaData.getDatabaseProductVersion());
+                logger.debug("🔗 URL: {}", metaData.getURL());
+
+            } else {
+                throw new SQLException("Connection validation failed");
+            }
+        } catch (SQLException e) {
+            logger.error("❌ Database connection validation failed: {}", e.getMessage());
+            throw new RuntimeException("Database connection validation failed", e);
+        }
     }
 }

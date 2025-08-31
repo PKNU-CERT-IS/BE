@@ -8,7 +8,7 @@ import java.util.List;
 
 /**
  * Member Information Response DTO
- * 
+ *
  * Presentation Layer의 응답 DTO
  * API 응답에 사용되는 회원 정보
  */

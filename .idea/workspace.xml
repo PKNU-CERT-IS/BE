@@ -4,14 +4,222 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="177d3300-bc44-4b7c-8fae-30ebad035897" name="변경" comment="Fix: Role 권한 검사 부분 에러 해결 #28">
-      <change afterPath="$PROJECT_DIR$/src/test/java/org/certis/studyplatform/board/presentation/BoardControllerTest.java" afterDir="false" />
+    <list default="true" id="177d3300-bc44-4b7c-8fae-30ebad035897" name="변경" comment="">
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/DefaultCatalog.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/Keys.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/Public.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/Tables.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/Auth.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/Blog.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/BlogTag.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/BlogView.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/Board.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/BoardAttached.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/BoardLike.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/BoardView.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/Member.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/MemberContact.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/MemberPenalty.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/Project.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/ProjectAttached.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/ProjectMeeting.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/ProjectMeetingLink.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/ProjectParticipant.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/Schedule.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/ScheduleAttached.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/ScheduleStatus.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/Study.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/StudyAttached.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/StudyMeeting.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/StudyMeetingLink.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/StudyParticipant.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/pojos/Auth.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/pojos/Blog.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/pojos/BlogTag.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/pojos/BlogView.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/pojos/Board.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/pojos/BoardAttached.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/pojos/BoardLike.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/pojos/BoardView.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/pojos/Member.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/pojos/MemberContact.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/pojos/MemberPenalty.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/pojos/Project.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/pojos/ProjectAttached.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/pojos/ProjectMeeting.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/pojos/ProjectMeetingLink.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/pojos/ProjectParticipant.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/pojos/Schedule.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/pojos/ScheduleAttached.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/pojos/ScheduleStatus.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/pojos/Study.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/pojos/StudyAttached.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/pojos/StudyMeeting.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/pojos/StudyMeetingLink.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/pojos/StudyParticipant.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/records/AuthRecord.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/records/BlogRecord.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/records/BlogTagRecord.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/records/BlogViewRecord.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/records/BoardAttachedRecord.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/records/BoardLikeRecord.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/records/BoardRecord.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/records/BoardViewRecord.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/records/MemberContactRecord.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/records/MemberPenaltyRecord.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/records/MemberRecord.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/records/ProjectAttachedRecord.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/records/ProjectMeetingLinkRecord.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/records/ProjectMeetingRecord.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/records/ProjectParticipantRecord.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/records/ProjectRecord.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/records/ScheduleAttachedRecord.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/records/ScheduleRecord.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/records/ScheduleStatusRecord.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/records/StudyAttachedRecord.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/records/StudyMeetingLinkRecord.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/records/StudyMeetingRecord.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/records/StudyParticipantRecord.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/generated/jooq/tables/records/StudyRecord.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/project/application/object/command/UpdateProjectCommand.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/project/application/object/command/UpdateProjectMeetingCommand.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/project/infrastructure/persistence/entity/ProjectEntity.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/project/infrastructure/persistence/entity/ProjectMeetingLinkEntity.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/shared/config/ApplicationStartupConfig.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/shared/config/AsyncConfig.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/shared/config/DataSourceConfig.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/shared/config/RedisConfiguration.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/shared/type/AttachedType.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/shared/util/DataConverter.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/study/infrastructure/persistence/entity/StudyEntity.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/study/infrastructure/persistence/entity/StudyMeetingLinkEntity.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/db/V19__Insert_project_meeting.sql" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/db/V1__Create_tables.sql" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/db/V23__Insert_study_meeting_link.sql" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/db/V24__Insert_project_meeting_link.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/8.13/checksums/checksums.lock" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/8.13/checksums/md5-checksums.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/8.13/checksums/sha1-checksums.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/8.13/executionHistory/executionHistory.lock" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/8.13/fileChanges/last-build.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/8.13/fileHashes/fileHashes.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/8.13/fileHashes/fileHashes.lock" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/8.13/gc.properties" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/cache.properties" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/cache.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/build.gradle" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/presentation/dto/request/AttachmentRequestDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/presentation/dto/request/AttachmentRequestDto.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/presentation/dto/request/BoardCreateRequestDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/presentation/dto/request/BoardCreateRequestDto.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/presentation/dto/request/BoardUpdateRequestDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/presentation/dto/request/BoardUpdateRequestDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/auth/infrastructure/persistence/AuthEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/auth/infrastructure/persistence/AuthEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/blog/infrastructure/persistence/BlogEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/blog/infrastructure/persistence/BlogEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/blog/infrastructure/persistence/BlogTagEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/blog/infrastructure/persistence/BlogTagEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/blog/infrastructure/persistence/BlogViewEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/blog/infrastructure/persistence/BlogViewEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/infrastructure/persistence/entity/BoardAttachedEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/infrastructure/persistence/entity/BoardAttachedEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/infrastructure/persistence/entity/BoardEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/infrastructure/persistence/entity/BoardEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/infrastructure/persistence/entity/BoardLikeEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/infrastructure/persistence/entity/BoardLikeEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/infrastructure/persistence/entity/BoardReportEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/infrastructure/persistence/entity/BoardReportEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/infrastructure/persistence/entity/BoardViewEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/board/infrastructure/persistence/entity/BoardViewEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/ApplicationException.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/ApplicationException.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/AsyncException.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/AsyncException.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/BaseException.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/BaseException.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/DomainException.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/DomainException.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/DtoException.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/DtoException.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/EntityException.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/EntityException.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/ExceptionStatus.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/ExceptionStatus.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/GlobalExceptionHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/GlobalExceptionHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/InfrastructureException.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/InfrastructureException.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/MiddlewareException.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/MiddlewareException.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/PresentationException.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/PresentationException.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/UtilException.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/UtilException.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/VoException.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/exception/VoException.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/mapper/MemberApplicationCommandMapper.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/mapper/MemberApplicationCommandMapper.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/mapper/MemberApplicationMapper.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/mapper/MemberApplicationMapper.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/mapper/MemberApplicationQueryMapper.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/mapper/MemberApplicationQueryMapper.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/object/command/CreateMemberCommand.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/object/command/CreateMemberCommand.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/object/query/GetMemberByIdQuery.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/object/query/GetMemberByIdQuery.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/object/query/SearchMembersQuery.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/object/query/SearchMembersQuery.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/query/MemberQueryService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/application/query/MemberQueryService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/Member.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/Member.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/MemberGrade.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/MemberGrade.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/Profile.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/Profile.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/service/GracePeriodCalculationService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/service/GracePeriodCalculationService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/service/MemberDomainService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/service/MemberDomainService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/service/ProfileDomainService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/service/ProfileDomainService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/BirthdayVo.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/BirthdayVo.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/EmailVo.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/EmailVo.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/GenderVo.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/GenderVo.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/GradeVo.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/GradeVo.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/MajorVo.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/MajorVo.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/MemberCreatedVo.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/MemberCreatedVo.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/MemberCreationVo.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/MemberCreationVo.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/MemberFilterVo.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/MemberFilterVo.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/MemberIdVo.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/MemberIdVo.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/MemberSummaryVo.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/MemberSummaryVo.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/MemberUpdateVo.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/MemberUpdateVo.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/MemberUpdatedVo.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/MemberUpdatedVo.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/MemberVo.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/MemberVo.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/NameVo.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/NameVo.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/ProfileBlogVo.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/ProfileBlogVo.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/ProfileProjectVo.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/ProfileProjectVo.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/ProfileStudyVo.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/ProfileStudyVo.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/ProfileUpdateVo.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/ProfileUpdateVo.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/ProfileVo.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/ProfileVo.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/RoleVo.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/RoleVo.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/StudentNumberVo.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/domain/vo/StudentNumberVo.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/mapper/MemberInfrastructureEntityMapper.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/mapper/MemberInfrastructureEntityMapper.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/persistence/MemberCommandRepositoryImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/persistence/MemberCommandRepositoryImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/persistence/ProfileQueryRepositoryImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/persistence/ProfileQueryRepositoryImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/persistence/entity/MemberContactEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/persistence/entity/MemberContactEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/persistence/entity/MemberEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/persistence/entity/MemberEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/persistence/entity/MemberPenaltyEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/persistence/entity/MemberPenaltyEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/persistence/jpa/MemberJpaRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/infrastructure/persistence/jpa/MemberJpaRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/presentation/MemberController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/presentation/MemberController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/presentation/dto/request/MemberCreateRequestDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/presentation/dto/request/MemberCreateRequestDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/presentation/dto/request/MemberSearchRequestDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/presentation/dto/request/MemberSearchRequestDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/presentation/dto/request/MemberUpdateRequestDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/presentation/dto/request/MemberUpdateRequestDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/presentation/dto/request/ProfileUpdateRequestDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/presentation/dto/request/ProfileUpdateRequestDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/presentation/dto/response/MemberInfoResponseDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/presentation/dto/response/MemberInfoResponseDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/presentation/dto/response/MemberResponseDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/presentation/dto/response/MemberResponseDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/presentation/dto/response/MemberSearchResponseDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/presentation/dto/response/MemberSearchResponseDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/presentation/dto/response/ProfileBlogResponseDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/presentation/dto/response/ProfileBlogResponseDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/presentation/dto/response/ProfileProjectResponseDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/presentation/dto/response/ProfileProjectResponseDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/presentation/dto/response/ProfileStudyResponseDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/member/presentation/dto/response/ProfileStudyResponseDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/project/infrastructure/persistence/ProjectAttachedEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/project/infrastructure/persistence/entity/ProjectAttachedEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/project/infrastructure/persistence/ProjectEntity.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/project/infrastructure/persistence/ProjectParticipantEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/project/infrastructure/persistence/entity/ProjectParticipantEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/project/infrastructure/persistence/ProjectStatus.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/project/domain/ProjectStatus.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/project/infrastructure/persistence/ProjectTagEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/project/infrastructure/persistence/entity/ProjectMeetingEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/response/GlobalResponseHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/response/GlobalResponseHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/response/ResponseStatus.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/response/ResponseStatus.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/infrastructure/persistence/ScheduleAttachedEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/infrastructure/persistence/ScheduleAttachedEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/infrastructure/persistence/ScheduleEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/infrastructure/persistence/ScheduleEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/infrastructure/persistence/ScheduleStatusEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/schedule/infrastructure/persistence/ScheduleStatusEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/shared/config/DatabaseInitializationService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/shared/config/DatabaseInitializationService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/shared/config/EmbeddedPostgresConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/shared/config/EmbeddedPostgresConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/shared/config/JacksonConfiguration.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/shared/config/JacksonConfiguration.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/shared/config/JooqConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/shared/config/JooqConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/shared/config/JpaConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/shared/config/JpaConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/shared/config/RedisConfig.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/shared/security/CurrentUser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/shared/security/CurrentUser.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/shared/util/DateTimeUtils.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/shared/util/DateTimeUtils.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/shared/util/GracePeriodCalculator.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/shared/util/GracePeriodCalculator.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/study/infrastructure/persistence/StudyAttachedEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/study/infrastructure/persistence/entity/StudyAttachedEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/study/infrastructure/persistence/StudyEntity.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/study/infrastructure/persistence/StudyMeetingEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/study/infrastructure/persistence/entity/StudyMeetingEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/study/infrastructure/persistence/StudyParticipantEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/study/infrastructure/persistence/entity/StudyParticipantEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/study/infrastructure/persistence/StudyStatus.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/study/domain/StudyStatus.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/study/infrastructure/persistence/StudyTagEntity.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/db/V18__Insert_project_participant.sql" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/db/V18__Insert_project_participant.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/db/V19__Insert_project_tag.sql" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/db/V21__Insert_study_meeting.sql" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/db/V21__Insert_study_meeting.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/db/V22__Insert_study_participant.sql" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/db/V22__Insert_study_participant.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/db/V23__Insert_study_tag.sql" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/db/V6__Insert_study_data.sql" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/db/V6__Insert_study_data.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/db/V7__Insert_project_data.sql" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/db/V7__Insert_project_data.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/db/schema.sql.backup" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/db/schema.sql.backup" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test/java/org/certis/studyplatform/config/TestEmbeddedPostgresConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/org/certis/studyplatform/config/TestEmbeddedPostgresConfig.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/test/resources/application-test.yml" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/resources/application-test.yml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -103,7 +311,7 @@
     "Gradle.UpdateBoardTest.updateBoard_ByAuthor_Success.executor": "Run",
     "Gradle.소스 다운로드.executor": "Run",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "be/dev/test-board-domain#32"
+    "git-widget-placeholder": "be/dev/test-board-domain#32 병합 중"
   }
 }]]></component>
   <component name="RecentsManager">

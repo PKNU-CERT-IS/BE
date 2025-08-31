@@ -21,6 +21,7 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
 
 /**
@@ -386,6 +387,28 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(CompletionException.class)
+    public ResponseEntity<GlobalResponseHandler<Object>> handleCompletionException(
+            CompletionException ex, WebRequest request) {
+
+        Throwable cause = ex.getCause();
+        log.warn("CompletionException caught, unwrapping cause: {}",
+                cause != null ? cause.getClass().getSimpleName() : "null");
+
+        // 원본 예외가 있는 경우 해당 예외로 처리
+        if (cause != null) {
+            return delegateToSpecificHandler(cause, request);
+        }
+
+        // 원본 예외가 없는 경우 일반 처리
+        log.error("CompletionException without cause: {}", ex.getMessage(), ex);
+        return GlobalResponseHandler.error(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "비동기 작업 처리 중 오류가 발생했습니다",
+                createErrorDetails("COMPLETION_ERROR", request)
+        );
+    }
+
     // =================================================================
     // HELPER METHODS
     // =================================================================
@@ -399,6 +422,76 @@ public class GlobalExceptionHandler {
         details.put("type", errorType);
         details.put("path", getPath(request));
         return details;
+    }
+
+    /**
+     * 원본 예외 타입에 따라 적절한 핸들러로 위임
+     */
+    private ResponseEntity<GlobalResponseHandler<Object>> delegateToSpecificHandler(
+            Throwable cause, WebRequest request) {
+
+        // Domain Layer 예외
+        if (cause instanceof DomainException domainEx) {
+            return handleDomainException(domainEx, request);
+        }
+
+        // Application Layer 예외
+        if (cause instanceof ApplicationException appEx) {
+            return handleApplicationException(appEx, request);
+        }
+
+        // Infrastructure Layer 예외
+        if (cause instanceof InfrastructureException infraEx) {
+            return handleInfrastructureException(infraEx, request);
+        }
+
+        // Presentation Layer 예외
+        if (cause instanceof PresentationException presEx) {
+            return handlePresentationException(presEx, request);
+        }
+
+        // DTO 예외
+        if (cause instanceof DtoException dtoEx) {
+            return handleDtoException(dtoEx, request);
+        }
+
+        // 데이터 무결성 위반
+        if (cause instanceof DataIntegrityViolationException dataEx) {
+            return handleDataIntegrityViolation(dataEx, request);
+        }
+
+        // 제약 조건 위반
+        if (cause instanceof ConstraintViolationException constraintEx) {
+            return handleConstraintViolation(constraintEx, request);
+        }
+
+        // Validation 예외
+        if (cause instanceof MethodArgumentNotValidException validationEx) {
+            return handleValidationErrors(validationEx, request);
+        }
+
+        // IllegalArgument 예외
+        if (cause instanceof IllegalArgumentException illegalArgEx) {
+            return handleIllegalArgument(illegalArgEx, request);
+        }
+
+        // IllegalState 예외
+        if (cause instanceof IllegalStateException illegalStateEx) {
+            return handleIllegalState(illegalStateEx, request);
+        }
+
+        // 그 외의 RuntimeException
+        if (cause instanceof RuntimeException runtimeEx) {
+            return handleRuntimeException(runtimeEx, request);
+        }
+
+        // 일반 Exception
+        log.error("Unhandled exception type in async context: {}", cause.getClass().getSimpleName(), cause);
+        return GlobalResponseHandler.error(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "비동기 작업에서 예상치 못한 오류가 발생했습니다",
+                createErrorDetails("ASYNC_UNEXPECTED_ERROR", request)
+        );
     }
 
     /**

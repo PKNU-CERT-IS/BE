@@ -11,7 +11,7 @@ import java.time.OffsetDateTime;
 
 /**
  * Board Like Entity
- * 
+ *
  * 게시판 좋아요를 저장하는 JPA Entity
  */
 @Entity
@@ -45,4 +45,4 @@ public class BoardLikeEntity {
         this.likeNumber = likeNumber;
         this.updatedAt = updatedAt;
     }
-} 
+}

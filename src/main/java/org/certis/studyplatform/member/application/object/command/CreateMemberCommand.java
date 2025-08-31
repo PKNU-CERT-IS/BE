@@ -8,14 +8,14 @@ import java.util.List;
 
 /**
  * Create Member Command
- * 
+ *
  * Application Layer → Domain Service로 전달되는 Command Object
- * 
+ *
  * 특징:
  * - Primitive/Reference Type으로 구성 (VO 변환 전)
  * - Domain Service에서 VO로 변환하여 비즈니스 검증 수행
  * - 불변 Record 구조로 데이터 무결성 보장
- * 
+ *
  * 데이터 흐름:
  * 1. Controller → Facade Service (DTO → Command 변환)
  * 2. Facade → Command Service (Command 그대로 전달)

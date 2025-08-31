@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Member Application Query Mapper
- * 
+ *
  * ✅ DTO → Query Object 변환 담당
  * ✅ Application Layer의 Query 전용 매퍼
  * ✅ 네이밍 컨벤션: MemberApplicationQueryMapper

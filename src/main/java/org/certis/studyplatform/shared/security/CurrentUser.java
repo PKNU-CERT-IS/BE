@@ -26,6 +26,8 @@ import java.util.Collections;
 @RequiredArgsConstructor
 public class CurrentUser implements UserDetails {
 
+    private static final long serialVersionUID = 1L;
+    
     private final Long id;
     private final String username;
     private final String email;
@@ -102,4 +104,4 @@ public class CurrentUser implements UserDetails {
                 ", role='" + role + '\'' +
                 '}';
     }
-} 
+}

@@ -10,11 +10,34 @@ version = '1.0-SNAPSHOT'
 
 java {
     sourceCompatibility = '21'
+    targetCompatibility = '21'
 }
 
 configurations {
     compileOnly {
         extendsFrom annotationProcessor
+    }
+
+    // ✅ 전역적으로 충돌 라이브러리 제외
+    all {
+        exclude group: 'commons-logging', module: 'commons-logging'
+        exclude group: 'org.slf4j', module: 'slf4j-simple'
+        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+        exclude group: 'log4j', module: 'log4j'
+
+        // 중복 의존성 해결 전략
+        resolutionStrategy {
+            // 의존성 충돌 시 최신 버전 사용
+            failOnVersionConflict()
+            preferProjectModules()
+
+            // 강제 버전 지정
+            force(
+                    'org.slf4j:slf4j-api:2.0.17',
+                    'ch.qos.logback:logback-classic:1.5.18',
+                    'io.netty:netty-resolver-dns-native-macos:4.1.123.Final:osx-aarch_64'
+            )
+        }
     }
 }
 
@@ -23,106 +46,105 @@ repositories {
 }
 
 dependencies {
-    // Spring Boot Starters
+    // ✅ Spring Boot Core Starters
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
-    implementation 'org.springframework.boot:spring-boot-starter-mail'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
-    // 데이터베이스
-    // ✅ 개발용 Embedded PostgreSQL - 포트 충돌 방지 개선 (JPA 자동 생성 사용)
-    implementation('io.zonky.test:embedded-postgres:2.0.7') {  
-        exclude group: 'org.slf4j', module: 'slf4j-simple'
-    }
-    runtimeOnly 'org.postgresql:postgresql'  // PostgreSQL 드라이버 (필수)
+    // ✅ Spring Security - 선택적 (개발 시 비활성화 가능)
+    implementation 'org.springframework.boot:spring-boot-starter-security'
 
-    // JWT 인증 (토큰 기반 인증 사용시)
+    // ✅ 데이터베이스 - Embedded PostgreSQL
+    implementation('io.zonky.test:embedded-postgres:2.0.7') {
+        exclude group: 'org.slf4j'
+        exclude group: 'commons-logging'
+    }
+    runtimeOnly 'org.postgresql:postgresql'
+
+    // ✅ JWT 인증
     implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 
-    // Redis 캐싱 및 데이터 처리 (조회수/좋아요 캐싱용)
+    // ✅ Redis 및 캐싱 - 안정화된 설정
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.springframework.boot:spring-boot-starter-cache'
-    implementation 'redis.clients:jedis' // Spring Boot 관리 버전 사용
-    implementation 'org.redisson:redisson-spring-boot-starter:3.37.0'
+    implementation 'redis.clients:jedis'
+    implementation('org.redisson:redisson-spring-boot-starter:3.37.0') {
+        exclude group: 'commons-logging'
+    }
 
-    // jOOQ for CQRS Query Side
+    // ✅ jOOQ (CQRS Query Side)
     implementation 'org.springframework.boot:spring-boot-starter-jooq'
     implementation 'org.jooq:jooq:3.20.1'
     implementation 'org.jooq:jooq-codegen:3.20.1'
 
-    // 배치 처리 (주기적 DB 마이그레이션용)
-    implementation 'org.springframework.boot:spring-boot-starter-batch'
-
-    // 스케줄링
-    implementation 'org.springframework.boot:spring-boot-starter-quartz'
-
-    // 파일 업로드/처리
-    implementation 'commons-io:commons-io:2.20.0'
+    // ✅ 유틸리티 라이브러리
+    implementation('commons-io:commons-io:2.20.0') {
+        exclude group: 'commons-logging'
+    }
     implementation 'org.apache.commons:commons-lang3:3.18.0'
 
-    // 마크다운 처리 (블로그 글 작성용)
-    implementation 'com.vladsch.flexmark:flexmark-all:0.64.8'
+    // ✅ 마크다운 처리 (간소화된 버전)
+    implementation('com.vladsch.flexmark:flexmark:0.64.8') {
+        exclude group: 'commons-logging'
+    }
+    implementation('com.vladsch.flexmark:flexmark-ext-tables:0.64.8') {
+        exclude group: 'commons-logging'
+    }
+    implementation('com.vladsch.flexmark:flexmark-ext-gfm-strikethrough:0.64.8') {
+        exclude group: 'commons-logging'
+    }
 
-    // 이미지 처리
-    implementation 'org.imgscalr:imgscalr-lib:4.2'
-
-    // WebSocket (실시간 채팅/알림용 - 선택사항)
-    // implementation 'org.springframework.boot:spring-boot-starter-websocket'
-
-    // OpenAPI/Swagger 문서화
+    // ✅ API 문서화
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5'
 
-    // JSON 처리 개선
+    // ✅ JSON 처리
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
     implementation 'com.fasterxml.jackson.module:jackson-module-parameter-names'
 
-    // 개발 도구
-    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    // ✅ MacOS DNS 이슈 해결
+    runtimeOnly 'io.netty:netty-resolver-dns-native-macos:4.1.123.Final:osx-aarch_64'
 
-    // 어노테이션 프로세서
+    // ✅ 개발 도구
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 
-    // Lombok (선택사항 - 코드 간소화)
+    // ✅ Lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
-    // jOOQ Code Generation Dependencies
+    // ✅ jOOQ Code Generation
     jooqCodegen 'org.postgresql:postgresql'
     jooqCodegen 'org.jooq:jooq-codegen:3.20.1'
 
-    // 테스트
+    // ✅ 테스트 의존성
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
-    testImplementation 'org.springframework.batch:spring-batch-test'
-
-    // ✅ 테스트용 Embedded PostgreSQL 추가
     testImplementation('io.zonky.test:embedded-postgres:2.0.7') {
         exclude group: 'org.slf4j', module: 'slf4j-simple'
     }
-
-    // TODO: DockerDesktop 이슈로 TestContainers 비활성화
-//    testImplementation 'org.testcontainers:junit-jupiter'
-//    testImplementation 'org.testcontainers:postgresql'
-//    testImplementation 'org.testcontainers:redis'
     testImplementation 'it.ozimov:embedded-redis:0.7.3'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+// ✅ 테스트 설정
 test {
     useJUnitPlatform()
+    maxHeapSize = '1g'
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
 }
 
 // ✅ 환경변수 로딩 태스크
 task loadEnv {
     group = 'environment'
     description = 'Load environment variables from .env file'
-    
+
     doFirst {
         def envFile = file('.env')
         if (envFile.exists()) {
@@ -131,62 +153,70 @@ task loadEnv {
                 if (line && !line.startsWith('#') && line.contains('=')) {
                     def (key, value) = line.split('=', 2)
                     envVars[key.trim()] = value.trim()
-                    // 시스템 프로퍼티와 환경변수 둘 다 설정
                     System.setProperty(key.trim(), value.trim())
                 }
             }
-            
-            // bootRun에 환경변수 전달
+
             bootRun {
                 environment envVars
+                jvmArgs = ['-Xmx1g', '-Xms512m']
             }
-            
+
             println '✅ Environment variables loaded from .env file'
-            println "🔧 SQL_INIT_MODE: ${envVars.get('SQL_INIT_MODE', 'not set')}"
         } else {
             println '⚠️  .env file not found - using default values'
         }
     }
 }
 
-// ✅ 데이터베이스 초기화 태스크
-task setupDatabase {
-    group = 'database'
-    description = 'Setup database with embedded PostgreSQL and mock data'
-    
+// ✅ 개발용 태스크들
+task setupDev {
+    group = 'development'
+    description = 'Setup development environment'
+
     doLast {
-        println '🗄️  Database setup:'
-        println '📝 Schema: JPA auto-generation (DDL_AUTO=update)'
-        println '📊 Mock Data: DatabaseInitializationService'
-        println '🐘 Embedded PostgreSQL: Fixed port 5433'
-        println '🚀 Run with: ./gradlew loadEnv bootRun'
-        println '🔧 Environment: Load .env file automatically'
+        println '🛠️  Development Environment Setup:'
+        println '🐘 Database: Embedded PostgreSQL (auto-port from 5433)'
+        println '🔴 Redis: In-memory fallback (embedded redis optional)'
+        println '🔐 Security: Development mode (auto-generated passwords)'
+        println '📖 API Docs: http://localhost:8080/swagger-ui.html'
+        println '🔧 Actuator: http://localhost:8080/actuator'
+        println '🚀 Run: ./gradlew bootRun'
     }
 }
 
-task flushDatabase {
-    group = 'database'
-    description = 'Information about database flushing'
-    
+task cleanDev {
+    group = 'development'
+    description = 'Clean development environment'
+
     doLast {
-        println '🧹 Database flush:'
-        println '📋 Automatic: On application shutdown (if enabled)'
-        println '🔄 Manual: DatabaseInitializationService.flushAllData()'
-        println '⚙️  Configure: Set SQL_INIT_MODE in .env file'
+        delete 'logs'
+        delete 'uploads'
+        println '🧹 Development environment cleaned'
     }
 }
 
-// bootRun 태스크가 loadEnv에 의존하도록 설정
-bootRun.dependsOn loadEnv
+// ✅ bootRun 최적화
+bootRun {
+    dependsOn loadEnv
+    systemProperty 'spring.profiles.active', 'dev'
 
-// ✅ jOOQ Code Generation Configuration - 개발 시에만 필요
-// 실제 데이터베이스가 실행 중일 때만 코드 생성 가능
+    // JVM 최적화
+    jvmArgs = [
+            '-Xmx1g',
+            '-Xms512m',
+            '-XX:+UseG1GC',
+            '-XX:MaxGCPauseMillis=200',
+            '-Dspring.output.ansi.enabled=always'
+    ]
+}
+
+// ✅ jOOQ 설정 (선택적)
 jooq {
     configuration {
         jdbc {
             driver = 'org.postgresql.Driver'
-            // 실제 PostgreSQL 인스턴스에 연결 (embedded는 런타임에만 존재)
-            url = "jdbc:postgresql://${System.getenv('JOOQ_DB_HOST') ?: 'localhost'}:${System.getenv('JOOQ_DB_PORT') ?: '5433'}/${System.getenv('JOOQ_DB_NAME') ?: 'certis_local'}"
+            url = "jdbc:postgresql://${System.getenv('JOOQ_DB_HOST') ?: 'localhost'}:${System.getenv('JOOQ_DB_PORT') ?: '5432'}/${System.getenv('JOOQ_DB_NAME') ?: 'certis_local'}"
             user = System.getenv('JOOQ_DB_USERNAME') ?: 'postgres'
             password = System.getenv('JOOQ_DB_PASSWORD') ?: ''
         }
@@ -195,94 +225,60 @@ jooq {
                 name = 'org.jooq.meta.postgres.PostgresDatabase'
                 inputSchema = 'public'
                 includes = '.*'
-                excludes = 'auth'  // auth 테이블 제외 (외래키 문제)
-                recordVersionFields = ''
-                recordTimestampFields = ''
-                onError = 'LOG'
-                properties {
-                    property {
-                        key = 'defaultNameCase'
-                        value = 'lower'
-                    }
-                    property {
-                        key = 'defaultSchema'
-                        value = 'public'
-                    }
-                    property {
-                        key = 'includeSystemTables'
-                        value = 'false'
-                    }
-                    property {
-                        key = 'includeSystemSchemas'
-                        value = 'false'
-                    }
-                    property {
-                        key = 'includeSystemIndexes'
-                        value = 'false'
-                    }
-                    property {
-                        key = 'includeSystemForeignKeys'
-                        value = 'false'
-                    }
-                    property {
-                        key = 'includeSystemPrimaryKeys'
-                        value = 'false'
-                    }
-                    property {
-                        key = 'includeSystemUniqueKeys'
-                        value = 'false'
-                    }
-                    property {
-                        key = 'includeSystemCheckConstraints'
-                        value = 'false'
-                    }
-                    property {
-                        key = 'includeSystemSequences'
-                        value = 'false'
-                    }
-                    property {
-                        key = 'includeSystemRoutines'
-                        value = 'false'
-                    }
-                    property {
-                        key = 'includeSystemUDTs'
-                        value = 'false'
-                    }
-                    property {
-                        key = 'includeIndexes'
-                        value = 'false'
-                    }
-                    property {
-                        key = 'includeSequences'
-                        value = 'false'
-                    }
-                    property {
-                        key = 'includeRoutines'
-                        value = 'false'
-                    }
-                    property {
-                        key = 'includeUDTs'
-                        value = 'false'
-                    }
-                }
+                excludes = 'flyway_schema_history'  // Flyway 테이블 제외
             }
             target {
-                packageName = 'org.certis.studyplatform.infrastructure.persistence.jooq.generated'
-                directory = 'src/main/java'
+                packageName = 'org.certis.generated.jooq'
+                directory = 'src/main/java'  // ✅ 수정: resources → java
             }
             generate {
                 records = true
                 pojos = true
                 daos = false
-                relations = false
-                keys = false
-            }
-            strategy {
-                name = 'org.jooq.codegen.DefaultGeneratorStrategy'
+                relations = true  // ✅ 추가: 테이블 관계 생성
+                keys = true       // ✅ 추가: FK/PK 생성
+                sequences = true  // ✅ 추가: 시퀀스 생성
             }
         }
     }
 }
-configurations.all {
-    exclude group: 'org.slf4j', module: 'slf4j-simple'
+
+// ✅ jOOQ 코드 생성 태스크 추가
+task generateJooqCode {
+    group = 'jooq'
+    description = 'Generate jOOQ code from database schema'
+    dependsOn 'jooqCodegen'
+
+    doLast {
+        println '✅ jOOQ code generation completed'
+        println '📁 Generated files location: src/main/java/org/certis/generated/jooq/'
+    }
+}
+
+// ✅ 컴파일 전에 jOOQ 코드 생성 (선택적)
+// compileJava.dependsOn generateJooqCode
+
+// ✅ 컴파일 최적화
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+    options.compilerArgs += [
+            '-Xlint:all',
+            '-Xlint:-deprecation',
+            '-Xlint:-processing',
+            '-parameters'
+    ]
+    options.deprecation = false
+}
+
+// ✅ JAR 빌드 최적화
+jar {
+    enabled = false
+    archiveClassifier = ''
+}
+
+bootJar {
+    archiveFileName = "${project.name}-${project.version}.jar"
+    layered {
+        enabled = true
+    }
 }
