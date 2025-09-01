@@ -140,7 +140,7 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
-  <component name="RunManager" selected="Gradle.ScheduleControllerTest.deleteClubRoomUsage_AuthorizationFailure_UnauthorizedUser">
+  <component name="RunManager" selected="Gradle.ScheduleControllerTest">
     <configuration name="ScheduleControllerTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
@@ -290,8 +290,8 @@
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Gradle.ScheduleControllerTest.deleteClubRoomUsage_AuthorizationFailure_UnauthorizedUser" />
         <item itemvalue="Gradle.ScheduleControllerTest" />
+        <item itemvalue="Gradle.ScheduleControllerTest.deleteClubRoomUsage_AuthorizationFailure_UnauthorizedUser" />
         <item itemvalue="Gradle.ScheduleControllerTest.createClubRoomUsage_DomainFailure_PastTimeSchedule" />
         <item itemvalue="Gradle.ScheduleControllerTest.createClubRoomUsage_DomainFailure_InvalidTimeOrder" />
         <item itemvalue="Gradle.ScheduleControllerTest.createClubRoomUsage_ValidationFailure_MissingRequiredFields" />

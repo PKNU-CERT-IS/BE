@@ -195,7 +195,7 @@ class ScheduleControllerTest {
     // =================================================================
 
     @Test
-    @Order(10)
+    @Order(5)
     @DisplayName("❌ 동아리방 사용 신청 실패 - 필수 필드 누락")
     void createClubRoomUsage_ValidationFailure_MissingRequiredFields() throws Exception {
         // Given: 필수 필드가 누락된 요청
@@ -215,7 +215,7 @@ class ScheduleControllerTest {
     }
 
     @Test
-    @Order(11)
+    @Order(6)
     @DisplayName("❌ 동아리방 사용 신청 실패 - 과거 시간으로 신청")
     void createClubRoomUsage_DomainFailure_PastTimeSchedule() throws Exception {
         // Given: 과거 시간으로 스케줄 신청
@@ -237,7 +237,7 @@ class ScheduleControllerTest {
     }
 
     @Test
-    @Order(12)
+    @Order(7)
     @DisplayName("❌ 동아리방 사용 신청 실패 - 시작시간이 종료시간보다 늦음")
     void createClubRoomUsage_DomainFailure_InvalidTimeOrder() throws Exception {
         // Given: 잘못된 시간 순서의 스케줄 신청
@@ -260,7 +260,7 @@ class ScheduleControllerTest {
     }
 
     @Test
-    @Order(13)
+    @Order(8)
     @DisplayName("❌ 동아리방 사용 신청 실패 - 빈 제목")
     void createClubRoomUsage_ValidationFailure_EmptyTitle() throws Exception {
         // Given: 빈 제목의 스케줄 신청
@@ -281,7 +281,7 @@ class ScheduleControllerTest {
     }
 
     @Test
-    @Order(14)
+    @Order(9)
     @DisplayName("❌ 동아리방 사용 신청 실패 - 잘못된 데이터 형식")
     void createClubRoomUsage_ValidationFailure_InvalidDataFormat() throws Exception {
         // Given: 잘못된 JSON 형식
@@ -299,7 +299,7 @@ class ScheduleControllerTest {
     }
 
     @Test
-    @Order(15)
+    @Order(10)
     @DisplayName("❌ 승인된 스케줄 조회 실패 - 잘못된 날짜 파라미터")
     void getAllApprovedScheduleRequests_ValidationFailure_InvalidDateParameter() throws Exception {
         // Given: 잘못된 날짜 파라미터
@@ -316,7 +316,7 @@ class ScheduleControllerTest {
     }
 
     @Test
-    @Order(17)
+    @Order(11)
     @DisplayName("❌ 동아리방 사용 삭제 실패 - 존재하지 않는 스케줄")
     void deleteClubRoomUsage_NotFound_NonExistentSchedule() throws Exception {
         // Given: 존재하지 않는 스케줄 ID
@@ -337,7 +337,7 @@ class ScheduleControllerTest {
     }
 
     @Test
-    @Order(19)
+    @Order(12)
     @DisplayName("❌ 동아리방 사용 삭제 실패 - 권한 없는 사용자")
     void deleteClubRoomUsage_AuthorizationFailure_UnauthorizedUser() throws Exception {
         // Given: 다른 사용자가 생성한 스케줄
@@ -354,7 +354,7 @@ class ScheduleControllerTest {
                 .andDo(print())
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.statusCode").value(403))
-                .andExpect(jsonPath("$.message").value("스케줄 삭제 권한이 없습니다"));
+                .andExpect(jsonPath("$.message").value("스케줄 관리에 적절하지 않은 사용자입니다."));
 
         System.out.println("✅ 권한 없는 사용자 삭제 시도 테스트 성공");
     }
