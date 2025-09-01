@@ -48,7 +48,7 @@ public class ApplicationStartupConfig implements ApplicationListener<Application
         logger.info("🎯   CERT-IS Study Platform Started     ");
         logger.info("🎯 ========================================");
         logger.info("🌐 Server: http://localhost:8080");
-        logger.info("📊 Database: Embedded PostgreSQL (localhost:5432)");
+        logger.info("📊 Database: Embedded PostgreSQL (localhost:5433)");
         logger.info("🔴 Redis: Embedded Redis (localhost:6379)");
         logger.info("📖 API Docs: http://localhost:8080/swagger-ui.html");
         logger.info("🔧 Actuator: http://localhost:8080/actuator/health");

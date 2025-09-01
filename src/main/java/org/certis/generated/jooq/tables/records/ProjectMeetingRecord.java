@@ -92,15 +92,15 @@ public class ProjectMeetingRecord extends UpdatableRecordImpl<ProjectMeetingReco
     /**
      * Setter for <code>public.project_meeting.participants</code>.
      */
-    public void setParticipants(Integer[] value) {
+    public void setParticipants(Long[] value) {
         set(5, value);
     }
 
     /**
      * Getter for <code>public.project_meeting.participants</code>.
      */
-    public Integer[] getParticipants() {
-        return (Integer[]) get(5);
+    public Long[] getParticipants() {
+        return (Long[]) get(5);
     }
 
     /**
@@ -168,7 +168,7 @@ public class ProjectMeetingRecord extends UpdatableRecordImpl<ProjectMeetingReco
     /**
      * Create a detached, initialised ProjectMeetingRecord
      */
-    public ProjectMeetingRecord(Long id, Long projectId, Long memberId, String title, String content, Integer[] participants, OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
+    public ProjectMeetingRecord(Long id, Long projectId, Long memberId, String title, String content, Long[] participants, OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
         super(ProjectMeeting.PROJECT_MEETING);
 
         setId(id);

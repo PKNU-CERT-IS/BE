@@ -92,15 +92,15 @@ public class StudyMeetingRecord extends UpdatableRecordImpl<StudyMeetingRecord> 
     /**
      * Setter for <code>public.study_meeting.participants</code>.
      */
-    public void setParticipants(Integer[] value) {
+    public void setParticipants(Long[] value) {
         set(5, value);
     }
 
     /**
      * Getter for <code>public.study_meeting.participants</code>.
      */
-    public Integer[] getParticipants() {
-        return (Integer[]) get(5);
+    public Long[] getParticipants() {
+        return (Long[]) get(5);
     }
 
     /**
@@ -168,7 +168,7 @@ public class StudyMeetingRecord extends UpdatableRecordImpl<StudyMeetingRecord> 
     /**
      * Create a detached, initialised StudyMeetingRecord
      */
-    public StudyMeetingRecord(Long id, Long studyId, Long memberId, String title, String content, Integer[] participants, OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
+    public StudyMeetingRecord(Long id, Long studyId, Long memberId, String title, String content, Long[] participants, OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
         super(StudyMeeting.STUDY_MEETING);
 
         setId(id);

@@ -367,7 +367,6 @@ CREATE TABLE member_penalty (
                                 penalty_point INTEGER NOT NULL DEFAULT 0,
                                 penaltied_at TIMESTAMPTZ NOT NULL,
                                 updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                                reason VARCHAR NOT NULL,
                                 CONSTRAINT fk_member_penalty_member FOREIGN KEY (member_id) REFERENCES member(id)
 );
 

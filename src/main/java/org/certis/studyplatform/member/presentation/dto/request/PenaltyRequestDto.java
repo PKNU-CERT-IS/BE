@@ -17,5 +17,5 @@ public class PenaltyRequestDto {
 
     @NotNull(message = "벌점은 필수입니다")
     @Positive(message = "벌점은 양수여야 합니다")
-    private Long penaltyPoints;
+    private Integer penaltyPoints;
 }

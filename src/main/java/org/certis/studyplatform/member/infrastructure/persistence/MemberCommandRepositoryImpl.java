@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.exception.InfrastructureException;
-import org.certis.studyplatform.infrastructure.persistence.jooq.generated.tables.Member;
 import org.certis.studyplatform.member.domain.repository.command.MemberCommandRepository;
 import org.certis.studyplatform.member.domain.vo.*;
 import org.certis.studyplatform.member.infrastructure.mapper.MemberInfrastructureMapper;

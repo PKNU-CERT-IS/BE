@@ -22,7 +22,7 @@ public class StudyMeeting implements Serializable {
     private Long memberId;
     private String title;
     private String content;
-    private Integer[] participants;
+    private Long[] participants;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private OffsetDateTime deletedAt;
@@ -47,7 +47,7 @@ public class StudyMeeting implements Serializable {
         Long memberId,
         String title,
         String content,
-        Integer[] participants,
+        Long[] participants,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt,
         OffsetDateTime deletedAt
@@ -136,14 +136,14 @@ public class StudyMeeting implements Serializable {
     /**
      * Getter for <code>public.study_meeting.participants</code>.
      */
-    public Integer[] getParticipants() {
+    public Long[] getParticipants() {
         return this.participants;
     }
 
     /**
      * Setter for <code>public.study_meeting.participants</code>.
      */
-    public void setParticipants(Integer[] participants) {
+    public void setParticipants(Long[] participants) {
         this.participants = participants;
     }
 

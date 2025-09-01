@@ -1,9 +1,7 @@
-package org.certis.studyplatform.shared.config;
+package org.certis.studyplatform.config;
 
 import lombok.RequiredArgsConstructor;
-// import org.certis.studyplatform.shared.security.JwtAuthenticationFilter;  // 🔥 JWT 비활성화
-// import org.certis.studyplatform.shared.security.JwtTokenProvider;        // 🔥 JWT 비활성화
-import org.certis.studyplatform.shared.security.JwtAuthenticationFilter;
+import org.certis.studyplatform.config.TestAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -19,32 +17,36 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
 
+/**
+ * 테스트 환경에서 사용되는 Security 설정
+ * JWT 대신 TestAuthenticationFilter를 사용하여 간단한 Mock 인증 처리
+ */
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(prePostEnabled = true) // @PreAuthorize 활성화
+@EnableMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
-@Profile("!test") // 테스트 환경이 아닐 때만 활성화
-public class SecurityConfig {
+@Profile("test") // 테스트 환경에서만 활성화
+public class TestSecurityConfig {
 
     private final CorsConfigurationSource corsConfigurationSource;
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final TestAuthenticationFilter testAuthenticationFilter;
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain testFilterChain(HttpSecurity http) throws Exception {
         http
                 // CORS 설정 적용
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
-                // CSRF 비활성화 (JWT 사용시 불필요)
+                // CSRF 비활성화
                 .csrf(AbstractHttpConfigurer::disable)
-                // 세션 사용하지 않음 (JWT는 Stateless)
+                // 세션 사용하지 않음
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-                // H2 Console을 위한 설정 (개발환경용)
+                // H2 Console을 위한 설정
                 .headers(headers ->
                         headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
                 )
-                // 경로별 권한 설정
+                // 경로별 권한 설정 - 테스트에서는 더 관대하게 설정
                 .authorizeHttpRequests(auths -> auths
                         // 인증이 필요하지 않은 경로
                         .requestMatchers(
@@ -53,20 +55,19 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
-                                "/actuator/health",          // 헬스체크
+                                "/actuator/health",
                                 "/favicon.ico",
                                 "/error"
                         ).permitAll()
-                        // 그 외 모든 요청은 인증 필요
+                        // 테스트에서는 모든 API 경로 허용
+                        .requestMatchers("/api/**").permitAll()
+                        // 그 외 요청은 인증 필요 (Mock 인증으로 처리)
                         .anyRequest().authenticated()
                 )
-
-                // JWT 인증 필터 등록
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-
+                // 테스트용 Mock 인증 필터 등록
+                .addFilterBefore(testAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 // 기본 폼 로그인 비활성화
                 .formLogin(AbstractHttpConfigurer::disable)
-
                 // HTTP Basic 인증 비활성화
                 .httpBasic(AbstractHttpConfigurer::disable);
 
@@ -74,8 +75,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    @Profile("!test") // 테스트 환경이 아닐 때만 활성화
-    public PasswordEncoder passwordEncoder(){
+    @Profile("test")
+    public PasswordEncoder testPasswordEncoder() {
         return new BCryptPasswordEncoder();
     }
 }

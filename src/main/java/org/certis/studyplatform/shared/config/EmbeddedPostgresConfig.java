@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 
+import jakarta.annotation.PreDestroy;
 import javax.sql.DataSource;
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -28,6 +29,7 @@ import java.sql.SQLException;
  * - 적절한 로깅
  * - 단순화된 설정
  * - autoCommit=false 설정
+ * - 종료 순서 제어로 연결 문제 해결
  */
 @Configuration
 @Profile({"embedded", "local", "dev", "default"})
@@ -36,7 +38,7 @@ import java.sql.SQLException;
         havingValue = "true",
         matchIfMissing = true
 )
-@Order(1) // 가장 먼저 초기화
+@Order(100) // DatabaseInitializationService보다 늦게 종료되도록 설정
 public class EmbeddedPostgresConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(EmbeddedPostgresConfig.class);
@@ -72,34 +74,37 @@ public class EmbeddedPostgresConfig {
     @Value("${spring.datasource.hikari.leak-detection-threshold:60000}")
     private long leakDetectionThreshold;
 
-    @Bean(destroyMethod = "close")
+    // EmbeddedPostgres 인스턴스를 필드로 보관하여 종료 순서 제어
+    private EmbeddedPostgres embeddedPostgres;
+
+    @Bean
     @Primary
     public EmbeddedPostgres embeddedPostgres() throws IOException {
-        logger.info("🐘 Starting Embedded PostgreSQL...");
+        logger.info("Starting Embedded PostgreSQL...");
 
         // 사용 가능한 포트 찾기
         int availablePort = findAvailablePort(preferredPort);
 
         try {
-            EmbeddedPostgres postgres = EmbeddedPostgres.builder()
+            embeddedPostgres = EmbeddedPostgres.builder()
                     .setPort(availablePort)
                     .setCleanDataDirectory(false) // 데이터 디렉토리 유지
                     .start();
 
-            int actualPort = postgres.getPort();
-            logger.info("✅ Embedded PostgreSQL started successfully on port: {}", actualPort);
-            logger.info("📊 Database URL: {}", postgres.getJdbcUrl("postgres", "postgres"));
+            int actualPort = embeddedPostgres.getPort();
+            logger.info("Embedded PostgreSQL started successfully on port: {}", actualPort);
+            logger.info("Database URL: {}", embeddedPostgres.getJdbcUrl("postgres", "postgres"));
 
             // 포트가 변경된 경우 시스템 프로퍼티 업데이트
             if (actualPort != preferredPort) {
                 updateSystemProperties(actualPort);
-                logger.warn("⚠️  Port changed from {} to {} due to conflict", preferredPort, actualPort);
+                logger.warn("Port changed from {} to {} due to conflict", preferredPort, actualPort);
             }
 
-            return postgres;
+            return embeddedPostgres;
 
         } catch (IOException e) {
-            logger.error("❌ Failed to start Embedded PostgreSQL: {}", e.getMessage());
+            logger.error("Failed to start Embedded PostgreSQL: {}", e.getMessage());
             throw new RuntimeException("Could not start embedded PostgreSQL", e);
         }
     }
@@ -107,7 +112,7 @@ public class EmbeddedPostgresConfig {
     @Bean
     @Primary
     public DataSource embeddedDataSource(EmbeddedPostgres embeddedPostgres) {
-        logger.info("🔗 Creating DataSource from Embedded PostgreSQL with autoCommit=false");
+        logger.info("Creating DataSource from Embedded PostgreSQL with autoCommit=false");
 
         try {
             // Hikari DataSource 설정으로 autoCommit=false 명시적 설정
@@ -128,7 +133,7 @@ public class EmbeddedPostgresConfig {
             config.setMaxLifetime(maxLifetime);
             config.setLeakDetectionThreshold(leakDetectionThreshold);
 
-            // ⭐ 중요: autoCommit을 false로 설정
+            // 중요: autoCommit을 false로 설정
             config.setAutoCommit(false);
 
             // 연결 테스트 쿼리
@@ -145,16 +150,33 @@ public class EmbeddedPostgresConfig {
             // 연결 테스트
             validateConnection(dataSource);
 
-            logger.info("✅ DataSource configured successfully with autoCommit=false");
-            logger.info("📋 Pool Name: {}", config.getPoolName());
-            logger.info("🔧 AutoCommit: {}", config.isAutoCommit());
-            logger.info("📊 Max Pool Size: {}", config.getMaximumPoolSize());
+            logger.info("DataSource configured successfully with autoCommit=false");
+            logger.info("Pool Name: {}", config.getPoolName());
+            logger.info("AutoCommit: {}", config.isAutoCommit());
+            logger.info("Max Pool Size: {}", config.getMaximumPoolSize());
 
             return dataSource;
 
         } catch (Exception e) {
-            logger.error("❌ Failed to configure DataSource: {}", e.getMessage());
+            logger.error("Failed to configure DataSource: {}", e.getMessage());
             throw new RuntimeException("Could not configure DataSource", e);
+        }
+    }
+
+    /**
+     * 애플리케이션 종료 시 EmbeddedPostgres를 수동으로 종료
+     * DatabaseInitializationService보다 늦게 실행되도록 함
+     */
+    @PreDestroy
+    public void cleanup() {
+        if (embeddedPostgres != null) {
+            try {
+                logger.info("Shutting down Embedded PostgreSQL...");
+                embeddedPostgres.close();
+                logger.info("Embedded PostgreSQL shutdown completed");
+            } catch (Exception e) {
+                logger.warn("Error during Embedded PostgreSQL shutdown: {}", e.getMessage());
+            }
         }
     }
 
@@ -190,7 +212,7 @@ public class EmbeddedPostgresConfig {
         System.setProperty("spring.datasource.url", newUrl);
         System.setProperty("EMBEDDED_POSTGRES_PORT", String.valueOf(actualPort));
 
-        logger.info("🔧 Updated system properties for port: {}", actualPort);
+        logger.info("Updated system properties for port: {}", actualPort);
     }
 
     /**
@@ -199,21 +221,21 @@ public class EmbeddedPostgresConfig {
     private void validateConnection(DataSource dataSource) {
         try (Connection connection = dataSource.getConnection()) {
             if (connection.isValid(5)) {
-                logger.info("🔌 Database connection validated successfully");
-                logger.info("🔧 Connection AutoCommit: {}", connection.getAutoCommit());
+                logger.info("Database connection validated successfully");
+                logger.info("Connection AutoCommit: {}", connection.getAutoCommit());
 
                 // 데이터베이스 정보 로깅
                 var metaData = connection.getMetaData();
-                logger.debug("📋 Database: {} {}",
+                logger.debug("Database: {} {}",
                         metaData.getDatabaseProductName(),
                         metaData.getDatabaseProductVersion());
-                logger.debug("🔗 URL: {}", metaData.getURL());
+                logger.debug("URL: {}", metaData.getURL());
 
             } else {
                 throw new SQLException("Connection validation failed");
             }
         } catch (SQLException e) {
-            logger.error("❌ Database connection validation failed: {}", e.getMessage());
+            logger.error("Database connection validation failed: {}", e.getMessage());
             throw new RuntimeException("Database connection validation failed", e);
         }
     }
