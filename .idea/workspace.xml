@@ -89,12 +89,12 @@
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/PKNU-CERT-IS/BE.git",
-    "accountId": "69d52c3c-61e8-44bc-bf06-fdb37fda2e03"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/PKNU-CERT-IS/BE.git&quot;,
+    &quot;accountId&quot;: &quot;69d52c3c-61e8-44bc-bf06-fdb37fda2e03&quot;
   }
-}]]></component>
+}</component>
   <component name="ProjectColorInfo">{
   &quot;customColor&quot;: &quot;&quot;,
   &quot;associatedIndex&quot;: 4
@@ -108,12 +108,27 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "Gradle.AdminScheduleControllerTest.approveOrRejectScheduleRequest_SuccessfulApprovalScenario.executor": "Run",
+    "Gradle.AdminScheduleControllerTest.approveOrRejectScheduleRequest_SuccessfulRejectionScenario.executor": "Run",
+    "Gradle.AdminScheduleControllerTest.createScheduleByAdmin_SuccessfulBusinessScenario.executor": "Run",
+    "Gradle.AdminScheduleControllerTest.deleteSchedule_SuccessfulDeletionScenario.executor": "Run",
+    "Gradle.AdminScheduleControllerTest.executor": "Run",
+    "Gradle.AdminScheduleControllerTest.getPendingScheduleRequests_AdminApprovalList.executor": "Run",
+    "Gradle.BoardControllerTest.executor": "Run",
     "Gradle.ProjectControllerTest.executor": "Run",
     "Gradle.ProjectMeetingControllerTest.executor": "Run",
     "Gradle.ProjectParticipantControllerTest.executor": "Run",
+    "Gradle.ScheduleControllerTest.createClubRoomUsage_DomainFailure_InvalidTimeOrder.executor": "Run",
+    "Gradle.ScheduleControllerTest.createClubRoomUsage_DomainFailure_PastTimeSchedule.executor": "Run",
+    "Gradle.ScheduleControllerTest.createClubRoomUsage_SuccessfulBusinessScenario.executor": "Run",
+    "Gradle.ScheduleControllerTest.createClubRoomUsage_ValidationFailure_MissingRequiredFields.executor": "Run",
+    "Gradle.ScheduleControllerTest.deleteClubRoomUsage_AuthorizationFailure_UnauthorizedUser.executor": "Run",
+    "Gradle.ScheduleControllerTest.deleteClubRoomUsage_SuccessfulDeletionScenario.executor": "Run",
+    "Gradle.ScheduleControllerTest.executor": "Run",
     "Gradle.certis [generateJooqCode].executor": "Run",
     "Gradle.certis [jooqCodegen].executor": "Run",
     "Gradle.certis 빌드.executor": "Run",
+    "Gradle.소스 다운로드.executor": "Run",
     "JUnit.전체 프로젝트.executor": "Run",
     "RequestMappingsPanelOrder0": "0",
     "RequestMappingsPanelOrder1": "1",
@@ -131,8 +146,8 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
-  <component name="RunManager" selected="Gradle.ProjectParticipantControllerTest">
-    <configuration name="ProjectControllerTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+  <component name="RunManager" selected="Gradle.AdminScheduleControllerTest">
+    <configuration name="AdminScheduleControllerTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -145,30 +160,18 @@
           <list>
             <option value=":test" />
             <option value="--tests" />
-            <option value="&quot;org.certis.studyplatform.project.presentation.ProjectControllerTest&quot;" />
+            <option value="&quot;org.certis.studyplatform.schedule.presentation.AdminScheduleControllerTest&quot;" />
           </list>
         </option>
         <option name="vmOptions" />
       </ExternalSystemSettings>
       <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
       <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
-      <EXTENSION ID="com.intellij.execution.ExternalSystemRunConfigurationJavaExtension">
-        <extension name="net.ashald.envfile">
-          <option name="IS_ENABLED" value="false" />
-          <option name="IS_SUBST" value="false" />
-          <option name="IS_PATH_MACRO_SUPPORTED" value="false" />
-          <option name="IS_IGNORE_MISSING_FILES" value="false" />
-          <option name="IS_ENABLE_EXPERIMENTAL_INTEGRATIONS" value="false" />
-          <ENTRIES>
-            <ENTRY IS_ENABLED="true" PARSER="runconfig" IS_EXECUTABLE="false" />
-          </ENTRIES>
-        </extension>
-      </EXTENSION>
       <DebugAllEnabled>false</DebugAllEnabled>
       <RunAsTest>true</RunAsTest>
       <method v="2" />
     </configuration>
-    <configuration name="ProjectMeetingControllerTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+    <configuration name="AdminScheduleControllerTest.approveOrRejectScheduleRequest_SuccessfulApprovalScenario" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -181,7 +184,7 @@
           <list>
             <option value=":test" />
             <option value="--tests" />
-            <option value="&quot;org.certis.studyplatform.project.presentation.ProjectMeetingControllerTest&quot;" />
+            <option value="&quot;org.certis.studyplatform.schedule.presentation.AdminScheduleControllerTest.approveOrRejectScheduleRequest_SuccessfulApprovalScenario&quot;" />
           </list>
         </option>
         <option name="vmOptions" />
@@ -192,7 +195,7 @@
       <RunAsTest>true</RunAsTest>
       <method v="2" />
     </configuration>
-    <configuration name="ProjectParticipantControllerTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+    <configuration name="AdminScheduleControllerTest.approveOrRejectScheduleRequest_SuccessfulRejectionScenario" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -205,7 +208,7 @@
           <list>
             <option value=":test" />
             <option value="--tests" />
-            <option value="&quot;org.certis.studyplatform.project.presentation.ProjectParticipantControllerTest&quot;" />
+            <option value="&quot;org.certis.studyplatform.schedule.presentation.AdminScheduleControllerTest.approveOrRejectScheduleRequest_SuccessfulRejectionScenario&quot;" />
           </list>
         </option>
         <option name="vmOptions" />
@@ -216,37 +219,53 @@
       <RunAsTest>true</RunAsTest>
       <method v="2" />
     </configuration>
-    <configuration name="certis [jooqCodegen]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+    <configuration name="AdminScheduleControllerTest.createScheduleByAdmin_AuthorizationFailure_NotAdminUser" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
         <option name="externalSystemIdString" value="GRADLE" />
-        <option name="scriptParameters" />
+        <option name="scriptParameters" value="" />
         <option name="taskDescriptions">
           <list />
         </option>
         <option name="taskNames">
           <list>
-            <option value="jooqCodegen" />
+            <option value=":test" />
+            <option value="--tests" />
+            <option value="&quot;org.certis.studyplatform.schedule.presentation.AdminScheduleControllerTest.createScheduleByAdmin_AuthorizationFailure_NotAdminUser&quot;" />
           </list>
         </option>
         <option name="vmOptions" />
       </ExternalSystemSettings>
-      <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
+      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
       <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
       <DebugAllEnabled>false</DebugAllEnabled>
-      <RunAsTest>false</RunAsTest>
+      <RunAsTest>true</RunAsTest>
       <method v="2" />
     </configuration>
-    <configuration name="전체 프로젝트" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
-      <option name="PACKAGE_NAME" value="" />
-      <option name="TEST_OBJECT" value="package" />
-      <option name="TEST_SEARCH_SCOPE">
-        <value defaultName="wholeProject" />
-      </option>
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
+    <configuration name="AdminScheduleControllerTest.deleteSchedule_SuccessfulDeletionScenario" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" value="" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value=":test" />
+            <option value="--tests" />
+            <option value="&quot;org.certis.studyplatform.schedule.presentation.AdminScheduleControllerTest.deleteSchedule_SuccessfulDeletionScenario&quot;" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>true</RunAsTest>
+      <method v="2" />
     </configuration>
     <configuration name="StudyPlatformApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
       <option name="ALTERNATIVE_JRE_PATH" value="temurin-21" />
@@ -269,20 +288,19 @@
       </method>
     </configuration>
     <list>
-      <item itemvalue="Gradle.ProjectMeetingControllerTest" />
-      <item itemvalue="Gradle.ProjectParticipantControllerTest" />
-      <item itemvalue="Gradle.ProjectControllerTest" />
-      <item itemvalue="Gradle.certis [jooqCodegen]" />
-      <item itemvalue="JUnit.전체 프로젝트" />
-      <item itemvalue="Spring Boot.StudyPlatformApplication" />
+      <item itemvalue="Gradle.AdminScheduleControllerTest" />
+      <item itemvalue="Gradle.AdminScheduleControllerTest.approveOrRejectScheduleRequest_SuccessfulApprovalScenario" />
+      <item itemvalue="Gradle.AdminScheduleControllerTest.approveOrRejectScheduleRequest_SuccessfulRejectionScenario" />
+      <item itemvalue="Gradle.AdminScheduleControllerTest.createScheduleByAdmin_AuthorizationFailure_NotAdminUser" />
+      <item itemvalue="Gradle.AdminScheduleControllerTest.deleteSchedule_SuccessfulDeletionScenario" />
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Gradle.ProjectParticipantControllerTest" />
-        <item itemvalue="Gradle.ProjectMeetingControllerTest" />
-        <item itemvalue="Gradle.ProjectControllerTest" />
-        <item itemvalue="Gradle.certis [jooqCodegen]" />
-        <item itemvalue="JUnit.전체 프로젝트" />
+        <item itemvalue="Gradle.AdminScheduleControllerTest" />
+        <item itemvalue="Gradle.AdminScheduleControllerTest.createScheduleByAdmin_AuthorizationFailure_NotAdminUser" />
+        <item itemvalue="Gradle.AdminScheduleControllerTest.deleteSchedule_SuccessfulDeletionScenario" />
+        <item itemvalue="Gradle.AdminScheduleControllerTest.approveOrRejectScheduleRequest_SuccessfulRejectionScenario" />
+        <item itemvalue="Gradle.AdminScheduleControllerTest.approveOrRejectScheduleRequest_SuccessfulApprovalScenario" />
       </list>
     </recent_temporary>
   </component>

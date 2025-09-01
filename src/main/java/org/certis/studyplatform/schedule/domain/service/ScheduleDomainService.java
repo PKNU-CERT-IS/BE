@@ -12,6 +12,7 @@ import org.certis.studyplatform.schedule.application.object.query.GetPendingSche
 import org.certis.studyplatform.schedule.domain.model.vo.*;
 import org.certis.studyplatform.schedule.domain.repository.ScheduleCommandRepository;
 import org.certis.studyplatform.schedule.domain.repository.ScheduleQueryRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -55,8 +56,13 @@ public class ScheduleDomainService {
         ScheduleIdVo scheduleId = ScheduleIdVo.of(command.scheduleId());
         MemberIdVo memberId = MemberIdVo.of(command.memberId());
 
-        //  존재 여부 확인
-        validateScheduleExists(scheduleId);
+        ScheduleVo schedule = scheduleQueryRepository.findById(scheduleId)
+                .orElseThrow(() -> new DomainException(ExceptionStatus.SCHEDULE_INFRASTRUCTURE_STATUS_NOT_FOUND));
+
+        // 생성자(member_id)와 요청자 비교
+        if (!schedule.memberId().equals(memberId.value())) {
+            throw new DomainException(ExceptionStatus.SCHEDULE_DOMAIN_INVALID_OWNER);
+        }
 
         // 스케줄 상태 삭제 (Hard Delete)
         scheduleCommandRepository.deleteScheduleStatusByScheduleId(scheduleId);
