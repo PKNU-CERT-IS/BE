@@ -108,6 +108,12 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "Gradle.AdminScheduleControllerTest.approveOrRejectScheduleRequest_SuccessfulApprovalScenario.executor": "Run",
+    "Gradle.AdminScheduleControllerTest.approveOrRejectScheduleRequest_SuccessfulRejectionScenario.executor": "Run",
+    "Gradle.AdminScheduleControllerTest.createScheduleByAdmin_SuccessfulBusinessScenario.executor": "Run",
+    "Gradle.AdminScheduleControllerTest.deleteSchedule_SuccessfulDeletionScenario.executor": "Run",
+    "Gradle.AdminScheduleControllerTest.executor": "Run",
+    "Gradle.AdminScheduleControllerTest.getPendingScheduleRequests_AdminApprovalList.executor": "Run",
     "Gradle.BoardControllerTest.executor": "Run",
     "Gradle.ProjectControllerTest.executor": "Run",
     "Gradle.ProjectMeetingControllerTest.executor": "Run",
@@ -140,8 +146,8 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
-  <component name="RunManager" selected="Gradle.ScheduleControllerTest">
-    <configuration name="ScheduleControllerTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+  <component name="RunManager" selected="Gradle.AdminScheduleControllerTest">
+    <configuration name="AdminScheduleControllerTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -154,7 +160,7 @@
           <list>
             <option value=":test" />
             <option value="--tests" />
-            <option value="&quot;org.certis.studyplatform.schedule.presentation.ScheduleControllerTest&quot;" />
+            <option value="&quot;org.certis.studyplatform.schedule.presentation.AdminScheduleControllerTest&quot;" />
           </list>
         </option>
         <option name="vmOptions" />
@@ -165,7 +171,7 @@
       <RunAsTest>true</RunAsTest>
       <method v="2" />
     </configuration>
-    <configuration name="ScheduleControllerTest.createClubRoomUsage_DomainFailure_InvalidTimeOrder" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+    <configuration name="AdminScheduleControllerTest.approveOrRejectScheduleRequest_SuccessfulApprovalScenario" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -178,7 +184,7 @@
           <list>
             <option value=":test" />
             <option value="--tests" />
-            <option value="&quot;org.certis.studyplatform.schedule.presentation.ScheduleControllerTest.createClubRoomUsage_DomainFailure_InvalidTimeOrder&quot;" />
+            <option value="&quot;org.certis.studyplatform.schedule.presentation.AdminScheduleControllerTest.approveOrRejectScheduleRequest_SuccessfulApprovalScenario&quot;" />
           </list>
         </option>
         <option name="vmOptions" />
@@ -189,7 +195,7 @@
       <RunAsTest>true</RunAsTest>
       <method v="2" />
     </configuration>
-    <configuration name="ScheduleControllerTest.createClubRoomUsage_DomainFailure_PastTimeSchedule" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+    <configuration name="AdminScheduleControllerTest.approveOrRejectScheduleRequest_SuccessfulRejectionScenario" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -202,7 +208,7 @@
           <list>
             <option value=":test" />
             <option value="--tests" />
-            <option value="&quot;org.certis.studyplatform.schedule.presentation.ScheduleControllerTest.createClubRoomUsage_DomainFailure_PastTimeSchedule&quot;" />
+            <option value="&quot;org.certis.studyplatform.schedule.presentation.AdminScheduleControllerTest.approveOrRejectScheduleRequest_SuccessfulRejectionScenario&quot;" />
           </list>
         </option>
         <option name="vmOptions" />
@@ -213,7 +219,7 @@
       <RunAsTest>true</RunAsTest>
       <method v="2" />
     </configuration>
-    <configuration name="ScheduleControllerTest.createClubRoomUsage_ValidationFailure_MissingRequiredFields" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+    <configuration name="AdminScheduleControllerTest.createScheduleByAdmin_AuthorizationFailure_NotAdminUser" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -226,7 +232,7 @@
           <list>
             <option value=":test" />
             <option value="--tests" />
-            <option value="&quot;org.certis.studyplatform.schedule.presentation.ScheduleControllerTest.createClubRoomUsage_ValidationFailure_MissingRequiredFields&quot;" />
+            <option value="&quot;org.certis.studyplatform.schedule.presentation.AdminScheduleControllerTest.createScheduleByAdmin_AuthorizationFailure_NotAdminUser&quot;" />
           </list>
         </option>
         <option name="vmOptions" />
@@ -237,7 +243,7 @@
       <RunAsTest>true</RunAsTest>
       <method v="2" />
     </configuration>
-    <configuration name="ScheduleControllerTest.deleteClubRoomUsage_AuthorizationFailure_UnauthorizedUser" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+    <configuration name="AdminScheduleControllerTest.deleteSchedule_SuccessfulDeletionScenario" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -250,7 +256,7 @@
           <list>
             <option value=":test" />
             <option value="--tests" />
-            <option value="&quot;org.certis.studyplatform.schedule.presentation.ScheduleControllerTest.deleteClubRoomUsage_AuthorizationFailure_UnauthorizedUser&quot;" />
+            <option value="&quot;org.certis.studyplatform.schedule.presentation.AdminScheduleControllerTest.deleteSchedule_SuccessfulDeletionScenario&quot;" />
           </list>
         </option>
         <option name="vmOptions" />
@@ -282,19 +288,19 @@
       </method>
     </configuration>
     <list>
-      <item itemvalue="Gradle.ScheduleControllerTest" />
-      <item itemvalue="Gradle.ScheduleControllerTest.createClubRoomUsage_DomainFailure_InvalidTimeOrder" />
-      <item itemvalue="Gradle.ScheduleControllerTest.createClubRoomUsage_DomainFailure_PastTimeSchedule" />
-      <item itemvalue="Gradle.ScheduleControllerTest.createClubRoomUsage_ValidationFailure_MissingRequiredFields" />
-      <item itemvalue="Gradle.ScheduleControllerTest.deleteClubRoomUsage_AuthorizationFailure_UnauthorizedUser" />
+      <item itemvalue="Gradle.AdminScheduleControllerTest" />
+      <item itemvalue="Gradle.AdminScheduleControllerTest.approveOrRejectScheduleRequest_SuccessfulApprovalScenario" />
+      <item itemvalue="Gradle.AdminScheduleControllerTest.approveOrRejectScheduleRequest_SuccessfulRejectionScenario" />
+      <item itemvalue="Gradle.AdminScheduleControllerTest.createScheduleByAdmin_AuthorizationFailure_NotAdminUser" />
+      <item itemvalue="Gradle.AdminScheduleControllerTest.deleteSchedule_SuccessfulDeletionScenario" />
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Gradle.ScheduleControllerTest" />
-        <item itemvalue="Gradle.ScheduleControllerTest.deleteClubRoomUsage_AuthorizationFailure_UnauthorizedUser" />
-        <item itemvalue="Gradle.ScheduleControllerTest.createClubRoomUsage_DomainFailure_PastTimeSchedule" />
-        <item itemvalue="Gradle.ScheduleControllerTest.createClubRoomUsage_DomainFailure_InvalidTimeOrder" />
-        <item itemvalue="Gradle.ScheduleControllerTest.createClubRoomUsage_ValidationFailure_MissingRequiredFields" />
+        <item itemvalue="Gradle.AdminScheduleControllerTest" />
+        <item itemvalue="Gradle.AdminScheduleControllerTest.createScheduleByAdmin_AuthorizationFailure_NotAdminUser" />
+        <item itemvalue="Gradle.AdminScheduleControllerTest.deleteSchedule_SuccessfulDeletionScenario" />
+        <item itemvalue="Gradle.AdminScheduleControllerTest.approveOrRejectScheduleRequest_SuccessfulRejectionScenario" />
+        <item itemvalue="Gradle.AdminScheduleControllerTest.approveOrRejectScheduleRequest_SuccessfulApprovalScenario" />
       </list>
     </recent_temporary>
   </component>
