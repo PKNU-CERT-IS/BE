@@ -47,18 +47,18 @@ public class MemberController {
      * @param request 회원 생성 요청 DTO
      * @return 생성된 회원 정보 (VO 직접 반환)
      */
-    @PostMapping
-    public ResponseEntity<GlobalResponseHandler<MemberCreatedVo>> createMember(
-            @Valid @RequestBody MemberCreateRequestDto request) {
-        log.info("REST: Creating member - {}", request.getName());
-
-        // RequestDTO를 Facade에 전달하고 VO로 받음
-        MemberCreatedVo createdVo = memberFacadeService.createMember(request);
-
-        log.info("REST: Member created successfully - ID: {}", createdVo.id());
-
-        return GlobalResponseHandler.success(ResponseStatus.MEMBER_CREATE_SUCCESS, createdVo);
-    }
+//    @PostMapping
+//    public ResponseEntity<GlobalResponseHandler<MemberCreatedVo>> createMember(
+//            @Valid @RequestBody MemberCreateRequestDto request) {
+//        log.info("REST: Creating member - {}", request.getName());
+//
+//        // RequestDTO를 Facade에 전달하고 VO로 받음
+//        MemberCreatedVo createdVo = memberFacadeService.createMember(request);
+//
+//        log.info("REST: Member created successfully - ID: {}", createdVo.id());
+//
+//        return GlobalResponseHandler.success(ResponseStatus.MEMBER_CREATE_SUCCESS, createdVo);
+//    }
 
     /**
      * 회원 상세 조회

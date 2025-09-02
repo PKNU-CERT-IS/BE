@@ -42,6 +42,7 @@ public class MemberApplicationMapper {
                 dto.getDescription(),
                 Optional.ofNullable(dto.getSkills()).orElse(List.of()),
                 dto.getEmail(),
+                dto.getPhoneNumber(),
                 dto.getProfileImage(),
                 dto.getBirthday(),
                 dto.getGender()

@@ -1,5 +1,6 @@
 package org.certis.studyplatform.auth.presentation.dto.request;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -32,6 +33,13 @@ public class RegisterRequestDto {
 
     @NotBlank(message = "전공은 필수입니다")
     private String major;
+
+    @NotBlank(message = "전화번호는 필수입니다")
+    private String phoneNumber;
+
+    @NotBlank(message = "이메은 필수입니다")
+    @Email(message = "올바른 이메일 형식이어야 합니다")
+    private String email;
 
     @NotNull(message = "생년월일은 필수입니다")
     private OffsetDateTime birthday;
