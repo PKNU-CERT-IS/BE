@@ -116,7 +116,11 @@
     "Gradle.AdminScheduleControllerTest.deleteSchedule_SuccessfulDeletionScenario.executor": "Run",
     "Gradle.AdminScheduleControllerTest.executor": "Run",
     "Gradle.AdminScheduleControllerTest.getPendingScheduleRequests_AdminApprovalList.executor": "Run",
+    "Gradle.AuthControllerTest.executor": "Run",
     "Gradle.AuthControllerTest.login_Success_ValidCredentials.executor": "Run",
+    "Gradle.AuthControllerTest.logout_Success_AuthenticatedUser.executor": "Run",
+    "Gradle.AuthControllerTest.refreshToken_Success_ValidTokens.executor": "Run",
+    "Gradle.AuthControllerTest.security_Test_XssPrevention.executor": "Run",
     "Gradle.BoardControllerTest.executor": "Run",
     "Gradle.ProjectControllerTest.executor": "Run",
     "Gradle.ProjectMeetingControllerTest.executor": "Run",
@@ -154,8 +158,8 @@
       <recent name="org.certis.studyplatform.member.domain.vo" />
     </key>
   </component>
-  <component name="RunManager" selected="Gradle.AuthControllerTest.login_Success_ValidCredentials">
-    <configuration name="AdminScheduleControllerTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+  <component name="RunManager" selected="Gradle.AuthControllerTest">
+    <configuration name="AuthControllerTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -168,79 +172,7 @@
           <list>
             <option value=":test" />
             <option value="--tests" />
-            <option value="&quot;org.certis.studyplatform.schedule.presentation.AdminScheduleControllerTest&quot;" />
-          </list>
-        </option>
-        <option name="vmOptions" />
-      </ExternalSystemSettings>
-      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
-      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
-      <DebugAllEnabled>false</DebugAllEnabled>
-      <RunAsTest>true</RunAsTest>
-      <method v="2" />
-    </configuration>
-    <configuration name="AdminScheduleControllerTest.approveOrRejectScheduleRequest_SuccessfulRejectionScenario" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
-      <ExternalSystemSettings>
-        <option name="executionName" />
-        <option name="externalProjectPath" value="$PROJECT_DIR$" />
-        <option name="externalSystemIdString" value="GRADLE" />
-        <option name="scriptParameters" value="" />
-        <option name="taskDescriptions">
-          <list />
-        </option>
-        <option name="taskNames">
-          <list>
-            <option value=":test" />
-            <option value="--tests" />
-            <option value="&quot;org.certis.studyplatform.schedule.presentation.AdminScheduleControllerTest.approveOrRejectScheduleRequest_SuccessfulRejectionScenario&quot;" />
-          </list>
-        </option>
-        <option name="vmOptions" />
-      </ExternalSystemSettings>
-      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
-      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
-      <DebugAllEnabled>false</DebugAllEnabled>
-      <RunAsTest>true</RunAsTest>
-      <method v="2" />
-    </configuration>
-    <configuration name="AdminScheduleControllerTest.createScheduleByAdmin_AuthorizationFailure_NotAdminUser" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
-      <ExternalSystemSettings>
-        <option name="executionName" />
-        <option name="externalProjectPath" value="$PROJECT_DIR$" />
-        <option name="externalSystemIdString" value="GRADLE" />
-        <option name="scriptParameters" value="" />
-        <option name="taskDescriptions">
-          <list />
-        </option>
-        <option name="taskNames">
-          <list>
-            <option value=":test" />
-            <option value="--tests" />
-            <option value="&quot;org.certis.studyplatform.schedule.presentation.AdminScheduleControllerTest.createScheduleByAdmin_AuthorizationFailure_NotAdminUser&quot;" />
-          </list>
-        </option>
-        <option name="vmOptions" />
-      </ExternalSystemSettings>
-      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
-      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
-      <DebugAllEnabled>false</DebugAllEnabled>
-      <RunAsTest>true</RunAsTest>
-      <method v="2" />
-    </configuration>
-    <configuration name="AdminScheduleControllerTest.deleteSchedule_SuccessfulDeletionScenario" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
-      <ExternalSystemSettings>
-        <option name="executionName" />
-        <option name="externalProjectPath" value="$PROJECT_DIR$" />
-        <option name="externalSystemIdString" value="GRADLE" />
-        <option name="scriptParameters" value="" />
-        <option name="taskDescriptions">
-          <list />
-        </option>
-        <option name="taskNames">
-          <list>
-            <option value=":test" />
-            <option value="--tests" />
-            <option value="&quot;org.certis.studyplatform.schedule.presentation.AdminScheduleControllerTest.deleteSchedule_SuccessfulDeletionScenario&quot;" />
+            <option value="&quot;org.certis.studyplatform.auth.presentation.AuthControllerTest&quot;" />
           </list>
         </option>
         <option name="vmOptions" />
@@ -275,6 +207,78 @@
       <RunAsTest>true</RunAsTest>
       <method v="2" />
     </configuration>
+    <configuration name="AuthControllerTest.logout_Success_AuthenticatedUser" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" value="" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value=":test" />
+            <option value="--tests" />
+            <option value="&quot;org.certis.studyplatform.auth.presentation.AuthControllerTest.logout_Success_AuthenticatedUser&quot;" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>true</RunAsTest>
+      <method v="2" />
+    </configuration>
+    <configuration name="AuthControllerTest.refreshToken_Success_ValidTokens" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" value="" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value=":test" />
+            <option value="--tests" />
+            <option value="&quot;org.certis.studyplatform.auth.presentation.AuthControllerTest.refreshToken_Success_ValidTokens&quot;" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>true</RunAsTest>
+      <method v="2" />
+    </configuration>
+    <configuration name="AuthControllerTest.security_Test_XssPrevention" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" value="" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value=":test" />
+            <option value="--tests" />
+            <option value="&quot;org.certis.studyplatform.auth.presentation.AuthControllerTest.security_Test_XssPrevention&quot;" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>true</RunAsTest>
+      <method v="2" />
+    </configuration>
     <configuration name="StudyPlatformApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
       <option name="ALTERNATIVE_JRE_PATH" value="temurin-21" />
       <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
@@ -296,19 +300,19 @@
       </method>
     </configuration>
     <list>
+      <item itemvalue="Gradle.AuthControllerTest" />
       <item itemvalue="Gradle.AuthControllerTest.login_Success_ValidCredentials" />
-      <item itemvalue="Gradle.AdminScheduleControllerTest" />
-      <item itemvalue="Gradle.AdminScheduleControllerTest.approveOrRejectScheduleRequest_SuccessfulRejectionScenario" />
-      <item itemvalue="Gradle.AdminScheduleControllerTest.createScheduleByAdmin_AuthorizationFailure_NotAdminUser" />
-      <item itemvalue="Gradle.AdminScheduleControllerTest.deleteSchedule_SuccessfulDeletionScenario" />
+      <item itemvalue="Gradle.AuthControllerTest.logout_Success_AuthenticatedUser" />
+      <item itemvalue="Gradle.AuthControllerTest.refreshToken_Success_ValidTokens" />
+      <item itemvalue="Gradle.AuthControllerTest.security_Test_XssPrevention" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Gradle.AuthControllerTest" />
+        <item itemvalue="Gradle.AuthControllerTest.refreshToken_Success_ValidTokens" />
+        <item itemvalue="Gradle.AuthControllerTest.logout_Success_AuthenticatedUser" />
+        <item itemvalue="Gradle.AuthControllerTest.security_Test_XssPrevention" />
         <item itemvalue="Gradle.AuthControllerTest.login_Success_ValidCredentials" />
-        <item itemvalue="Gradle.AdminScheduleControllerTest" />
-        <item itemvalue="Gradle.AdminScheduleControllerTest.createScheduleByAdmin_AuthorizationFailure_NotAdminUser" />
-        <item itemvalue="Gradle.AdminScheduleControllerTest.deleteSchedule_SuccessfulDeletionScenario" />
-        <item itemvalue="Gradle.AdminScheduleControllerTest.approveOrRejectScheduleRequest_SuccessfulRejectionScenario" />
       </list>
     </recent_temporary>
   </component>
