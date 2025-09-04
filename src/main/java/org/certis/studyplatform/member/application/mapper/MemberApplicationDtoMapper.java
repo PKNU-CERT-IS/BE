@@ -56,7 +56,7 @@ public class MemberApplicationDtoMapper {
         return MemberSummaryResponseDto.builder()
                 .id(vo.getId().value())
                 .name(vo.getName().value())
-                .grade(vo.getGrade().value())
+                .grade(vo.getGrade().toString())
                 .role(vo.getRole().toString())
                 .build();
     }

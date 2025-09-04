@@ -221,7 +221,7 @@ public class MemberInfrastructureMapper {
         List<String> skills = entity.getSkills() != null ?
                 Arrays.asList(entity.getSkills()) : List.of();
 
-        MemberGrade memberGrade = MemberGrade.fromGradeString(entity.getGrade());
+        MemberGrade memberGrade = entity.getGrade();
         MemberRole memberRole = entity.getRole() != null ? entity.getRole() : MemberRole.NONE; // Safe conversion
 
         return new ProfileVo(

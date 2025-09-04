@@ -1,5 +1,6 @@
 package org.certis.studyplatform.member.application.object.command;
 
+import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.member.domain.MemberRole;
 
 public record UpdateMemberAdminFieldsCommand(
@@ -7,14 +8,14 @@ public record UpdateMemberAdminFieldsCommand(
         MemberRole executorRole,
         Long targetMemberId,
         MemberRole newRole,
-        String newGrade
+        MemberGrade newGrade
 ) {
     public static UpdateMemberAdminFieldsCommand of(
             Long executorId,
             MemberRole executorRole,
             Long targetMemberId,
             MemberRole newRole,
-            String newGrade) {
+            MemberGrade newGrade) {
         return new UpdateMemberAdminFieldsCommand(
                 executorId,
                 executorRole,

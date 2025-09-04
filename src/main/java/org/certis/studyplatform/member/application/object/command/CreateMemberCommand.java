@@ -25,7 +25,7 @@ import java.util.List;
 public record CreateMemberCommand(
         String name,                    // → NameVo (2-50자, 한글/영문/공백)
         String studentNumber,           // → StudentNumberVo (6-20자, 숫자만)
-        String grade,                   // → GradeVo (1-4학년, 석사, 박사, 수료생)
+        String grade,                   // → GradeVo (문자열 → MemberGrade 변환은 도메인에서 수행)
         MemberRole role,                    // → RoleVo (2-100자, 다국어)
         String major,                   // → MajorVo (2-100자, 특수문자 포함)
         String description,             // → String (선택적, 2000자 이하)

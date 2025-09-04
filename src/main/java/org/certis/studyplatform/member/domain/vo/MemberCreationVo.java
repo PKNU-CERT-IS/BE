@@ -1,5 +1,6 @@
 package org.certis.studyplatform.member.domain.vo;
 
+import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.member.domain.MemberRole;
 
 import java.util.Collections;
@@ -189,8 +190,8 @@ public record MemberCreationVo(
     /**
      * 학년 문자열 반환
      */
-    public String getGradeValue() {
-        return grade.value();
+    public MemberGrade getGradeValue() {
+        return grade.grade();
     }
 
     /**
