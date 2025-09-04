@@ -97,6 +97,12 @@ public enum ResponseStatus {
     STUDY_MEETING_UPDATE_SUCCESS(HttpStatus.OK, "스터디 회의록이 성공적으로 수정되었습니다"),
     STUDY_MEETING_DELETE_SUCCESS(HttpStatus.OK, "스터디 회의록이 성공적으로 삭제되었습니다"),
 
+    STUDY_PARTICIPANT_JOIN_REGISTERED(HttpStatus.CREATED, "스터디 참가 신청이 성공했습니다"),
+    STUDY_PARTICIPANT_JOIN_CANCELED(HttpStatus.OK, "스터디 참가 취소가 성공했습니다"),
+    STUDY_PARTICIPANT_JOIN_APPROVED(HttpStatus.OK, "스터디 참가가 승인되었습니다"),
+    STUDY_PARTICIPANT_JOIN_REJECTED(HttpStatus.OK, "스터디 참가가 거절되었습니다"),
+    STUDY_PARTICIPANT_SEARCH_SUCCESS(HttpStatus.OK, "스터디 참가자 조회에 성공했습니다."),
+
     // =================================================================
     // BOARD DOMAIN RESPONSE CODES
     // =================================================================

@@ -5,7 +5,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.certis.studyplatform.study.domain.StudyPariticipantStatus;
+import org.certis.studyplatform.study.domain.StudyParticipantStatus;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.SQLDelete;
@@ -37,7 +37,7 @@ public class StudyParticipantEntity {
     private Long memberId;
 
     @Enumerated(EnumType.STRING)
-    private StudyPariticipantStatus status;
+    private StudyParticipantStatus status;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -51,11 +51,12 @@ public class StudyParticipantEntity {
     private OffsetDateTime deletedAt;
 
     @Builder(toBuilder = true)
-    private StudyParticipantEntity(Long id, Long studyId, Long memberId,
+    private StudyParticipantEntity(Long id, Long studyId, Long memberId, StudyParticipantStatus status,
                                    OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
         this.id = id;
         this.studyId = studyId;
         this.memberId = memberId;
+        this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.deletedAt = deletedAt;
