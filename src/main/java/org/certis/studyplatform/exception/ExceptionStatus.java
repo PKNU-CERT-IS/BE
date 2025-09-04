@@ -257,6 +257,7 @@ public enum ExceptionStatus {
     BOARD_DOMAIN_INVALID_SEARCH(HttpStatus.BAD_REQUEST, "유효하지 않은 검색어입니다"),
     BOARD_DOMAIN_INVALID_PAGE(HttpStatus.BAD_REQUEST, "유효하지 않은 페이지 번호입니다"),
     BOARD_DOMAIN_INVALID_PAGE_SIZE(HttpStatus.BAD_REQUEST, "유효하지 않은 페이지 크기입니다"),
+    BOARD_DOMAIN_INVALID_PHONE_NUMBER(HttpStatus.BAD_REQUEST, "유효하지 않은 전화번호입니다"),
 
 
     // Board - Infrastructure Layer

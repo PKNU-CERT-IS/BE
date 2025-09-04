@@ -11,6 +11,7 @@ import org.certis.studyplatform.auth.presentation.dto.request.RegisterRequestDto
 import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.response.GlobalResponseHandler;
 import org.certis.studyplatform.response.ResponseStatus;
+import org.certis.studyplatform.shared.security.CurrentUser;
 import org.certis.studyplatform.shared.security.JwtTokenProvider;
 import org.certis.studyplatform.auth.presentation.dto.request.LoginRequestDto;
 import org.certis.studyplatform.auth.presentation.dto.response.RefreshAccessTokenResponseDto;
@@ -63,18 +64,18 @@ public class AuthController {
     // 로그아웃
     @PostMapping("/logout")
     public ResponseEntity<GlobalResponseHandler<Void>> logout(
-            @AuthenticationPrincipal Long memberId,
+            @AuthenticationPrincipal CurrentUser currentUser,
             HttpServletResponse response) {
 
-        log.info("로그아웃 요청: memberId={}", memberId);
+        log.info("로그아웃 요청: memberId={}", currentUser.getId());
 
         // 로그아웃 처리
-        authFacadeService.logout(memberId);
+        authFacadeService.logout(currentUser.getId());
 
         // RefreshToken 쿠키 삭제
         clearRefreshTokenCookie(response);
 
-        log.info("로그아웃 성공: memberId={}", memberId);
+        log.info("로그아웃 성공: memberId={}", currentUser.getId());
         return GlobalResponseHandler.success(ResponseStatus.AUTH_LOGOUT_SUCCESS);
     }
 
@@ -84,9 +85,10 @@ public class AuthController {
     @PostMapping("/token/refresh")
     public ResponseEntity<GlobalResponseHandler<RefreshAccessTokenResponseDto>> refreshToken(
             HttpServletRequest request,
-            @AuthenticationPrincipal Long memberId) {
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
 
-        log.info("토큰 갱신 요청: memberId={}", memberId);
+        log.info("토큰 갱신 요청: memberId={}", currentUser.getId());
 
         // 만료된 AccessToken 에서 role 추출 (Command Service를 통해)
         String accessToken = extractTokenFromHeader(request);
@@ -97,9 +99,10 @@ public class AuthController {
 
 
         // 토큰 갱신 ( memberId는 검증된 값 currentRole 도 또한 검증된 값 따라서 dto 감싸는건 과다하다고 생각)
-        RefreshAccessTokenResponseDto responseDto = authFacadeService.refreshAccessToken(memberId,username,name,email, currentRole);
+        RefreshAccessTokenResponseDto responseDto = authFacadeService.refreshAccessToken(currentUser.getId(),username,name,email, currentRole);
 
-        log.info("토큰 갱신 성공: memberId={}", memberId);
+        log.info("토큰 갱신 성공: memberId={}", currentUser.getId()
+        );
         return GlobalResponseHandler.success(ResponseStatus.AUTH_TOKEN_REFRESH_SUCCESS,responseDto);
     }
 
