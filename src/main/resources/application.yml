@@ -362,10 +362,9 @@ embedded:
 springdoc:
   api-docs:
     enabled: true
-    path: /api-docs
   swagger-ui:
     enabled: true
-    path: /swagger-ui.html
+    path: swagger-ui.html
     display-request-duration: true
     display-operation-id: true
   show-actuator: true
