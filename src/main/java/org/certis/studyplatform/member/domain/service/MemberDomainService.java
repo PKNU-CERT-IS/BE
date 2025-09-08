@@ -318,23 +318,6 @@ public class MemberDomainService {
                 });
     }
 
-    /**
-     * 회원 검색 (Query 기반)
-     * Repository는 VO를 반환
-     */
-    public Page<MemberSummaryVo> searchMemberVos(SearchMembersQuery query) {
-        log.info("Domain: Searching member VOs with criteria: {}", query.keyword());
-        return memberQueryRepository.searchMembers(query);
-    }
-
-    /**
-     * 전체 회원 조회 (Query 기반)
-     * Repository는 VO를 반환
-     */
-    public Page<MemberSummaryVo> getAllMemberVos(GetMembersQuery query) {
-        log.info("Domain: Getting all member VOs with pagination");
-        return memberQueryRepository.findAll(query);
-    }
 
     // ================================================================
     // BUSINESS LOGIC VALIDATION METHODS - VO 기반

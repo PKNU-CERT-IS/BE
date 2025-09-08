@@ -46,26 +46,6 @@ public class MemberQueryService {
     }
 
     /**
-     * ✅ Query Object를 받아서 회원 검색
-     */
-    public Page<MemberSummaryVo> searchMembers(SearchMembersQuery query) {
-        log.info("Query: Searching members with criteria - keyword: {}, grade: {}, role: {}",
-                query.keyword(), query.grade(), query.role());
-
-        return memberDomainService.searchMemberVos(query);
-    }
-
-    /**
-     * ✅ Query Object를 받아서 전체 회원 조회
-     */
-    public Page<MemberSummaryVo> getAllMembers(GetMembersQuery query) {
-        log.info("Query: Getting all members with pagination - page: {}, size: {}",
-                query.pageable().getPageNumber(), query.pageable().getPageSize());
-
-        return memberDomainService.getAllMemberVos(query);
-    }
-
-    /**
      * ✅ JWT 토큰 생성용 회원 정보 조회
      * Domain Service를 통한 클린 아키텍처 구조 준수
      */

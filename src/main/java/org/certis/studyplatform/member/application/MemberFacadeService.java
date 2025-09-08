@@ -38,26 +38,6 @@ public class MemberFacadeService {
     private final MemberApplicationQueryMapper memberApplicationQueryMapper;
     private final MemberAdminApplicationMapper memberAdminApplicationMapper;
 
-    // ================================================================
-    // COMMAND OPERATIONS - 상태 변경 작업
-    // ================================================================
-
-    /**
-     * 회원 생성
-     */
-    public MemberCreatedVo createMember(MemberCreateRequestDto requestDto) {
-        log.info("Facade: Creating member with student number: {}", requestDto.getStudentNumber());
-
-        // DTO → Command Object 변환 (새로운 매퍼 사용)
-        CreateMemberCommand command = memberApplicationCommandMapper.toCreateMemberCommand(requestDto);
-
-        // Command Service 호출
-        MemberCreatedVo createdVo = memberCommandService.createMember(command);
-
-        log.info("Facade: Member created successfully with ID: {}", createdVo.id());
-        return createdVo;
-    }
-
     /**
      * 회원 정보 수정 (통합: 기본정보 + 프로필 + 기술스택)
      */
@@ -109,86 +89,23 @@ public class MemberFacadeService {
         return memberVo;
     }
 
-    /**
-     * 회원 검색 (페이징 포함)
-     */
-    public Page<MemberSummaryVo> searchMembers(MemberSearchRequestDto requestDto, Pageable pageable) {
-        log.info("Facade: Searching members with criteria: {}", requestDto.getKeyword());
-
-        // DTO → Query Object 변환 (새로운 매퍼 사용)
-        SearchMembersQuery query = memberApplicationQueryMapper.toSearchMembersQuery(requestDto, pageable);
-
-        // Query Service 호출
-        Page<MemberSummaryVo> memberSummaryVos = memberQueryService.searchMembers(query);
-
-        log.info("Facade: Member search completed successfully. Found {} members", memberSummaryVos.getTotalElements());
-        return memberSummaryVos;
-    }
-
-    /**
-     * 회원 검색 (기본 페이징 사용)
-     */
-    public Page<MemberSummaryVo> searchMembers(MemberSearchRequestDto requestDto) {
-        log.info("Facade: Searching members with criteria: {}", requestDto.getKeyword());
-
-        // DTO → Query Object 변환 (새로운 매퍼 사용)
-        SearchMembersQuery query = memberApplicationQueryMapper.toSearchMembersQuery(requestDto);
-
-        // Query Service 호출
-        Page<MemberSummaryVo> memberSummaryVos = memberQueryService.searchMembers(query);
-
-        log.info("Facade: Member search completed successfully. Found {} members", memberSummaryVos.getTotalElements());
-        return memberSummaryVos;
-    }
-
-    /**
-     * 키워드로 회원 검색
-     */
-    public Page<MemberSummaryVo> searchMembersByKeyword(String keyword, Pageable pageable) {
-        log.info("Facade: Searching members by keyword: {}", keyword);
-
-        // DTO → Query Object 변환 (새로운 매퍼 사용)
-        SearchMembersQuery query = memberApplicationQueryMapper.toSearchMembersQuery(keyword, pageable);
-
-        // Query Service 호출
-        Page<MemberSummaryVo> memberSummaryVos = memberQueryService.searchMembers(query);
-
-        log.info("Facade: Keyword search completed successfully. Found {} members", memberSummaryVos.getTotalElements());
-        return memberSummaryVos;
-    }
-
-    /**
-     * 전체 회원 조회
-     */
-    public Page<MemberSummaryVo> getAllMembers(Pageable pageable) {
-        log.info("Facade: Getting all members with pagination");
-
-        // DTO → Query Object 변환 (새로운 매퍼 사용)
-        GetMembersQuery query = memberApplicationQueryMapper.toGetMembersQuery(pageable);
-
-        // Query Service 호출
-        Page<MemberSummaryVo> memberSummaryVos = memberQueryService.getAllMembers(query);
-
-        log.info("Facade: All members retrieved successfully. Found {} members", memberSummaryVos.getTotalElements());
-        return memberSummaryVos;
-    }
-
-    // ================================================================
-    // PRIVATE HELPER METHODS
-    // ================================================================
-
-    /**
-     * 페이징 정보 생성
-     */
-    private Pageable createPageable(Integer page, Integer size, String sortBy, String sortDirection) {
-        // 기존 구현 유지
-        return null; // 실제 구현은 기존 코드 유지
-    }
 
     public AdminMemberUpdateResponseDto updateMemberAdminFields(Long executorId,
                                                                 MemberRole executorRole,
                                                                 AdminMemberUpdateRequestDto request) {
-        return null;
+
+        UpdateMemberAdminFieldsCommand command = UpdateMemberAdminFieldsCommand.of(executorId,
+                executorRole,
+                request.getTargetMemberId(),
+                request.getNewRole(),
+                request.getNewGrade());
+        AdminMemberUpdateResultVo resultVo = memberCommandService.updateMemberAdminFields(command);
+
+        return new AdminMemberUpdateResponseDto(
+                resultVo.memberId(),
+                resultVo.newRole(),
+                resultVo.newGrade()
+        );
     }
 
     @Transactional
