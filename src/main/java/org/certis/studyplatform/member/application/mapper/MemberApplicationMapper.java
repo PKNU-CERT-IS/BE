@@ -127,7 +127,7 @@ public class MemberApplicationMapper {
                 .id(vo.getMemberId())
                 .name(vo.getNameValue())
                 .studentNumber(vo.getStudentNumberValue())
-                .grade(vo.getGradeValue())
+                .grade(vo.getGradeValue().toString())
                 .role(vo.getRoleValue().toString())
                 .major(vo.getMajorValue())
                 .description(vo.description())

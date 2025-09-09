@@ -308,7 +308,7 @@ public class MemberCommandRepositoryImpl implements MemberCommandRepository {
     @Transactional(readOnly = true)
     public long countByConditions(GradeVo grade, RoleVo role) {
         log.debug("Command Infrastructure: Counting members by conditions - grade: {}, role: {}",
-                grade != null ? grade.value() : null,
+                grade != null ? grade.grade() : null,
                 role != null ? role.role() : null);
 
         try {

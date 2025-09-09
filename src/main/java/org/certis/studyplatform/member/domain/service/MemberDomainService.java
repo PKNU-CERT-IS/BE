@@ -83,7 +83,7 @@ public class MemberDomainService {
 
         // 학년 VO 변환 (유효한 학년 값 검증 자동 수행)
         GradeVo gradeVo = memberDomainMapper.toGradeVo(command.grade());
-        log.debug("✅ GradeVo created: {}", gradeVo.value());
+        log.debug("✅ GradeVo created: {}", gradeVo.grade());
 
         SkillsVo skillsVo = null; // 회원가입에서는 항상 null
 
@@ -190,7 +190,7 @@ public class MemberDomainService {
         if (command.grade() != null) {
             GradeVo gradeVo = memberDomainMapper.toGradeVo(command.grade());
             updateBuilder.grade(gradeVo);
-            log.debug("✅ GradeVo converted and set: {}", gradeVo.value());
+            log.debug("✅ GradeVo converted and set: {}", gradeVo.grade());
         }
 
         // 역할 VO 변환 및 설정 (null-safe)
@@ -448,7 +448,7 @@ public class MemberDomainService {
 
     private void validateGradeRoleConsistency(GradeVo grade, RoleVo role) {
         // 예: 1학년은 팀장이 될 수 없다는 규칙
-        if ("1".equals(grade.value()) && "LEADER".equals(role.role())) {
+        if ("1".equals(grade) && "LEADER".equals(role.role())) {
             throw new DomainException(ExceptionStatus.MEMBER_DOMAIN_INVALID_NAME,
                     "1학년은 팀장 역할을 할 수 없습니다");
         }
@@ -487,7 +487,7 @@ public class MemberDomainService {
             updateBuilder.role(newRoleVo);
         }
 
-        if (command.newGrade() != null && !command.newGrade().trim().isEmpty()) {
+        if (command.newGrade() != null) {
             GradeVo newGradeVo = GradeVo.of(command.newGrade());
             updateBuilder.grade(newGradeVo);
         }

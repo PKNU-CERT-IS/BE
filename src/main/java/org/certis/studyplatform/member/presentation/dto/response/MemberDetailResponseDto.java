@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.member.domain.MemberRole;
 
 import java.time.OffsetDateTime;
@@ -23,7 +24,7 @@ public class MemberDetailResponseDto {
     private String name;
     private String studentNumber;
     private String profileImage;
-    private String grade;
+    private MemberGrade grade;
     private MemberRole role;
     private List<String> skills;
     private String major;

@@ -1,5 +1,6 @@
 package org.certis.studyplatform.member.infrastructure.mapper;
 
+import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberContactEntity;
 import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberEntity;
@@ -50,7 +51,7 @@ public class MemberInfrastructureEntityMapper {
                 // 필수 필드 변환 (VO → primitive)
                 .name(extractNameValue(creationVo.name()))
                 .studentNumber(extractStudentNumberValue(creationVo.studentNumber()))
-                .grade(extractGradeValue(creationVo.grade()))
+                .grade(creationVo.grade().grade())
                 .role(extractRoleValue(creationVo.role()))
                 .major(extractMajorValue(creationVo.major()))
                 .skills(extractSkillsArray(creationVo.skills()))
@@ -76,7 +77,7 @@ public class MemberInfrastructureEntityMapper {
         return MemberEntity.builder()
                 .name(creationVo.name().value())
                 .studentNumber(creationVo.studentNumber().value())
-                .grade(creationVo.grade().value())
+                .grade(creationVo.grade().grade())
                 .role(creationVo.role().role())
                 .major(creationVo.major().value())
                 .skills(convertSkillsToArray(creationVo.skills()))
@@ -101,7 +102,7 @@ public class MemberInfrastructureEntityMapper {
         // updatedAt은 @UpdateTimestamp에 의해 자동 갱신됨
         return existingEntity.toBuilder()
                 .name(updateVo.name() != null ? updateVo.name().value() : existingEntity.getName())
-                .grade(updateVo.grade() != null ? updateVo.grade().value() : existingEntity.getGrade())
+                .grade(updateVo.grade() != null ? updateVo.grade().grade() : existingEntity.getGrade())
                 .role(updateVo.role() != null ? updateVo.role().role() : existingEntity.getRole())
                 .major(updateVo.major() != null ? updateVo.major().value() : existingEntity.getMajor())
                 .skills(updateVo.skills() != null ? convertSkillsToArray(updateVo.skills()) : existingEntity.getSkills())
@@ -134,7 +135,7 @@ public class MemberInfrastructureEntityMapper {
                 .name(name.value())
                 .studentNumber(studentNumber.value())
                 .profileImage(profileImage != null ? profileImage.value() : null)
-                .grade(grade.value())
+                .grade(grade.grade())
                 .role(role.role())
                 .skills(convertSkillsToArray(skills))
                 .major(major.value())
@@ -159,7 +160,7 @@ public class MemberInfrastructureEntityMapper {
                 .name(name.value())
                 .studentNumber(studentNumber.value())
                 .profileImage(profileImage != null ? profileImage.value() : null)
-                .grade(grade.value())
+                .grade(grade.grade())
                 .role(role.role())
                 .skills(convertSkillsToArray(skills))
                 .major(major.value())
@@ -179,13 +180,27 @@ public class MemberInfrastructureEntityMapper {
     // 검색/필터링 조건 → JPA 쿼리 조건 변환
     // =================================================================
 
+    /**
+     * MemberSearchConditionVo → JPA 쿼리 조건 변환
+     * QueryDSL이나 Criteria API에서 사용할 조건들로 변환
+     */
+    public SearchConditionJpa toSearchCondition(MemberSearchConditionVo searchConditionVo) {
+        return SearchConditionJpa.builder()
+                .keyword(searchConditionVo.keyword())
+                .grade(searchConditionVo.grade() != null ? searchConditionVo.grade().grade() : null)
+                .role(searchConditionVo.role() != null ? searchConditionVo.role().role() : null)
+                .major(searchConditionVo.major() != null ? searchConditionVo.major().value() : null)
+                .skills(searchConditionVo.skills() != null ?
+                        convertSkillsToArray(searchConditionVo.skills()) : null)
+                .build();
+    }
 
     /**
      * MemberFilterVo → JPA 필터 조건 변환
      */
     public FilterConditionJpa toFilterCondition(MemberFilterVo filterVo) {
         return FilterConditionJpa.builder()
-                .grade(filterVo.grade() != null ? filterVo.grade().value() : null)
+                .grade(filterVo.grade() != null ? filterVo.grade().grade().toString() : null)
                 .role(filterVo.role() != null ? filterVo.role().role() : null)
                 .major(filterVo.major() != null ? filterVo.major().value() : null)
                 .isActive(filterVo.isActive())
@@ -267,11 +282,11 @@ public class MemberInfrastructureEntityMapper {
     /**
      * GradeVo → String 추출
      */
-    private String extractGradeValue(GradeVo gradeVo) {
+    private MemberGrade extractGradeValue(GradeVo gradeVo) {
         if (gradeVo == null) {
             throw new IllegalArgumentException("GradeVo는 필수입니다");
         }
-        return gradeVo.value();
+        return gradeVo.grade();
     }
 
     /**
@@ -332,7 +347,7 @@ public class MemberInfrastructureEntityMapper {
      */
     public static class SearchConditionJpa {
         private final String keyword;
-        private final String grade;
+        private final MemberGrade grade;
         private final MemberRole role;
         private final String major;
         private final String[] skills;
@@ -351,20 +366,20 @@ public class MemberInfrastructureEntityMapper {
 
         // Getters
         public String getKeyword() { return keyword; }
-        public String getGrade() { return grade; }
+        public MemberGrade getGrade() { return grade; }
         public MemberRole getRole() { return role; }
         public String getMajor() { return major; }
         public String[] getSkills() { return skills; }
 
         public static class Builder {
             private String keyword;
-            private String grade;
+            private MemberGrade grade;
             private MemberRole role;
             private String major;
             private String[] skills;
 
             public Builder keyword(String keyword) { this.keyword = keyword; return this; }
-            public Builder grade(String grade) { this.grade = grade; return this; }
+            public Builder grade(MemberGrade grade) { this.grade = grade; return this; }
             public Builder role(MemberRole role) { this.role = role; return this; }
             public Builder major(String major) { this.major = major; return this; }
             public Builder skills(String[] skills) { this.skills = skills; return this; }
