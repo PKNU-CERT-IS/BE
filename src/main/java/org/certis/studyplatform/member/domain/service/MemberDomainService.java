@@ -6,10 +6,7 @@ import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.member.application.command.GetMemberTokenInfoQuery;
 import org.certis.studyplatform.member.application.object.command.*;
-import org.certis.studyplatform.member.application.object.query.GetMemberByIdQuery;
-import org.certis.studyplatform.member.application.object.query.SearchMembersForAdminQuery;
-import org.certis.studyplatform.member.application.object.query.SearchMembersQuery;
-import org.certis.studyplatform.member.application.object.query.GetMembersQuery;
+import org.certis.studyplatform.member.application.object.query.*;
 import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.repository.command.MemberContactCommandRepository;
 import org.certis.studyplatform.member.domain.vo.*;
@@ -588,5 +585,23 @@ public class MemberDomainService {
             memberCommandRepository.updatePenalty(member.memberId(), penaltyVo);
             memberCommandRepository.updateGracePeriod(member.memberId(), graceVo);
         }
+    }
+
+    public List<MemberWithContactVo> searchMembersWithContact(SearchMembersWithContactQuery query) {
+        log.info("Domain: Searching members with contact - search: {}, grade: {}, role: {}",
+                query.search(), query.grade(), query.role());
+
+        // Query 객체를 VO로 변환
+        MemberSearchConditionVo searchConditionVo = MemberSearchConditionVo.of(
+                query.search(),
+                query.grade(),
+                query.role()
+        );
+
+        // Repository에 VO 전달
+        List<MemberWithContactVo> members = memberQueryRepository.searchMembersWithContact(searchConditionVo);
+
+        log.info("Domain: Found {} members with contact info", members.size());
+        return members;
     }
 }

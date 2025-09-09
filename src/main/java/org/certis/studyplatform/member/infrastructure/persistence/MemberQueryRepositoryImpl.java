@@ -1,5 +1,7 @@
 package org.certis.studyplatform.member.infrastructure.persistence;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.exception.ExceptionStatus;
@@ -8,11 +10,13 @@ import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.repository.query.MemberQueryRepository;
 import org.certis.studyplatform.member.domain.vo.*;
 import org.certis.studyplatform.member.infrastructure.mapper.MemberInfrastructureMapper;
+import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberContactEntity;
 import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberEntity;
 import org.certis.studyplatform.member.application.object.query.SearchMembersQuery;
 import org.certis.studyplatform.member.application.object.query.GetMembersQuery;
 import org.jooq.*;
 import org.jooq.Record;
+import org.jooq.impl.DSL;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.certis.generated.jooq.Tables.MEMBER;
+import static org.certis.generated.jooq.Tables.MEMBER_CONTACT;
 import static org.jooq.impl.DSL.*;
 
 /**
@@ -85,98 +91,6 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
         }
     }
 
-    @Override
-    public Page<MemberSummaryVo> searchMembers(SearchMembersQuery query) {
-        log.info("Query Infrastructure: Searching members with criteria: {}", query.keyword());
-
-        try {
-            // 동적 조건 구성
-            Condition conditions = buildSearchConditions(query);
-
-            // 총 개수 조회
-            int total = dsl.selectCount()
-                    .from(table(MEMBER_TABLE))
-                    .where(conditions.and(field("deleted_at").isNull()))
-                    .fetchOneInto(Integer.class);
-
-            // 페이징된 데이터 조회
-            List<MemberSummaryVo> members = dsl.select(
-                            field("id", Long.class),
-                            field("name", String.class),
-                            field("student_number", String.class),
-                            field("profile_image", String.class),
-                            field("grade", String.class),
-                            field("role", String.class),
-                            field("skills", String[].class), // String[] 배열로 처리
-                            field("major", String.class),
-                            field("description", String.class),
-                            field("birthday", OffsetDateTime.class),
-                            field("gender", String.class),
-                            field("created_at", OffsetDateTime.class)
-                    )
-                    .from(table(MEMBER_TABLE))
-                    .where(conditions.and(field("deleted_at").isNull()))
-                    .orderBy(buildOrderBy(query.pageable()))
-                    .limit(query.pageable().getPageSize())
-                    .offset(query.pageable().getOffset())
-                    .fetch(record -> {
-                        // Raw Data → MemberEntity → VO 변환
-                        MemberEntity entity = recordToMemberEntity(record);
-                        return memberInfrastructureMapper.toMemberSummaryVo(entity);
-                    });
-
-            return new PageImpl<>(members, query.pageable(), total);
-
-        } catch (Exception e) {
-            log.error("Error searching members: {}", e.getMessage());
-            return Page.empty(query.pageable());
-        }
-    }
-
-    @Override
-    public Page<MemberSummaryVo> findAll(GetMembersQuery query) {
-        log.info("Query Infrastructure: Finding all members with pagination");
-
-        try {
-            // 총 개수 조회
-            int total = dsl.selectCount()
-                    .from(table(MEMBER_TABLE))
-                    .where(field("deleted_at").isNull())
-                    .fetchOneInto(Integer.class);
-
-            // 페이징된 데이터 조회
-            List<MemberSummaryVo> members = dsl.select(
-                            field("id", Long.class),
-                            field("name", String.class),
-                            field("student_number", String.class),
-                            field("profile_image", String.class),
-                            field("grade", String.class),
-                            field("role", String.class),
-                            field("skills", String[].class), // String[] 배열로 처리
-                            field("major", String.class),
-                            field("description", String.class),
-                            field("birthday", OffsetDateTime.class),
-                            field("gender", String.class),
-                            field("created_at", OffsetDateTime.class)
-                    )
-                    .from(table(MEMBER_TABLE))
-                    .where(field("deleted_at").isNull())
-                    .orderBy(buildOrderBy(query.pageable()))
-                    .limit(query.pageable().getPageSize())
-                    .offset(query.pageable().getOffset())
-                    .fetch(record -> {
-                        // Raw Data → MemberEntity → VO 변환
-                        MemberEntity entity = recordToMemberEntity(record);
-                        return memberInfrastructureMapper.toMemberSummaryVo(entity);
-                    });
-
-            return new PageImpl<>(members, query.pageable(), total);
-
-        } catch (Exception e) {
-            log.error("Error finding all members: {}", e.getMessage());
-            return Page.empty(query.pageable());
-        }
-    }
 
     @Override
     public Page<MemberSummaryVo> findMembers(MemberSearchCriteriaVo searchCriteria, Pageable pageable) {
@@ -226,6 +140,11 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
         }
     }
 
+    @Override
+    public Page<MemberSummaryVo> findMembers(String nameFilter, String roleFilter, String gradeFilter, String skillFilter, Pageable pageable) {
+        return MemberQueryRepository.super.findMembers(nameFilter, roleFilter, gradeFilter, skillFilter, pageable);
+    }
+
     // ================================================================
     // PRIVATE HELPER METHODS
     // ================================================================
@@ -252,37 +171,6 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
                 .build();
     }
 
-    private Condition buildSearchConditions(SearchMembersQuery query) {
-        Condition conditions = noCondition();
-
-        if (query.keyword() != null && !query.keyword().trim().isEmpty()) {
-            String keyword = "%" + query.keyword().trim() + "%";
-            conditions = conditions.and(
-                    field("name").likeIgnoreCase(keyword)
-                            .or(field("student_number").likeIgnoreCase(keyword))
-                            .or(field("major").likeIgnoreCase(keyword))
-            );
-        }
-
-        if (query.grade() != null && !query.grade().trim().isEmpty()) {
-            conditions = conditions.and(field("grade").eq(query.grade()));
-        }
-
-        if (query.role() != null) {
-            conditions = conditions.and(field("role").eq(query.role()));
-        }
-
-        // skills 검색 - PostgreSQL array 함수 사용
-        if (query.skills() != null && !query.skills().isEmpty()) {
-            String skillKeyword = "%" + String.join("%", query.skills()) + "%";
-            conditions = conditions.and(
-                    field("array_to_string(skills, ',')")
-                            .likeIgnoreCase(skillKeyword)
-            );
-        }
-
-        return conditions;
-    }
 
     private Condition buildSearchConditionsFromCriteria(MemberSearchCriteriaVo searchCriteria) {
         Condition conditions = noCondition();
@@ -333,10 +221,6 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
     // LEGACY METHODS (하위 호환성 유지)
     // ================================================================
 
-    @Override
-    public Optional<MemberVo> findMemberById(Long memberId) {
-        return findById(new MemberIdVo(memberId));
-    }
 
     @Override
     public boolean existsById(Long memberId) {
@@ -517,6 +401,117 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
                 ));
     }
 
+    @Override
+    public List<MemberWithContactVo> searchMembersWithContact(MemberSearchConditionVo searchConditionVo) {
+        log.info("Infrastructure: Searching members with contact - search: {}, grade: {}, role: {}",
+                searchConditionVo.keyword(),
+                searchConditionVo.grade() != null ? searchConditionVo.grade().value() : null,
+                searchConditionVo.role() != null ? searchConditionVo.role().role() : null);
 
+        // JOOQ 쿼리 실행 (Entity 기반)
+        var records = dsl.select(
+                        MEMBER.ID,
+                        MEMBER.NAME,
+                        MEMBER.PROFILE_IMAGE,
+                        MEMBER.GRADE,
+                        MEMBER.ROLE,
+                        MEMBER.SKILLS,
+                        MEMBER.MAJOR,
+                        MEMBER.DESCRIPTION,
+                        MEMBER.CREATED_AT,
+                        MEMBER.UPDATED_AT,
+                        MEMBER_CONTACT.EMAIL,
+                        MEMBER_CONTACT.GITHUB_URL,
+                        MEMBER_CONTACT.LINKEDIN_URL
+                )
+                .from(MEMBER)
+                .leftJoin(MEMBER_CONTACT).on(MEMBER.ID.eq(MEMBER_CONTACT.MEMBER_ID))
+                .where(buildSearchConditions(searchConditionVo))
+                .and(MEMBER.DELETED_AT.isNull())
+                .orderBy(MEMBER.NAME.asc())
+                .fetch();
 
+        // Record를 Entity로 변환 후 VO로 변환
+        List<MemberWithContactVo> members = records.stream()
+                .map(this::recordToMemberWithContactEntity)
+                .map(memberInfrastructureMapper::toMemberWithContactVo)
+                .toList();
+
+        log.info("Infrastructure: Found {} members with contact info", members.size());
+        return members;
+    }
+
+    private Condition buildSearchConditions(MemberSearchConditionVo searchConditionVo) {
+        Condition condition = DSL.noCondition();
+
+        // 검색어 조건 (이름, 전공, 기술스택)
+        if (searchConditionVo.keyword() != null && !searchConditionVo.keyword().trim().isEmpty()) {
+            String searchPattern = "%" + searchConditionVo.keyword().toUpperCase() + "%";
+
+            condition = condition.and(
+                    DSL.upper(MEMBER.NAME).like(searchPattern)
+                            .or(DSL.upper(MEMBER.MAJOR).like(searchPattern))
+                            .or(DSL.upper(DSL.function("array_to_string", String.class, MEMBER.SKILLS, DSL.val(","))).like(searchPattern))
+            );
+        }
+
+        // 학년 필터 (VO에서 원시값 추출)
+        if (searchConditionVo.grade() != null) {
+            condition = condition.and(MEMBER.GRADE.eq(searchConditionVo.grade().value()));
+        }
+
+        // 역할 필터 (VO에서 원시값 추출)
+        if (searchConditionVo.role() != null) {
+            condition = condition.and(MEMBER.ROLE.eq(searchConditionVo.role().role().name()));
+        }
+
+        return condition;
+    }
+
+    /**
+     * JOOQ Record를 Entity로 변환 (중간 단계)
+     */
+    private MemberWithContactEntity recordToMemberWithContactEntity(Record record) {
+        // MemberEntity 생성
+        String roleString = record.get(MEMBER.ROLE);
+        MemberRole memberRole = roleString != null ? MemberRole.valueOf(roleString) : null;
+
+        MemberEntity memberEntity = MemberEntity.builder()
+                .id(record.get(MEMBER.ID))
+                .name(record.get(MEMBER.NAME))
+                .profileImage(record.get(MEMBER.PROFILE_IMAGE))
+                .grade(record.get(MEMBER.GRADE))
+                .role(memberRole)
+                .skills(record.get(MEMBER.SKILLS))
+                .major(record.get(MEMBER.MAJOR))
+                .description(record.get(MEMBER.DESCRIPTION))
+                .createdAt(record.get(MEMBER.CREATED_AT))
+                .updatedAt(record.get(MEMBER.UPDATED_AT))
+                .build();
+
+        // MemberContactEntity 생성 (nullable)
+        MemberContactEntity contactEntity = null;
+        if (record.get(MEMBER_CONTACT.EMAIL) != null) {
+            contactEntity = MemberContactEntity.builder()
+                    .memberId(record.get(MEMBER.ID))
+                    .email(record.get(MEMBER_CONTACT.EMAIL))
+                    .githubUrl(record.get(MEMBER_CONTACT.GITHUB_URL))
+                    .linkedinUrl(record.get(MEMBER_CONTACT.LINKEDIN_URL))
+                    .build();
+        }
+
+        // 복합 Entity 반환
+        return new MemberWithContactEntity(memberEntity, contactEntity);
+    }
+
+    /**
+     * Member + MemberContact 복합 Entity
+     * Infrastructure Layer에서 조인 결과를 담는 임시 객체
+     */
+    @Getter
+    @AllArgsConstructor
+    public static class MemberWithContactEntity {
+        private final MemberEntity member;
+        private final MemberContactEntity contact; // nullable
+    }
 }

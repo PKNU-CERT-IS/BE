@@ -179,20 +179,6 @@ public class MemberInfrastructureEntityMapper {
     // 검색/필터링 조건 → JPA 쿼리 조건 변환
     // =================================================================
 
-    /**
-     * MemberSearchConditionVo → JPA 쿼리 조건 변환
-     * QueryDSL이나 Criteria API에서 사용할 조건들로 변환
-     */
-    public SearchConditionJpa toSearchCondition(MemberSearchConditionVo searchConditionVo) {
-        return SearchConditionJpa.builder()
-                .keyword(searchConditionVo.keyword())
-                .grade(searchConditionVo.grade() != null ? searchConditionVo.grade().value() : null)
-                .role(searchConditionVo.role() != null ? searchConditionVo.role().role() : null)
-                .major(searchConditionVo.major() != null ? searchConditionVo.major().value() : null)
-                .skills(searchConditionVo.skills() != null ?
-                        convertSkillsToArray(searchConditionVo.skills()) : null)
-                .build();
-    }
 
     /**
      * MemberFilterVo → JPA 필터 조건 변환

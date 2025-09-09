@@ -4,11 +4,14 @@ import lombok.RequiredArgsConstructor;
 import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.vo.*;
 import org.certis.studyplatform.member.domain.MemberGrade;
+import org.certis.studyplatform.member.infrastructure.persistence.MemberQueryRepositoryImpl;
+import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberContactEntity;
 import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberEntity;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -172,12 +175,6 @@ public class MemberInfrastructureMapper {
     // 검색/필터링 조건 변환 (EntityMapper 위임)
     // =================================================================
 
-    /**
-     * MemberSearchConditionVo → JPA 쿼리 조건 변환
-     */
-    public MemberInfrastructureEntityMapper.SearchConditionJpa toSearchCondition(MemberSearchConditionVo searchConditionVo) {
-        return memberInfrastructureEntityMapper.toSearchCondition(searchConditionVo);
-    }
 
     /**
      * MemberFilterVo → JPA 필터 조건 변환
@@ -305,5 +302,35 @@ public class MemberInfrastructureMapper {
                 .profileImage(profileImageUrl)
                 .updatedAt(OffsetDateTime.now())
                 .build();
+    }
+
+    /**
+     * MemberWithContactEntity → MemberWithContactVo 변환
+     */
+    public MemberWithContactVo toMemberWithContactVo(MemberQueryRepositoryImpl.MemberWithContactEntity entity) {
+        MemberEntity member = entity.getMember();
+        MemberContactEntity contact = entity.getContact();
+
+        // skills 배열을 List<String>으로 변환
+        List<String> skills = member.getSkills() != null ?
+                Arrays.asList(member.getSkills()) :
+                Collections.emptyList();
+
+        return MemberWithContactVo.of(
+                member.getId(),
+                member.getName(),
+                member.getProfileImage(),
+                member.getGrade(),
+                member.getRole(),
+                skills,
+                member.getMajor(),
+                member.getDescription(),
+                member.getCreatedAt(),
+                member.getUpdatedAt(),
+                // 연락처 정보 (nullable 처리)
+                contact != null ? contact.getEmail() : null,
+                contact != null ? contact.getGithubUrl() : null,
+                contact != null ? contact.getLinkedinUrl() : null
+        );
     }
 }

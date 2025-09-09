@@ -1,6 +1,7 @@
 package org.certis.studyplatform.member.domain.vo;
 
 import lombok.Builder;
+import org.certis.studyplatform.member.domain.MemberRole;
 
 /**
  * 회원 검색 조건 VO
@@ -9,15 +10,13 @@ import lombok.Builder;
 public record MemberSearchConditionVo(
         String keyword,
         GradeVo grade,
-        RoleVo role,
-        MajorVo major,
-        SkillsVo skills
+        RoleVo role
 ) {
-    /**
-     * 검색 조건이 비어있는지 확인
-     */
-    public boolean isEmpty() {
-        return (keyword == null || keyword.trim().isEmpty()) &&
-                grade == null && role == null && major == null && skills == null;
+    public static MemberSearchConditionVo of(String searchKeyword, String grade, MemberRole role) {
+        return new MemberSearchConditionVo(
+                searchKeyword,
+                grade != null ? GradeVo.of(grade) : null,
+                role != null ? RoleVo.of(role) : null
+        );
     }
 }

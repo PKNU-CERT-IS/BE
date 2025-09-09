@@ -6,10 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.member.application.command.*;
 import org.certis.studyplatform.member.application.mapper.MemberAdminApplicationMapper;
 import org.certis.studyplatform.member.application.object.command.*;
-import org.certis.studyplatform.member.application.object.query.GetMemberByIdQuery;
-import org.certis.studyplatform.member.application.object.query.GetMembersQuery;
-import org.certis.studyplatform.member.application.object.query.SearchMembersForAdminQuery;
-import org.certis.studyplatform.member.application.object.query.SearchMembersQuery;
+import org.certis.studyplatform.member.application.object.query.*;
 import org.certis.studyplatform.member.application.query.*;
 import org.certis.studyplatform.member.application.mapper.MemberApplicationMapper;
 import org.certis.studyplatform.member.application.mapper.MemberApplicationCommandMapper;
@@ -19,6 +16,7 @@ import org.certis.studyplatform.member.domain.vo.*;
 import org.certis.studyplatform.member.presentation.dto.request.*;
 import org.certis.studyplatform.member.presentation.dto.response.AdminMemberUpdateResponseDto;
 import org.certis.studyplatform.member.presentation.dto.response.MemberDataForAdminResponseDto;
+import org.certis.studyplatform.member.presentation.dto.response.MemberSearchResponseDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -158,5 +156,25 @@ public class MemberFacadeService {
         memberCommandService.assignPenalty(command);
 
         log.info("Facade: Penalty assigned successfully for member: {}", request.getMemberId());
+    }
+
+    public List<MemberSearchResponseDto> searchMembers(MemberSearchRequestDto request) {
+        log.info("Facade: Searching members - search: {}, grade: {}, role: {}",
+                request.getSearch(), request.getGrade(), request.getRole());
+
+        SearchMembersWithContactQuery query = SearchMembersWithContactQuery.of(
+                request.getSearch(),
+                request.getGrade(),
+                request.getRole()
+        );
+
+        List<MemberWithContactVo> members = memberQueryService.searchMembersWithContact(query);
+
+        List<MemberSearchResponseDto> response = members.stream()
+                .map(memberApplicationMapper::toMemberSearchResponseDto)
+                .toList();
+
+        log.info("Facade: Search completed - found {} members", response.size());
+        return response;
     }
 }

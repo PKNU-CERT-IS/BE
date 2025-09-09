@@ -30,30 +30,6 @@ public class MemberApplicationQueryMapper {
     /**
      * DTO → SearchMembersQuery 변환
      */
-    public SearchMembersQuery toSearchMembersQuery(MemberSearchRequestDto requestDto, Pageable pageable) {
-        return new SearchMembersQuery(
-            requestDto.getSafeKeyword(),
-            requestDto.getSafeGrade(),
-            requestDto.getSafeRole(),
-            null, // TODO: MemberSearchRequestDto에 skills 필드 추가 필요
-            pageable
-        );
-    }
-
-    /**
-     * DTO → SearchMembersQuery 변환 (기본 페이징 사용)
-     */
-    public SearchMembersQuery toSearchMembersQuery(MemberSearchRequestDto requestDto) {
-        // 기본 페이징 설정 (페이지 0, 크기 20)
-        Pageable defaultPageable = PageRequest.of(0, 20);
-        return new SearchMembersQuery(
-            requestDto.getSafeKeyword(),
-            requestDto.getSafeGrade(),
-            requestDto.getSafeRole(),
-            null, // TODO: MemberSearchRequestDto에 skills 필드 추가 필요
-            defaultPageable
-        );
-    }
 
     /**
      * DTO → SearchMembersQuery 변환 (키워드 + 페이징)

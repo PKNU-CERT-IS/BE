@@ -3,15 +3,9 @@ package org.certis.studyplatform.member.application.query;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.member.application.command.GetMemberTokenInfoQuery;
-import org.certis.studyplatform.member.application.object.query.GetMemberByIdQuery;
-import org.certis.studyplatform.member.application.object.query.GetMembersQuery;
-import org.certis.studyplatform.member.application.object.query.SearchMembersForAdminQuery;
-import org.certis.studyplatform.member.application.object.query.SearchMembersQuery;
+import org.certis.studyplatform.member.application.object.query.*;
 import org.certis.studyplatform.member.domain.service.MemberDomainService;
-import org.certis.studyplatform.member.domain.vo.MemberSearchForAdminVo;
-import org.certis.studyplatform.member.domain.vo.MemberSummaryVo; // Uses VO
-import org.certis.studyplatform.member.domain.vo.MemberTokenInfoVo;
-import org.certis.studyplatform.member.domain.vo.MemberVo;
+import org.certis.studyplatform.member.domain.vo.*;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,5 +63,16 @@ public class MemberQueryService {
         log.info("Query: Found {} members for keyword={}", voList.size(), query.keyword());
 
         return voList;
+    }
+
+    public List<MemberWithContactVo> searchMembersWithContact(SearchMembersWithContactQuery query) {
+        log.info("Query Service: Searching members with contact - search: {}, grade: {}, role: {}",
+                query.search(), query.grade(), query.role());
+
+        List<MemberWithContactVo> members = memberDomainService.searchMembersWithContact(query);
+
+        log.info("Query Service: Found {} members with contact info", members.size());
+
+        return members;
     }
 }

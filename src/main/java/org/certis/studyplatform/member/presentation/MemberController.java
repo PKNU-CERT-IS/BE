@@ -5,20 +5,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.member.application.MemberFacadeService;
 import org.certis.studyplatform.member.domain.vo.MemberVo;
-import org.certis.studyplatform.member.domain.vo.MemberCreatedVo;
 import org.certis.studyplatform.member.domain.vo.MemberUpdatedVo;
-import org.certis.studyplatform.member.domain.vo.MemberSummaryVo;
-import org.certis.studyplatform.member.presentation.dto.request.MemberCreateRequestDto;
 import org.certis.studyplatform.member.presentation.dto.request.MemberSearchRequestDto;
 import org.certis.studyplatform.member.presentation.dto.request.MemberUpdateRequestDto;
+import org.certis.studyplatform.member.presentation.dto.response.MemberSearchResponseDto;
 import org.certis.studyplatform.response.GlobalResponseHandler;
 import org.certis.studyplatform.response.ResponseStatus;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * Member REST Controller
@@ -43,18 +39,21 @@ public class MemberController {
 
     /**
      * 회원 상세 조회 -> members 페이지 조회로 구현
-     *
-     * @param id 회원 ID
-     * @return 회원 상세 정보 (VO 직접 반환)
      */
-    @GetMapping("/{id}")
-    public ResponseEntity<GlobalResponseHandler<MemberVo>> getMember(@PathVariable Long id) {
-        log.info("REST: Getting member - {}", id);
+    @GetMapping("/keyword")
+    public ResponseEntity<GlobalResponseHandler<List<MemberSearchResponseDto>>> searchMembers(
+            @ModelAttribute MemberSearchRequestDto searchRequest) {
 
-        // Facade를 통한 조회 (VO로 받음)
-        MemberVo memberVo = memberFacadeService.getMemberDetail(id);
+        log.info("REST: Searching members - search: {}, grade: {}, role: {}",
+                searchRequest.getSearch(),
+                searchRequest.getGrade(),
+                searchRequest.getRole());
 
-        return GlobalResponseHandler.success(ResponseStatus.MEMBER_FIND_SUCCESS, memberVo);
+        List<MemberSearchResponseDto> result = memberFacadeService.searchMembers(searchRequest);
+
+        log.info("REST: Search completed - found {} results", result.size());
+
+        return GlobalResponseHandler.success(ResponseStatus.MEMBER_SEARCH_SUCCESS, result);
     }
 
     /**

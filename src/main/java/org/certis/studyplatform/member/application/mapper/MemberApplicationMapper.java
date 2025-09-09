@@ -92,6 +92,24 @@ public class MemberApplicationMapper {
         );
     }
 
+    public MemberSearchResponseDto toMemberSearchResponseDto(MemberWithContactVo vo) {
+        return MemberSearchResponseDto.of(
+                vo.id(),
+                vo.name(),
+                vo.profileImage(),
+                vo.grade(),
+                vo.role(),
+                vo.skills(),
+                vo.major(),
+                vo.description(),
+                vo.createdAt(),
+                vo.updatedAt(),
+                vo.email(),
+                vo.githubUrl(),
+                vo.linkedinUrl()
+        );
+    }
+
 
     // ================================================================
     // Domain VO -> Response DTO (for Service output)

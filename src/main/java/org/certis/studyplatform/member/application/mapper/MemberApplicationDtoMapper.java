@@ -8,8 +8,6 @@ import org.certis.studyplatform.member.presentation.dto.response.MemberCreatedRe
 import org.certis.studyplatform.member.presentation.dto.response.MemberUpdatedResponseDto;
 import org.certis.studyplatform.member.presentation.dto.response.MemberSummaryResponseDto;
 import org.certis.studyplatform.member.presentation.dto.response.MemberDetailResponseDto;
-import org.certis.studyplatform.member.presentation.dto.response.MemberSearchResponseDto;
-import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 
 /**
@@ -81,16 +79,4 @@ public class MemberApplicationDtoMapper {
                 .build();
     }
 
-    // ================================================================
-    // COLLECTION MAPPING
-    // ================================================================
-
-    /**
-     * Page<MemberSummaryVo> → MemberSearchResponseDto 변환
-     * 페이징 정보를 포함한 검색 결과 변환
-     */
-    public MemberSearchResponseDto toMemberSearchResponseDto(Page<MemberSummaryVo> memberPage) {
-        Page<MemberSummaryResponseDto> dtoPage = memberPage.map(this::toMemberSummaryResponseDto);
-        return MemberSearchResponseDto.of(dtoPage);
-    }
 }
