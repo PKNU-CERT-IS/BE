@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.certis.generated.jooq.Tables.*;
+import org.certis.studyplatform.member.domain.MemberGrade;
 
 /**
  * Project Infrastructure Mapper
@@ -77,7 +78,8 @@ public class ProjectInfrastructureMapper {
                 entity.getExternalUrl(),
                 entity.getThumbnailUrl(),
                 entity.getMaxParticipantsNumber(), // maxParticipantsNumber → maxParticipants
-                0 // currentParticipants는 별도 계산 필요
+                0, // currentParticipants는 별도 계산 필요
+                null // meetingSummaryVos는 별도 조회 필요
         );
     }
 
@@ -109,7 +111,8 @@ public class ProjectInfrastructureMapper {
                 record.get(PROJECT.EXTERNAL_URL), // externalUrl은 별도 관리
                 record.get(PROJECT.THUMBNAIL_URL),
                 record.get(PROJECT.MAX_PARTICIPANTS_NUMBER),
-                record.get("current_participants", Integer.class) // 서브쿼리 결과
+                record.get("current_participants", Integer.class), // 서브쿼리 결과
+                null
         );
     }
 
@@ -135,11 +138,12 @@ public class ProjectInfrastructureMapper {
                 record.get(PROJECT.ID),
                 record.get(PROJECT.TITLE),
                 record.get(PROJECT.DESCRIPTION),
-                buildCategoryList(record.get(PROJECT.CATEGORY), record.get(PROJECT.SUBCATEGORY)),
+                record.get(PROJECT.CATEGORY),
+                record.get(PROJECT.SUBCATEGORY),
                 record.get(PROJECT.STARTED_AT),
                 record.get(PROJECT.ENDED_AT),
                 record.get(MEMBER.NAME), // JOIN된 creatorName
-                "LEADER", // 기본 역할
+                MemberGrade.fromGradeString(record.get(MEMBER.GRADE, String.class)),
                 isParticipantable,
                 null, // githubUrl은 별도 관리
                 null  // externalUrl은 별도 관리

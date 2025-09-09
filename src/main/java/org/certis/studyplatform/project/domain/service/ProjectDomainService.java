@@ -13,6 +13,7 @@ import org.certis.studyplatform.project.application.object.command.CreateProject
 import org.certis.studyplatform.project.application.object.command.DeleteProjectCommand;
 import org.certis.studyplatform.project.application.object.command.UpdateProjectCommand;
 import org.certis.studyplatform.project.application.object.query.GetAllProjectsQuery;
+import org.certis.studyplatform.project.application.object.query.GetCompletedProjectsByMemberQuery;
 import org.certis.studyplatform.project.application.object.query.GetProjectByIdQuery;
 import org.certis.studyplatform.project.application.object.query.SearchProjectsQuery;
 import org.certis.studyplatform.project.domain.repository.ProjectCommandRepository;
@@ -21,6 +22,8 @@ import org.certis.studyplatform.project.domain.vo.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 /**
  * Project Domain Service
@@ -40,7 +43,6 @@ public class ProjectDomainService {
     private final ProjectCommandRepository commandRepository;
     private final ProjectQueryRepository queryRepository;
     private final MemberDomainService memberDomainService;
-    private final MemberQueryRepositoryImpl memberQueryRepositoryImpl;
 
     // ================================================================
     // COMMAND OPERATIONS
@@ -209,6 +211,39 @@ public class ProjectDomainService {
         log.info("Domain: Found {} projects by advanced criteria", projectPage.getTotalElements());
         return projectPage;
     }
+
+    /**
+     * 특정 멤버가 생성한 완료된 프로젝트 목록 조회
+     * 완료 조건: endedAt이 현재 시간보다 이전이고, 삭제되지 않은 프로젝트
+     */
+    public Page<ProjectSummaryVo> getCompletedProjectsByMember(GetCompletedProjectsByMemberQuery query) {
+        log.info("Domain: Getting completed projects by member - memberId: {}", query.memberId());
+
+        // Repository에서 완료된 프로젝트 조회
+        Page<ProjectSummaryVo> completedProjects = queryRepository.findCompletedProjectsByMember(
+                query.memberId(),
+                query.pageable()
+        );
+
+        log.info("Domain: Found {} completed projects for member: {}",
+                completedProjects.getTotalElements(), query.memberId());
+
+        return completedProjects;
+    }
+
+    /**
+     * 특정 멤버가 생성한 완료된 프로젝트 목록 조회 (리스트 버전)
+     * 페이징 없이 전체 조회
+     */
+    public List<ProjectSummaryVo> getCompletedProjectsListByMember(Long memberId) {
+        log.info("Domain: Getting completed projects list by member - memberId: {}", memberId);
+        List<ProjectSummaryVo> completedProjects = queryRepository.findCompletedProjectsListByMember(memberId);
+
+        log.info("Domain: Found {} completed projects for member: {}", completedProjects.size(), memberId);
+
+        return completedProjects;
+    }
+
 
     // ================================================================
     // PRIVATE VALIDATION METHODS (Repository 의존성이 필요한 검증만)

@@ -9,9 +9,12 @@ package org.certis.studyplatform.project.domain.vo;
 public record ProjectMeetingSummaryVo(
     Long id,
     String title,
+    String content,
     Integer participantNumber,
     String creatorName,
-    boolean isEditable
+    boolean isEditable,
+    String meetingAttachedUrl,
+    String meetingAttachedTitle
 ) {
     /**
      * 기본 생성자
@@ -19,9 +22,14 @@ public record ProjectMeetingSummaryVo(
     public static ProjectMeetingSummaryVo of(
             Long id,
             String title,
+            String content,
             Integer participantNumber,
             String creatorName,
-            boolean isEditable) {
-        return new ProjectMeetingSummaryVo(id, title, participantNumber, creatorName, isEditable);
+            boolean isEditable,
+            String meetingAttachedUrl,
+            String meetingAttachedTitle) {
+        return new ProjectMeetingSummaryVo(id, title,
+                content, participantNumber, creatorName, isEditable,
+                meetingAttachedUrl, meetingAttachedTitle);
     }
 } 

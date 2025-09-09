@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.certis.studyplatform.member.domain.MemberGrade;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -27,7 +28,9 @@ public class ProjectSummaryResponseDto {
 
     private String description;
 
-    private List<String> category;
+    private String category;
+
+    private String subcategory;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private OffsetDateTime startDate;
@@ -37,7 +40,7 @@ public class ProjectSummaryResponseDto {
 
     private String projectCreatorName;
 
-    private String projectCreatorRole;
+    private MemberGrade projectCreatorGrade;
 
     private boolean isParticipantable;
 

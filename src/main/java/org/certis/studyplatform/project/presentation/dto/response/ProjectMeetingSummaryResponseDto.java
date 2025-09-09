@@ -27,6 +27,10 @@ public class ProjectMeetingSummaryResponseDto {
 
     private boolean isEditable;
 
+    private String meetingAttachedUrl;
+
+    private String meetingAttachedTitle;
+
     // toString for logging
     @Override
     public String toString() {

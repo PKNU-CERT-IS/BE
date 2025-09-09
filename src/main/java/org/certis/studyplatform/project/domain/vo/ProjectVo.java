@@ -28,7 +28,8 @@ public record ProjectVo(
         String externalUrl,
         String thumbnailUrl,
         Integer maxParticipants,
-        Integer currentParticipants
+        Integer currentParticipants,
+        List<ProjectMeetingSummaryVo> meetingSummaryVos
 ) {
 
     /**
@@ -93,12 +94,14 @@ public record ProjectVo(
             String externalUrl,
             String thumbnailUrl,
             Integer maxParticipants,
-            Integer currentParticipants
+            Integer currentParticipants,
+            List<ProjectMeetingSummaryVo> meetingSummaryVos
     ) {
         return new ProjectVo(
                 id, title, description, content, category, subCategory,
                 startDate, endDate, creatorId, creatorName, githubUrl,
-                externalUrl, thumbnailUrl, maxParticipants, currentParticipants
+                externalUrl, thumbnailUrl, maxParticipants, currentParticipants,
+                meetingSummaryVos
         );
     }
 
@@ -124,7 +127,8 @@ public record ProjectVo(
                 null, // id는 null (새 생성)
                 title, description, content, category, subCategory,
                 startDate, endDate, creatorId, creatorName, githubUrl,
-                externalUrl, thumbnailUrl, maxParticipants, 0 // 초기 참가자는 0명
+                externalUrl, thumbnailUrl, maxParticipants, 0, // 초기 참가자는 0명
+                null
         );
     }
 
@@ -158,7 +162,8 @@ public record ProjectVo(
                 externalUrl != null ? externalUrl : existing.externalUrl(),
                 thumbnailUrl != null ? thumbnailUrl : existing.thumbnailUrl(),
                 maxParticipants != null ? maxParticipants : existing.maxParticipants(),
-                existing.currentParticipants()
+                existing.currentParticipants(),
+                existing.meetingSummaryVos()
         );
     }
 }

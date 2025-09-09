@@ -1,8 +1,10 @@
 package org.certis.studyplatform.project.domain.repository;
 
+import org.certis.studyplatform.project.domain.vo.ProjectSummaryVo;
 import org.certis.studyplatform.project.domain.vo.ProjectVo;
 import org.certis.studyplatform.project.domain.vo.ProjectSearchCriteriaVo;
 import org.certis.studyplatform.project.domain.vo.ProjectSearchResultVo;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
@@ -117,4 +119,16 @@ public interface ProjectQueryRepository {
      * @return 중복 여부
      */
     boolean existsByTitleAndIdNot(String title, Long projectId);
+
+    /**
+     * 특정 멤버가 생성한 완료된 프로젝트 목록 조회 (페이징)
+     * 완료 조건: ended_at < 현재시간 AND deleted_at IS NULL AND member_id = ?
+     */
+    Page<ProjectSummaryVo> findCompletedProjectsByMember(Long memberId, Pageable pageable);
+
+    /**
+     * 특정 멤버가 생성한 완료된 프로젝트 목록 조회 (전체)
+     */
+    List<ProjectSummaryVo> findCompletedProjectsListByMember(Long memberId);
+
 }
