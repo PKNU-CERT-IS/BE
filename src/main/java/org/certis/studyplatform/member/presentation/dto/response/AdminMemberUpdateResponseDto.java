@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.member.domain.MemberRole;
 
 
@@ -14,5 +15,5 @@ import org.certis.studyplatform.member.domain.MemberRole;
 public class AdminMemberUpdateResponseDto {
     private Long memberId;
     private MemberRole newRole;
-    private String newGrade;
+    private MemberGrade newGrade;
 }

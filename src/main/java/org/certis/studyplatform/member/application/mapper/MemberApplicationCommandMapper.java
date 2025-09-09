@@ -19,24 +19,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class MemberApplicationCommandMapper {
 
-    /**
-     * DTO → CreateMemberCommand 변환
-     */
-    public CreateMemberCommand toCreateMemberCommand(MemberCreateRequestDto requestDto) {
-        return new CreateMemberCommand(
-            requestDto.getName(),
-            requestDto.getStudentNumber(),
-            requestDto.getGrade(),
-            requestDto.getRole(),
-            requestDto.getMajor(),
-            requestDto.getDescription(),
-            requestDto.getSkills(),
-            requestDto.getEmail(),
-            requestDto.getProfileImage(),
-                requestDto.getBirthday(),
-                requestDto.getGender()
-        );
-    }
+
 
     /**
      * DTO → MemberUpdateCommand 변환 (기본 정보 수정)

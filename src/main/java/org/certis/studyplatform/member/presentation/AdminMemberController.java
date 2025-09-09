@@ -32,7 +32,7 @@ public class AdminMemberController {
     private final MemberFacadeService memberFacadeService;
 
     @PostMapping("/update")
-//    @PreAuthorize("hasRole('STAFF') or hasRole('VICECHAIRMAN') or hasRole('CHAIRMAN') or hasRole('ADMIN')") for test
+//    @PreAuthorize("hasRole('STAFF') or hasRole('VICECHAIRMAN') or hasRole('CHAIRMAN') or hasRole('ADMIN')")
     public ResponseEntity<GlobalResponseHandler<AdminMemberUpdateResponseDto>> updateMemberAdminFields(
             @Valid @RequestBody AdminMemberUpdateRequestDto request
 //            @AuthenticationPrincipal CurrentUser currentUser

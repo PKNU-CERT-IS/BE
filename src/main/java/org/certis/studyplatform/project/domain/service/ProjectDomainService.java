@@ -281,7 +281,7 @@ public class ProjectDomainService {
             MemberVo requesterMember = memberDomainService.getMemberVo(new GetMemberByIdQuery(requesterId));
             MemberRole requesterRole = requesterMember.role();
 
-            if (requesterRole.isStaffOrAbove(requesterRole)) {
+            if (MemberRole.isStaffOrAbove(requesterRole)) {
                 log.debug("Domain: Update permission granted - requester is staff or above: {}", requesterRole);
                 return;
             }
@@ -316,7 +316,7 @@ public class ProjectDomainService {
             MemberVo requesterMember = memberDomainService.getMemberVo(new GetMemberByIdQuery(requesterId));
             MemberRole requesterRole = requesterMember.role();
 
-            if (requesterRole.isStaffOrAbove(requesterRole)) {
+            if (MemberRole.isStaffOrAbove(requesterRole)) {
                 log.debug("Domain: Delete permission granted - requester is staff or above: {}", requesterRole);
                 return;
             }

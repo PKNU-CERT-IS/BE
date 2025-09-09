@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.member.domain.MemberRole;
 
 @Getter
@@ -20,5 +21,5 @@ public class AdminMemberUpdateRequestDto {
     private MemberRole newRole;
 
     @NotNull(message = "대상 회원 학년 정보는 필수입니다")
-    private String newGrade;
+    private MemberGrade newGrade;
 }

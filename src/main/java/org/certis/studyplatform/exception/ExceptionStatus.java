@@ -316,6 +316,7 @@ public enum ExceptionStatus {
     BOARD_DOMAIN_INVALID_SEARCH(HttpStatus.BAD_REQUEST, "유효하지 않은 검색어입니다"),
     BOARD_DOMAIN_INVALID_PAGE(HttpStatus.BAD_REQUEST, "유효하지 않은 페이지 번호입니다"),
     BOARD_DOMAIN_INVALID_PAGE_SIZE(HttpStatus.BAD_REQUEST, "유효하지 않은 페이지 크기입니다"),
+    BOARD_DOMAIN_INVALID_PHONE_NUMBER(HttpStatus.BAD_REQUEST, "유효하지 않은 전화번호입니다"),
 
 
     // Board - Infrastructure Layer
@@ -355,6 +356,7 @@ public enum ExceptionStatus {
     SCHEDULE_DOMAIN_INVALID_PLACE(HttpStatus.UNPROCESSABLE_ENTITY, "스케줄 장소가 유효하지 않습니다"),
     SCHEDULE_DOMAIN_INVALID_TIME(HttpStatus.UNPROCESSABLE_ENTITY, "스케줄 시간이 유효하지 않습니다"),
     SCHEDULE_DOMAIN_INVALID_TIME_ORDER(HttpStatus.UNPROCESSABLE_ENTITY, "시작 시간이 종료 시간보다 늦을 수 없습니다"),
+    SCHEDULE_DOMAIN_INVALID_OWNER(HttpStatus.FORBIDDEN, "스케줄 관리에 적절하지 않은 사용자입니다."),
     SCHEDULE_DOMAIN_INVALID_PAST_TIME(HttpStatus.UNPROCESSABLE_ENTITY, "과거 시간으로 스케줄을 생성할 수 없습니다"),
     SCHEDULE_DOMAIN_INVALID_STATUS(HttpStatus.UNPROCESSABLE_ENTITY, "유효하지 않은 스케줄 상태입니다"),
     SCHEDULE_DOMAIN_TIME_CONFLICT(HttpStatus.CONFLICT, "스케줄 시간이 중복됩니다"),

@@ -1,5 +1,8 @@
 package org.certis.studyplatform.shared.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -53,11 +56,17 @@ public class RedisConfiguration {
         try {
             // 연결 테스트
             connectionFactory.getConnection().ping();
+// ✅ LocalDateTime 직렬화 지원하는 ObjectMapper 생성
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.registerModule(new JavaTimeModule());
+            objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
+            GenericJackson2JsonRedisSerializer serializer =
+                    new GenericJackson2JsonRedisSerializer(objectMapper);
             RedisTemplate<String, Object> template = new RedisTemplate<>();
             template.setConnectionFactory(connectionFactory);
-            template.setKeySerializer(new StringRedisSerializer());
-            template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+            template.setValueSerializer(serializer);
+            template.setHashValueSerializer(serializer);
             template.setHashKeySerializer(new StringRedisSerializer());
             template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
             template.afterPropertiesSet();

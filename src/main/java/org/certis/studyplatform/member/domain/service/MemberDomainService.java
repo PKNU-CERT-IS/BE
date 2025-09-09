@@ -6,11 +6,9 @@ import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.member.application.command.GetMemberTokenInfoQuery;
 import org.certis.studyplatform.member.application.object.command.*;
-import org.certis.studyplatform.member.application.object.query.GetMemberByIdQuery;
-import org.certis.studyplatform.member.application.object.query.SearchMembersForAdminQuery;
-import org.certis.studyplatform.member.application.object.query.SearchMembersQuery;
-import org.certis.studyplatform.member.application.object.query.GetMembersQuery;
+import org.certis.studyplatform.member.application.object.query.*;
 import org.certis.studyplatform.member.domain.MemberRole;
+import org.certis.studyplatform.member.domain.repository.command.MemberContactCommandRepository;
 import org.certis.studyplatform.member.domain.vo.*;
 import org.certis.studyplatform.member.domain.repository.command.MemberCommandRepository;
 import org.certis.studyplatform.member.domain.repository.query.MemberQueryRepository;
@@ -49,6 +47,7 @@ public class MemberDomainService {
     private final MemberCommandRepository memberCommandRepository;
     private final MemberQueryRepository memberQueryRepository;
     private final MemberDomainMapper memberDomainMapper;
+    private final MemberContactCommandRepository memberContactCommandRepository;
 
     // ================================================================
     // COMMAND OPERATIONS - Command 객체 기반 (VO만 처리)
@@ -137,6 +136,13 @@ public class MemberDomainService {
         log.debug("💾 Calling repository to persist member (VO → Entity)...");
         MemberCreatedVo createdMember = memberCommandRepository.createMember(creationVo);
         log.info("🎉 Domain: Member created successfully with ID: {}", createdMember.id());
+
+        MemberContactVo contactVo = MemberContactVo.of(
+                createdMember.id(),
+                memberDomainMapper.toEmailVo(command.email()),
+                PhoneNumberVo.of(command.phoneNumber())
+        );
+        memberContactCommandRepository.createContact(contactVo);
 
         return createdMember;
     }
@@ -309,23 +315,6 @@ public class MemberDomainService {
                 });
     }
 
-    /**
-     * 회원 검색 (Query 기반)
-     * Repository는 VO를 반환
-     */
-    public Page<MemberSummaryVo> searchMemberVos(SearchMembersQuery query) {
-        log.info("Domain: Searching member VOs with criteria: {}", query.keyword());
-        return memberQueryRepository.searchMembers(query);
-    }
-
-    /**
-     * 전체 회원 조회 (Query 기반)
-     * Repository는 VO를 반환
-     */
-    public Page<MemberSummaryVo> getAllMemberVos(GetMembersQuery query) {
-        log.info("Domain: Getting all member VOs with pagination");
-        return memberQueryRepository.findAll(query);
-    }
 
     // ================================================================
     // BUSINESS LOGIC VALIDATION METHODS - VO 기반
@@ -596,5 +585,23 @@ public class MemberDomainService {
             memberCommandRepository.updatePenalty(member.memberId(), penaltyVo);
             memberCommandRepository.updateGracePeriod(member.memberId(), graceVo);
         }
+    }
+
+    public List<MemberWithContactVo> searchMembersWithContact(SearchMembersWithContactQuery query) {
+        log.info("Domain: Searching members with contact - search: {}, grade: {}, role: {}",
+                query.search(), query.grade(), query.role());
+
+        // Query 객체를 VO로 변환
+        MemberSearchConditionVo searchConditionVo = MemberSearchConditionVo.of(
+                query.search(),
+                query.grade(),
+                query.role()
+        );
+
+        // Repository에 VO 전달
+        List<MemberWithContactVo> members = memberQueryRepository.searchMembersWithContact(searchConditionVo);
+
+        log.info("Domain: Found {} members with contact info", members.size());
+        return members;
     }
 }

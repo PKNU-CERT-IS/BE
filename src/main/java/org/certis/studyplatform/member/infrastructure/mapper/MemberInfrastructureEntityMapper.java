@@ -2,6 +2,7 @@ package org.certis.studyplatform.member.infrastructure.mapper;
 
 import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.member.domain.MemberRole;
+import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberContactEntity;
 import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberEntity;
 import org.certis.studyplatform.member.domain.vo.*;
 import org.springframework.stereotype.Component;
@@ -179,20 +180,6 @@ public class MemberInfrastructureEntityMapper {
     // 검색/필터링 조건 → JPA 쿼리 조건 변환
     // =================================================================
 
-    /**
-     * MemberSearchConditionVo → JPA 쿼리 조건 변환
-     * QueryDSL이나 Criteria API에서 사용할 조건들로 변환
-     */
-    public SearchConditionJpa toSearchCondition(MemberSearchConditionVo searchConditionVo) {
-        return SearchConditionJpa.builder()
-                .keyword(searchConditionVo.keyword())
-                .grade(searchConditionVo.grade() != null ? searchConditionVo.grade().grade() : null)
-                .role(searchConditionVo.role() != null ? searchConditionVo.role().role() : null)
-                .major(searchConditionVo.major() != null ? searchConditionVo.major().value() : null)
-                .skills(searchConditionVo.skills() != null ?
-                        convertSkillsToArray(searchConditionVo.skills()) : null)
-                .build();
-    }
 
     /**
      * MemberFilterVo → JPA 필터 조건 변환
@@ -430,5 +417,18 @@ public class MemberInfrastructureEntityMapper {
                 return new FilterConditionJpa(this);
             }
         }
+    }
+
+
+// MemberContactVo → MemberContactEntity 변환
+    public MemberContactEntity toEntity(MemberContactVo contactVo) {
+
+        return MemberContactEntity.builder()
+                .memberId(contactVo.memberId().value())
+                .email(extractEmailValue(contactVo.email()))
+                .phoneNumber(contactVo.phoneNumber().value())
+                .githubUrl(null)     // 초기 회원가입 시점에서는 null
+                .linkedinUrl(null)   // 초기 회원가입 시점에서는 null
+                .build();
     }
 }

@@ -48,5 +48,6 @@ public class MemberCreateRequestDto {
     private String profileImage;
     private String description;
     private String email;
+    private String phoneNumber;
 
 }

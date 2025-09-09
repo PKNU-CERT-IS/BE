@@ -1,4 +1,9 @@
 spring:
+  config:
+    activate:
+      on-profile: test
+
+
   datasource:
     # 테스트에서 트랜잭션 제어를 위한 설정
     hikari:
@@ -6,7 +11,7 @@ spring:
       connection-timeout: 20000
       maximum-pool-size: 5
       minimum-idle: 1
-  
+
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:

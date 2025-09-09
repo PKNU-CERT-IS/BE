@@ -38,11 +38,11 @@ public record SkillsVo(List<String> values) {
                     "기술 스택 목록은 null일 수 없습니다.");
         }
 
-        // [핵심 규칙] 비어있는 리스트를 허용하지 않습니다.
-        if (skills.isEmpty()) {
-            throw new DomainException(ExceptionStatus.MEMBER_DOMAIN_INVALID_SKILLS,
-                    "최소 1개 이상의 기술 스택이 필요합니다.");
-        }
+        // [핵심 규칙] 비어있는 리스트를 허용하지 않습니다. -> 스택이 비어있을 수 있다고 생각함 아니면 다시 활성화
+//        if (skills.isEmpty()) {
+//            throw new DomainException(ExceptionStatus.MEMBER_DOMAIN_INVALID_SKILLS,
+//                    "최소 1개 이상의 기술 스택이 필요합니다.");
+//        }
 
         if (skills.size() > 20) {
             throw new DomainException(ExceptionStatus.MEMBER_DOMAIN_INVALID_SKILLS,
