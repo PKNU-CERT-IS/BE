@@ -31,6 +31,7 @@ public record CreateMemberCommand(
         String description,             // → String (선택적, 2000자 이하)
         List<String> skills,            // → SkillsVo (1-20개, 중복제거, 각 50자 이하)
         String email,                   // → EmailVo (선택적, 이메일 형식)
+        String phoneNumber,
         String profileImage,             // → ProfileImageVo (선택적, URL 형식)
         OffsetDateTime birthday,
         String gender
