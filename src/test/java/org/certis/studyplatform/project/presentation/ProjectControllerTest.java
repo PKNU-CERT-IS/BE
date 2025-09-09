@@ -46,7 +46,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import(TestEmbeddedPostgresConfig.class)
+@Import({
+        TestEmbeddedPostgresConfig.class
+})
 @ActiveProfiles("test")
 @TestPropertySource(locations = "classpath:application-test.yml")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
@@ -743,7 +745,7 @@ class ProjectControllerTest {
                     .set(PROJECT_MEETING.MEMBER_ID, TEST_MEMBER_ID)
                     .set(PROJECT_MEETING.TITLE, "프로젝트 회의록 " + i)
                     .set(PROJECT_MEETING.CONTENT, "프로젝트 회의록 " + i + " 내용")
-                    .set(PROJECT_MEETING.PARTICIPANTS, new String[]{TEST_MEMBER_NAME, TEST_MEMBER_2_NAME})
+                    .set(PROJECT_MEETING.PARTICIPANTS, new Long[]{TEST_MEMBER_ID, TEST_MEMBER_2_ID})
                     .set(PROJECT_MEETING.CREATED_AT, now.minusHours(i))
                     .set(PROJECT_MEETING.UPDATED_AT, now.minusHours(i))
                     .execute();

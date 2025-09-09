@@ -24,19 +24,21 @@ public class MemberApplicationCommandMapper {
      */
     public CreateMemberCommand toCreateMemberCommand(MemberCreateRequestDto requestDto) {
         return new CreateMemberCommand(
-            requestDto.getName(),
-            requestDto.getStudentNumber(),
-            requestDto.getGrade(),
-            requestDto.getRole(),
-            requestDto.getMajor(),
-            requestDto.getDescription(),
-            requestDto.getSkills(),
-            requestDto.getEmail(),
-            requestDto.getProfileImage(),
+                requestDto.getName(),
+                requestDto.getStudentNumber(),
+                requestDto.getGrade(),
+                requestDto.getRole(),
+                requestDto.getMajor(),
+                requestDto.getDescription(),
+                requestDto.getSkills(),
+                requestDto.getEmail(),        // ✅ 필수
+                requestDto.getPhoneNumber(),  // ✅ 새로 추가 (필수)
+                requestDto.getProfileImage(), // 선택값
                 requestDto.getBirthday(),
                 requestDto.getGender()
         );
     }
+
 
     /**
      * DTO → MemberUpdateCommand 변환 (기본 정보 수정)

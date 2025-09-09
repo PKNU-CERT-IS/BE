@@ -2,6 +2,7 @@ package org.certis.studyplatform.member.infrastructure.mapper;
 
 import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.member.domain.MemberRole;
+import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberContactEntity;
 import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberEntity;
 import org.certis.studyplatform.member.domain.vo.*;
 import org.springframework.stereotype.Component;
@@ -430,5 +431,18 @@ public class MemberInfrastructureEntityMapper {
                 return new FilterConditionJpa(this);
             }
         }
+    }
+
+
+// MemberContactVo → MemberContactEntity 변환
+    public MemberContactEntity toEntity(MemberContactVo contactVo) {
+
+        return MemberContactEntity.builder()
+                .memberId(contactVo.memberId().value())
+                .email(extractEmailValue(contactVo.email()))
+                .phoneNumber(contactVo.phoneNumber().value())
+                .githubUrl(null)     // 초기 회원가입 시점에서는 null
+                .linkedinUrl(null)   // 초기 회원가입 시점에서는 null
+                .build();
     }
 }

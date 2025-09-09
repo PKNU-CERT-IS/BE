@@ -11,6 +11,7 @@ import org.certis.studyplatform.member.application.object.query.SearchMembersFor
 import org.certis.studyplatform.member.application.object.query.SearchMembersQuery;
 import org.certis.studyplatform.member.application.object.query.GetMembersQuery;
 import org.certis.studyplatform.member.domain.MemberRole;
+import org.certis.studyplatform.member.domain.repository.command.MemberContactCommandRepository;
 import org.certis.studyplatform.member.domain.vo.*;
 import org.certis.studyplatform.member.domain.repository.command.MemberCommandRepository;
 import org.certis.studyplatform.member.domain.repository.query.MemberQueryRepository;
@@ -49,6 +50,7 @@ public class MemberDomainService {
     private final MemberCommandRepository memberCommandRepository;
     private final MemberQueryRepository memberQueryRepository;
     private final MemberDomainMapper memberDomainMapper;
+    private final MemberContactCommandRepository memberContactCommandRepository;
 
     // ================================================================
     // COMMAND OPERATIONS - Command 객체 기반 (VO만 처리)
@@ -137,6 +139,13 @@ public class MemberDomainService {
         log.debug("💾 Calling repository to persist member (VO → Entity)...");
         MemberCreatedVo createdMember = memberCommandRepository.createMember(creationVo);
         log.info("🎉 Domain: Member created successfully with ID: {}", createdMember.id());
+
+        MemberContactVo contactVo = MemberContactVo.of(
+                createdMember.id(),
+                memberDomainMapper.toEmailVo(command.email()),
+                PhoneNumberVo.of(command.phoneNumber())
+        );
+        memberContactCommandRepository.createContact(contactVo);
 
         return createdMember;
     }

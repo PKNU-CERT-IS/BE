@@ -65,17 +65,20 @@ public record CreateMemberCommand(
         }
     }
 
-    public static CreateMemberCommand createMemberCommandForNewAuthMember(RegisterRequestDto requestDto){
-        return new CreateMemberCommand(requestDto.getName(),
+    public static CreateMemberCommand createMemberCommandForNewAuthMember(RegisterRequestDto requestDto) {
+        return new CreateMemberCommand(
+                requestDto.getName(),
                 requestDto.getStudentNumber(),
                 requestDto.getGrade(),
-                MemberRole.NONE,
+                MemberRole.NONE,                // 회원가입 시 기본 Role (추후 승인되면 변경)
                 requestDto.getMajor(),
-                null,
-                null,
-                null,
-                null,
+                null,                           // description (선택값)
+                null,                           // skills (회원가입 시점엔 선택적)
+                requestDto.getEmail(),          // ✅ email (필수)
+                requestDto.getPhoneNumber(),    // ✅ phoneNumber (필수)
+                null,                           // profileImage (선택값)
                 requestDto.getBirthday(),
-                requestDto.getGender());
+                requestDto.getGender()
+        );
     }
 }

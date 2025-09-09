@@ -653,9 +653,9 @@ class ProjectMeetingControllerTest {
                 .set(PROJECT_MEETING.MEMBER_ID, TEST_MEMBER_ID)
                 .set(PROJECT_MEETING.TITLE, TEST_MEETING_TITLE)
                 .set(PROJECT_MEETING.CONTENT, TEST_MEETING_CONTENT)
-                .set(PROJECT_MEETING.PARTICIPANTS, new String[]{
-                        TEST_MEMBER_ID.toString(),
-                        TEST_MEMBER_2_ID.toString()
+                .set(PROJECT_MEETING.PARTICIPANTS, new Long[]{
+                        TEST_MEMBER_ID,
+                        TEST_MEMBER_2_ID
                 })
                 .set(PROJECT_MEETING.CREATED_AT, now)
                 .set(PROJECT_MEETING.UPDATED_AT, now)
@@ -675,9 +675,9 @@ class ProjectMeetingControllerTest {
                     .set(PROJECT_MEETING.MEMBER_ID, TEST_MEMBER_ID)
                     .set(PROJECT_MEETING.TITLE, "회의록 " + i)
                     .set(PROJECT_MEETING.CONTENT, "회의록 " + i + " 내용")
-                    .set(PROJECT_MEETING.PARTICIPANTS, new String[]{
-                            TEST_MEMBER_ID.toString(),
-                            TEST_MEMBER_2_ID.toString()
+                    .set(PROJECT_MEETING.PARTICIPANTS, new Long[]{
+                            TEST_MEMBER_ID,
+                            TEST_MEMBER_2_ID
                     })
                     .set(PROJECT_MEETING.CREATED_AT, now.minusHours(i))
                     .set(PROJECT_MEETING.UPDATED_AT, now.minusHours(i))
@@ -698,9 +698,9 @@ class ProjectMeetingControllerTest {
                     .set(PROJECT_MEETING.MEMBER_ID, TEST_MEMBER_ID)
                     .set(PROJECT_MEETING.TITLE, "대용량 테스트 회의록 " + i)
                     .set(PROJECT_MEETING.CONTENT, "대용량 테스트용 회의록 내용 " + i)
-                    .set(PROJECT_MEETING.PARTICIPANTS, new String[]{
-                            TEST_MEMBER_ID.toString(),
-                            TEST_MEMBER_2_ID.toString()
+                    .set(PROJECT_MEETING.PARTICIPANTS, new Long[]{
+                            TEST_MEMBER_ID,
+                            TEST_MEMBER_2_ID
                     })
                     .set(PROJECT_MEETING.CREATED_AT, now.minusHours(i))
                     .set(PROJECT_MEETING.UPDATED_AT, now.minusHours(i))
