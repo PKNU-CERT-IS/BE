@@ -406,7 +406,7 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
     public List<MemberWithContactVo> searchMembersWithContact(MemberSearchConditionVo searchConditionVo) {
         log.info("Infrastructure: Searching members with contact - search: {}, grade: {}, role: {}",
                 searchConditionVo.keyword(),
-                searchConditionVo.grade() != null ? searchConditionVo.grade().value() : null,
+                searchConditionVo.grade() != null ? searchConditionVo.grade().grade() : null,
                 searchConditionVo.role() != null ? searchConditionVo.role().role() : null);
 
         // JOOQ 쿼리 실행 (Entity 기반)
@@ -458,7 +458,7 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
 
         // 학년 필터 (VO에서 원시값 추출)
         if (searchConditionVo.grade() != null) {
-            condition = condition.and(MEMBER.GRADE.eq(searchConditionVo.grade().value()));
+            condition = condition.and(MEMBER.GRADE.eq(searchConditionVo.grade().grade().name()));
         }
 
         // 역할 필터 (VO에서 원시값 추출)
@@ -477,11 +477,15 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
         String roleString = record.get(MEMBER.ROLE);
         MemberRole memberRole = roleString != null ? MemberRole.valueOf(roleString) : null;
 
+        String gradeString = record.get(MEMBER.GRADE);
+        MemberGrade memberGrade = roleString != null ? MemberGrade.valueOf(gradeString) : null;
+
+
         MemberEntity memberEntity = MemberEntity.builder()
                 .id(record.get(MEMBER.ID))
                 .name(record.get(MEMBER.NAME))
                 .profileImage(record.get(MEMBER.PROFILE_IMAGE))
-                .grade(record.get(MEMBER.GRADE))
+                .grade(memberGrade)
                 .role(memberRole)
                 .skills(record.get(MEMBER.SKILLS))
                 .major(record.get(MEMBER.MAJOR))

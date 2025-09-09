@@ -11,6 +11,7 @@ import java.util.List;
  * 검색 결과와 페이지네이션 정보 포함
  */
 import lombok.Getter;
+import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.member.domain.MemberRole;
 
 
@@ -21,7 +22,7 @@ public class MemberSearchResponseDto {
     private Long id;
     private String name;
     private String profileImage;
-    private String grade;
+    private MemberGrade grade;
     private MemberRole role;
     private List<String> skills;
     private String major;
@@ -36,7 +37,7 @@ public class MemberSearchResponseDto {
             Long id,
             String name,
             String profileImage,
-            String grade,
+            MemberGrade grade,
             MemberRole role,
             List<String> skills,
             String major,

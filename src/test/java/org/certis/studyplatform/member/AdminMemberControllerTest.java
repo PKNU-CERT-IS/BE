@@ -2,6 +2,7 @@ package org.certis.studyplatform.member;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.certis.studyplatform.config.TestEmbeddedPostgresConfig;
+import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.presentation.dto.request.AdminMemberUpdateRequestDto;
 import org.certis.studyplatform.member.presentation.dto.request.GrantGracePeriodRequestDto;
@@ -80,7 +81,7 @@ class AdminMemberControllerTest {
         AdminMemberUpdateRequestDto request = new AdminMemberUpdateRequestDto(
                 TEST_TARGET_MEMBER_ID,
                 MemberRole.STAFF, // 새로운 역할
-                "3학년"// 새로운 학년
+                MemberGrade.JUNIOR// 새로운 학년
         );
 
         // When: 관리자 권한으로 회원 필드 수정 API 호출
@@ -202,7 +203,7 @@ class AdminMemberControllerTest {
                 .set(MEMBER.ID, TEST_ADMIN_ID)
                 .set(MEMBER.NAME, TEST_ADMIN_NAME)
                 .set(MEMBER.STUDENT_NUMBER, "20200001")
-                .set(MEMBER.GRADE, "4학년")
+                .set(MEMBER.GRADE, MemberGrade.SENIOR.name())
                 .set(MEMBER.ROLE, MemberRole.ADMIN.name())
                 .set(MEMBER.MAJOR, "소프트웨어학과")
                 .set(MEMBER.BIRTHDAY, OffsetDateTime.now().minusYears(23))
@@ -216,7 +217,7 @@ class AdminMemberControllerTest {
                 .set(MEMBER.ID, TEST_TARGET_MEMBER_ID)
                 .set(MEMBER.NAME, TEST_TARGET_MEMBER_NAME)
                 .set(MEMBER.STUDENT_NUMBER, "20200002")
-                .set(MEMBER.GRADE, "2학년")
+                .set(MEMBER.GRADE, MemberGrade.SOPHOMORE.name())
                 .set(MEMBER.ROLE, MemberRole.PLAYER.name())
                 .set(MEMBER.MAJOR, "컴퓨터공학과")
                 .set(MEMBER.BIRTHDAY, OffsetDateTime.now().minusYears(20))

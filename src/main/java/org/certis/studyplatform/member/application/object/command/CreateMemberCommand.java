@@ -1,6 +1,7 @@
 package org.certis.studyplatform.member.application.object.command;
 
 import org.certis.studyplatform.auth.presentation.dto.request.RegisterRequestDto;
+import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.member.domain.MemberRole;
 
 import java.time.OffsetDateTime;
@@ -25,7 +26,7 @@ import java.util.List;
 public record CreateMemberCommand(
         String name,                    // → NameVo (2-50자, 한글/영문/공백)
         String studentNumber,           // → StudentNumberVo (6-20자, 숫자만)
-        String grade,                   // → GradeVo (문자열 → MemberGrade 변환은 도메인에서 수행)
+        MemberGrade grade,                   // → GradeVo (문자열 → MemberGrade 변환은 도메인에서 수행)
         MemberRole role,                    // → RoleVo (2-100자, 다국어)
         String major,                   // → MajorVo (2-100자, 특수문자 포함)
         String description,             // → String (선택적, 2000자 이하)
@@ -48,7 +49,7 @@ public record CreateMemberCommand(
         if (studentNumber == null || studentNumber.trim().isEmpty()) {
             throw new IllegalArgumentException("학번은 필수입니다");
         }
-        if (grade == null || grade.trim().isEmpty()) {
+        if (grade == null ) {
             throw new IllegalArgumentException("학년은 필수입니다");
         }
         if (major == null || major.trim().isEmpty()) {
@@ -70,7 +71,7 @@ public record CreateMemberCommand(
         return new CreateMemberCommand(
                 requestDto.getName(),
                 requestDto.getStudentNumber(),
-                requestDto.getGrade(),
+                 MemberGrade.fromGradeString(requestDto.getGrade()),
                 MemberRole.NONE,                // 회원가입 시 기본 Role (추후 승인되면 변경)
                 requestDto.getMajor(),
                 null,                           // description (선택값)

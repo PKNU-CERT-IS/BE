@@ -1,6 +1,7 @@
 package org.certis.studyplatform.member.domain.vo;
 
 import lombok.Builder;
+import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.member.domain.MemberRole;
 
 /**
@@ -12,7 +13,7 @@ public record MemberSearchConditionVo(
         GradeVo grade,
         RoleVo role
 ) {
-    public static MemberSearchConditionVo of(String searchKeyword, String grade, MemberRole role) {
+    public static MemberSearchConditionVo of(String searchKeyword, MemberGrade grade, MemberRole role) {
         return new MemberSearchConditionVo(
                 searchKeyword,
                 grade != null ? GradeVo.of(grade) : null,

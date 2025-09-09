@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.certis.generated.jooq.tables.Member;
+import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.member.domain.MemberRole;
 
 import java.util.List;
@@ -19,7 +21,7 @@ public class MemberSearchRequestDto {
     /**
      * 학년 필터 (선택적)
      */
-    private String grade;
+    private MemberGrade grade;
 
     /**
      * 역할 필터 (선택적)

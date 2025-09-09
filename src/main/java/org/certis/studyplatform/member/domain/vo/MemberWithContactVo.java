@@ -1,5 +1,6 @@
 package org.certis.studyplatform.member.domain.vo;
 
+import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.member.domain.MemberRole;
 
 import java.time.OffsetDateTime;
@@ -9,7 +10,7 @@ public record MemberWithContactVo(
         Long id,
         String name,
         String profileImage,
-        String grade,
+        MemberGrade grade,
         MemberRole role,
         List<String> skills,
         String major,
@@ -23,7 +24,7 @@ public record MemberWithContactVo(
         String linkedinUrl
 ) {
     public static MemberWithContactVo of(
-            Long id, String name, String profileImage, String grade, MemberRole role,
+            Long id, String name, String profileImage, MemberGrade grade, MemberRole role,
             List<String> skills, String major, String description,
             OffsetDateTime createdAt, OffsetDateTime updatedAt,
             String email, String githubUrl, String linkedinUrl) {

@@ -2,6 +2,7 @@ package org.certis.studyplatform.member;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.certis.studyplatform.config.TestEmbeddedPostgresConfig;
+import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.presentation.dto.request.MemberUpdateRequestDto;
 import org.jooq.DSLContext;
@@ -140,12 +141,12 @@ class MemberControllerTest {
 
         // When: 학년으로 필터링하여 검색 API 호출
         mockMvc.perform(get(BASE_URL + "/keyword")
-                        .param("grade", "4학년"))
+                        .param("grade", MemberGrade.SENIOR.name()))
                 .andDo(print())
                 // Then: HTTP 200 OK 응답과 해당 학년 회원만 반환
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data[0].grade").value("4학년"));
+                .andExpect(jsonPath("$.data[0].grade").value(MemberGrade.SENIOR.name()));
 
         System.out.println("✅ 학년 필터링 테스트 성공");
     }
@@ -177,7 +178,7 @@ class MemberControllerTest {
         // When: 검색어 + 학년 + 역할로 복합 검색 API 호출
         mockMvc.perform(get(BASE_URL + "/keyword")
                         .param("search", "김")
-                        .param("grade", "4학년")
+                        .param("grade", MemberGrade.SENIOR.name())
                         .param("role", "PLAYER"))
                 .andDo(print())
                 // Then: HTTP 200 OK 응답과 모든 조건에 맞는 회원 반환
@@ -221,7 +222,7 @@ class MemberControllerTest {
                 .set(MEMBER.ID, TEST_MEMBER_ID)
                 .set(MEMBER.NAME, TEST_MEMBER_NAME)
                 .set(MEMBER.STUDENT_NUMBER, "20201111")
-                .set(MEMBER.GRADE, "4학년")
+                .set(MEMBER.GRADE, MemberGrade.SENIOR.name())
                 .set(MEMBER.ROLE, MemberRole.PLAYER.name())
                 .set(MEMBER.MAJOR, TEST_MAJOR)
                 .set(MEMBER.SKILLS, new String[]{"Java", "Spring", "React"})
@@ -252,7 +253,7 @@ class MemberControllerTest {
                 .set(MEMBER.ID, TEST_MEMBER_2_ID)
                 .set(MEMBER.NAME, TEST_MEMBER_2_NAME)
                 .set(MEMBER.STUDENT_NUMBER, "20202222")
-                .set(MEMBER.GRADE, "3학년")
+                .set(MEMBER.GRADE, MemberGrade.JUNIOR.name())
                 .set(MEMBER.ROLE, MemberRole.PLAYER.name())
                 .set(MEMBER.MAJOR, TEST_MAJOR_2)
                 .set(MEMBER.SKILLS, new String[]{"Python", "Django"})
@@ -275,7 +276,7 @@ class MemberControllerTest {
         return new MemberUpdateRequestDto(
                 "김수정됨",
                 "수정된 프로필 이미지 URL",
-                "4학년",
+                MemberGrade.SENIOR,
                 MemberRole.ADMIN,
                 "소프트웨어학과",
                 "",

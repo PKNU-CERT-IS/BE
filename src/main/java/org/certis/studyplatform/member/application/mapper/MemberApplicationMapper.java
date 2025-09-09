@@ -31,23 +31,6 @@ public class MemberApplicationMapper {
     // Request DTO -> Command/Query (for Facade/Service input)
     // ================================================================
 
-    public CreateMemberCommand toCreateCommand(MemberCreateRequestDto dto) {
-        if (dto == null) return null;
-        return new CreateMemberCommand(
-                dto.getName(),
-                dto.getStudentNumber(),
-                dto.getGrade(),
-                dto.getRole(),
-                dto.getMajor(),
-                dto.getDescription(),
-                Optional.ofNullable(dto.getSkills()).orElse(List.of()),
-                dto.getEmail(),
-                dto.getPhoneNumber(),
-                dto.getProfileImage(),
-                dto.getBirthday(),
-                dto.getGender()
-        );
-    }
 
     public UpdateMemberCommand toUpdateCommand(Long id, MemberUpdateRequestDto dto) {
         if (dto == null) return null;
