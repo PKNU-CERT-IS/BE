@@ -20,11 +20,9 @@ import java.util.List;
  * ✅ 비즈니스 규칙 검증은 Domain VO에서 수행
  */
 @Getter
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class MemberUpdateRequestDto {
-
     // 프로필 관련 필드 (선택적)
     @Size(min = 2, max = 50, message = "이름은 2자 이상 50자 이하여야 합니다.")
     @Pattern(regexp = "^[가-힣a-zA-Z\\s]*$", message = "이름은 한글, 영문, 공백만 포함할 수 있습니다.")
