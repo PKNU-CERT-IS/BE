@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.exception.InfrastructureException;
+import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.repository.query.MemberQueryRepository;
 import org.certis.studyplatform.member.domain.vo.*;
@@ -240,7 +241,7 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
                 .name(record.get("name", String.class))
                 .studentNumber(record.get("student_number", String.class))
                 .profileImage(record.get("profile_image", String.class))
-                .grade(record.get("grade", String.class))
+                .grade(record.get("grade", MemberGrade.class))
                 .role(record.get("role", MemberRole.class))
                 .skills(record.get("skills", String[].class)) // String[] 배열
                 .major(record.get("major", String.class))

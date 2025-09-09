@@ -1,6 +1,7 @@
 package org.certis.studyplatform.member.domain.mapper;
 
 import lombok.RequiredArgsConstructor;
+import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.vo.*;
 import org.springframework.stereotype.Component;
@@ -65,7 +66,8 @@ public class MemberDomainMapper {
      * String → GradeVo 변환 (검증 포함)
      */
     public GradeVo toGradeVo(String grade) {
-        return memberDomainCommandMapper.toGradeVo(grade);
+        MemberGrade parsed = MemberGrade.fromGradeString(grade);
+        return memberDomainCommandMapper.toGradeVo(parsed);
     }
 
     /**
@@ -119,7 +121,8 @@ public class MemberDomainMapper {
      * Query 조건을 필터링용 VO로 변환 (필요시 구현)
      */
     public GradeVo toSearchGradeVo(String grade) {
-        return memberDomainQueryMapper.toSearchGradeVo(grade);
+        MemberGrade parsed = MemberGrade.fromGradeString(grade);
+        return memberDomainQueryMapper.toSearchGradeVo(parsed);
     }
 
     /**

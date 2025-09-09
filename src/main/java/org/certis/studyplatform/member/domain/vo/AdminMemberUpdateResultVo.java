@@ -1,11 +1,12 @@
 package org.certis.studyplatform.member.domain.vo;
 
+import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.member.domain.MemberRole;
 
 public record AdminMemberUpdateResultVo(
         Long memberId,
         MemberRole newRole,
-        String newGrade
+        MemberGrade newGrade
 ) {
     public AdminMemberUpdateResultVo {
         if (memberId == null) {
@@ -14,12 +15,12 @@ public record AdminMemberUpdateResultVo(
         if (newRole == null) {
             throw new IllegalArgumentException("현재 권한은 필수입니다");
         }
-        if (newGrade == null || newGrade.trim().isEmpty()) {
+        if (newGrade == null) {
             throw new IllegalArgumentException("현재 학년은 필수입니다");
         }
     }
 
-    public static AdminMemberUpdateResultVo of(Long memberId, MemberRole newRole, String newGrade) {
+    public static AdminMemberUpdateResultVo of(Long memberId, MemberRole newRole, MemberGrade newGrade) {
         return new AdminMemberUpdateResultVo(memberId, newRole, newGrade);
     }
 }

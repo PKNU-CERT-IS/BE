@@ -1,5 +1,6 @@
 package org.certis.studyplatform.member.domain.vo;
 
+import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.member.domain.MemberRole;
 
 import java.time.OffsetDateTime;
@@ -14,7 +15,7 @@ public record MemberVo(
         String name,
         String studentNumber,
         String profileImage,
-        String grade,
+        MemberGrade grade,
         MemberRole role,
         List<String> skills,
         String major,
@@ -31,7 +32,7 @@ public record MemberVo(
      * 정적 팩토리 메서드
      */
     public static MemberVo of(Long id, String name, String studentNumber, String profileImage,
-                              String grade, MemberRole role, List<String> skills, String major,
+                              MemberGrade grade, MemberRole role, List<String> skills, String major,
                               String description, OffsetDateTime createdAt, OffsetDateTime updatedAt) {
         return new MemberVo(id, name, studentNumber, profileImage, grade, role, skills, major, description, createdAt, updatedAt);
     }
@@ -71,7 +72,7 @@ public record MemberVo(
     /**
      * 학년 반환
      */
-    public String getGrade() {
+    public MemberGrade getGrade() {
         return grade;
     }
 

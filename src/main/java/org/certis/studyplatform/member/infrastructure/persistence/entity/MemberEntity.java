@@ -5,6 +5,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.member.domain.MemberRole;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -38,8 +39,9 @@ public class MemberEntity {
     @Column(name = "profile_image")
     private String profileImage;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String grade;
+    private MemberGrade grade;
 
     @Enumerated(EnumType.STRING) // 중요!!
     @Column(nullable = false)
@@ -73,7 +75,7 @@ public class MemberEntity {
 
     @Builder(toBuilder = true)
     private MemberEntity(Long id, String name, String description, String studentNumber,
-                        String profileImage, String grade, MemberRole role, String[] skills,
+                        String profileImage, MemberGrade grade, MemberRole role, String[] skills,
                         String major, OffsetDateTime birthday, String gender, OffsetDateTime gracePeriod,
                         OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
         this.id = id;
