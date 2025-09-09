@@ -1,0 +1,366 @@
+package org.certis.studyplatform.study.domain.service;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.certis.studyplatform.exception.DomainException;
+import org.certis.studyplatform.exception.ExceptionStatus;
+import org.certis.studyplatform.member.application.object.query.GetMemberByIdQuery;
+import org.certis.studyplatform.member.domain.MemberRole;
+import org.certis.studyplatform.member.domain.service.MemberDomainService;
+import org.certis.studyplatform.member.domain.vo.MemberVo;
+import org.certis.studyplatform.member.infrastructure.persistence.MemberQueryRepositoryImpl;
+import org.certis.studyplatform.study.application.object.command.CreateStudyCommand;
+import org.certis.studyplatform.study.application.object.command.DeleteStudyCommand;
+import org.certis.studyplatform.study.application.object.command.UpdateStudyCommand;
+import org.certis.studyplatform.study.application.object.query.GetAllStudiesQuery;
+import org.certis.studyplatform.study.application.object.query.GetCompletedStudiesByMemberQuery;
+import org.certis.studyplatform.study.application.object.query.GetStudyByIdQuery;
+import org.certis.studyplatform.study.application.object.query.SearchStudiesQuery;
+import org.certis.studyplatform.study.domain.repository.StudyCommandRepository;
+import org.certis.studyplatform.study.domain.repository.StudyQueryRepository;
+import org.certis.studyplatform.study.domain.vo.StudySearchCriteriaVo;
+import org.certis.studyplatform.study.domain.vo.StudySearchResultVo;
+import org.certis.studyplatform.study.domain.vo.StudySummaryVo;
+import org.certis.studyplatform.study.domain.vo.StudyVo;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+/**
+ * Study Domain Service
+ *
+ * Clean Architecture Domain Layer
+ * 스터디 비즈니스 로직 처리
+ *
+ * CQRS 패턴: Command/Query 객체를 받아서 VO를 생성하여 Repository로 전달
+ * ✅ ReadModel 제거로 인한 단순화: Repository에서 직접 VO 반환
+ * ✅ StudyVo 내부 검증 로직 활용: 도메인 객체가 자체 유효성을 보장
+ */
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class StudyDomainService {
+
+    private final StudyCommandRepository commandRepository;
+    private final StudyQueryRepository queryRepository;
+    private final MemberDomainService memberDomainService;
+
+    // ================================================================
+    // COMMAND OPERATIONS
+    // ================================================================
+
+    /**
+     * 스터디 생성
+     */
+    public StudyVo createStudy(CreateStudyCommand command) {
+        log.info("Domain: Creating study from command - {}", command.title());
+
+//         [FIX] Add validation to ensure the creator exists before proceeding.
+//        if (!memberQueryRepositoryImpl.existsById(command.creatorId())) {
+//            throw new DomainException(ExceptionStatus.MEMBER_DOMAIN_NOT_FOUND,
+//                    "스터디 생성자를 찾을 수 없습니다: " + command.creatorId());
+//        }
+
+        // 중복 검사 (Repository 의존성이 필요한 검증만 수행)
+//        validateStudyTitleDuplication(command.title());
+
+        // StudyVo.createNew() 사용 - 생성 시 자동으로 나머지 검증 수행
+        StudyVo studyVo = StudyVo.createNew(
+                command.title(),
+                command.description(),
+                command.content(),
+                command.category(),
+                command.subCategory(),
+                command.startDate(),
+                command.endDate(),
+                command.creatorId(),
+                null, // creatorName
+                null, // creatorGrade
+                command.maxParticipants()
+        );
+
+        // Command Repository를 통한 저장 (VO 전달)
+        StudyVo savedStudyVo = commandRepository.save(studyVo);
+
+        log.info("Domain: Study created successfully - ID: {}", savedStudyVo.id());
+
+        return savedStudyVo;
+    }
+
+    /**
+     * 스터디 수정
+     */
+    public StudyVo updateStudy(UpdateStudyCommand command) {
+        log.info("Domain: Updating study from command - ID: {}", command.id());
+
+        // 기존 스터디 조회 (Repository에서 직접 StudyVo 반환)
+        StudyVo existingStudy = queryRepository.findById(command.id())
+                .orElseThrow(() -> new DomainException(ExceptionStatus.STUDY_DOMAIN_NOT_FOUND,
+                        "스터디를 찾을 수 없습니다: " + command.id()));
+
+        // 권한 검증: STAFF 이상이거나 작성자 본인인지 확인
+        validateStudyUpdatePermission(command.requesterId(), existingStudy.creatorId());
+
+        // 제목 중복 검사 (자신 제외)
+        if (command.title() != null) {
+            validateStudyTitleDuplicationForUpdate(command.title(), command.id());
+        }
+
+        // StudyVo.updateFrom() 사용 - 업데이트 시 자동으로 검증 수행
+        StudyVo updatedStudyVo = StudyVo.updateFrom(
+                existingStudy,
+                command.title(),
+                command.description(),
+                command.content(),
+                command.category(),
+                command.subCategory(),
+                command.startDate(),
+                command.endDate(),
+                command.maxParticipants()
+        );
+
+        // Command Repository를 통한 저장 (VO 전달)
+        StudyVo savedStudyVo = commandRepository.save(updatedStudyVo);
+
+        log.info("Domain: Study updated successfully - ID: {}", savedStudyVo.id());
+
+        return savedStudyVo;
+    }
+
+    /**
+     * 스터디 삭제
+     */
+    public void deleteStudy(DeleteStudyCommand command) {
+        log.info("Domain: Deleting study from command - ID: {}", command.id());
+
+        // 스터디 존재 여부 확인 (Repository에서 직접 StudyVo 반환)
+        StudyVo existingStudy = queryRepository.findByIdAndDeletedAtIsNull(command.id())
+                .orElseThrow(() -> new DomainException(ExceptionStatus.STUDY_DOMAIN_NOT_FOUND,
+                        "스터디를 찾을 수 없습니다: " + command.id()));
+
+        // 권한 검증: STAFF 이상이거나 작성자 본인인지 확인
+        validateStudyDeletePermission(command.requesterId(), existingStudy.creatorId());
+
+        // Command Repository를 통한 Soft Delete
+        commandRepository.deleteById(existingStudy.id());
+
+        log.info("Domain: Study deleted successfully - ID: {}", existingStudy.id());
+    }
+
+    // ================================================================
+    // QUERY OPERATIONS
+    // ================================================================
+
+    /**
+     * 스터디 단건 조회
+     */
+    public StudyVo getStudyById(GetStudyByIdQuery query) {
+        log.info("Domain: Getting study from query - ID: {}", query.id());
+
+        // ✅ Repository에서 직접 StudyVo 반환 (ReadModel 변환 불필요)
+        StudyVo studyVo = queryRepository.findStudyDetailById(query.id())
+                .orElseThrow(() -> new DomainException(ExceptionStatus.STUDY_DOMAIN_NOT_FOUND,
+                        "스터디를 찾을 수 없습니다: " + query.id()));
+
+        log.info("Domain: Study found - ID: {}", studyVo.id());
+        return studyVo;
+    }
+
+    /**
+     * 전체 스터디 조회 (페이징)
+     */
+    public Page<StudySummaryVo> getAllStudies(GetAllStudiesQuery query) {
+        log.info("Domain: Getting all studies from query");
+
+        StudySearchCriteriaVo emptyCriteria = StudySearchCriteriaVo.empty();
+        StudySearchResultVo result = queryRepository.findStudies(emptyCriteria, query.pageable());
+
+        // ✅ Repository에서 직접 StudySummaryVo 반환 (변환 불필요)
+        Page<StudySummaryVo> studyPage = new PageImpl<>(result.studies(), query.pageable(), result.totalElements());
+
+        log.info("Domain: Found {} studies", studyPage.getTotalElements());
+        return studyPage;
+    }
+
+    /**
+     * 복합 검색 조건으로 스터디 검색 (고급 검색 지원)
+     */
+    public Page<StudySummaryVo> searchStudiesByCriteria(SearchStudiesQuery query) {
+        log.info("Domain: Searching studies from query - keyword: {}, category: {}, status: {}",
+                query.keyword(), query.category(), query.status());
+
+        // Query를 StudySearchCriteria로 변환 (고급 검색 필드 포함)
+        StudySearchCriteriaVo criteria = StudySearchCriteriaVo.ofAdvanced(
+                query.keyword(),
+                query.category(),
+                query.subCategory(),
+                query.status()
+        );
+
+        StudySearchResultVo result = queryRepository.findStudies(criteria, query.pageable());
+
+        // ✅ Repository에서 직접 StudySummaryVo 반환 (변환 불필요)
+        Page<StudySummaryVo> studyPage = new PageImpl<>(result.studies(), query.pageable(), result.totalElements());
+
+        log.info("Domain: Found {} studies by advanced criteria", studyPage.getTotalElements());
+        return studyPage;
+    }
+
+    /**
+     * 특정 멤버가 생성한 완료된 스터디 목록 조회
+     * 완료 조건: endedAt이 현재 시간보다 이전이고, 삭제되지 않은 스터디
+     */
+    public Page<StudySummaryVo> getCompletedStudiesByMember(GetCompletedStudiesByMemberQuery query) {
+        log.info("Domain: Getting completed studies by member - memberId: {}", query.memberId());
+
+        try {
+            // Repository에서 완료된 스터디 조회
+            Page<StudySummaryVo> completedStudies = queryRepository.findCompletedStudiesByMember(
+                    query.memberId(),
+                    query.pageable()
+            );
+
+            log.info("Domain: Found {} completed studies for member: {}",
+                    completedStudies.getTotalElements(), query.memberId());
+
+            return completedStudies;
+
+        } catch (Exception e) {
+            log.error("Domain: Error getting completed studies for member: {}", query.memberId(), e);
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_NOT_FOUND);
+        }
+    }
+
+    /**
+     * 특정 멤버가 생성한 완료된 스터디 목록 조회 (리스트 버전)
+     * 페이징 없이 전체 조회
+     */
+    public List<StudySummaryVo> getCompletedStudiesListByMember(Long memberId) {
+        log.info("Domain: Getting completed studies list by member - memberId: {}", memberId);
+
+        try {
+            List<StudySummaryVo> completedStudies = queryRepository.findCompletedStudiesListByMember(memberId);
+
+            log.info("Domain: Found {} completed studies for member: {}", completedStudies.size(), memberId);
+
+            return completedStudies;
+
+        } catch (Exception e) {
+            log.error("Domain: Error getting completed studies list for member: {}", memberId, e);
+            return List.of(); // 실패시 빈 리스트 반환
+        }
+    }
+
+
+    // ================================================================
+    // PRIVATE VALIDATION METHODS (Repository 의존성이 필요한 검증만)
+    // ================================================================
+
+    /**
+     * 스터디 생성자 존재 확인
+     */
+    private void validateCreatorExists(Long creatorId) {
+        try {
+            memberDomainService.getMemberVo(new GetMemberByIdQuery(creatorId));
+            log.debug("Domain: Study creator validation passed - {}", creatorId);
+        } catch (DomainException e) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_INVALID_CREATOR,
+                    "스터디 생성자를 찾을 수 없습니다: " + creatorId);
+        }
+    }
+
+    /**
+     * 스터디 수정 권한 검증
+     * STAFF 이상의 관리자이거나 스터디 생성자 본인만 수정 가능
+     */
+    private void validateStudyUpdatePermission(Long requesterId, Long studyCreatorId) {
+        log.debug("Domain: Validating study update permission - requesterId: {}, creatorId: {}",
+                requesterId, studyCreatorId);
+
+        // 작성자 본인인 경우 수정 허용
+        if (requesterId.equals(studyCreatorId)) {
+            log.debug("Domain: Update permission granted - requester is study creator");
+            return;
+        }
+
+        // STAFF 이상 관리자 권한 확인
+        try {
+            MemberVo requesterMember = memberDomainService.getMemberVo(new GetMemberByIdQuery(requesterId));
+            MemberRole requesterRole = requesterMember.role();
+
+            if (MemberRole.isStaffOrAbove(requesterRole)) {
+                log.debug("Domain: Update permission granted - requester is staff or above: {}", requesterRole);
+                return;
+            }
+        } catch (DomainException e) {
+            log.warn("Domain: Requester not found: {}", requesterId);
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_ACCESS_DENIED,
+                    "스터디를 수정할 권한이 없습니다");
+        }
+
+        // 권한이 없는 경우
+        log.warn("Domain: Update permission denied - requesterId: {}, creatorId: {}", requesterId, studyCreatorId);
+        throw new DomainException(ExceptionStatus.STUDY_DOMAIN_ACCESS_DENIED,
+                "스터디를 수정할 권한이 없습니다");
+    }
+
+    /**
+     * 스터디 삭제 권한 검증
+     * STAFF 이상의 관리자이거나 스터디 생성자 본인만 삭제 가능
+     */
+    private void validateStudyDeletePermission(Long requesterId, Long studyCreatorId) {
+        log.debug("Domain: Validating study delete permission - requesterId: {}, creatorId: {}",
+                requesterId, studyCreatorId);
+
+        // 작성자 본인인 경우 삭제 허용
+        if (requesterId.equals(studyCreatorId)) {
+            log.debug("Domain: Delete permission granted - requester is study creator");
+            return;
+        }
+
+        // STAFF 이상 관리자 권한 확인
+        try {
+            MemberVo requesterMember = memberDomainService.getMemberVo(new GetMemberByIdQuery(requesterId));
+            MemberRole requesterRole = requesterMember.role();
+
+            if (MemberRole.isStaffOrAbove(requesterRole)) {
+                log.debug("Domain: Delete permission granted - requester is staff or above: {}", requesterRole);
+                return;
+            }
+        } catch (DomainException e) {
+            log.warn("Domain: Requester not found: {}", requesterId);
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_ACCESS_DENIED,
+                    "스터디를 삭제할 권한이 없습니다");
+        }
+
+        // 권한이 없는 경우
+        log.warn("Domain: Delete permission denied - requesterId: {}, creatorId: {}", requesterId, studyCreatorId);
+        throw new DomainException(ExceptionStatus.STUDY_DOMAIN_ACCESS_DENIED,
+                "스터디를 삭제할 권한이 없습니다");
+    }
+
+
+    /**
+     * 스터디 제목 중복 검증 (생성 시)
+     */
+    private void validateStudyTitleDuplication(String title) {
+        if (queryRepository.existsByTitle(title)) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_INVALID_TITLE,
+                    "이미 존재하는 스터디 제목입니다: " + title);
+        }
+        log.debug("Domain: Study title duplication validation passed - {}", title);
+    }
+
+    /**
+     * 스터디 제목 중복 검증 (수정 시 - 자신 제외)
+     */
+    private void validateStudyTitleDuplicationForUpdate(String title, Long studyId) {
+        if (queryRepository.existsByTitleAndIdNot(title, studyId)) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_INVALID_TITLE,
+                    "이미 존재하는 스터디 제목입니다: " + title);
+        }
+        log.debug("Domain: Study title duplication validation passed for update - {}", title);
+    }
+}
