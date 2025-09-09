@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="542e23ea-3ab4-450e-b010-97a77f56983b" name="변경" comment="Feat: Impl study CRUD in application layer #41">
+    <list default="true" id="542e23ea-3ab4-450e-b010-97a77f56983b" name="변경" comment="Feat: Impl study attached in infrastructure layer #41">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/project/application/mapper/ProjectApplicationDtoMapper.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/project/application/mapper/ProjectApplicationDtoMapper.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/project/domain/repository/ProjectQueryRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/certis/studyplatform/project/domain/repository/ProjectQueryRepository.java" afterDir="false" />
@@ -195,7 +195,7 @@
       <workItem from="1756447942777" duration="15629000" />
       <workItem from="1756736051941" duration="8164000" />
       <workItem from="1756978574985" duration="11977000" />
-      <workItem from="1757247476687" duration="4674000" />
+      <workItem from="1757247476687" duration="5403000" />
     </task>
     <task id="LOCAL-00001" summary="Fix: Member penalty Integer type 통일 #6">
       <option name="closed" value="true" />
@@ -269,7 +269,127 @@
       <option name="project" value="LOCAL" />
       <updated>1756989761276</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="Feat: Impl study CRUD in domain layer #41">
+      <option name="closed" value="true" />
+      <created>1757418963186</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1757418963186</updated>
+    </task>
+    <task id="LOCAL-00011" summary="Feat: Impl study CRUD in infrastructure layer #41">
+      <option name="closed" value="true" />
+      <created>1757419041084</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1757419041084</updated>
+    </task>
+    <task id="LOCAL-00012" summary="Feat: Impl study participant in presentation layer #41">
+      <option name="closed" value="true" />
+      <created>1757419155074</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1757419155074</updated>
+    </task>
+    <task id="LOCAL-00013" summary="Feat: Impl study participant in application layer #41">
+      <option name="closed" value="true" />
+      <created>1757419211922</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1757419211922</updated>
+    </task>
+    <task id="LOCAL-00014" summary="Feat: Impl study participant in domain layer #41">
+      <option name="closed" value="true" />
+      <created>1757419243066</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1757419243066</updated>
+    </task>
+    <task id="LOCAL-00015" summary="Feat: Impl study participant in infrastructure layer #41">
+      <option name="closed" value="true" />
+      <created>1757419285178</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1757419285178</updated>
+    </task>
+    <task id="LOCAL-00016" summary="Feat: Impl study meeting in presentation layer #41">
+      <option name="closed" value="true" />
+      <created>1757419318871</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1757419318871</updated>
+    </task>
+    <task id="LOCAL-00017" summary="Feat: Impl study meeting in application layer #41">
+      <option name="closed" value="true" />
+      <created>1757419344217</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1757419344217</updated>
+    </task>
+    <task id="LOCAL-00018" summary="Feat: Impl study meeting in domain layer #41">
+      <option name="closed" value="true" />
+      <created>1757419361425</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1757419361425</updated>
+    </task>
+    <task id="LOCAL-00019" summary="Feat: Impl study participant jpa in infrastructure layer #41">
+      <option name="closed" value="true" />
+      <created>1757419395368</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1757419395368</updated>
+    </task>
+    <task id="LOCAL-00020" summary="Feat: Impl study meeting in infrastructure layer #41">
+      <option name="closed" value="true" />
+      <created>1757419421104</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1757419421104</updated>
+    </task>
+    <task id="LOCAL-00021" summary="Feat: Impl study attached in presentation layer #41">
+      <option name="closed" value="true" />
+      <created>1757419451314</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1757419451314</updated>
+    </task>
+    <task id="LOCAL-00022" summary="Feat: Impl study attached in application layer #41">
+      <option name="closed" value="true" />
+      <created>1757419459652</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1757419459652</updated>
+    </task>
+    <task id="LOCAL-00023" summary="Feat: Impl study attached in domain layer #41">
+      <option name="closed" value="true" />
+      <created>1757419474688</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1757419474688</updated>
+    </task>
+    <task id="LOCAL-00024" summary="Feat: Impl study attached in infrastructure layer #41">
+      <option name="closed" value="true" />
+      <created>1757419487925</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1757419487925</updated>
+    </task>
+    <option name="localTasksCounter" value="25" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -287,9 +407,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Build: Change Build process jpa mocking after db activate status #25" />
-    <MESSAGE value="Fix: Change Member penalty point to int #6" />
-    <MESSAGE value="Chore: Delete member penalty reason field #6" />
     <MESSAGE value="Fix: Verify role permission error #28" />
     <MESSAGE value="Build: Disable flush all mock data in shutdown phase for using embeded DB #25" />
     <MESSAGE value="Fix: Change Member penalty point to int  #6" />
@@ -300,6 +417,21 @@
     <MESSAGE value="Refactor: Change status enum path and append entity constructure #41" />
     <MESSAGE value="Feat: Impl study CRUD in presentation layer #41" />
     <MESSAGE value="Feat: Impl study CRUD in application layer #41" />
-    <option name="LAST_COMMIT_MESSAGE" value="Feat: Impl study CRUD in application layer #41" />
+    <MESSAGE value="Feat: Impl study CRUD in domain layer #41" />
+    <MESSAGE value="Feat: Impl study CRUD in infrastructure layer #41" />
+    <MESSAGE value="Feat: Impl study participant in presentation layer #41" />
+    <MESSAGE value="Feat: Impl study participant in application layer #41" />
+    <MESSAGE value="Feat: Impl study participant in domain layer #41" />
+    <MESSAGE value="Feat: Impl study participant in infrastructure layer #41" />
+    <MESSAGE value="Feat: Impl study meeting in presentation layer #41" />
+    <MESSAGE value="Feat: Impl study meeting in application layer #41" />
+    <MESSAGE value="Feat: Impl study meeting in domain layer #41" />
+    <MESSAGE value="Feat: Impl study participant jpa in infrastructure layer #41" />
+    <MESSAGE value="Feat: Impl study meeting in infrastructure layer #41" />
+    <MESSAGE value="Feat: Impl study attached in presentation layer #41" />
+    <MESSAGE value="Feat: Impl study attached in application layer #41" />
+    <MESSAGE value="Feat: Impl study attached in domain layer #41" />
+    <MESSAGE value="Feat: Impl study attached in infrastructure layer #41" />
+    <option name="LAST_COMMIT_MESSAGE" value="Feat: Impl study attached in infrastructure layer #41" />
   </component>
 </project>
