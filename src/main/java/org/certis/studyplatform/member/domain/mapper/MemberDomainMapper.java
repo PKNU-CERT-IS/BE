@@ -65,8 +65,8 @@ public class MemberDomainMapper {
     /**
      * String → GradeVo 변환 (검증 포함)
      */
-    public GradeVo toGradeVo(String grade) {
-        MemberGrade parsed = MemberGrade.fromGradeString(grade);
+    public GradeVo toGradeVo(MemberGrade grade) {
+        MemberGrade parsed = MemberGrade.fromGradeString(grade.toString());
         return memberDomainCommandMapper.toGradeVo(parsed);
     }
 
@@ -117,13 +117,6 @@ public class MemberDomainMapper {
         return memberDomainQueryMapper.toSearchMemberIdVo(memberId);
     }
 
-    /**
-     * Query 조건을 필터링용 VO로 변환 (필요시 구현)
-     */
-    public GradeVo toSearchGradeVo(String grade) {
-        MemberGrade parsed = MemberGrade.fromGradeString(grade);
-        return memberDomainQueryMapper.toSearchGradeVo(parsed);
-    }
 
     /**
      * Query 조건을 필터링용 VO로 변환 (필요시 구현)

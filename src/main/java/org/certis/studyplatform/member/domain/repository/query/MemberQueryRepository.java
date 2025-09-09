@@ -37,37 +37,7 @@ public interface MemberQueryRepository {
      */
     Optional<MemberVo> findById(MemberIdVo memberId);
 
-    /**
-     * 회원 상세 정보 조회 (primitive 타입)
-     *
-     * @param memberId 회원 ID
-     * @return 회원 상세 정보 VO (Optional)
-     */
-    Optional<MemberVo> findMemberById(Long memberId);
 
-    /**
-     * SearchMembersQuery를 사용한 회원 검색 (VO 기반)
-     *
-     * @param query 검색 쿼리
-     * @return 페이징된 회원 요약 VO 목록
-     */
-    Page<MemberSummaryVo> searchMembers(SearchMembersQuery query);
-
-    /**
-     * GetMembersQuery를 사용한 전체 회원 조회 (VO 기반)
-     *
-     * @param query 조회 쿼리
-     * @return 페이징된 회원 요약 VO 목록
-     */
-    Page<MemberSummaryVo> findAll(GetMembersQuery query);
-
-    /**
-     * 구조화된 검색 조건을 사용한 회원 목록 조회 (페이징) - VO 기반
-     *
-     * @param searchCriteria 검색 조건 VO
-     * @param pageable 페이징 정보
-     * @return 페이징된 회원 요약 VO
-     */
     Page<MemberSummaryVo> findMembers(MemberSearchCriteriaVo searchCriteria, Pageable pageable);
 
     /**
@@ -108,4 +78,6 @@ public interface MemberQueryRepository {
     List<MemberSearchForAdminVo> searchMembersForAdmin(SearchKeywordVo keywordVo);
 
     List<MemberWithPenaltyVo> findExpiredUpsolvers(OffsetDateTime now);
+
+    List<MemberWithContactVo> searchMembersWithContact(MemberSearchConditionVo searchConditionVo);
 }

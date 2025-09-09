@@ -6,10 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.member.application.command.*;
 import org.certis.studyplatform.member.application.mapper.MemberAdminApplicationMapper;
 import org.certis.studyplatform.member.application.object.command.*;
-import org.certis.studyplatform.member.application.object.query.GetMemberByIdQuery;
-import org.certis.studyplatform.member.application.object.query.GetMembersQuery;
-import org.certis.studyplatform.member.application.object.query.SearchMembersForAdminQuery;
-import org.certis.studyplatform.member.application.object.query.SearchMembersQuery;
+import org.certis.studyplatform.member.application.object.query.*;
 import org.certis.studyplatform.member.application.query.*;
 import org.certis.studyplatform.member.application.mapper.MemberApplicationMapper;
 import org.certis.studyplatform.member.application.mapper.MemberApplicationCommandMapper;
@@ -19,6 +16,7 @@ import org.certis.studyplatform.member.domain.vo.*;
 import org.certis.studyplatform.member.presentation.dto.request.*;
 import org.certis.studyplatform.member.presentation.dto.response.AdminMemberUpdateResponseDto;
 import org.certis.studyplatform.member.presentation.dto.response.MemberDataForAdminResponseDto;
+import org.certis.studyplatform.member.presentation.dto.response.MemberSearchResponseDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -37,26 +35,6 @@ public class MemberFacadeService {
     private final MemberApplicationCommandMapper memberApplicationCommandMapper;
     private final MemberApplicationQueryMapper memberApplicationQueryMapper;
     private final MemberAdminApplicationMapper memberAdminApplicationMapper;
-
-    // ================================================================
-    // COMMAND OPERATIONS - 상태 변경 작업
-    // ================================================================
-
-    /**
-     * 회원 생성
-     */
-    public MemberCreatedVo createMember(MemberCreateRequestDto requestDto) {
-        log.info("Facade: Creating member with student number: {}", requestDto.getStudentNumber());
-
-        // DTO → Command Object 변환 (새로운 매퍼 사용)
-        CreateMemberCommand command = memberApplicationCommandMapper.toCreateMemberCommand(requestDto);
-
-        // Command Service 호출
-        MemberCreatedVo createdVo = memberCommandService.createMember(command);
-
-        log.info("Facade: Member created successfully with ID: {}", createdVo.id());
-        return createdVo;
-    }
 
     /**
      * 회원 정보 수정 (통합: 기본정보 + 프로필 + 기술스택)
@@ -109,86 +87,23 @@ public class MemberFacadeService {
         return memberVo;
     }
 
-    /**
-     * 회원 검색 (페이징 포함)
-     */
-    public Page<MemberSummaryVo> searchMembers(MemberSearchRequestDto requestDto, Pageable pageable) {
-        log.info("Facade: Searching members with criteria: {}", requestDto.getKeyword());
-
-        // DTO → Query Object 변환 (새로운 매퍼 사용)
-        SearchMembersQuery query = memberApplicationQueryMapper.toSearchMembersQuery(requestDto, pageable);
-
-        // Query Service 호출
-        Page<MemberSummaryVo> memberSummaryVos = memberQueryService.searchMembers(query);
-
-        log.info("Facade: Member search completed successfully. Found {} members", memberSummaryVos.getTotalElements());
-        return memberSummaryVos;
-    }
-
-    /**
-     * 회원 검색 (기본 페이징 사용)
-     */
-    public Page<MemberSummaryVo> searchMembers(MemberSearchRequestDto requestDto) {
-        log.info("Facade: Searching members with criteria: {}", requestDto.getKeyword());
-
-        // DTO → Query Object 변환 (새로운 매퍼 사용)
-        SearchMembersQuery query = memberApplicationQueryMapper.toSearchMembersQuery(requestDto);
-
-        // Query Service 호출
-        Page<MemberSummaryVo> memberSummaryVos = memberQueryService.searchMembers(query);
-
-        log.info("Facade: Member search completed successfully. Found {} members", memberSummaryVos.getTotalElements());
-        return memberSummaryVos;
-    }
-
-    /**
-     * 키워드로 회원 검색
-     */
-    public Page<MemberSummaryVo> searchMembersByKeyword(String keyword, Pageable pageable) {
-        log.info("Facade: Searching members by keyword: {}", keyword);
-
-        // DTO → Query Object 변환 (새로운 매퍼 사용)
-        SearchMembersQuery query = memberApplicationQueryMapper.toSearchMembersQuery(keyword, pageable);
-
-        // Query Service 호출
-        Page<MemberSummaryVo> memberSummaryVos = memberQueryService.searchMembers(query);
-
-        log.info("Facade: Keyword search completed successfully. Found {} members", memberSummaryVos.getTotalElements());
-        return memberSummaryVos;
-    }
-
-    /**
-     * 전체 회원 조회
-     */
-    public Page<MemberSummaryVo> getAllMembers(Pageable pageable) {
-        log.info("Facade: Getting all members with pagination");
-
-        // DTO → Query Object 변환 (새로운 매퍼 사용)
-        GetMembersQuery query = memberApplicationQueryMapper.toGetMembersQuery(pageable);
-
-        // Query Service 호출
-        Page<MemberSummaryVo> memberSummaryVos = memberQueryService.getAllMembers(query);
-
-        log.info("Facade: All members retrieved successfully. Found {} members", memberSummaryVos.getTotalElements());
-        return memberSummaryVos;
-    }
-
-    // ================================================================
-    // PRIVATE HELPER METHODS
-    // ================================================================
-
-    /**
-     * 페이징 정보 생성
-     */
-    private Pageable createPageable(Integer page, Integer size, String sortBy, String sortDirection) {
-        // 기존 구현 유지
-        return null; // 실제 구현은 기존 코드 유지
-    }
 
     public AdminMemberUpdateResponseDto updateMemberAdminFields(Long executorId,
                                                                 MemberRole executorRole,
                                                                 AdminMemberUpdateRequestDto request) {
-        return null;
+
+        UpdateMemberAdminFieldsCommand command = UpdateMemberAdminFieldsCommand.of(executorId,
+                executorRole,
+                request.getTargetMemberId(),
+                request.getNewRole(),
+                request.getNewGrade());
+        AdminMemberUpdateResultVo resultVo = memberCommandService.updateMemberAdminFields(command);
+
+        return new AdminMemberUpdateResponseDto(
+                resultVo.memberId(),
+                resultVo.newRole(),
+                resultVo.newGrade()
+        );
     }
 
     @Transactional
@@ -241,5 +156,25 @@ public class MemberFacadeService {
         memberCommandService.assignPenalty(command);
 
         log.info("Facade: Penalty assigned successfully for member: {}", request.getMemberId());
+    }
+
+    public List<MemberSearchResponseDto> searchMembers(MemberSearchRequestDto request) {
+        log.info("Facade: Searching members - search: {}, grade: {}, role: {}",
+                request.getSearch(), request.getGrade(), request.getRole());
+
+        SearchMembersWithContactQuery query = SearchMembersWithContactQuery.of(
+                request.getSearch(),
+                request.getGrade(),
+                request.getRole()
+        );
+
+        List<MemberWithContactVo> members = memberQueryService.searchMembersWithContact(query);
+
+        List<MemberSearchResponseDto> response = members.stream()
+                .map(memberApplicationMapper::toMemberSearchResponseDto)
+                .toList();
+
+        log.info("Facade: Search completed - found {} members", response.size());
+        return response;
     }
 }

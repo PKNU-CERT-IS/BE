@@ -1,12 +1,6 @@
 package org.certis.studyplatform.member.presentation.dto.response;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import org.certis.studyplatform.member.domain.Member;
-import org.certis.studyplatform.member.domain.MemberRole;
+import lombok.*;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -16,47 +10,58 @@ import java.util.List;
  *
  * 검색 결과와 페이지네이션 정보 포함
  */
-import lombok.Builder;
 import lombok.Getter;
-import org.springframework.data.domain.Page;
+import org.certis.studyplatform.member.domain.MemberGrade;
+import org.certis.studyplatform.member.domain.MemberRole;
 
-import java.util.List;
 
 @Getter
-@Builder
+@RequiredArgsConstructor
+@AllArgsConstructor
 public class MemberSearchResponseDto {
+    private Long id;
+    private String name;
+    private String profileImage;
+    private MemberGrade grade;
+    private MemberRole role;
+    private List<String> skills;
+    private String major;
+    private String description;
+    private OffsetDateTime createdAt;
+    private OffsetDateTime updatedAt;
+    private String email;
+    private String githubUrl;
+    private String linkedinUrl;
 
-    private final List<MemberSummaryResponseDto> members;
-
-    private final int currentPage;
-
-    private final int totalPages;
-
-    private final long totalElements;
-
-    private final boolean hasNext;
-
-    private final boolean hasPrevious;
-
-    public static MemberSearchResponseDto of(Page<MemberSummaryResponseDto> memberPage) {
-        return MemberSearchResponseDto.builder()
-                .members(memberPage.getContent())
-                .currentPage(memberPage.getNumber())
-                .totalPages(memberPage.getTotalPages())
-                .totalElements(memberPage.getTotalElements())
-                .hasNext(memberPage.hasNext())
-                .hasPrevious(memberPage.hasPrevious())
-                .build();
-    }
-
-    // toString for logging
-    @Override
-    public String toString() {
-        return "MemberSearchResponseDto{" +
-                "membersCount=" + (members != null ? members.size() : 0) +
-                ", currentPage=" + currentPage +
-                ", totalPages=" + totalPages +
-                ", totalElements=" + totalElements +
-                '}';
+    public static MemberSearchResponseDto of(
+            Long id,
+            String name,
+            String profileImage,
+            MemberGrade grade,
+            MemberRole role,
+            List<String> skills,
+            String major,
+            String description,
+            OffsetDateTime createdAt,
+            OffsetDateTime updatedAt,
+            String email,
+            String githubUrl,
+            String linkedinUrl
+    ) {
+        return new MemberSearchResponseDto(
+                id,
+                name,
+                profileImage,
+                grade,
+                role,
+                skills,
+                major,
+                description,
+                createdAt,
+                updatedAt,
+                email,
+                githubUrl,
+                linkedinUrl
+        );
     }
 }
