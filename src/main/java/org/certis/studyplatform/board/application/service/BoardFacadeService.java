@@ -9,6 +9,7 @@ import org.certis.studyplatform.board.application.object.command.ToggleLikeComma
 import org.certis.studyplatform.board.application.object.command.UpdateBoardCommand;
 import org.certis.studyplatform.board.application.object.query.GetBoardDetailQuery;
 import org.certis.studyplatform.board.application.object.query.SearchBoardsQuery;
+import org.certis.studyplatform.board.application.sync.BoardSyncService;
 import org.certis.studyplatform.board.domain.model.vo.BoardDetailVo;
 import org.certis.studyplatform.board.domain.model.vo.BoardLikeVo;
 import org.certis.studyplatform.board.domain.model.vo.BoardSummaryVo;
@@ -29,7 +30,7 @@ public class BoardFacadeService {
 
     private final BoardCommandService boardCommandService;
     private final BoardQueryService boardQueryService;
-    private final org.certis.studyplatform.board.application.sync.BoardSyncService boardSyncService;
+    private final BoardSyncService boardSyncService;
 
     private final BoardApplicationMapper boardApplicationMapper;
 
