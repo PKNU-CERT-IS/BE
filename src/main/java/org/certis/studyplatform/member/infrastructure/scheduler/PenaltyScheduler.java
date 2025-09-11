@@ -3,7 +3,7 @@ package org.certis.studyplatform.member.infrastructure.scheduler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.member.application.GracePeriodService;
-// import org.springframework.scheduling.annotation.Scheduled;
+ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
@@ -23,7 +23,7 @@ public class PenaltyScheduler {
      * 
      * 크론 표현식: "0 0 0 * * SUN" = 매주 일요일 00:00:00
      */
-    // @Scheduled(cron = "0 0 0 * * SUN", zone = "Asia/Seoul")
+     @Scheduled(cron = "0 0 0 * * SUN", zone = "Asia/Seoul")
     public void processExpiredGracePeriods() {
         log.info("Scheduler: Starting weekly penalty processing for expired grace periods");
         
@@ -41,7 +41,7 @@ public class PenaltyScheduler {
      * 
      * 매분 실행 (테스트 목적)
      */
-    // @Scheduled(cron = "0 * * * * *") // 매분 실행 - 테스트용
+     @Scheduled(cron = "0 * * * * *") // 매분 실행 - 테스트용
     public void processExpiredGracePeriods_ForTesting() {
         log.debug("Scheduler: Manual penalty processing for testing");
         
@@ -58,7 +58,7 @@ public class PenaltyScheduler {
      * 
      * 벌점 시스템의 상태를 확인하고 로그를 남김
      */
-    // @Scheduled(cron = "0 0 9 * * *", zone = "Asia/Seoul")
+     @Scheduled(cron = "0 0 9 * * *", zone = "Asia/Seoul")
     public void checkPenaltySystemHealth() {
         log.info("Scheduler: Daily penalty system health check");
         
