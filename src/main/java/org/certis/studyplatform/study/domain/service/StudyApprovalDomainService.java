@@ -42,8 +42,7 @@ public class StudyApprovalDomainService {
         // 2. 승인 조건 검증
         validateApprovalConditions(study, approverId);
 
-        // 3. 스터디 상태를 승인으로 변경 (실제 구현에서는 StudyCommandService 호출)
-        // studyCommandService.updateStatus(studyId, StudyStatus.APPROVED);
+        // 3. 스터디 상태를 승인으로 변경 (실제 구현에서는 StudyDomainService 혹은 Infrastructure layer method 호출)
 
         // 4. 참가자들의 유예기간 연장
         extendGracePeriodForParticipants(study);
