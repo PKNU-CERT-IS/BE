@@ -45,7 +45,7 @@ public class BoardControllerTest {
     @Autowired EntityManager em;
 
     private static final Long TEST_BOARD_ID = 1L;
-    private static final Long TEST_BOARD_ID_FOR_DIFFERENCE = 5L;
+    private static final Long TEST_BOARD_ID_FOR_DIFFERENCE = 2L;
 
     @Test
     @Order(1)
@@ -55,7 +55,7 @@ public class BoardControllerTest {
     void createBoard_FullFlow_Success() throws Exception {
         em.unwrap(Session.class).doWork(conn -> {
             try (Statement stmt = conn.createStatement()) {
-                stmt.execute("ALTER SEQUENCE board_id_seq RESTART WITH 201");
+                stmt.execute("TRUNCATE TABLE board RESTART IDENTITY CASCADE");
             }
         });
 
@@ -76,6 +76,21 @@ public class BoardControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(201))
                 .andExpect(jsonPath("$.message").value(ResponseStatus.BOARD_CREATE_SUCCESS.getMessage()))
                 .andReturn();
+
+        // 두 번째 게시글 생성 (id=2)
+        BoardCreateRequestDto request2 = BoardCreateRequestDto.builder()
+                .title("두번째 통합 테스트 게시글")
+                .content("두번째 게시글 내용입니다.")
+                .description("두번째 게시글 설명")
+                .category("STUDY")
+                .attachments(List.of())
+                .build();
+
+        mockMvc.perform(post("/api/v1/board/create")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request2)))
+                .andExpect(status().isCreated());
 
     }
 
@@ -131,7 +146,14 @@ public class BoardControllerTest {
     @DisplayName("4️⃣-2 이미 좋아요한 게시글 좋아요 삭제 → 다시 시도 -> 좋아요 성공")
     @Transactional
     void toggleLike_Fail_AlreadyLiked() throws Exception {
-        // 첫 번째 시도 →
+        // 사전 상태: 해당 게시글에 이미 좋아요를 한 상태로 만들기
+        mockMvc.perform(post("/api/v1/board/like/{id}", TEST_BOARD_ID_FOR_DIFFERENCE)
+                        .with(csrf()))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("게시글을 성공적으로 좋아요했습니다"));
+
+        // 첫 번째 시도 → (이미 좋아요한 상태에서 취소)
         mockMvc.perform(post("/api/v1/board/like/{id}", TEST_BOARD_ID_FOR_DIFFERENCE)
                         .with(csrf()))
                 .andDo(print())
@@ -182,5 +204,31 @@ public class BoardControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value(ResponseStatus.BOARD_DELETE_SUCCESS.getMessage()));
+    }
+
+    @Test
+    @Order(8)
+    @WithMockUser(username = "admin", roles = "STAFF")
+    @DisplayName("7️⃣ 매일 00시 View→RDB 동기화 트리거 검증 - 수동 호출 시 정상 동작")
+    @Transactional
+    void syncBoardStatsDaily_ManualTrigger_Success() throws Exception {
+        // 사전 조건: 통계 관련 View 데이터가 존재한다고 가정 (테스트 DB에 seed 되어 있음)
+        // 동기화 엔드포인트가 별도로 노출되어 있다면 해당 엔드포인트를 호출하는 방식 권장.
+        // 여기서는 스케줄러가 호출하는 Application Service 흐름을 컨트롤러 레벨에서 검증하기 위해
+        // 관리용 엔드포인트를 노출했다고 가정: /api/v1/board/admin/sync
+
+        mockMvc.perform(post("/api/v1/board/admin/sync").with(csrf()))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.message").value("BOARD_SYNC_SUCCESS"));
+
+        // 이후 효과 검증: 특정 집계 조회 API가 동기화 결과를 반영했는지 확인
+        mockMvc.perform(get("/api/v1/board/stats/today"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.message").value("BOARD_STATS_FIND_SUCCESS"))
+                .andExpect(jsonPath("$.data.synced").value(true));
     }
 }

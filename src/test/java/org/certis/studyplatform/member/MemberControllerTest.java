@@ -16,6 +16,8 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -59,6 +61,14 @@ class MemberControllerTest {
     @BeforeEach
     void setUp() {
         System.out.println("🔧 테스트 데이터 설정 시작");
+        // 데이터 충돌 방지: 관련 테이블 초기화
+        dsl.execute("TRUNCATE TABLE member_contact RESTART IDENTITY CASCADE");
+        dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
+
+        // 보안 컨텍스트에 Mock 사용자 설정 (user1)
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("user1", "password")
+        );
         setupTestData();
         System.out.println("✅ 테스트 데이터 설정 완료");
     }

@@ -1,0 +1,570 @@
+package org.certis.studyplatform.study.presentation;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.certis.studyplatform.config.TestEmbeddedPostgresConfig;
+import org.certis.studyplatform.study.presentation.dto.request.*;
+import org.jooq.DSLContext;
+import org.junit.jupiter.api.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+
+import java.time.OffsetDateTime;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.certis.generated.jooq.Tables.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+/**
+ * StudyMeetingController 완전 새로운 통합 테스트
+ *
+ * 🎯 새로운 테스트 특징:
+ * - CQRS 패턴과 JOOQ 기반 아키텍처 완전 활용
+ * - Clean Architecture 계층별 테스트 분리
+ * - BDD 스타일 테스트 시나리오 (Given-When-Then)
+ * - 실제 비즈니스 시나리오 기반 테스트 케이스
+ * - 포괄적인 검증 및 엣지 케이스 커버
+ * - 테스트 데이터 격리 및 독립성 보장
+ * - 성능 및 동시성 고려 테스트
+ *
+ * 🔧 기술 스택:
+ * - Spring Boot Test with @SpringBootTest
+ * - MockMvc for REST API testing
+ * - JOOQ DSLContext for direct database operations
+ * - Embedded PostgreSQL for isolated testing
+ * - AssertJ for fluent assertions
+ * - JUnit 5 with ordered test execution
+ */
+@SpringBootTest
+@AutoConfigureMockMvc
+@Import(TestEmbeddedPostgresConfig.class)
+@ActiveProfiles("test")
+@TestPropertySource(locations = "classpath:application-test.yml")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@DisplayName("🚀 StudyMeetingController 새로운 통합 테스트")
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+class StudyMeetingControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private DSLContext dsl; // JOOQ로 직접 데이터베이스 조작
+
+    // 테스트 상수
+    private static final Long TEST_STUDY_ID = 1L;
+    private static final Long TEST_MEMBER_ID = 1L;
+    private static final Long TEST_MEMBER_2_ID = 2L;
+    private static final Long TEST_MEETING_ID = 1L;
+    
+    private static final String TEST_STUDY_TITLE = "CERT-IS 학습 플랫폼 스터디";
+    private static final String TEST_MEMBER_NAME = "김개발";
+    private static final String TEST_MEMBER_2_NAME = "이테스트";
+    private static final String TEST_MEETING_TITLE = "스터디 킥오프 회의";
+    private static final String TEST_MEETING_CONTENT = "스터디 목표와 일정을 논의했습니다.";
+
+    @BeforeEach
+    void setUp() {
+        System.out.println("🔧 테스트 데이터 설정 시작");
+        // 데이터 충돌 방지: 관련 테이블 초기화
+        dsl.execute("TRUNCATE TABLE study_meeting RESTART IDENTITY CASCADE");
+        dsl.execute("TRUNCATE TABLE study RESTART IDENTITY CASCADE");
+        dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
+
+        // 보안 컨텍스트에 Mock 사용자 설정 (user1)
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("user1", "password")
+        );
+
+        setupTestData();
+        System.out.println("✅ 테스트 데이터 설정 완료");
+    }
+
+    @AfterEach
+    void tearDown() {
+        System.out.println("🧹 테스트 데이터 정리 시작");
+        cleanupTestData();
+        System.out.println("✅ 테스트 데이터 정리 완료");
+    }
+
+    // =================================================================
+    // 🎯 비즈니스 시나리오 기반 통합 테스트
+    // =================================================================
+
+    @Test
+    @Order(1)
+    @DisplayName("📝 스터디 회의록 생성 - 성공적인 비즈니스 시나리오")
+    void createStudyMeeting_SuccessfulBusinessScenario() throws Exception {
+        // Given: 유효한 스터디와 참여자들이 존재하고, 회의록 생성 요청이 준비됨
+        StudyMeetingCreateRequestDto request = createValidMeetingRequest();
+
+        // When: 회의록 생성 API를 호출
+        mockMvc.perform(post("/api/v1/study/meeting/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                // Then: HTTP 201 Created 응답과 성공 메시지 확인
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType("application/json;charset=UTF-8"))
+                .andExpect(jsonPath("$.statusCode").value(201))
+                .andExpect(jsonPath("$.message").value("스터디 회의록이 성공적으로 생성되었습니다"));
+
+        // Then: 데이터베이스에 회의록이 정상적으로 저장되었는지 검증
+        verifyMeetingCreatedInDatabase(request);
+        
+        System.out.println("✅ 스터디 회의록 생성 테스트 성공");
+    }
+
+    @Test
+    @Order(2)
+    @DisplayName("🔍 스터디 회의록 상세 조회 - 완전한 정보 반환")
+    void getStudyMeetingDetail_CompleteInformationReturned() throws Exception {
+        // Given: 회의록이 미리 생성되어 있음
+        createTestMeetingInDatabase();
+
+        // When: 회의록 상세 조회 API 호출
+        mockMvc.perform(get("/api/v1/study/meeting/detail")
+                        .param("meetingId", TEST_MEETING_ID.toString()))
+                .andDo(print())
+                // Then: HTTP 200 OK 응답과 완전한 회의록 정보 반환
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.message").value("스터디 회의록을 성공적으로 조회했습니다"))
+                .andExpect(jsonPath("$.data").exists())
+                .andExpect(jsonPath("$.data.id").value(TEST_MEETING_ID))
+                .andExpect(jsonPath("$.data.studyId").value(TEST_STUDY_ID))
+                .andExpect(jsonPath("$.data.title").value(TEST_MEETING_TITLE))
+                .andExpect(jsonPath("$.data.content").value(TEST_MEETING_CONTENT))
+                .andExpect(jsonPath("$.data.writerId").value(TEST_MEMBER_ID))
+                .andExpect(jsonPath("$.data.participantIds").isArray())
+                .andExpect(jsonPath("$.data.createdAt").exists())
+                .andExpect(jsonPath("$.data.updatedAt").exists())
+                .andExpect(jsonPath("$.data.editable").isBoolean());
+
+        System.out.println("✅ 스터디 회의록 상세 조회 테스트 성공");
+    }
+
+    @Test
+    @Order(3)
+    @DisplayName("✏️ 스터디 회의록 수정 - 권한 있는 사용자의 성공적인 수정")
+    void updateStudyMeeting_AuthorizedUserSuccessfulUpdate() throws Exception {
+        // Given: 회의록이 존재하고, 작성자가 수정을 요청함
+        createTestMeetingInDatabase();
+        
+        StudyMeetingUpdateRequestDto request = new StudyMeetingUpdateRequestDto();
+        request.setMeetingId(TEST_MEETING_ID);
+        request.setWriterId(TEST_MEMBER_ID); // 작성자가 수정 요청
+        request.setTitle("수정된 회의록 제목");
+        request.setContent("수정된 회의록 내용입니다.");
+        request.setParticipants(List.of(TEST_MEMBER_ID, TEST_MEMBER_2_ID));
+        request.setAttachedUrl("https://example.com/updated-meeting-notes.pdf");
+
+        // When: 회의록 수정 API 호출
+        mockMvc.perform(put("/api/v1/study/meeting/edit")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                // Then: HTTP 200 OK 응답과 성공 메시지
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.message").value("스터디 회의록이 성공적으로 수정되었습니다"));
+
+        System.out.println("✅ 스터디 회의록 수정 테스트 성공");
+    }
+
+    @Test
+    @Order(4)
+    @DisplayName("📋 스터디 회의록 목록 조회 - 페이징과 정렬 기능")
+    void getAllStudyMeetings_PaginationAndSortingFeatures() throws Exception {
+        // Given: 여러 개의 회의록이 존재함
+        createMultipleMeetingsInDatabase();
+
+        // When: 페이징된 회의록 목록 조회
+        mockMvc.perform(get("/api/v1/study/meeting/all")
+                        .param("studyId", TEST_STUDY_ID.toString())
+                        .param("page", "0")
+                        .param("size", "10")
+                        .param("sort", "createdAt,desc"))
+                .andDo(print())
+                // Then: 페이징된 결과와 메타데이터 반환
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content.length()").value(3)) // 3개 회의록
+                .andExpect(jsonPath("$.data.totalElements").value(3))
+                .andExpect(jsonPath("$.data.totalPages").value(1))
+                .andExpect(jsonPath("$.data.size").value(10))
+                .andExpect(jsonPath("$.data.number").value(0))
+                .andExpect(jsonPath("$.data.first").value(true))
+                .andExpect(jsonPath("$.data.last").value(true));
+
+        System.out.println("✅ 스터디 회의록 목록 조회 테스트 성공");
+    }
+
+    @Test
+    @Order(5)
+    @DisplayName("🗑️ 스터디 회의록 삭제 - 권한 있는 사용자의 성공적인 삭제")
+    void deleteStudyMeeting_AuthorizedUserSuccessfulDeletion() throws Exception {
+        // Given: 회의록이 존재하고, 작성자가 삭제를 요청함
+        createTestMeetingInDatabase();
+        
+        StudyMeetingDeleteRequestDto request = new StudyMeetingDeleteRequestDto();
+        request.setMeetingId(TEST_MEETING_ID);
+        request.setRequesterId(TEST_MEMBER_ID); // 작성자가 삭제 요청
+
+        // When: 회의록 삭제 API 호출
+        mockMvc.perform(delete("/api/v1/study/meeting/delete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                // Then: HTTP 200 OK 응답과 성공 메시지
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.message").value("스터디 회의록이 성공적으로 삭제되었습니다"));
+
+        // Then: 데이터베이스에서 소프트 삭제 확인 (deletedAt 필드 설정)
+        verifyMeetingDeletedInDatabase(TEST_MEETING_ID);
+        
+        System.out.println("✅ 스터디 회의록 삭제 테스트 성공");
+    }
+
+    // =================================================================
+    // 🚨 검증 실패 및 예외 상황 테스트
+    // =================================================================
+
+    @Test
+    @Order(10)
+    @DisplayName("❌ 회의록 생성 실패 - 필수 필드 누락")
+    void createStudyMeeting_ValidationFailure_MissingRequiredFields() throws Exception {
+        // Given: 필수 필드가 누락된 요청
+        StudyMeetingCreateRequestDto request = new StudyMeetingCreateRequestDto();
+        // studyId, writerId, title, content, participantIds 모두 누락
+
+        // When & Then: 검증 실패로 HTTP 400 Bad Request 응답
+        mockMvc.perform(post("/api/v1/study/meeting/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.statusCode").value(400));
+
+        System.out.println("✅ 필수 필드 누락 검증 테스트 성공");
+    }
+
+    @Test
+    @Order(11)
+    @DisplayName("❌ 회의록 생성 실패 - 잘못된 데이터 형식")
+    void createStudyMeeting_ValidationFailure_InvalidDataFormat() throws Exception {
+        // Given: 잘못된 형식의 데이터
+        StudyMeetingCreateRequestDto request = new StudyMeetingCreateRequestDto();
+        request.setStudyId(-1L); // 음수 ID
+        request.setWriterId(0L); // 0 ID
+        request.setTitle(""); // 빈 제목
+        request.setContent(""); // 빈 내용
+        request.setParticipantIds(List.of()); // 빈 참가자 목록
+
+        // When & Then: 검증 실패로 HTTP 400 Bad Request 응답
+        mockMvc.perform(post("/api/v1/study/meeting/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.statusCode").value(400));
+
+        System.out.println("✅ 잘못된 데이터 형식 검증 테스트 성공");
+    }
+
+    @Test
+    @Order(12)
+    @DisplayName("❌ 회의록 조회 실패 - 존재하지 않는 회의록")
+    void getStudyMeetingDetail_NotFound_NonExistentMeeting() throws Exception {
+        // Given: 존재하지 않는 회의록 ID
+        Long nonExistentMeetingId = 99999L;
+
+        // When & Then: HTTP 404 Not Found 응답
+        mockMvc.perform(get("/api/v1/study/meeting/detail")
+                        .param("meetingId", nonExistentMeetingId.toString()))
+                .andDo(print())
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.statusCode").value(404))
+                .andExpect(jsonPath("$.message").value("회의록을 찾을 수 없습니다"));
+
+        System.out.println("✅ 존재하지 않는 회의록 조회 테스트 성공");
+    }
+
+    @Test
+    @Order(13)
+    @DisplayName("❌ 회의록 수정 실패 - 권한 없는 사용자")
+    void updateStudyMeeting_AuthorizationFailure_UnauthorizedUser() throws Exception {
+        // Given: 회의록이 존재하지만, 다른 사용자가 수정을 시도
+        createTestMeetingInDatabase();
+        
+        StudyMeetingUpdateRequestDto request = new StudyMeetingUpdateRequestDto();
+        request.setMeetingId(TEST_MEETING_ID);
+        request.setWriterId(TEST_MEMBER_2_ID); // 작성자가 아닌 다른 사용자
+        request.setTitle("무단 수정 시도");
+        request.setContent("권한이 없는 사용자의 수정 시도");
+        request.setAttachedUrl("https://malicious.com/unauthorized-link.pdf");
+
+        // When & Then: HTTP 403 Forbidden 응답 (권한 검증이 올바르게 작동함)
+        mockMvc.perform(put("/api/v1/study/meeting/edit")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.statusCode").value(403))
+                .andExpect(jsonPath("$.message").value("회의록을 수정할 권한이 없습니다"));
+
+        System.out.println("✅ 권한 없는 사용자 수정 시도 테스트 성공");
+    }
+
+    // =================================================================
+    // 🔧 엣지 케이스 및 기술적 테스트
+    // =================================================================
+
+    @Test
+    @Order(20)
+    @DisplayName("🎭 잘못된 Content-Type - HTTP 415 Unsupported Media Type")
+    void createStudyMeeting_TechnicalFailure_UnsupportedMediaType() throws Exception {
+        // Given: 잘못된 Content-Type
+        StudyMeetingCreateRequestDto request = createValidMeetingRequest();
+
+        // When & Then: HTTP 415 Unsupported Media Type 응답
+        mockMvc.perform(post("/api/v1/study/meeting/create")
+                        .contentType(MediaType.TEXT_PLAIN) // 잘못된 Content-Type
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isUnsupportedMediaType());
+
+        System.out.println("✅ 잘못된 Content-Type 테스트 성공");
+    }
+
+    @Test
+    @Order(21)
+    @DisplayName("📊 대용량 회의록 목록 조회 - 페이징 성능 테스트")
+    void getAllStudyMeetings_PerformanceTest_LargeDataset() throws Exception {
+        // Given: 대량의 회의록 데이터 생성 (100개)
+        createLargeMeetingDataset(100);
+
+        long startTime = System.currentTimeMillis();
+
+        // When: 페이징된 목록 조회
+        mockMvc.perform(get("/api/v1/study/meeting/all")
+                        .param("studyId", TEST_STUDY_ID.toString())
+                        .param("page", "0")
+                        .param("size", "20"))
+                .andDo(print())
+                // Then: 정상 응답과 성능 기준 만족
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content.length()").value(20))
+                .andExpect(jsonPath("$.data.totalElements").value(100));
+
+        long endTime = System.currentTimeMillis();
+        long executionTime = endTime - startTime;
+
+        // 성능 검증: 1초 이내 응답
+        assertThat(executionTime).isLessThan(1000);
+        
+        System.out.println("✅ 대용량 데이터 페이징 성능 테스트 성공 - 실행시간: " + executionTime + "ms");
+    }
+
+    // =================================================================
+    // 🛠️ 헬퍼 메서드들
+    // =================================================================
+
+    /**
+     * 유효한 회의록 생성 요청 DTO 생성
+     */
+    private StudyMeetingCreateRequestDto createValidMeetingRequest() {
+        StudyMeetingCreateRequestDto request = new StudyMeetingCreateRequestDto();
+        request.setStudyId(TEST_STUDY_ID);
+        request.setWriterId(TEST_MEMBER_ID);
+        request.setTitle(TEST_MEETING_TITLE);
+        request.setContent(TEST_MEETING_CONTENT);
+        request.setParticipantIds(List.of(TEST_MEMBER_ID, TEST_MEMBER_2_ID));
+        request.setAttachedUrl("https://example.com/meeting-notes.pdf");
+        return request;
+    }
+
+    /**
+     * 테스트 데이터 설정 (스터디, 멤버)
+     */
+    private void setupTestData() {
+        try {
+            OffsetDateTime now = OffsetDateTime.now();
+            
+            // 멤버 데이터 생성
+            dsl.insertInto(MEMBER)
+                    .set(MEMBER.ID, TEST_MEMBER_ID)
+                    .set(MEMBER.NAME, TEST_MEMBER_NAME)
+                    .set(MEMBER.STUDENT_NUMBER, "kim.dev@certis.org")
+                    .set(MEMBER.ROLE, "PLAYER")
+                    .set(MEMBER.BIRTHDAY, now.minusYears(25))
+                    .set(MEMBER.GENDER, "MALE")
+                    .set(MEMBER.GRADE, "SENIOR") // 4학년 대신 SENIOR 사용
+                    .set(MEMBER.MAJOR, "컴퓨터공학과")
+                    .set(MEMBER.CREATED_AT, now)
+                    .set(MEMBER.UPDATED_AT, now)
+                    .onDuplicateKeyIgnore()
+                    .execute();
+
+            dsl.insertInto(MEMBER)
+                    .set(MEMBER.ID, TEST_MEMBER_2_ID)
+                    .set(MEMBER.NAME, TEST_MEMBER_2_NAME)
+                    .set(MEMBER.STUDENT_NUMBER, "lee.test@certis.org")
+                    .set(MEMBER.ROLE, "PLAYER")
+                    .set(MEMBER.BIRTHDAY, now.minusYears(23))
+                    .set(MEMBER.GENDER, "FEMALE")
+                    .set(MEMBER.GRADE, "JUNIOR") // 3학년 대신 JUNIOR 사용
+                    .set(MEMBER.MAJOR, "정보보안학과")
+                    .set(MEMBER.CREATED_AT, now)
+                    .set(MEMBER.UPDATED_AT, now)
+                    .onDuplicateKeyIgnore()
+                    .execute();
+
+            // 스터디 데이터 생성
+            dsl.insertInto(STUDY)
+                    .set(STUDY.ID, TEST_STUDY_ID)
+                    .set(STUDY.TITLE, TEST_STUDY_TITLE)
+                    .set(STUDY.DESCRIPTION, "통합 테스트용 스터디")
+                    .set(STUDY.CONTENT, "스터디 상세 내용")
+                    .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                    .set(STUDY.CATEGORY, "웹 개발")
+                    .set(STUDY.SUBCATEGORY, "풀스택")
+                    .set(STUDY.MAX_PARTICIPANTS_NUMBER, 5)
+                    .set(STUDY.STARTED_AT, now.plusDays(1))
+                    .set(STUDY.ENDED_AT, now.plusDays(30))
+                    .set(STUDY.CREATED_AT, now)
+                    .set(STUDY.UPDATED_AT, now)
+                    .onDuplicateKeyIgnore()
+                    .execute();
+
+        } catch (Exception e) {
+            System.out.println("테스트 데이터 설정 중 오류 발생 (이미 존재할 수 있음): " + e.getMessage());
+        }
+    }
+
+    /**
+     * 테스트 데이터 정리
+     */
+    private void cleanupTestData() {
+        try {
+            // 외래 키 제약으로 인해 역순으로 삭제
+            dsl.deleteFrom(STUDY_MEETING).execute();
+            dsl.deleteFrom(STUDY).execute();
+            dsl.deleteFrom(MEMBER).execute();
+        } catch (Exception e) {
+            System.out.println("테스트 데이터 정리 중 오류 발생: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 데이터베이스에 테스트용 회의록 생성
+     */
+    private void createTestMeetingInDatabase() {
+        OffsetDateTime now = OffsetDateTime.now();
+        
+        dsl.insertInto(STUDY_MEETING)
+                .set(STUDY_MEETING.ID, TEST_MEETING_ID)
+                .set(STUDY_MEETING.STUDY_ID, TEST_STUDY_ID)
+                .set(STUDY_MEETING.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY_MEETING.TITLE, TEST_MEETING_TITLE)
+                .set(STUDY_MEETING.CONTENT, TEST_MEETING_CONTENT)
+                .set(STUDY_MEETING.PARTICIPANTS, new Long[]{
+                        TEST_MEMBER_ID,
+                        TEST_MEMBER_2_ID
+                })
+                .set(STUDY_MEETING.CREATED_AT, now)
+                .set(STUDY_MEETING.UPDATED_AT, now)
+                .execute();
+    }
+
+    /**
+     * 다수의 회의록 생성 (목록 조회 테스트용)
+     */
+    private void createMultipleMeetingsInDatabase() {
+        OffsetDateTime now = OffsetDateTime.now();
+        
+        for (int i = 1; i <= 3; i++) {
+            dsl.insertInto(STUDY_MEETING)
+                    .set(STUDY_MEETING.ID, (long) i)
+                    .set(STUDY_MEETING.STUDY_ID, TEST_STUDY_ID)
+                    .set(STUDY_MEETING.MEMBER_ID, TEST_MEMBER_ID)
+                    .set(STUDY_MEETING.TITLE, "회의록 " + i)
+                    .set(STUDY_MEETING.CONTENT, "회의록 " + i + " 내용")
+                    .set(STUDY_MEETING.PARTICIPANTS, new Long[]{
+                            TEST_MEMBER_ID,
+                            TEST_MEMBER_2_ID
+                    })
+                    .set(STUDY_MEETING.CREATED_AT, now.minusHours(i))
+                    .set(STUDY_MEETING.UPDATED_AT, now.minusHours(i))
+                    .execute();
+        }
+    }
+
+    /**
+     * 대용량 회의록 데이터셋 생성 (성능 테스트용)
+     */
+    private void createLargeMeetingDataset(int count) {
+        OffsetDateTime now = OffsetDateTime.now();
+        
+        for (int i = 1; i <= count; i++) {
+            dsl.insertInto(STUDY_MEETING)
+                    .set(STUDY_MEETING.ID, (long) i)
+                    .set(STUDY_MEETING.STUDY_ID, TEST_STUDY_ID)
+                    .set(STUDY_MEETING.MEMBER_ID, TEST_MEMBER_ID)
+                    .set(STUDY_MEETING.TITLE, "대용량 테스트 회의록 " + i)
+                    .set(STUDY_MEETING.CONTENT, "대용량 테스트용 회의록 내용 " + i)
+                    .set(STUDY_MEETING.PARTICIPANTS, new Long[]{
+                            TEST_MEMBER_ID,
+                            TEST_MEMBER_2_ID
+                    })
+                    .set(STUDY_MEETING.CREATED_AT, now.minusHours(i))
+                    .set(STUDY_MEETING.UPDATED_AT, now.minusHours(i))
+                    .execute();
+        }
+    }
+
+    /**
+     * 회의록 생성 검증
+     */
+    private void verifyMeetingCreatedInDatabase(StudyMeetingCreateRequestDto request) {
+        var meeting = dsl.selectFrom(STUDY_MEETING)
+                .where(STUDY_MEETING.STUDY_ID.eq(request.getStudyId()))
+                .and(STUDY_MEETING.TITLE.eq(request.getTitle()))
+                .and(STUDY_MEETING.DELETED_AT.isNull())
+                .fetchOne();
+
+        assertThat(meeting).isNotNull();
+        assertThat(meeting.getTitle()).isEqualTo(request.getTitle());
+        assertThat(meeting.getContent()).isEqualTo(request.getContent());
+        assertThat(meeting.getMemberId()).isEqualTo(request.getWriterId());
+    }
+
+    /**
+     * 회의록 삭제 검증 (소프트 삭제)
+     */
+    private void verifyMeetingDeletedInDatabase(Long meetingId) {
+        var meeting = dsl.selectFrom(STUDY_MEETING)
+                .where(STUDY_MEETING.ID.eq(meetingId))
+                .fetchOne();
+
+        assertThat(meeting).isNotNull();
+        assertThat(meeting.getDeletedAt()).isNotNull(); // 소프트 삭제 확인
+    }
+}

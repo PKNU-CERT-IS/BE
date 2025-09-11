@@ -14,6 +14,8 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.OffsetDateTime;
 
@@ -81,6 +83,17 @@ class ProjectControllerTest {
     @BeforeEach
     void setUp() {
         System.out.println("🔧 테스트 데이터 설정 시작");
+        // 데이터 충돌 방지를 위해 매 테스트 시작 시 테이블 정리
+        dsl.execute("TRUNCATE TABLE project_meeting_link RESTART IDENTITY CASCADE");
+        dsl.execute("TRUNCATE TABLE project_meeting RESTART IDENTITY CASCADE");
+        dsl.execute("TRUNCATE TABLE project_participant RESTART IDENTITY CASCADE");
+        dsl.execute("TRUNCATE TABLE project RESTART IDENTITY CASCADE");
+        dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
+
+        // 보안 컨텍스트에 Mock 사용자 설정 (user1)
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("user1", "password")
+        );
         setupTestData();
         System.out.println("✅ 테스트 데이터 설정 완료");
     }
@@ -564,7 +577,7 @@ class ProjectControllerTest {
                     .set(MEMBER.ROLE, "PLAYER")
                     .set(MEMBER.BIRTHDAY, now.minusYears(25))
                     .set(MEMBER.GENDER, "MALE")
-                    .set(MEMBER.GRADE, "4")
+                    .set(MEMBER.GRADE, "SENIOR")
                     .set(MEMBER.MAJOR, "컴퓨터공학과")
                     .set(MEMBER.CREATED_AT, now)
                     .set(MEMBER.UPDATED_AT, now)
@@ -578,7 +591,7 @@ class ProjectControllerTest {
                     .set(MEMBER.ROLE, "PLAYER")
                     .set(MEMBER.BIRTHDAY, now.minusYears(23))
                     .set(MEMBER.GENDER, "FEMALE")
-                    .set(MEMBER.GRADE, "3")
+                    .set(MEMBER.GRADE, "JUNIOR")
                     .set(MEMBER.MAJOR, "정보보안학과")
                     .set(MEMBER.CREATED_AT, now)
                     .set(MEMBER.UPDATED_AT, now)

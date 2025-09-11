@@ -165,7 +165,7 @@ class AuthControllerTest {
                 .fetchOne();
         assertThat(memberRecord).isNotNull();
         assertThat(memberRecord.getName()).isEqualTo("신규회원");
-        assertThat(memberRecord.getGrade()).isEqualTo("3학년");
+        assertThat(memberRecord.getGrade()).isEqualTo("JUNIOR");
         assertThat(memberRecord.getMajor()).isEqualTo("컴퓨터공학");
 
         // MEMBER_CONTACT 테이블에 연락처 정보 저장 확인
@@ -339,7 +339,7 @@ class AuthControllerTest {
         dsl.insertInto(MEMBER)
                 .set(MEMBER.NAME, TEST_NAME)
                 .set(MEMBER.STUDENT_NUMBER, TEST_ACCOUNT_NUMBER)
-                .set(MEMBER.GRADE, "3학년")
+                .set(MEMBER.GRADE, "JUNIOR")
                 .set(MEMBER.ROLE, TEST_ROLE.name())
                 .set(MEMBER.MAJOR, "컴퓨터공학")
                 .set(MEMBER.BIRTHDAY, OffsetDateTime.parse("2000-01-01T00:00:00Z"))
