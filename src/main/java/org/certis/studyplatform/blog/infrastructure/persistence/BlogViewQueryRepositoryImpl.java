@@ -43,17 +43,14 @@ public class BlogViewQueryRepositoryImpl implements BlogViewQueryRepository {
 
         var bv = BLOG_VIEW.as("bv");
 
-        // 가장 최근의 view_number 값 가져오기
-        Integer latestViewCount = dsl.select(bv.VIEW_NUMBER)
+        Integer viewCount = dsl.select(bv.VIEW_NUMBER)
                 .from(bv)
                 .where(bv.BLOG_ID.eq(blogIdVo.value()))
-                .orderBy(bv.CREATED_AT.desc())
-                .limit(1)
                 .fetchOne(0, Integer.class);
 
-        int result = latestViewCount != null ? latestViewCount : 0;
+        int result = viewCount != null ? viewCount : 0;
 
-        log.info("jOOQ: Latest view count retrieved - Blog ID: {}, Count: {}", blogIdVo.value(), result);
+        log.info("jOOQ: view count retrieved - Blog ID: {}, Count: {}", blogIdVo.value(), result);
 
         return result;
     }
