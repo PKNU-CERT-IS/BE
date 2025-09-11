@@ -155,6 +155,11 @@ public class BoardDomainService {
 
         // 3. Redis에서 좋아요 토글 (실패 시 에러 반환)
         ToggleLikeVo toggleVo = ToggleLikeVo.of(command.boardId(), command.memberId());
+        // Redis 선동기화: DB에 사용자가 이미 좋아요한 기록이 있으면 Redis에 먼저 반영
+        if (!boardRedisRepository.isLikedByMember(boardIdVo, command.memberId())
+                && boardQueryRepository.hasMemberLiked(boardIdVo, command.memberId())) {
+            boardRedisRepository.addLike(boardIdVo, command.memberId());
+        }
         boolean newLikeStatus = toggleLikeInRedis(toggleVo);
 
         // 4. 좋아요 수 조회

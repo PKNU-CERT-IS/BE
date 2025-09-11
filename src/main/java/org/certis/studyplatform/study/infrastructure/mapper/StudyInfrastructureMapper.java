@@ -75,6 +75,8 @@ public class StudyInfrastructureMapper {
                 entity.getSubcategory(),
                 entity.getStartedAt(),
                 entity.getEndedAt(),
+                entity.getCreatedAt(),
+                entity.getUpdatedAt(),
                 entity.getMemberId(),
                 null, // creatorName은 별도 조회 필요
                 null, // creatorGrade는 별도 조회 필요
@@ -127,7 +129,7 @@ public class StudyInfrastructureMapper {
                 .collect(Collectors.toList());
 
 
-        // ✅ [MODIFICATION] StudyVo 생성자 인자 순서 변경 (attached, summaryVoList, participantVoList)
+        // ✅ [MODIFICATION] StudyVo 생성자 인자 순서 변경 (createdAt, updatedAt 추가)
         return new StudyVo(
                 firstRecord.get("id", Long.class),
                 firstRecord.get("title", String.class),
@@ -137,6 +139,8 @@ public class StudyInfrastructureMapper {
                 firstRecord.get("subcategory", String.class),
                 firstRecord.get("started_at", OffsetDateTime.class),
                 firstRecord.get("ended_at", OffsetDateTime.class),
+                firstRecord.get("created_at", OffsetDateTime.class),
+                firstRecord.get("updated_at", OffsetDateTime.class),
                 firstRecord.get("member_id", Long.class),
                 firstRecord.get("creator_name", String.class),
                 safeParseMemberGrade(firstRecord.get("creator_grade", String.class)),
@@ -167,7 +171,7 @@ public class StudyInfrastructureMapper {
                 .distinct() // 중복 제거
                 .collect(Collectors.toList());
 
-        // ✅ [MODIFICATION] StudyVo 생성자 인자 순서 변경 (attached, summaryVoList, participantVoList)
+        // ✅ [MODIFICATION] StudyVo 생성자 인자 순서 변경 (createdAt, updatedAt 추가)
         return new StudyVo(
                 firstRecord.get("id", Long.class),
                 firstRecord.get("title", String.class),
@@ -177,6 +181,8 @@ public class StudyInfrastructureMapper {
                 firstRecord.get("subcategory", String.class),
                 firstRecord.get("started_at", OffsetDateTime.class),
                 firstRecord.get("ended_at", OffsetDateTime.class),
+                firstRecord.get("created_at", OffsetDateTime.class),
+                firstRecord.get("updated_at", OffsetDateTime.class),
                 firstRecord.get("member_id", Long.class),
                 firstRecord.get("creator_name", String.class),
                 safeParseMemberGrade(firstRecord.get("creator_grade", String.class)),

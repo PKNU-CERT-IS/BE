@@ -91,8 +91,7 @@ public class ProjectFacadeService {
         log.info("Facade: Updating project - ID: {}", requestDto.getProjectId());
 
         // DTO → Command Object 변환
-        // TODO: 하드코딩 변경 필요
-        UpdateProjectCommand command = commandMapper.toUpdateProjectCommand(requestDto, 1L);
+        UpdateProjectCommand command = commandMapper.toUpdateProjectCommand(requestDto, requestDto.getRequesterId());
 
         // Command Service 호출 (VO 반환)
         ProjectVo updatedVo = projectCommandService.updateProject(command);

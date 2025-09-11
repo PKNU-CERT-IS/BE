@@ -115,6 +115,8 @@ public enum ResponseStatus {
     BOARD_LIST_SUCCESS(HttpStatus.OK, "게시글 목록을 성공적으로 조회했습니다"),
     BOARD_SEARCH_SUCCESS(HttpStatus.OK, "게시글 검색을 성공적으로 완료했습니다"),
     BOARD_VIEW_INCREMENT_SUCCESS(HttpStatus.OK, "게시글 조회수가 성공적으로 증가했습니다"),
+    BOARD_SYNC_SUCCESS(HttpStatus.OK, "BOARD_SYNC_SUCCESS"),
+    BOARD_STATS_FIND_SUCCESS(HttpStatus.OK, "BOARD_STATS_FIND_SUCCESS"),
 
     // =================================================================
     // COMMENT RESPONSE CODES

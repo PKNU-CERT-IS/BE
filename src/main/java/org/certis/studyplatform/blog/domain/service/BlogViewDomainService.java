@@ -12,8 +12,8 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class BlogViewDomainService {
 
-    BlogRedisRepository redisRepository;
-    BlogViewQueryRepository queryRepository;
+    private final BlogRedisRepository redisRepository;
+    private final BlogViewQueryRepository queryRepository;
 
     /**
      * ViewCount 조회 (Redis 우선, 없으면 BlogViewEntity에서 조회)

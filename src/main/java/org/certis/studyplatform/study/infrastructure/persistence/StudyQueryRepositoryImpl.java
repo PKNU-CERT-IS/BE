@@ -88,7 +88,9 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .where(s.ID.eq(studyId))
                                 .and(s.DELETED_AT.isNull())
                                 .fetch()
-                                .into(Record.class)
+                                .stream()
+                                .map(record -> (Record) record)
+                                .toList()
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.toStudyVoFromRecordsWithAttachments(records));
 
@@ -159,7 +161,9 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .limit(pageable.getPageSize())
                                 .offset((int) pageable.getOffset())
                                 .fetch()
-                                .into(Record.class)
+                                .stream()
+                                .map(record -> (Record) record)
+                                .toList()
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.groupRecordsByStudyIdToSummaryVos(records))
                 .orElse(List.of());
@@ -231,7 +235,9 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .limit(pageable.getPageSize())
                                 .offset((int) pageable.getOffset())
                                 .fetch()
-                                .into(Record.class)
+                                .stream()
+                                .map(record -> (Record) record)
+                                .toList()
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.groupRecordsByStudyIdToSummaryVos(records))
                 .orElse(List.of());
@@ -290,7 +296,9 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .limit(pageable.getPageSize())
                                 .offset((int) pageable.getOffset())
                                 .fetch()
-                                .into(Record.class)
+                                .stream()
+                                .map(record -> (Record) record)
+                                .toList()
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.groupRecordsByStudyIdToSummaryVos(records))
                 .orElse(List.of());
@@ -351,7 +359,9 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .limit(pageable.getPageSize())
                                 .offset((int) pageable.getOffset())
                                 .fetch()
-                                .into(Record.class)
+                                .stream()
+                                .map(record -> (Record) record)
+                                .toList()
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.groupRecordsByStudyIdToSummaryVos(records))
                 .orElse(List.of());
@@ -416,7 +426,9 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .limit(pageable.getPageSize())
                                 .offset((int) pageable.getOffset())
                                 .fetch()
-                                .into(Record.class)
+                                .stream()
+                                .map(record -> (Record) record)
+                                .toList()
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.groupRecordsByStudyIdToSummaryVos(records))
                 .orElse(List.of());
@@ -478,7 +490,9 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .limit(pageable.getPageSize())
                                 .offset((int) pageable.getOffset())
                                 .fetch()
-                                .into(Record.class)
+                                .stream()
+                                .map(record -> (Record) record)
+                                .toList()
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.groupRecordsByStudyIdToSummaryVos(records))
                 .orElse(List.of());
@@ -541,7 +555,9 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .limit(pageable.getPageSize())
                                 .offset((int) pageable.getOffset())
                                 .fetch()
-                                .into(Record.class)
+                                .stream()
+                                .map(record -> (Record) record)
+                                .toList()
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.groupRecordsByStudyIdToSummaryVos(records))
                 .orElse(List.of());
@@ -589,7 +605,9 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .and(s.ENDED_AT.lessThan(OffsetDateTime.now()))
                                 .orderBy(s.ENDED_AT.desc())
                                 .fetch()
-                                .into(Record.class)
+                                .stream()
+                                .map(record -> (Record) record)
+                                .toList()
                 ).filter(records -> !records.isEmpty())
                 .map(mapper::groupRecordsByStudyIdToSummaryVos)
                 .orElse(List.of());
@@ -671,7 +689,9 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .leftJoin(sa).on(s.ID.eq(sa.STUDY_ID).and(sa.DELETED_AT.isNull()))
                                 .where(s.ID.eq(studyId))
                                 .fetch()
-                                .into(Record.class)
+                                .stream()
+                                .map(record -> (Record) record)
+                                .toList()
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.toStudyVoFromRecordsWithAttachments(records));
 
@@ -721,7 +741,9 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .where(s.ID.eq(studyId))
                                 .and(s.DELETED_AT.isNull())
                                 .fetch()
-                                .into(Record.class)
+                                .stream()
+                                .map(record -> (Record) record)
+                                .toList()
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.toStudyVoFromRecordsWithAttachments(records));
 
@@ -739,26 +761,30 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
     private Condition buildSearchConditions(StudySearchCriteriaVo criteria) {
         log.debug("jOOQ: Building search conditions with criteria: {}", criteria);
 
+        // Use aliases to match the query structure
+        var s = STUDY.as("s");
+        var m = MEMBER.as("m");
+        
         Condition conditions = noCondition();
 
         // 키워드 검색 (title, description, creatorName 포함)
         if (criteria.keyword() != null && !criteria.keyword().trim().isEmpty()) {
             String likeKeyword = "%" + criteria.keyword() + "%";
             conditions = conditions.and(
-                    STUDY.TITLE.likeIgnoreCase(likeKeyword)
-                            .or(STUDY.DESCRIPTION.likeIgnoreCase(likeKeyword))
-                            .or(MEMBER.NAME.likeIgnoreCase(likeKeyword))
+                    s.TITLE.likeIgnoreCase(likeKeyword)
+                            .or(s.DESCRIPTION.likeIgnoreCase(likeKeyword))
+                            .or(m.NAME.likeIgnoreCase(likeKeyword))
             );
             log.debug("jOOQ: Added keyword condition: {}", likeKeyword);
         }
 
         if (criteria.category() != null) {
-            conditions = conditions.and(STUDY.CATEGORY.eq(criteria.category()));
+            conditions = conditions.and(s.CATEGORY.eq(criteria.category()));
             log.debug("jOOQ: Added category condition: {}", criteria.category());
         }
 
         if (criteria.subCategory() != null) {
-            conditions = conditions.and(STUDY.SUBCATEGORY.eq(criteria.subCategory()));
+            conditions = conditions.and(s.SUBCATEGORY.eq(criteria.subCategory()));
             log.debug("jOOQ: Added subcategory condition: {}", criteria.subCategory());
         }
 
@@ -771,8 +797,10 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
      * ✅ jOOQ 생성 테이블로 정렬 조건 구성
      */
     private OrderField<?>[] buildOrderBy(Pageable pageable) {
+        var s = STUDY.as("s"); // 테이블 별칭 정의
+        
         if (pageable.getSort().isUnsorted()) {
-            return new OrderField<?>[]{STUDY.CREATED_AT.desc()};
+            return new OrderField<?>[]{s.CREATED_AT.desc()};
         }
 
         return pageable.getSort().stream()
@@ -780,28 +808,28 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                     Field<?> sortField; // OrderField → Field로 변경
                     switch (order.getProperty()) {
                         case "createdAt":
-                            sortField = STUDY.CREATED_AT;
+                            sortField = s.CREATED_AT;
                             break;
                         case "updatedAt":
-                            sortField = STUDY.UPDATED_AT;
+                            sortField = s.UPDATED_AT;
                             break;
                         case "startedAt":
-                            sortField = STUDY.STARTED_AT;
+                            sortField = s.STARTED_AT;
                             break;
                         case "endedAt":
-                            sortField = STUDY.ENDED_AT;
+                            sortField = s.ENDED_AT;
                             break;
                         case "title":
-                            sortField = STUDY.TITLE;
+                            sortField = s.TITLE;
                             break;
                         case "memberId":
-                            sortField = STUDY.MEMBER_ID;
+                            sortField = s.MEMBER_ID;
                             break;
                         case "maxParticipantsNumber":
-                            sortField = STUDY.MAX_PARTICIPANTS_NUMBER;
+                            sortField = s.MAX_PARTICIPANTS_NUMBER;
                             break;
                         default:
-                            sortField = STUDY.CREATED_AT; // 기본값
+                            sortField = s.CREATED_AT; // 기본값
                     }
                     return order.isAscending() ? sortField.asc() : sortField.desc();
                 })

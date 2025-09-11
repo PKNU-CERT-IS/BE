@@ -52,13 +52,8 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
 
             MemberEntity memberEntity = memberEntityOpt.get();
 
-            // Profile 정보가 있는지 확인
-            if (!memberInfrastructureMapper.hasProfileInformation(memberEntity)) {
-                log.debug("Member {} does not have profile information", memberIdVo.toLong());
-                return Optional.empty();
-            }
-
-            // 기본 ProfileVo 생성 (gracePeriod는 null)
+            // Profile 정보 유무와 상관없이 기본 ProfileVo 생성 (gracePeriod는 null)
+            // 조회 시점에 프로필 설명/이미지가 없어도 수정 API에서 생성/갱신 가능해야 함
             ProfileVo baseProfile = memberInfrastructureMapper.toProfile(memberEntity);
 
             // 목 데이터를 통해 gracePeriod 계산

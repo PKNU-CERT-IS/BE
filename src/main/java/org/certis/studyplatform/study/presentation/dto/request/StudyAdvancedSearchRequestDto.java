@@ -39,8 +39,6 @@ public class StudyAdvancedSearchRequestDto {
     /**
      * 상태 필터 (Ready, InProgress, Completed)
      */
-    @Pattern(regexp = "^(Ready|InProgress|Completed|READY|INPROGRESS|COMPLETED)$", 
-             message = "상태는 Ready, InProgress, Completed 중 하나여야 합니다")
     private StudyStatus status;
 
     /**

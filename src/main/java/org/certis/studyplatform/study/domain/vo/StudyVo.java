@@ -24,6 +24,8 @@ public record StudyVo(
         String subCategory,
         OffsetDateTime startDate,
         OffsetDateTime endDate,
+        OffsetDateTime createdAt,
+        OffsetDateTime updatedAt,
         Long creatorId,
         String creatorName,
         MemberGrade creatorGrade,
@@ -91,6 +93,8 @@ public record StudyVo(
             String subCategory,
             OffsetDateTime startDate,
             OffsetDateTime endDate,
+            OffsetDateTime createdAt,
+            OffsetDateTime updatedAt,
             Long creatorId,
             String creatorName,
             MemberGrade creatorGrade,
@@ -99,7 +103,8 @@ public record StudyVo(
     ) {
         return new StudyVo(
                 id, title, description, content, category, subCategory,
-                startDate, endDate, creatorId, creatorName, creatorGrade,
+                startDate, endDate, createdAt, updatedAt,
+                creatorId, creatorName, creatorGrade,
                 maxParticipants, currentParticipants,
                 Collections.emptyList(), Collections.emptyList(),
                 Collections.emptyList()
@@ -122,10 +127,12 @@ public record StudyVo(
             MemberGrade creatorGrade,
             Integer maxParticipants
     ) {
+        OffsetDateTime now = OffsetDateTime.now();
         return new StudyVo(
                 null, // id는 null (새 생성)
                 title, description, content, category, subCategory,
-                startDate, endDate, creatorId, creatorName, creatorGrade,
+                startDate, endDate, now, now, // createdAt, updatedAt
+                creatorId, creatorName, creatorGrade,
                 maxParticipants, 0, // 초기 참가자는 0명
                 Collections.emptyList(),
                 Collections.emptyList(), // 초기 회의록 목록은 비어 있음
@@ -154,6 +161,8 @@ public record StudyVo(
                 subCategory != null ? subCategory : existing.subCategory(),
                 startDate != null ? startDate : existing.startDate(),
                 endDate != null ? endDate : existing.endDate(),
+                existing.createdAt(), // 기존 createdAt 유지
+                OffsetDateTime.now(), // updatedAt은 현재 시간으로 갱신
                 existing.creatorId(),
                 existing.creatorName(),
                 existing.creatorGrade(), // 기존 creatorGrade 유지

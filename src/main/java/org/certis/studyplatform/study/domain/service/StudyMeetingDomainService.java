@@ -194,7 +194,7 @@ public class StudyMeetingDomainService {
     private void validateWriterPermission(Long writerId, Long requesterId, String errorMessage) {
         if (!writerId.equals(requesterId)) {
             log.warn("Permission denied - writerId: {}, requesterId: {}", writerId, requesterId);
-            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_PERMISSION_DENINED, errorMessage);
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_UPDATE_UNAUTHORIZED, errorMessage);
         }
         log.debug("Writer permission validated - writerId: {}, requesterId: {}", writerId, requesterId);
     }

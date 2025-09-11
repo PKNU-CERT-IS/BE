@@ -85,7 +85,7 @@ public class BoardInfrastructureMapper {
                 entity.getMemberId(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt(),
-                List.of() // 기본 변환에서는 첨부파일 없음
+                attachmentVos
         );
     }
 

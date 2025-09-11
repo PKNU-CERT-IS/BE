@@ -12,7 +12,6 @@ import org.certis.studyplatform.board.application.object.query.SearchBoardsQuery
 import org.certis.studyplatform.board.domain.model.vo.BoardDetailVo;
 import org.certis.studyplatform.board.domain.model.vo.BoardLikeVo;
 import org.certis.studyplatform.board.domain.model.vo.BoardSummaryVo;
-import org.certis.studyplatform.board.domain.model.vo.BoardVo;
 import org.certis.studyplatform.board.presentation.dto.request.BoardCreateRequestDto;
 import org.certis.studyplatform.board.presentation.dto.request.BoardSearchRequestDto;
 import org.certis.studyplatform.board.presentation.dto.request.BoardUpdateRequestDto;
@@ -30,6 +29,7 @@ public class BoardFacadeService {
 
     private final BoardCommandService boardCommandService;
     private final BoardQueryService boardQueryService;
+    private final org.certis.studyplatform.board.application.sync.BoardSyncService boardSyncService;
 
     private final BoardApplicationMapper boardApplicationMapper;
 
@@ -166,5 +166,18 @@ public class BoardFacadeService {
         log.info("Facade: Like toggled - ID: {}, isLiked: {}, count: {}",
                 boardId, result.isLiked(), result.getLikeCount());
         return result;
+    }
+
+    // 수동 동기화 트리거
+    @Transactional
+    public void syncBoardStats() {
+        boardSyncService.syncStatsFromRedisToDatabase();
+    }
+
+    // 오늘 통계 조회 (간단한 더미 값 반환)
+    @Transactional(readOnly = true)
+    public org.certis.studyplatform.board.presentation.dto.response.BoardStatsResponseDto getTodayStats() {
+        // 실제 구현에서는 QueryService를 통해 조회
+        return new org.certis.studyplatform.board.presentation.dto.response.BoardStatsResponseDto(true);
     }
 }

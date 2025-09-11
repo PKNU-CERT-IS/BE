@@ -42,7 +42,7 @@ public record SearchStudiesQuery(
         StudyStatus status,
         Pageable pageable
     ) {
-        return new SearchStudiesQuery(keyword, category, subcategory, status, null);
+        return new SearchStudiesQuery(keyword, category, subcategory, status, pageable);
     }
 
     /**

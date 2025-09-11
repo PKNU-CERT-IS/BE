@@ -181,8 +181,11 @@ public class StudyMeetingInfrastructureMapper {
         }
 
         OffsetDateTime createdAt = record.get("created_at", OffsetDateTime.class);
-        String meetingAttachedUrl = record.get("meeting_attached_url", String.class);
-        String meetingAttachedTitle = record.get("meeting_attached_title", String.class);
+        
+        // study_meeting 테이블에는 첨부파일 필드가 없으므로 null로 설정
+        // 실제 첨부파일은 study_meeting_link 테이블에서 별도 조회
+        String meetingAttachedUrl = null;
+        String meetingAttachedTitle = null;
 
         return StudyMeetingSummaryVo.of(
                 record.get("id", Long.class),

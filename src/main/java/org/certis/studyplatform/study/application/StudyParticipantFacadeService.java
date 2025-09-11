@@ -23,6 +23,7 @@ import org.certis.studyplatform.study.application.query.StudyParticipantQuerySer
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.certis.studyplatform.shared.security.MockCurrentUserProvider;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +36,7 @@ public class StudyParticipantFacadeService {
     private final StudyParticipantQueryService participantQueryService;
     private final StudyApplicationCommandMapper commandMapper;
     private final StudyApplicationDtoMapper dtoMapper;
+    private final MockCurrentUserProvider currentUserProvider;
 
     // ================================================================
     // STUDY PARTICIPANT OPERATIONS - 프로젝트 참가 관리
@@ -46,9 +48,7 @@ public class StudyParticipantFacadeService {
     public StudyJoinResponseDto registerJoinStudy(StudyJoinRequestDto requestDto) {
         log.info("Facade: Registering study join - studyId: {}", requestDto.getStudyId());
 
-        // 임시: Spring Security 미구축 상태에서 현재 사용자 ID 하드코딩
-        // TODO: Spring Security 구축 후 @AuthenticationPrincipal CurrentUser 사용
-        Long currentUserId = 1L; // 임시 하드코딩
+        Long currentUserId = currentUserProvider.getMockCurrentUser().getId();
 
         // DTO → Command Object 변환
         CreateStudyParticipantCommand command = commandMapper
@@ -70,8 +70,7 @@ public class StudyParticipantFacadeService {
     public void cancelJoinStudy(StudyJoinCancelRequestDto requestDto) {
         log.info("Facade: Cancelling study join - studyId: {}", requestDto.getStudyId());
 
-        // 임시: Spring Security 미구축 상태에서 현재 사용자 ID 하드코딩
-        Long currentUserId = 1L; // 임시 하드코딩
+        Long currentUserId = currentUserProvider.getMockCurrentUser().getId();
 
         // DTO → Command Object 변환
         CancelStudyParticipantCommand command = commandMapper
@@ -89,8 +88,7 @@ public class StudyParticipantFacadeService {
     public StudyParticipantStatusUpdateResponseDto approveJoinStudy(StudyJoinApproveRequestDto requestDto) {
         log.info("Facade: Approving study join - participantId: {}", requestDto.getParticipantId());
 
-        // 임시: Spring Security 미구축 상태에서 현재 사용자 ID 하드코딩 (프로젝트 생성자 권한 확인 필요)
-        Long currentUserId = 1L; // 임시 하드코딩
+        Long currentUserId = currentUserProvider.getMockCurrentUser().getId();
 
         // DTO → Command Object 변환
         UpdateStudyParticipantStatusCommand command = commandMapper
@@ -113,8 +111,7 @@ public class StudyParticipantFacadeService {
     public StudyParticipantStatusUpdateResponseDto rejectJoinStudy(StudyJoinRejectRequestDto requestDto) {
         log.info("Facade: Rejecting study join - participantId: {}", requestDto.getParticipantId());
 
-        // 임시: Spring Security 미구축 상태에서 현재 사용자 ID 하드코딩 (프로젝트 생성자 권한 확인 필요)
-        Long currentUserId = 1L; // 임시 하드코딩
+        Long currentUserId = currentUserProvider.getMockCurrentUser().getId();
 
         // DTO → Command Object 변환
         UpdateStudyParticipantStatusCommand command = commandMapper

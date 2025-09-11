@@ -41,6 +41,12 @@ public class StudyDetailResponseDto {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private OffsetDateTime endDate;
 
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private OffsetDateTime createdAt;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private OffsetDateTime updatedAt;
+
     private String creatorName;
 
     private MemberGrade creatorGrade;

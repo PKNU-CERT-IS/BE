@@ -38,6 +38,8 @@ public class StudyApplicationDtoMapper {
                 .subCategory(vo.subCategory())
                 .startDate(vo.startDate())
                 .endDate(vo.endDate())
+                .createdAt(vo.createdAt())
+                .updatedAt(vo.updatedAt())
                 .creatorName(vo.creatorName())
                 .creatorGrade(vo.creatorGrade())
                 .attachedFiles(toStudyAttachedResponseDtoList(vo.attached()))
