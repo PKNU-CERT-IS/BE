@@ -9,9 +9,9 @@ package org.certis.studyplatform.blog.domain.vo;
 public record BlogIdVo(Long value) {
 
     public static BlogIdVo of(Long id) {
-        if (id == null || id <= 0) {
-            throw new IllegalArgumentException("Blog ID must be positive");
-        }
+//        if (id == null || id <= 0) {
+//            throw new IllegalArgumentException("Blog ID must be positive");
+//        }
         return new BlogIdVo(id);
     }
 }

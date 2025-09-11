@@ -21,10 +21,6 @@ public record SearchBlogsQuery(
         return new SearchBlogsQuery(keyword, category, pageable);
     }
 
-    public static SearchBlogsQuery ofKeyword(String keyword, Pageable pageable) {
-        return new SearchBlogsQuery(keyword, null, pageable);
-    }
-
     /**
      * 고급 검색용 팩토리 메서드
      */
