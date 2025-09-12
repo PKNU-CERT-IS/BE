@@ -66,8 +66,8 @@ public class BlogEntity {
 
     @Builder(toBuilder = true)
     private BlogEntity(Long id, Long memberId, Long studyId, Long projectId,
-                       String title, String content, String category, Boolean isPublic, String description,
-                       OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
+                      String title, String content, String category, Boolean isPublic, String description,
+                      OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
         this.id = id;
         this.memberId = memberId;
         this.studyId = studyId;

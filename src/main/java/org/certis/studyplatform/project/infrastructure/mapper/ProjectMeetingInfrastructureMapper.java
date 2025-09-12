@@ -144,9 +144,12 @@ public class ProjectMeetingInfrastructureMapper {
         return ProjectMeetingSummaryVo.of(
                 entity.getId(),
                 entity.getTitle(),
+                entity.getContent(),
                 participantNumber,
                 creatorName,
-                isEditable
+                isEditable,
+                null,
+                null
         );
     }
 
@@ -203,9 +206,12 @@ public class ProjectMeetingInfrastructureMapper {
         return ProjectMeetingSummaryVo.of(
                 record.get("id", Long.class),
                 record.get("title", String.class),
+                null,
                 participantCount,
                 writerName,
-                true // TODO: 실제로는 현재 사용자와 작성자 비교하여 편집 가능 여부 결정
+                true, // TODO: 실제로는 현재 사용자와 작성자 비교하여 편집 가능 여부 결정
+                null,
+                null
         );
     }
 } 

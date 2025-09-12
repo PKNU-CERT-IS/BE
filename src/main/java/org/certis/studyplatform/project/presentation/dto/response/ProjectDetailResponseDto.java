@@ -51,6 +51,8 @@ public class ProjectDetailResponseDto {
 
     private List<ProjectMeetingSummaryResponseDto> meetingSummaries;
 
+    private List<ProjectParticipantSummaryResponseDto> participantSummaries;
+
     private Integer maxParticipants;
 
     private Integer currentParticipants;

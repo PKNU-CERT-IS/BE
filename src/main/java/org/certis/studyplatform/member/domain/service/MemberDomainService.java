@@ -568,22 +568,90 @@ public class MemberDomainService {
                 command.memberId(), command.penaltyPoints());
     }
 
+    /**
+     * 유예기간 만료 벌점 처리 (스케줄러에서 호출)
+     * 
+     * 매주 일요일 24:00에 실행되어 유예기간이 만료된 Upsolver들에게 벌점 부여
+     */
     public void applyGracePeriodForGrantingPenalties() {
+        log.info("Domain: Starting grace period penalty processing");
         OffsetDateTime now = OffsetDateTime.now();
         List<MemberWithPenaltyVo> expiredUpsolvers = memberQueryRepository.findExpiredUpsolvers(now);
 
+        if (expiredUpsolvers.isEmpty()) {
+            log.info("Domain: No expired upsolvers found");
+            return;
+        }
+
+        log.info("Domain: Found {} expired upsolvers", expiredUpsolvers.size());
+
+        int processedCount = 0;
+        int errorCount = 0;
+
         for (MemberWithPenaltyVo member : expiredUpsolvers) {
-            Integer newPoints = (int)(member.penaltyPoints() != null ? member.penaltyPoints() : 0) + 1;
-            PenaltyPointsVo penaltyVo = PenaltyPointsVo.of(newPoints);
+            try {
+                // 벌점 1점 추가
+                Long currentPoints = member.penaltyPoints() != null ? member.penaltyPoints() : 0L;
+                Long newPoints = currentPoints + 1;
+                PenaltyPointsVo penaltyVo = PenaltyPointsVo.of(newPoints.intValue());
 
-            OffsetDateTime nextGrace = now.plusWeeks(2)
-                    .toLocalDate()
-                    .atStartOfDay()
-                    .atOffset(ZoneOffset.UTC);
-            GracePeriodVo graceVo = GracePeriodVo.of(nextGrace);
+                // 새로운 유예기간 설정 (현재 + 2주)
+                OffsetDateTime nextGrace = now.plusWeeks(2)
+                        .toLocalDate()
+                        .atStartOfDay()
+                        .atOffset(now.getOffset());
+                GracePeriodVo graceVo = GracePeriodVo.of(nextGrace);
 
-            memberCommandRepository.updatePenalty(member.memberId(), penaltyVo);
-            memberCommandRepository.updateGracePeriod(member.memberId(), graceVo);
+                // 벌점 및 유예기간 업데이트
+                memberCommandRepository.updatePenalty(member.memberId(), penaltyVo);
+                memberCommandRepository.updateGracePeriod(member.memberId(), graceVo);
+
+                processedCount++;
+
+                log.debug("Domain: Penalty applied to member - memberId: {}, newPoints: {}, newGracePeriod: {}", 
+                    member.memberId().value(), newPoints, nextGrace);
+
+                // 6점 이상 시 탈퇴 대상 로그
+                if (newPoints >= 6) {
+                    log.warn("Domain: Member reached withdrawal threshold - memberId: {}, totalPoints: {}", 
+                        member.memberId().value(), newPoints);
+                }
+
+            } catch (Exception e) {
+                errorCount++;
+                log.error("Domain: Failed to process penalty for member - memberId: {}, error: {}", 
+                    member.memberId().value(), e.getMessage(), e);
+            }
+        }
+
+        log.info("Domain: Grace period penalty processing completed - processed: {}, errors: {}", 
+            processedCount, errorCount);
+    }
+
+    /**
+     * 특정 회원의 벌점 상태 확인
+     */
+    public boolean isWithdrawalCandidate(MemberIdVo memberId) {
+        try {
+            // 회원의 벌점 정보 조회 (실제 구현에서는 별도 메서드 필요)
+            // 현재는 간단한 로직으로 구현
+            return false; // 실제 구현 필요
+        } catch (Exception e) {
+            log.error("Domain: Failed to check withdrawal status - memberId: {}", memberId.value(), e);
+            return false;
+        }
+    }
+
+    /**
+     * 회원의 현재 벌점 조회
+     */
+    public int getCurrentPenaltyPoints(MemberIdVo memberId) {
+        try {
+            // 실제 구현에서는 memberQueryRepository.findPenaltyByMemberId() 등의 메서드 필요
+            return 0; // 실제 구현 필요
+        } catch (Exception e) {
+            log.error("Domain: Failed to get penalty points - memberId: {}", memberId.value(), e);
+            return 0;
         }
     }
 

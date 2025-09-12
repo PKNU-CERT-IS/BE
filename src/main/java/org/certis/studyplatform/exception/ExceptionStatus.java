@@ -67,6 +67,56 @@ public enum ExceptionStatus {
     AUTH_DOMAIN_ACCOUNT_NOT_FOUND(HttpStatus.UNAUTHORIZED, "존재하지 않는 계정입니다"),
 
     // =================================================================
+    // BLOG DOMAIN EXCEPTIONS
+    // =================================================================
+
+    // Blog - Presentation Layer
+    BLOG_PRESENTATION_INVALID_REQUEST(HttpStatus.BAD_REQUEST, "블로그 요청 데이터가 유효하지 않습니다"),
+    BLOG_PRESENTATION_UNAUTHORIZED_ACCESS(HttpStatus.UNAUTHORIZED, "블로그에 대한 접근 권한이 없습니다"),
+
+    // Blog - Application Layer
+    BLOG_APPLICATION_BUSINESS_RULE_VIOLATION(HttpStatus.UNPROCESSABLE_ENTITY, "블로그 비즈니스 규칙 위반입니다"),
+    BLOG_APPLICATION_COMMAND_EXECUTION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "블로그 명령 실행에 실패했습니다"),
+    BLOG_APPLICATION_QUERY_EXECUTION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "블로그 조회 실행에 실패했습니다"),
+    BLOG_APPLICATION_FACADE_OPERATION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "블로그 비즈니스 작업 실행에 실패했습니다"),
+
+    // Blog - Domain Layer
+    BLOG_DOMAIN_NOT_FOUND(HttpStatus.NOT_FOUND, "블로그를 찾을 수 없습니다"),
+    BLOG_DOMAIN_RULE_VIOLATION(HttpStatus.UNPROCESSABLE_ENTITY, "블로그 도메인 규칙 위반입니다"),
+    BLOG_DOMAIN_ACCESS_DENIED(HttpStatus.FORBIDDEN, "블로그 접근 권한이 없습니다"),
+    BLOG_DOMAIN_INVALID_STATUS(HttpStatus.UNPROCESSABLE_ENTITY, "유효하지 않은 블로그 상태입니다"),
+
+    // Blog - Domain VO Validation
+    BLOG_DOMAIN_INVALID_ID(HttpStatus.BAD_REQUEST, "유효하지 않은 블로그 ID입니다"),
+    BLOG_DOMAIN_INVALID_TITLE(HttpStatus.BAD_REQUEST, "유효하지 않은 블로그 제목입니다"),
+    BLOG_DOMAIN_INVALID_DESCRIPTION(HttpStatus.BAD_REQUEST, "유효하지 않은 블로그 설명입니다"),
+    BLOG_DOMAIN_INVALID_CONTENT(HttpStatus.BAD_REQUEST, "유효하지 않은 블로그 내용입니다"),
+    BLOG_DOMAIN_INVALID_CATEGORY(HttpStatus.BAD_REQUEST, "유효하지 않은 블로그 카테고리입니다"),
+    BLOG_DOMAIN_INVALID_REFERENCE(HttpStatus.BAD_REQUEST, "유효하지 않은 블로그 참조 정보입니다"),
+    BLOG_DOMAIN_INVALID_REFERENCE_TYPE(HttpStatus.BAD_REQUEST, "유효하지 않은 참조 타입입니다"),
+    BLOG_DOMAIN_INVALID_REFERENCE_ID(HttpStatus.BAD_REQUEST, "유효하지 않은 참조 ID입니다"),
+    BLOG_DOMAIN_INVALID_CREATOR(HttpStatus.BAD_REQUEST, "유효하지 않은 블로그 작성자입니다"),
+    BLOG_DOMAIN_INVALID_VIEW_COUNT(HttpStatus.BAD_REQUEST, "유효하지 않은 조회수입니다"),
+
+    // Blog - Domain Business Rules
+    BLOG_DOMAIN_DUPLICATE_TITLE(HttpStatus.CONFLICT, "이미 존재하는 블로그 제목입니다"),
+    BLOG_DOMAIN_UPDATE_UNAUTHORIZED(HttpStatus.FORBIDDEN, "블로그 수정 권한이 없습니다"),
+    BLOG_DOMAIN_DELETE_UNAUTHORIZED(HttpStatus.FORBIDDEN, "블로그 삭제 권한이 없습니다"),
+    BLOG_DOMAIN_REFERENCE_NOT_FOUND(HttpStatus.BAD_REQUEST, "참조하는 스터디 또는 프로젝트를 찾을 수 없습니다"),
+    BLOG_DOMAIN_REFERENCE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "참조하는 스터디 또는 프로젝트에 접근 권한이 없습니다"),
+
+    // Blog - Infrastructure Layer
+    BLOG_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "블로그를 찾을 수 없습니다"),
+    BLOG_INFRASTRUCTURE_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 존재하는 블로그입니다"),
+    BLOG_INFRASTRUCTURE_DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "블로그 데이터베이스 오류가 발생했습니다"),
+    BLOG_INFRASTRUCTURE_RESOURCE_CONFLICT(HttpStatus.CONFLICT, "블로그 리소스 충돌이 발생했습니다"),
+    BLOG_INFRASTRUCTURE_REDIS_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "블로그 Redis 처리 중 오류가 발생했습니다"),
+    BLOG_INFRASTRUCTURE_CREATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "블로그 생성에 실패했습니다"),
+    BLOG_INFRASTRUCTURE_UPDATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "블로그 수정에 실패했습니다"),
+    BLOG_INFRASTRUCTURE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "블로그 삭제에 실패했습니다"),
+    BLOG_INFRASTRUCTURE_QUERY_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "블로그 조회에 실패했습니다"),
+
+    // =================================================================
     // MEMBER DOMAIN EXCEPTIONS
     // =================================================================
 
@@ -197,6 +247,7 @@ public enum ExceptionStatus {
     STUDY_PRESENTATION_INVALID_REQUEST(HttpStatus.BAD_REQUEST, "스터디 요청 데이터가 유효하지 않습니다"),
     STUDY_PRESENTATION_UNAUTHORIZED_ACCESS(HttpStatus.UNAUTHORIZED, "스터디에 대한 접근 권한이 없습니다"),
 
+
     // Study - Application Layer
     STUDY_APPLICATION_BUSINESS_RULE_VIOLATION(HttpStatus.UNPROCESSABLE_ENTITY, "스터디 비즈니스 규칙 위반입니다"),
     STUDY_APPLICATION_COMMAND_EXECUTION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "스터디 명령 실행에 실패했습니다"),
@@ -215,12 +266,20 @@ public enum ExceptionStatus {
     STUDY_DOMAIN_DELETE_HAS_PARTICIPANTS(HttpStatus.UNPROCESSABLE_ENTITY, "참가자가 있는 스터디는 삭제할 수 없습니다"),
     STUDY_DOMAIN_UPDATE_UNAUTHORIZED(HttpStatus.FORBIDDEN, "스터디 수정 권한이 없습니다"),
     STUDY_DOMAIN_DELETE_UNAUTHORIZED(HttpStatus.FORBIDDEN, "스터디 삭제 권한이 없습니다"),
+    STUDY_DOMAIN_NOT_FOUND(HttpStatus.NOT_FOUND, "스터디를 찾을 수 없습니다"),
+    STUDY_DOMAIN_PERMISSION_DENINED(HttpStatus.BAD_REQUEST, "해당 스터디에 접근 권한이 없습니다."),
+    STUDY_DOMAIN_INVALID_TITLE(HttpStatus.BAD_REQUEST, "스터디 제목을 사용할 수 없습니다."),
+    STUDY_DOMAIN_INVALID_CREATOR(HttpStatus.BAD_REQUEST, "스터디 생성자가 잘못 되었습니다."),
+    STUDY_DOMAIN_ACCESS_DENIED(HttpStatus.BAD_REQUEST, "스터디에 접근이 실패했습니다"),
+    STUDY_DOMAIN_DEADLINE_PASSED(HttpStatus.BAD_REQUEST, "종료된 스터디에 참가할 수 없습니다."),
 
     // Study - Infrastructure Layer
     STUDY_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "스터디를 찾을 수 없습니다"),
     STUDY_INFRASTRUCTURE_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 존재하는 스터디입니다"),
     STUDY_INFRASTRUCTURE_DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "스터디 데이터베이스 오류가 발생했습니다"),
     STUDY_INFRASTRUCTURE_RESOURCE_CONFLICT(HttpStatus.CONFLICT, "스터디 리소스 충돌이 발생했습니다"),
+    STUDY_INFRASTRUCTURE_ACCESS_DENIED(HttpStatus.BAD_REQUEST, "스터디에 접근이 실패했습니다"),
+    STUDY_INFRASTRUCTURE_PERMISSION_DENINED(HttpStatus.BAD_REQUEST, "해당 스터디에 접근 권한이 없습니다."),
 
     // =================================================================
     // BOARD DOMAIN EXCEPTIONS
@@ -274,14 +333,6 @@ public enum ExceptionStatus {
     // Comment - Infrastructure Layer
     COMMENT_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "댓글을 찾을 수 없습니다"),
     COMMENT_INFRASTRUCTURE_DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "댓글 데이터베이스 오류가 발생했습니다"),
-
-    // =================================================================
-    // BLOG DOMAIN EXCEPTIONS
-    // =================================================================
-
-    // Blog - Infrastructure Layer
-    BLOG_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "블로그 글을 찾을 수 없습니다"),
-    BLOG_INFRASTRUCTURE_DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "블로그 데이터베이스 오류가 발생했습니다"),
 
     // =================================================================
     // SCHEDULE DOMAIN EXCEPTIONS

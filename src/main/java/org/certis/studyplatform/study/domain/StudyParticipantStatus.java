@@ -1,6 +1,6 @@
 package org.certis.studyplatform.study.domain;
 
-public enum StudyPariticipantStatus {
+public enum StudyParticipantStatus {
 
     /**
      * 참가 신청 상태 (대기 중)

@@ -15,6 +15,8 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -68,10 +70,10 @@ class ProjectParticipantControllerTest {
     private static final String BASE_URL = "/api/v1/project/participant";
     private static final Long TEST_PROJECT_ID = 1L;
     private static final Long TEST_PROJECT_2_ID = 2L;
-    private static final Long TEST_MEMBER_ID = 1L;
-    private static final Long TEST_MEMBER_2_ID = 2L;
-    private static final Long TEST_MEMBER_3_ID = 3L;
-    private static final Long TEST_CREATOR_ID = 10L;
+    private static final Long TEST_MEMBER_ID = 2L;
+    private static final Long TEST_MEMBER_2_ID = 3L;
+    private static final Long TEST_MEMBER_3_ID = 4L;
+    private static final Long TEST_CREATOR_ID = 1L;
 
     private static final String TEST_PROJECT_NAME = "CERT-IS 학습 플랫폼 프로젝트";
     private static final String TEST_PROJECT_2_NAME = "데이터베이스 최적화 프로젝트";
@@ -83,6 +85,15 @@ class ProjectParticipantControllerTest {
     @BeforeEach
     void setUp() {
         System.out.println("테스트 데이터 설정 시작");
+        // 데이터 충돌 방지: 관련 테이블 초기화
+        dsl.execute("TRUNCATE TABLE project_participant RESTART IDENTITY CASCADE");
+        dsl.execute("TRUNCATE TABLE project RESTART IDENTITY CASCADE");
+        dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
+
+        // 기본 로그인 사용자 설정 (user1 -> id 1L)
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("user1", "password")
+        );
         setupTestData();
         System.out.println("테스트 데이터 설정 완료");
     }
@@ -102,8 +113,9 @@ class ProjectParticipantControllerTest {
     @Order(1)
     @DisplayName("프로젝트 참가 신청 - 성공적인 비즈니스 시나리오")
     void registerJoinProject_SuccessfulBusinessScenario() throws Exception {
-        // Given: 유효한 프로젝트가 존재하고, 멤버가 참가 신청을 준비함
-        ProjectJoinRequestDto request = createValidJoinRequest();
+        // Given: 유효한 프로젝트가 존재하고, 일반 멤버(1L)가 다른 사용자가 생성한 프로젝트(2번)에 참가 신청을 준비함
+        ProjectJoinRequestDto request = new ProjectJoinRequestDto();
+        request.setProjectId(TEST_PROJECT_2_ID);
 
         // When: 프로젝트 참가 신청 API를 호출
         mockMvc.perform(post(BASE_URL + "/join/register")
@@ -114,7 +126,7 @@ class ProjectParticipantControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(content().contentType("application/json;charset=UTF-8"))
                 .andExpect(jsonPath("$.data.participantId").exists())
-                .andExpect(jsonPath("$.data.projectId").value(TEST_PROJECT_ID))
+                .andExpect(jsonPath("$.data.projectId").value(TEST_PROJECT_2_ID))
                 .andExpect(jsonPath("$.data.status").value("PENDING"));
 
         // Then: 데이터베이스에 참가 신청이 정상적으로 저장되었는지 검증
@@ -127,11 +139,11 @@ class ProjectParticipantControllerTest {
     @Order(2)
     @DisplayName("프로젝트 참가 신청 취소 - 성공적인 취소 시나리오")
     void cancelJoinProject_SuccessfulCancellationScenario() throws Exception {
-        // Given: 대기 중인 참가 신청이 존재함
-        createPendingParticipantInDatabase(TEST_PROJECT_ID, TEST_MEMBER_ID);
+        // Given: 현재 로그인 사용자(1L)의 대기 중인 참가 신청이 존재함 (프로젝트 2번에 대해)
+        createPendingParticipantInDatabase(TEST_PROJECT_2_ID, 1L); // 현재 로그인 사용자
 
         ProjectJoinCancelRequestDto request = new ProjectJoinCancelRequestDto();
-        request.setProjectId(TEST_PROJECT_ID);
+        request.setProjectId(TEST_PROJECT_2_ID);
 
         // When: 참가 신청 취소 API 호출
         mockMvc.perform(delete(BASE_URL + "/join/cancel")
@@ -142,7 +154,7 @@ class ProjectParticipantControllerTest {
                 .andExpect(status().isOk());
 
         // Then: 데이터베이스에서 소프트 삭제 확인
-        verifyParticipantCancelledInDatabase(TEST_PROJECT_ID, TEST_MEMBER_ID);
+        verifyParticipantCancelledInDatabase(TEST_PROJECT_2_ID, 1L);
 
         System.out.println("프로젝트 참가 신청 취소 테스트 성공");
     }
@@ -151,14 +163,13 @@ class ProjectParticipantControllerTest {
     @Order(3)
     @DisplayName("프로젝트 참가 승인 - 프로젝트 생성자의 성공적인 승인")
     void approveJoinProject_CreatorSuccessfulApproval() throws Exception {
-        // Given: 대기 중인 참가 신청이 존재하고, 프로젝트 생성자가 승인을 요청함
+        // Given: 프로젝트 생성자(1L)의 프로젝트(1번)에 다른 사용자(TEST_MEMBER_2_ID)의 대기 중인 참가 신청이 존재함
         Long participantId = createPendingParticipantInDatabase(TEST_PROJECT_ID, TEST_MEMBER_2_ID);
 
         ProjectJoinApproveRequestDto request = new ProjectJoinApproveRequestDto();
         request.setParticipantId(participantId);
 
-        // When: 참가 승인 API 호출
-        // TODO: 하드코딩 변경에 따라 변경필요
+        // When: 프로젝트 생성자(1L)가 참가 승인 API 호출
         mockMvc.perform(post(BASE_URL + "/join/approve")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -178,14 +189,13 @@ class ProjectParticipantControllerTest {
     @Order(4)
     @DisplayName("프로젝트 참가 거절 - 프로젝트 생성자의 성공적인 거절")
     void rejectJoinProject_CreatorSuccessfulRejection() throws Exception {
-        // Given: 대기 중인 참가 신청이 존재하고, 프로젝트 생성자가 거절을 요청함
+        // Given: 프로젝트 생성자(1L)의 프로젝트(1번)에 다른 사용자(TEST_MEMBER_3_ID)의 대기 중인 참가 신청이 존재함
         Long participantId = createPendingParticipantInDatabase(TEST_PROJECT_ID, TEST_MEMBER_3_ID);
 
         ProjectJoinRejectRequestDto request = new ProjectJoinRejectRequestDto();
         request.setParticipantId(participantId);
 
-        // When: 참가 거절 API 호출
-        // TODO: 하드코딩 변경에 따라 변경
+        // When: 프로젝트 생성자(1L)가 참가 거절 API 호출
         mockMvc.perform(post(BASE_URL + "/join/reject")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -276,10 +286,11 @@ class ProjectParticipantControllerTest {
     @Order(11)
     @DisplayName("참가 신청 실패 - 중복 신청")
     void registerJoinProject_BusinessFailure_DuplicateApplication() throws Exception {
-        // Given: 이미 참가 신청한 멤버가 다시 신청
-        createPendingParticipantInDatabase(TEST_PROJECT_ID, TEST_MEMBER_ID);
+        // Given: 현재 로그인 사용자(1L)가 이미 프로젝트 2번에 참가 신청함
+        createPendingParticipantInDatabase(TEST_PROJECT_2_ID, 1L);
 
-        ProjectJoinRequestDto request = createValidJoinRequest();
+        ProjectJoinRequestDto request = new ProjectJoinRequestDto();
+        request.setProjectId(TEST_PROJECT_2_ID);
 
         // When & Then: 중복 신청으로 비즈니스 로직 실패
         mockMvc.perform(post(BASE_URL + "/join/register")
@@ -294,22 +305,21 @@ class ProjectParticipantControllerTest {
 
     @Test
     @Order(12)
-    @DisplayName("참가 신청 실패 - 프로젝트 생성자의 자신 프로젝트 참가 신청")
+    @DisplayName("참가 신청 실패 - 프로젝트 생성자의 자가 신청")
     void registerJoinProject_BusinessFailure_CreatorSelfApplication() throws Exception {
-        // Given: 프로젝트 생성자가 자신의 프로젝트에 참가 신청
+        // Given: 프로젝트 생성자(1L)가 자신의 프로젝트(1번)에 참가 신청
         ProjectJoinRequestDto request = new ProjectJoinRequestDto();
         request.setProjectId(TEST_PROJECT_ID);
-        // writerId는 현재 하드코딩되어 있어 실제로는 TEST_CREATOR_ID와 다름
 
-        // TODO: 하드코딩 변경에 따라 변경필요
-        // When & Then: 비즈니스 로직에 의해 거부됨 (현재 구현에서는 하드코딩으로 인해 다른 결과)
+        // When & Then: 비즈니스 규칙에 의해 422 에러 반환
         mockMvc.perform(post(BASE_URL + "/join/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
-                .andExpect(status().isOk()); // 현재는 성공 (하드코딩 때문)
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.message").value("프로젝트 생성자는 자신의 프로젝트에 참가 신청할 수 없습니다."));
 
-        System.out.println("프로젝트 생성자 자가 신청 테스트 성공");
+        System.out.println("프로젝트 생성자 자가 신청 거부 테스트 성공");
     }
 
     @Test
@@ -487,11 +497,11 @@ class ProjectParticipantControllerTest {
     @Order(41)
     @DisplayName("참가자 수 제한 - 정원 초과 신청 거부")
     void registerJoinProject_BusinessRule_ParticipantLimitExceeded() throws Exception {
-        // Given: 프로젝트 정원이 가득 찬 상황 (maxParticipants = 5, 현재 5명)
+        // Given: 프로젝트 2번의 정원이 가득 찬 상황 (maxParticipants = 3, 현재 3명)
         createFullProjectParticipants();
 
         ProjectJoinRequestDto request = new ProjectJoinRequestDto();
-        request.setProjectId(TEST_PROJECT_ID);
+        request.setProjectId(TEST_PROJECT_2_ID); // 프로젝트 2번 사용
 
         // When & Then: 정원 초과로 참가 신청 거부
         mockMvc.perform(post(BASE_URL + "/join/register")
@@ -546,7 +556,7 @@ class ProjectParticipantControllerTest {
                     .set(PROJECT.TITLE, TEST_PROJECT_2_NAME)
                     .set(PROJECT.DESCRIPTION, "두 번째 테스트 프로젝트")
                     .set(PROJECT.CONTENT, "두 번째 프로젝트 상세 내용")
-                    .set(PROJECT.MEMBER_ID, TEST_CREATOR_ID)
+                    .set(PROJECT.MEMBER_ID, 20L) // 다른 사용자가 생성한 프로젝트
                     .set(PROJECT.CATEGORY, "데이터베이스")
                     .set(PROJECT.SUBCATEGORY, "최적화")
                     .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 3)
@@ -559,6 +569,7 @@ class ProjectParticipantControllerTest {
 
             // 멤버 데이터 생성
             createMemberInDatabase(TEST_CREATOR_ID, TEST_CREATOR_NAME, "creator@certis.org", now);
+            createMemberInDatabase(20L, "프로젝트2생성자", "creator2@certis.org", now);
             createMemberInDatabase(TEST_MEMBER_ID, TEST_MEMBER_NAME, "member1@certis.org", now);
             createMemberInDatabase(TEST_MEMBER_2_ID, TEST_MEMBER_2_NAME, "member2@certis.org", now);
             createMemberInDatabase(TEST_MEMBER_3_ID, TEST_MEMBER_3_NAME, "member3@certis.org", now);
@@ -579,7 +590,7 @@ class ProjectParticipantControllerTest {
                 .set(MEMBER.ROLE, "PLAYER")
                 .set(MEMBER.BIRTHDAY, now.minusYears(25))
                 .set(MEMBER.GENDER, "MALE")
-                .set(MEMBER.GRADE, "4")
+                .set(MEMBER.GRADE, "SENIOR")
                 .set(MEMBER.MAJOR, "컴퓨터공학과")
                 .set(MEMBER.CREATED_AT, now)
                 .set(MEMBER.UPDATED_AT, now)
@@ -679,11 +690,11 @@ class ProjectParticipantControllerTest {
      * 정원이 가득 찬 프로젝트 생성
      */
     private void createFullProjectParticipants() {
-        // 프로젝트 정원 5명 모두 승인된 상태로 생성
-        for (int i = 1; i <= 5; i++) {
+        // 프로젝트 2번의 정원 3명 모두 승인된 상태로 생성
+        for (int i = 1; i <= 3; i++) {
             Long memberId = 2000L + i;
             createMemberInDatabase(memberId, "정원테스트" + i, "full" + i + "@test.com", OffsetDateTime.now());
-            createApprovedParticipantInDatabase(TEST_PROJECT_ID, memberId);
+            createApprovedParticipantInDatabase(TEST_PROJECT_2_ID, memberId);
         }
     }
 
@@ -693,7 +704,7 @@ class ProjectParticipantControllerTest {
     private void verifyParticipantCreatedInDatabase(ProjectJoinRequestDto request) {
         var participant = dsl.selectFrom(PROJECT_PARTICIPANT)
                 .where(PROJECT_PARTICIPANT.PROJECT_ID.eq(request.getProjectId()))
-                .and(PROJECT_PARTICIPANT.MEMBER_ID.eq(1L)) // 하드코딩된 사용자 ID
+                .and(PROJECT_PARTICIPANT.MEMBER_ID.eq(1L)) // 현재 로그인 사용자 ID (하드코딩)
                 .and(PROJECT_PARTICIPANT.DELETED_AT.isNull())
                 .fetchOne();
 

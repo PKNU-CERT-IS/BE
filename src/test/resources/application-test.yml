@@ -3,11 +3,10 @@ spring:
     activate:
       on-profile: test
 
-
   datasource:
     # 테스트에서 트랜잭션 제어를 위한 설정
     hikari:
-      auto-commit: false  # autoCommit 비활성화하여 트랜잭션 제어 가능하게 함
+      auto-commit: false # autoCommit 비활성화하여 트랜잭션 제어 가능하게 함
       connection-timeout: 20000
       maximum-pool-size: 5
       minimum-idle: 1
@@ -27,7 +26,7 @@ spring:
           lob:
             non_contextual_creation: true
         connection:
-          autocommit: false  # Hibernate 레벨에서도 autoCommit 비활성화
+          autocommit: false # Hibernate 레벨에서도 autoCommit 비활성화
 
   sql:
     init:
@@ -80,7 +79,7 @@ logging:
     root: WARN
 
 # 환경변수 설정 (테스트에서는 SQL 초기화 비활성화)
-SQL_INIT_MODE: never
+SQL_INIT_MODE: always
 
 # Management 비활성화
 management:

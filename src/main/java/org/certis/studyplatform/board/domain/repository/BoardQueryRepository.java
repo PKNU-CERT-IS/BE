@@ -27,5 +27,7 @@ public interface BoardQueryRepository {
     // 게시글 현재 통계 조회
     BoardStatsVo getBoardStats(BoardIdVo boardIdVo);
 
+    // 특정 사용자가 게시글을 좋아요했는지 DB 기준 확인 (소프트 삭제 제외)
+    boolean hasMemberLiked(BoardIdVo boardIdVo, Long memberId);
 
 }

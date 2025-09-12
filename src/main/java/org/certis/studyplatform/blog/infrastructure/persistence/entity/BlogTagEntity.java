@@ -48,7 +48,7 @@ public class BlogTagEntity {
 
     @Builder(toBuilder = true)
     private BlogTagEntity(Long id, Long blogId, String content,
-                          OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
+                         OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
         this.id = id;
         this.blogId = blogId;
         this.content = content;

@@ -73,13 +73,10 @@ public class ProjectParticipantCommandRepositoryImpl implements ProjectParticipa
                     "참가자를 찾을 수 없습니다: " + participantVo.id());
         }
 
-        // 결과 VO 생성 (이전 상태는 알 수 없으므로 null 또는 기본값 사용)
+        // 결과 VO 생성 (이전 상태는 알 수 없으므로 null 사용)
         ProjectParticipantStatusUpdatedVo result = ProjectParticipantStatusUpdatedVo.of(
-                participantVo.id(),
-                participantVo.projectId(),
-                participantVo.memberId(),
-                null,
-                null);
+                participantVo, 
+                null); // previousStatus는 벌크 업데이트에서 알 수 없음
 
         log.debug("Command: Participant status bulk updated successfully - ID: {}, status: {}",
                 participantVo.id(), participantVo.status());

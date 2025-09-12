@@ -22,7 +22,6 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
-import static org.postgresql.util.PasswordUtil.encodePassword;
 
 @Slf4j
 @Service
@@ -91,7 +90,7 @@ public class AuthDomainService {
     public void validatePassword(AuthInfoVo authInfoVo, RawPasswordVo rawPasswordVo) {
         if (!authInfoVo.isPasswordMatches(rawPasswordVo.value(), passwordEncoder)) {
             // 비밀번호 불일치 예외
-//            throw new ApplicationException(ExceptionStatus.AUTH_APPLICATION_PASSWORD_MISMATCH); //나중에 password Encoder로 회원가입 로직 짜야함 지금 다 예외처림됨
+            throw new ApplicationException(ExceptionStatus.AUTH_APPLICATION_PASSWORD_MISMATCH);
         }
     }
 

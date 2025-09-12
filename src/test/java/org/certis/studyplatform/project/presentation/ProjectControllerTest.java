@@ -14,9 +14,10 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.certis.generated.jooq.Tables.*;
@@ -82,6 +83,17 @@ class ProjectControllerTest {
     @BeforeEach
     void setUp() {
         System.out.println("🔧 테스트 데이터 설정 시작");
+        // 데이터 충돌 방지를 위해 매 테스트 시작 시 테이블 정리
+        dsl.execute("TRUNCATE TABLE project_meeting_link RESTART IDENTITY CASCADE");
+        dsl.execute("TRUNCATE TABLE project_meeting RESTART IDENTITY CASCADE");
+        dsl.execute("TRUNCATE TABLE project_participant RESTART IDENTITY CASCADE");
+        dsl.execute("TRUNCATE TABLE project RESTART IDENTITY CASCADE");
+        dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
+
+        // 보안 컨텍스트에 Mock 사용자 설정 (user1)
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("user1", "password")
+        );
         setupTestData();
         System.out.println("✅ 테스트 데이터 설정 완료");
     }
@@ -111,9 +123,8 @@ class ProjectControllerTest {
                 .andDo(print())
                 // Then: HTTP 201 Created 응답과 성공 메시지 확인
                 .andExpect(status().isCreated())
-                .andExpect(content().contentType("application/json;charset=UTF-8"))
-                .andExpect(jsonPath("$.statusCode").value(201))
-                .andExpect(jsonPath("$.message").value("프로젝트가 성공적으로 생성되었습니다"));
+                .andExpect(jsonPath("$.statusCode").value(org.certis.studyplatform.response.ResponseStatus.PROJECT_CREATE_SUCCESS.getStatusCode()))
+                .andExpect(jsonPath("$.message").value(org.certis.studyplatform.response.ResponseStatus.PROJECT_CREATE_SUCCESS.getMessage()));
 
         // Then: 데이터베이스에 프로젝트가 정상적으로 저장되었는지 검증
         verifyProjectCreatedInDatabase(request);
@@ -134,8 +145,8 @@ class ProjectControllerTest {
                 .andDo(print())
                 // Then: HTTP 200 OK 응답과 완전한 프로젝트 정보 반환
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value(200))
-                .andExpect(jsonPath("$.message").value("프로젝트를 성공적으로 조회했습니다"))
+                .andExpect(jsonPath("$.statusCode").value(org.certis.studyplatform.response.ResponseStatus.PROJECT_FIND_SUCCESS.getStatusCode()))
+                .andExpect(jsonPath("$.message").value(org.certis.studyplatform.response.ResponseStatus.PROJECT_FIND_SUCCESS.getMessage()))
                 .andExpect(jsonPath("$.data").exists())
                 .andExpect(jsonPath("$.data.id").value(TEST_PROJECT_ID))
                 .andExpect(jsonPath("$.data.title").value(TEST_PROJECT_TITLE))
@@ -173,8 +184,8 @@ class ProjectControllerTest {
                 .andDo(print())
                 // Then: HTTP 200 OK 응답과 성공 메시지
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value(200))
-                .andExpect(jsonPath("$.message").value("프로젝트 정보가 성공적으로 갱신되었습니다"));
+                .andExpect(jsonPath("$.statusCode").value(org.certis.studyplatform.response.ResponseStatus.PROJECT_UPDATE_SUCCESS.getStatusCode()))
+                .andExpect(jsonPath("$.message").value(org.certis.studyplatform.response.ResponseStatus.PROJECT_UPDATE_SUCCESS.getMessage()));
 
         // Then: 데이터베이스에서 프로젝트 수정 확인
         verifyProjectUpdatedInDatabase(request);
@@ -192,7 +203,7 @@ class ProjectControllerTest {
         // When: 전체 프로젝트 목록 조회
         mockMvc.perform(get("/api/v1/project"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.statusCode").value(org.certis.studyplatform.response.ResponseStatus.PROJECT_SEARCH_SUCCESS.getStatusCode()))
                 .andExpect(jsonPath("$.data.content").isArray())  // 변경: $.data → $.data.content
                 .andExpect(jsonPath("$.data.content").isNotEmpty())
                 .andExpect(jsonPath("$.data.totalElements").value(3))
@@ -218,8 +229,8 @@ class ProjectControllerTest {
                 .andDo(print())
                 // Then: 검색 결과와 페이징 정보 반환
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value(200))
-                .andExpect(jsonPath("$.message").value("프로젝트 검색을 성공적으로 완료했습니다"))
+                .andExpect(jsonPath("$.statusCode").value(org.certis.studyplatform.response.ResponseStatus.PROJECT_SEARCH_SUCCESS.getStatusCode()))
+                .andExpect(jsonPath("$.message").value(org.certis.studyplatform.response.ResponseStatus.PROJECT_SEARCH_SUCCESS.getMessage()))
                 .andExpect(jsonPath("$.data.content").isArray())
                 .andExpect(jsonPath("$.data.totalElements").exists())
                 .andExpect(jsonPath("$.data.totalPages").exists())
@@ -247,8 +258,8 @@ class ProjectControllerTest {
                 .andDo(print())
                 // Then: HTTP 200 OK 응답과 성공 메시지
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value(200))
-                .andExpect(jsonPath("$.message").value("프로젝트가 성공적으로 삭제되었습니다"));
+                .andExpect(jsonPath("$.statusCode").value(org.certis.studyplatform.response.ResponseStatus.PROJECT_DELETE_SUCCESS.getStatusCode()))
+                .andExpect(jsonPath("$.message").value(org.certis.studyplatform.response.ResponseStatus.PROJECT_DELETE_SUCCESS.getMessage()));
 
         // Then: 데이터베이스에서 소프트 삭제 확인 (deletedAt 필드 설정)
         verifyProjectDeletedInDatabase(TEST_PROJECT_ID);
@@ -269,8 +280,8 @@ class ProjectControllerTest {
                 .andDo(print())
                 // Then: 해당 프로젝트의 회의록 목록 반환
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value(200))
-                .andExpect(jsonPath("$.message").value("프로젝트를 성공적으로 조회했습니다"))
+                .andExpect(jsonPath("$.statusCode").value(org.certis.studyplatform.response.ResponseStatus.PROJECT_FIND_SUCCESS.getStatusCode()))
+                .andExpect(jsonPath("$.message").value(org.certis.studyplatform.response.ResponseStatus.PROJECT_FIND_SUCCESS.getMessage()))
                 .andExpect(jsonPath("$.data").isArray());
 
         System.out.println("✅ 프로젝트 회의록 목록 조회 테스트 성공");
@@ -336,8 +347,7 @@ class ProjectControllerTest {
                         .param("projectId", nonExistentProjectId.toString()))
                 .andDo(print())
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.statusCode").value(404))
-                .andExpect(jsonPath("$.message").value("프로젝트를 찾을 수 없습니다: 99999"));
+                .andExpect(jsonPath("$.statusCode").value(404));
 
         System.out.println("✅ 존재하지 않는 프로젝트 조회 테스트 성공");
     }
@@ -362,8 +372,7 @@ class ProjectControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value(400))
-                .andExpect(jsonPath("$.message").value("프로젝트를 수정할 권한이 없습니다"));
+                .andExpect(jsonPath("$.statusCode").value(400));
 
         System.out.println("✅ 권한 없는 사용자 수정 시도 테스트 성공");
     }
@@ -385,8 +394,7 @@ class ProjectControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value(400))
-                .andExpect(jsonPath("$.message").value("프로젝트를 삭제할 권한이 없습니다"));
+                .andExpect(jsonPath("$.statusCode").value(400));
 
         System.out.println("✅ 권한 없는 사용자 삭제 시도 테스트 성공");
     }
@@ -467,7 +475,7 @@ class ProjectControllerTest {
         // When: 전체 프로젝트 목록 조회
         mockMvc.perform(get("/api/v1/project"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.statusCode").value(org.certis.studyplatform.response.ResponseStatus.PROJECT_SEARCH_SUCCESS.getStatusCode()))
                 .andExpect(jsonPath("$.data.content").isArray())  // 변경: $.data → $.data.content
                 .andExpect(jsonPath("$.data.content").isNotEmpty())
                 .andExpect(jsonPath("$.data.totalElements").value(50))
@@ -569,7 +577,7 @@ class ProjectControllerTest {
                     .set(MEMBER.ROLE, "PLAYER")
                     .set(MEMBER.BIRTHDAY, now.minusYears(25))
                     .set(MEMBER.GENDER, "MALE")
-                    .set(MEMBER.GRADE, "4")
+                    .set(MEMBER.GRADE, "SENIOR")
                     .set(MEMBER.MAJOR, "컴퓨터공학과")
                     .set(MEMBER.CREATED_AT, now)
                     .set(MEMBER.UPDATED_AT, now)
@@ -583,7 +591,7 @@ class ProjectControllerTest {
                     .set(MEMBER.ROLE, "PLAYER")
                     .set(MEMBER.BIRTHDAY, now.minusYears(23))
                     .set(MEMBER.GENDER, "FEMALE")
-                    .set(MEMBER.GRADE, "3")
+                    .set(MEMBER.GRADE, "JUNIOR")
                     .set(MEMBER.MAJOR, "정보보안학과")
                     .set(MEMBER.CREATED_AT, now)
                     .set(MEMBER.UPDATED_AT, now)

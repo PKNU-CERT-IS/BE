@@ -2,6 +2,7 @@ package org.certis.studyplatform.project.presentation.dto.response;
 
 import lombok.Builder;
 import lombok.Getter;
+import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.project.domain.ProjectParticipantStatus;
 
 import java.time.OffsetDateTime;
@@ -18,6 +19,7 @@ public class ProjectParticipantSummaryResponseDto {
     private Long id;
     private Long memberId;
     private String memberName;
+    private MemberGrade memberGrade;
     private ProjectParticipantStatus status;
     private OffsetDateTime createdAt;
 }

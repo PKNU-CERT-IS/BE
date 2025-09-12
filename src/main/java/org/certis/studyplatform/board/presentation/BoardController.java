@@ -16,6 +16,7 @@ import org.certis.studyplatform.shared.security.MockCurrentUserProvider;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.certis.studyplatform.board.presentation.dto.response.BoardStatsResponseDto;
 
 @RestController
 @RequestMapping("/api/v1/board")
@@ -104,5 +105,19 @@ public class BoardController {
         else{
             return GlobalResponseHandler.success(ResponseStatus.BOARD_UNLIKE_SUCCESS, likeResponse);
         }
+    }
+
+    // 관리자 수동 동기화 트리거
+    @PostMapping("/admin/sync")
+    public ResponseEntity<GlobalResponseHandler<Void>> manualSync() {
+        boardFacadeService.syncBoardStats();
+        return GlobalResponseHandler.success(ResponseStatus.BOARD_SYNC_SUCCESS);
+    }
+
+    // 오늘 통계 조회
+    @GetMapping("/stats/today")
+    public ResponseEntity<GlobalResponseHandler<BoardStatsResponseDto>> getTodayStats() {
+        BoardStatsResponseDto stats = boardFacadeService.getTodayStats();
+        return GlobalResponseHandler.success(ResponseStatus.BOARD_STATS_FIND_SUCCESS, stats);
     }
 }

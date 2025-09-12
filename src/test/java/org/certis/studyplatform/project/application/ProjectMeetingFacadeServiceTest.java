@@ -149,10 +149,10 @@ class ProjectMeetingFacadeServiceTest {
         Pageable pageable = PageRequest.of(0, 10);
 
         List<ProjectMeetingSummaryVo> mockMeetings = List.of(
-                ProjectMeetingSummaryVo.of(1L, "킥오프 회의", 4, "김철수", true),
-                ProjectMeetingSummaryVo.of(2L, "1차 진행상황 회의", 4, "이영희", false),
-                ProjectMeetingSummaryVo.of(3L, "중간 점검 회의", 3, "박민수", true),
-                ProjectMeetingSummaryVo.of(4L, "최종 발표 준비 회의", 4, "정하나", false)
+                ProjectMeetingSummaryVo.of(1L, "킥오프 회의", "", 4, "김철수", true, null, null),
+                ProjectMeetingSummaryVo.of(2L, "1차 진행상황 회의", "", 4, "이영희", false, null, null),
+                ProjectMeetingSummaryVo.of(3L, "중간 점검 회의", "", 3, "박민수", true, null, null),
+                ProjectMeetingSummaryVo.of(4L, "최종 발표 준비 회의", "", 4, "정하나", false, null, null)
         );
         Page<ProjectMeetingSummaryVo> mockPage = new PageImpl<>(mockMeetings, pageable, mockMeetings.size());
 

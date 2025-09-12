@@ -2,17 +2,21 @@ package org.certis.studyplatform.project.infrastructure.persistence;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.project.domain.repository.ProjectQueryRepository;
 import org.certis.studyplatform.project.domain.vo.ProjectVo;
 import org.certis.studyplatform.project.domain.vo.ProjectSummaryVo;
 import org.certis.studyplatform.project.domain.vo.ProjectSearchCriteriaVo;
 import org.certis.studyplatform.project.domain.vo.ProjectSearchResultVo;
 import org.certis.studyplatform.project.infrastructure.mapper.ProjectInfrastructureMapper;
+import org.certis.studyplatform.study.domain.vo.StudySummaryVo;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.OrderField;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -119,6 +123,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.ID,
                         p.MEMBER_ID,
                         m.NAME,
+                        m.GRADE,
                         p.TITLE,
                         p.DESCRIPTION,
                         p.CATEGORY,
@@ -178,6 +183,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.ID,
                         p.MEMBER_ID,
                         m.NAME,
+                        m.GRADE,
                         p.TITLE,
                         p.DESCRIPTION,
                         p.CATEGORY,
@@ -514,6 +520,118 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
         log.info("jOOQ: Project VO found - ID: {}", projectId);
         return result;
     }
+
+
+    @Override
+    public Page<ProjectSummaryVo> findCompletedProjectsByMember(Long memberId, Pageable pageable) {
+        log.info("Repository: Finding completed projects by member - memberId: {}", memberId);
+
+        var p = PROJECT.as("p");
+        var m = MEMBER.as("m");
+
+        // 전체 개수 조회
+        int totalCount = dsl.selectCount()
+                .from(p)
+                .where(p.MEMBER_ID.eq(memberId))
+                .and(p.DELETED_AT.isNull())
+                .and(p.ENDED_AT.lessThan(OffsetDateTime.now())) // 완료 조건
+                .fetchOne(0, int.class);
+
+        if (totalCount == 0) {
+            return Page.empty(pageable);
+        }
+
+        // 데이터 조회
+        List<ProjectSummaryVo> projects = dsl.select(
+                        p.ID,
+                        p.TITLE,
+                        p.DESCRIPTION,
+                        p.CATEGORY,
+                        p.SUBCATEGORY,
+                        p.STARTED_AT,
+                        p.ENDED_AT,
+                        m.NAME.as("creator_name"),
+                        m.GRADE,
+                        p.MAX_PARTICIPANTS_NUMBER,
+                        p.GITHUB_URL,
+                        p.EXTERNAL_URL
+                )
+                .from(p)
+                .leftJoin(m).on(p.MEMBER_ID.eq(m.ID))
+                .where(p.MEMBER_ID.eq(memberId))
+                .and(p.DELETED_AT.isNull())
+                .and(p.ENDED_AT.lessThan(OffsetDateTime.now()))
+                .orderBy(p.ENDED_AT.desc()) // 최근 완료된 순
+                .limit(pageable.getPageSize())
+                .offset((int) pageable.getOffset())
+                .fetch(record -> {
+
+
+                    return ProjectSummaryVo.of(
+                            record.get(p.ID),
+                            record.get(p.TITLE),
+                            record.get(p.DESCRIPTION),
+                            record.get(p.CATEGORY),
+                            record.get(p.SUBCATEGORY),
+                            record.get(p.STARTED_AT),
+                            record.get(p.ENDED_AT),
+                            record.get("creator_name", String.class),
+                            record.get(m.GRADE, MemberGrade.class),
+                            false, // 완료된 프로젝트는 참가 불가
+                            record.get(p.GITHUB_URL),
+                            record.get(p.EXTERNAL_URL)
+                    );
+                });
+
+        return new PageImpl<>(projects, pageable, totalCount);
+    }
+
+    @Override
+    public List<ProjectSummaryVo> findCompletedProjectsListByMember(Long memberId) {
+        log.info("Repository: Finding completed projects list by member - memberId: {}", memberId);
+
+        var p = PROJECT.as("p");
+        var m = MEMBER.as("m");
+
+        return dsl.select(
+                        p.ID,
+                        p.TITLE,
+                        p.DESCRIPTION,
+                        p.CATEGORY,
+                        p.SUBCATEGORY,
+                        p.STARTED_AT,
+                        p.ENDED_AT,
+                        m.NAME.as("creator_name"),
+                        m.GRADE,
+                        p.MAX_PARTICIPANTS_NUMBER,
+                        p.GITHUB_URL,
+                        p.EXTERNAL_URL
+                )
+                .from(p)
+                .leftJoin(m).on(p.MEMBER_ID.eq(m.ID))
+                .where(p.MEMBER_ID.eq(memberId))
+                .and(p.DELETED_AT.isNull())
+                .and(p.ENDED_AT.lessThan(OffsetDateTime.now()))
+                .orderBy(p.ENDED_AT.desc())
+                .fetch(record -> {
+
+                    return ProjectSummaryVo.of(
+                            record.get(p.ID),
+                            record.get(p.TITLE),
+                            record.get(p.DESCRIPTION),
+                            record.get(p.CATEGORY),
+                            record.get(p.SUBCATEGORY),
+                            record.get(p.STARTED_AT),
+                            record.get(p.ENDED_AT),
+                            record.get("creator_name", String.class),
+                            record.get(m.GRADE, MemberGrade.class),
+                            false, // 완료된 프로젝트는 참가 불가
+                            record.get(p.GITHUB_URL),
+                            record.get(p.EXTERNAL_URL)
+                    );
+                });
+    }
+
 
     // ================================================================
     // PRIVATE HELPER METHODS

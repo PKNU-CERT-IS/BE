@@ -210,6 +210,21 @@ public class BoardQueryRepositoryImpl implements BoardQueryRepository {
     }
 
     @Override
+    public boolean hasMemberLiked(BoardIdVo boardIdVo, Long memberId) {
+        try {
+            Integer count = dsl.selectCount()
+                    .from(table("board_like").as("bl"))
+                    .where(field("bl.board_id").eq(boardIdVo.value()))
+                    .and(field("bl.member_id").eq(memberId))
+                    .and(field("bl.deleted_at").isNull())
+                    .fetchOne(0, Integer.class);
+            return count != null && count > 0;
+        } catch (Exception e) {
+            log.error("❌ Infrastructure: Failed to check hasMemberLiked - board: {}, member: {}", boardIdVo.value(), memberId, e);
+            return false;
+        }
+    }
+    @Override
     public List<AttachmentVo> findAttachmentsByBoardId(BoardIdVo boardIdVo) {
         try {
             @NotNull Result<Record5<Object, Object, Object, Object, Object>> records = dsl.select(

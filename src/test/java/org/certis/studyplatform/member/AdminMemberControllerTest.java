@@ -18,6 +18,8 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.OffsetDateTime;
 
@@ -58,6 +60,15 @@ class AdminMemberControllerTest {
     @BeforeEach
     void setUp() {
         System.out.println("🔧 관리자 테스트 데이터 설정 시작");
+        // 데이터 충돌 방지: 관련 테이블 초기화
+        dsl.execute("TRUNCATE TABLE member_penalty RESTART IDENTITY CASCADE");
+        dsl.execute("TRUNCATE TABLE member_contact RESTART IDENTITY CASCADE");
+        dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
+
+        // 보안 컨텍스트에 Mock 관리자 설정 (admin)
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("admin", "password")
+        );
         setupTestData();
         System.out.println("✅ 관리자 테스트 데이터 설정 완료");
     }
