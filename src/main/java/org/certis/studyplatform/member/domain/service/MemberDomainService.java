@@ -511,7 +511,7 @@ public class MemberDomainService {
         // ID VO 변환 (양수 검증, null 검증 자동 수행)
         MemberIdVo memberIdVo = memberDomainMapper.toMemberIdVo(query.memberId());
 
-        return memberQueryRepository.findTokenInfoById(query.memberId())
+        return memberQueryRepository.findTokenInfoById(memberIdVo.value())
                 .orElseThrow(() -> new DomainException(ExceptionStatus.MEMBER_INFRASTRUCTURE_NOT_FOUND,
                         "회원 정보를 찾을 수 없습니다: " + query.memberId()));
     }
