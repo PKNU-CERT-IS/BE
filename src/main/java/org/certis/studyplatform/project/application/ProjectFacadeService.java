@@ -68,12 +68,8 @@ public class ProjectFacadeService {
     /**
      * 프로젝트 생성 (임시 - Spring Security 미구축 상태)
      */
-    public void createProject(ProjectCreateRequestDto requestDto) {
+    public void createProject(ProjectCreateRequestDto requestDto, Long creatorId) {
         log.info("Facade: Creating project - {}", requestDto.getTitle());
-
-        // 임시: RequestDto에서 leaderId, creatorName 추출 (Spring Security 구축 후 제거)
-        // TODO: Spring Security 구축 후 @AuthenticationPrincipal CurrentUser 사용
-        Long creatorId = 1L; // 임시 하드코딩
 
         // DTO → Command Object 변환
         CreateProjectCommand command = commandMapper.toCreateProjectCommand(requestDto, creatorId);
@@ -87,11 +83,11 @@ public class ProjectFacadeService {
     /**
      * 프로젝트 수정 (임시 - Spring Security 미구축 상태)
      */
-    public void updateProject(ProjectUpdateRequestDto requestDto) {
+    public void updateProject(ProjectUpdateRequestDto requestDto, Long requesterId) {
         log.info("Facade: Updating project - ID: {}", requestDto.getProjectId());
 
         // DTO → Command Object 변환
-        UpdateProjectCommand command = commandMapper.toUpdateProjectCommand(requestDto, requestDto.getRequesterId());
+        UpdateProjectCommand command = commandMapper.toUpdateProjectCommand(requestDto, requesterId);
 
         // Command Service 호출 (VO 반환)
         ProjectVo updatedVo = projectCommandService.updateProject(command);
@@ -102,11 +98,11 @@ public class ProjectFacadeService {
     /**
      * 프로젝트 삭제 (임시 - Spring Security 미구축 상태)
      */
-    public void deleteProject(ProjectDeleteRequestDto requestDto) {
-        log.info("Facade: Deleting project - ID: {} by requester: {}", requestDto.getProjectId(), requestDto.getRequesterId());
+    public void deleteProject(ProjectDeleteRequestDto requestDto, Long requesterId) {
+        log.info("Facade: Deleting project - ID: {} by requester: {}", requestDto.getProjectId(), requesterId);
 
         // DTO → Command Object 변환
-        DeleteProjectCommand command = commandMapper.toDeleteProjectCommand(requestDto.getProjectId(), requestDto.getRequesterId());
+        DeleteProjectCommand command = commandMapper.toDeleteProjectCommand(requestDto.getProjectId(),requesterId);
 
         // Command Service 호출 (void 반환)
         projectCommandService.deleteProject(command);
@@ -247,77 +243,6 @@ public class ProjectFacadeService {
         }
     }
 
-
-    // ================================================================
-    // LEGACY METHODS - 기존 호환성 유지 (Spring Security 구축 후 사용)
-    // ================================================================
-
-//    /**
-//     * 프로젝트 생성 (Spring Security 구축 후 사용) - VO 직접 반환
-//     */
-//    public ProjectCreateVo createProject(ProjectCreateRequestDto requestDto, Long leaderId, String leaderName) {
-//        log.info("Facade: Creating project - {}", requestDto.getTitle());
-//
-//        // DTO → Command Object 변환
-//        CreateProjectCommand command = commandMapper.toCreateProjectCommand(requestDto, leaderId, leaderName);
-//
-//        // Command Service 호출 (VO 반환)
-//        ProjectCreateVo createdVo = projectCommandService.createProject(command);
-//
-//        log.info("Facade: Project created successfully - ID: {}", createdVo.id());
-//        return createdVo;
-//    }
-//
-//    /**
-//     * 프로젝트 수정 (Spring Security 구축 후 사용) - VO 직접 반환
-//     */
-//    public ProjectUpdateVo updateProject(Long projectId, ProjectUpdateRequestDto requestDto, Long requesterId) {
-//        log.info("Facade: Updating project - ID: {}", projectId);
-//
-//        // DTO → Command Object 변환
-//        UpdateProjectCommand command = commandMapper.toUpdateProjectCommand(projectId, requestDto, requesterId);
-//
-//        // Command Service 호출 (VO 반환)
-//        ProjectUpdateVo updatedVo = projectCommandService.updateProject(command);
-//
-//        log.info("Facade: Project updated successfully - ID: {}", updatedVo.id());
-//        return updatedVo;
-//    }
-//
-//    /**
-//     * 프로젝트 삭제 (Spring Security 구축 후 사용)
-//     */
-//    public void deleteProject(Long projectId, Long requesterId) {
-//        log.info("Facade: Deleting project - ID: {}", projectId);
-//
-//        // DTO → Command Object 변환
-//        DeleteProjectCommand command = commandMapper.toDeleteProjectCommand(projectId, requesterId);
-//
-//        // Command Service 호출 (void 반환)
-//        projectCommandService.deleteProject(command);
-//
-//        log.info("Facade: Project deleted successfully - ID: {}", projectId);
-//    }
-//
-//    /**
-//     * 프로젝트 검색 (기본 페이징) - VO 직접 반환
-//     */
-//    public Page<ProjectSummaryVo> searchProjects(ProjectSearchRequestDto requestDto) {
-//        log.info("Facade: Searching projects with default pagination - keyword: {}", requestDto.getKeyword());
-//
-//        // DTO → Query Object 변환
-//        SearchProjectsQuery query = queryMapper.toSearchProjectsQuery(requestDto);
-//
-//        // Query Service 호출 (VO 반환)
-//        Page<ProjectSummaryVo> projects = projectQueryService.searchProjects(query);
-//
-//        log.info("Facade: Project search completed - found {} projects", projects.getTotalElements());
-//        return projects;
-//    }
-
-    // ================================================================
-    // ADDITIONAL QUERY METHODS - 첨부파일/회의록 조회
-    // ================================================================
 
     /**
      * 프로젝트 회의록 요약 목록 조회 (DTO 반환)

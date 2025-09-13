@@ -49,16 +49,12 @@ public class ProjectParticipantFacadeService {
     /**
      * 프로젝트 참가 신청
      */
-    public ProjectJoinResponseDto registerJoinProject(ProjectJoinRequestDto requestDto) {
+    public ProjectJoinResponseDto registerJoinProject(ProjectJoinRequestDto requestDto, Long requesterId) {
         log.info("Facade: Registering project join - projectId: {}", requestDto.getProjectId());
-
-        // 임시: Spring Security 미구축 상태에서 현재 사용자 ID 하드코딩
-        // TODO: Spring Security 구축 후 @AuthenticationPrincipal CurrentUser 사용
-        Long currentUserId = 1L; // 임시 하드코딩
 
         // DTO → Command Object 변환
         CreateProjectParticipantCommand command = commandMapper
-                .toCreateProjectParticipantCommand(requestDto, currentUserId);
+                .toCreateProjectParticipantCommand(requestDto, requesterId);
 
         // Command Service 호출
         ProjectParticipantCreatedVo createdVo = participantCommandService.createParticipant(command);
@@ -73,15 +69,12 @@ public class ProjectParticipantFacadeService {
     /**
      * 프로젝트 참가 신청 취소
      */
-    public void cancelJoinProject(ProjectJoinCancelRequestDto requestDto) {
+    public void cancelJoinProject(ProjectJoinCancelRequestDto requestDto, Long requesterId) {
         log.info("Facade: Cancelling project join - projectId: {}", requestDto.getProjectId());
-
-        // 임시: Spring Security 미구축 상태에서 현재 사용자 ID 하드코딩
-        Long currentUserId = 1L; // 임시 하드코딩
 
         // DTO → Command Object 변환
         CancelProjectParticipantCommand command = commandMapper
-                .toCancelProjectParticipantCommand(requestDto, currentUserId);
+                .toCancelProjectParticipantCommand(requestDto, requesterId);
 
         // Command Service 호출
         participantCommandService.cancelParticipant(command);
@@ -92,15 +85,12 @@ public class ProjectParticipantFacadeService {
     /**
      * 프로젝트 참가 승인
      */
-    public ProjectParticipantStatusUpdateResponseDto approveJoinProject(ProjectJoinApproveRequestDto requestDto) {
+    public ProjectParticipantStatusUpdateResponseDto approveJoinProject(ProjectJoinApproveRequestDto requestDto,  Long requesterId) {
         log.info("Facade: Approving project join - participantId: {}", requestDto.getParticipantId());
-
-        // 임시: Spring Security 미구축 상태에서 현재 사용자 ID 하드코딩 (프로젝트 생성자 권한 확인 필요)
-        Long currentUserId = 1L; // 임시 하드코딩
 
         // DTO → Command Object 변환
         UpdateProjectParticipantStatusCommand command = commandMapper
-                .toApproveProjectParticipantCommand(requestDto, currentUserId);
+                .toApproveProjectParticipantCommand(requestDto, requesterId);
 
         // Command Service 호출
         ProjectParticipantStatusUpdatedVo updatedVo = participantCommandService.approveParticipant(command);
@@ -116,15 +106,11 @@ public class ProjectParticipantFacadeService {
     /**
      * 프로젝트 참가 거절
      */
-    public ProjectParticipantStatusUpdateResponseDto rejectJoinProject(ProjectJoinRejectRequestDto requestDto) {
+    public ProjectParticipantStatusUpdateResponseDto rejectJoinProject(ProjectJoinRejectRequestDto requestDto, Long requesterId) {
         log.info("Facade: Rejecting project join - participantId: {}", requestDto.getParticipantId());
-
-        // 임시: Spring Security 미구축 상태에서 현재 사용자 ID 하드코딩 (프로젝트 생성자 권한 확인 필요)
-        Long currentUserId = 1L; // 임시 하드코딩
-
         // DTO → Command Object 변환
         UpdateProjectParticipantStatusCommand command = commandMapper
-                .toRejectProjectParticipantCommand(requestDto, currentUserId);
+                .toRejectProjectParticipantCommand(requestDto, requesterId);
 
         // Command Service 호출
         ProjectParticipantStatusUpdatedVo updatedVo = participantCommandService.rejectParticipant(command);

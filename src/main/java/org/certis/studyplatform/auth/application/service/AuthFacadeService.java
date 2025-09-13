@@ -24,6 +24,7 @@ import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.vo.MemberCreatedVo;
 import org.certis.studyplatform.member.domain.vo.MemberTokenInfoVo;
 import org.certis.studyplatform.member.domain.vo.MemberVo;
+import org.certis.studyplatform.shared.security.JwtTokenProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +37,7 @@ public class AuthFacadeService {
     private final AuthCommandService authCommandService;
     private final MemberCommandService memberCommandService;
     private final MemberQueryService  memberQueryService;
+    private final JwtTokenProvider jwtTokenProvider;
 
    // 로그인
     @Transactional
@@ -90,22 +92,35 @@ public class AuthFacadeService {
 
    // accessToken 갱신
     @Transactional
-    public RefreshAccessTokenResponseDto refreshAccessToken(Long memberId,String username,String name,String email,MemberRole currentRole) {
-        log.info("토큰 갱신 시도: memberId={}", memberId);
+    public RefreshAccessTokenResponseDto refreshAccessToken(String refreshToken) {
+        log.info("안전한 토큰 갱신 시작");
 
-        ValidateRefreshTokenQuery validateRefreshTokenQuery = ValidateRefreshTokenQuery.of(memberId);
+        // 1. RefreshToken 검증 및 사용자 ID 추출
+        Long tokenMemberId  = jwtTokenProvider.getUserIdFromToken(refreshToken);
+        ValidateRefreshTokenQuery validateQuery = ValidateRefreshTokenQuery.of(tokenMemberId);
+        RefreshTokenVo validationResult = authQueryService.validateRefreshToken(validateQuery);
 
-        // 1. RefreshToken 검증
-        RefreshTokenVo refreshToken = authQueryService.validateRefreshToken(validateRefreshTokenQuery);
+        Long verifiedMemberId = validationResult.memberId();
+        log.info("RefreshToken 검증 완료: memberId={}", verifiedMemberId);
 
-        RefreshTokenCommand refreshTokenCommand  = RefreshTokenCommand.of(memberId,username,email,name,currentRole);
+        // 2. DB에서 최신 사용자 정보 조회
+        GetMemberTokenInfoQuery memberQuery = GetMemberTokenInfoQuery.of(verifiedMemberId);
+        MemberTokenInfoVo memberInfo = memberQueryService.getMemberTokenInfo(memberQuery);
 
-        // 2. 새 AccessToken 생성
-        AccessTokenVo newAccessToken = authCommandService.refreshAccessToken(refreshTokenCommand);
+        // 3. 새 AccessToken 생성 Command 생성
+        RefreshTokenCommand command = RefreshTokenCommand.of(
+                memberInfo.memberId(),
+                memberInfo.studentNumber(),
+                memberInfo.email(),
+                memberInfo.name(),
+                memberInfo.role()
+        );
 
-        RefreshAccessTokenResponseDto responseDto = new RefreshAccessTokenResponseDto(newAccessToken.value());
-        log.info("토큰 갱신 성공: memberId={}", memberId);
-        return responseDto;
+        // 4. 새 AccessToken 생성
+        AccessTokenVo newAccessToken = authCommandService.refreshAccessToken(command);
+
+        log.info("안전한 토큰 갱신 완료: memberId={}, role={}", memberInfo.memberId(), memberInfo.role());
+        return new RefreshAccessTokenResponseDto(newAccessToken.value());
     }
 
     @Transactional

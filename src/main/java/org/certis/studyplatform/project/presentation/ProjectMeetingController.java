@@ -13,7 +13,9 @@ import org.certis.studyplatform.project.presentation.dto.response.ProjectMeeting
 import org.certis.studyplatform.project.presentation.dto.response.ProjectMeetingSummaryResponseDto;
 import org.certis.studyplatform.response.GlobalResponseHandler;
 import org.certis.studyplatform.response.ResponseStatus;
+import org.certis.studyplatform.shared.security.CurrentUser;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -55,11 +57,13 @@ public class ProjectMeetingController {
      */
     @PostMapping("/meeting/create")
     public ResponseEntity<GlobalResponseHandler<Void>> createProjectMeeting(
-            @Valid @RequestBody ProjectMeetingCreateRequestDto request) {
+            @Valid @RequestBody ProjectMeetingCreateRequestDto request,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
         log.info("REST: Creating project meeting - projectId: {}, title: {}", request.getProjectId(), request.getTitle());
 
         // Facade Service 호출
-        projectMeetingFacadeService.createProjectMeeting(request);
+        projectMeetingFacadeService.createProjectMeeting(request,currentUser.getId());
 
         log.info("REST: Project meeting created successfully");
 
@@ -93,12 +97,14 @@ public class ProjectMeetingController {
      */
     @PutMapping("/meeting/edit")
     public ResponseEntity<GlobalResponseHandler<Void>> updateProjectMeeting(
-            @Valid @RequestBody ProjectMeetingUpdateRequestDto request) {
+            @Valid @RequestBody ProjectMeetingUpdateRequestDto request,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
         log.info("REST: Updating project meeting - meetingId: {}, requesterId: {}",
-                request.getMeetingId(), request.getWriterId());
+                request.getMeetingId(),currentUser.getId());
 
         // Facade Service 호출
-        projectMeetingFacadeService.updateProjectMeeting(request);
+        projectMeetingFacadeService.updateProjectMeeting(request,currentUser.getId());
 
         log.info("REST: Project meeting updated successfully");
 
@@ -113,12 +119,14 @@ public class ProjectMeetingController {
      */
     @DeleteMapping("/meeting/delete")
     public ResponseEntity<GlobalResponseHandler<Void>> deleteProjectMeeting(
-            @Valid @RequestBody ProjectMeetingDeleteRequestDto request) {
+            @Valid @RequestBody ProjectMeetingDeleteRequestDto request,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
         log.info("REST: Deleting project meeting - meetingId: {}, requesterId: {}",
-                request.getMeetingId(), request.getRequesterId());
+                request.getMeetingId(), currentUser.getId());
 
         // Facade Service 호출
-        projectMeetingFacadeService.deleteProjectMeeting(request);
+        projectMeetingFacadeService.deleteProjectMeeting(request,currentUser.getId());
 
         log.info("REST: Project meeting deleted successfully");
 

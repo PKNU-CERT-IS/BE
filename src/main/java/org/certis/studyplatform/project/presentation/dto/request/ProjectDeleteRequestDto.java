@@ -17,8 +17,4 @@ public class ProjectDeleteRequestDto {
     @NotNull(message = "프로젝트 ID는 필수입니다")
     @Positive(message = "프로젝트 ID는 양수여야 합니다")
     private Long projectId;
-
-    @NotNull(message = "요청자 ID는 필수입니다")
-    @Positive(message = "요청자 ID는 양수여야 합니다")
-    private Long requesterId;
 }

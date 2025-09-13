@@ -62,12 +62,8 @@ public class StudyFacadeService {
     /**
      * 프로젝트 생성 (임시 - Spring Security 미구축 상태)
      */
-    public void createStudy(StudyCreateRequestDto requestDto) {
+    public void createStudy(StudyCreateRequestDto requestDto, Long creatorId) {
         log.info("Facade: Creating study - {}", requestDto.getTitle());
-
-        // 임시: RequestDto에서 leaderId, creatorName 추출 (Spring Security 구축 후 제거)
-        // TODO: Spring Security 구축 후 @AuthenticationPrincipal CurrentUser 사용
-        Long creatorId = 1L; // 임시 하드코딩
 
         // DTO → Command Object 변환
         CreateStudyCommand command = commandMapper.toCreateStudyCommand(requestDto, creatorId);
@@ -81,12 +77,11 @@ public class StudyFacadeService {
     /**
      * 프로젝트 수정 (임시 - Spring Security 미구축 상태)
      */
-    public void updateStudy(StudyUpdateRequestDto requestDto) {
+    public void updateStudy(StudyUpdateRequestDto requestDto, Long requesterId) {
         log.info("Facade: Updating study - ID: {}", requestDto.getStudyId());
 
         // DTO → Command Object 변환
-        // TODO: 하드코딩 변경 필요
-        UpdateStudyCommand command = commandMapper.toUpdateStudyCommand(requestDto, 1L);
+        UpdateStudyCommand command = commandMapper.toUpdateStudyCommand(requestDto, requesterId);
 
         // Command Service 호출 (VO 반환)
         StudyVo updatedVo = studyCommandService.updateStudy(command);
@@ -97,11 +92,11 @@ public class StudyFacadeService {
     /**
      * 프로젝트 삭제 (임시 - Spring Security 미구축 상태)
      */
-    public void deleteStudy(StudyDeleteRequestDto requestDto) {
-        log.info("Facade: Deleting study - ID: {} by requester: {}", requestDto.getStudyId(), requestDto.getRequesterId());
+    public void deleteStudy(StudyDeleteRequestDto requestDto, Long requesterId) {
+        log.info("Facade: Deleting study - ID: {} by requester: {}", requestDto.getStudyId(),requesterId);
 
         // DTO → Command Object 변환
-        DeleteStudyCommand command = commandMapper.toDeleteStudyCommand(requestDto.getStudyId(), requestDto.getRequesterId());
+        DeleteStudyCommand command = commandMapper.toDeleteStudyCommand(requestDto.getStudyId(), requesterId);
 
         // Command Service 호출 (void 반환)
         studyCommandService.deleteStudy(command);
@@ -222,74 +217,6 @@ public class StudyFacadeService {
             return responseDto;
         }
     }
-
-
-    // ================================================================
-    // LEGACY METHODS - 기존 호환성 유지 (Spring Security 구축 후 사용)
-    // ================================================================
-
-//    /**
-//     * 프로젝트 생성 (Spring Security 구축 후 사용) - VO 직접 반환
-//     */
-//    public StudyCreateVo createStudy(StudyCreateRequestDto requestDto, Long leaderId, String leaderName) {
-//        log.info("Facade: Creating study - {}", requestDto.getTitle());
-//
-//        // DTO → Command Object 변환
-//        CreateStudyCommand command = commandMapper.toCreateStudyCommand(requestDto, leaderId, leaderName);
-//
-//        // Command Service 호출 (VO 반환)
-//        StudyCreateVo createdVo = studyCommandService.createStudy(command);
-//
-//        log.info("Facade: Study created successfully - ID: {}", createdVo.id());
-//        return createdVo;
-//    }
-//
-//    /**
-//     * 프로젝트 수정 (Spring Security 구축 후 사용) - VO 직접 반환
-//     */
-//    public StudyUpdateVo updateStudy(Long studyId, StudyUpdateRequestDto requestDto, Long requesterId) {
-//        log.info("Facade: Updating study - ID: {}", studyId);
-//
-//        // DTO → Command Object 변환
-//        UpdateStudyCommand command = commandMapper.toUpdateStudyCommand(studyId, requestDto, requesterId);
-//
-//        // Command Service 호출 (VO 반환)
-//        StudyUpdateVo updatedVo = studyCommandService.updateStudy(command);
-//
-//        log.info("Facade: Study updated successfully - ID: {}", updatedVo.id());
-//        return updatedVo;
-//    }
-//
-//    /**
-//     * 프로젝트 삭제 (Spring Security 구축 후 사용)
-//     */
-//    public void deleteStudy(Long studyId, Long requesterId) {
-//        log.info("Facade: Deleting study - ID: {}", studyId);
-//
-//        // DTO → Command Object 변환
-//        DeleteStudyCommand command = commandMapper.toDeleteStudyCommand(studyId, requesterId);
-//
-//        // Command Service 호출 (void 반환)
-//        studyCommandService.deleteStudy(command);
-//
-//        log.info("Facade: Study deleted successfully - ID: {}", studyId);
-//    }
-//
-//    /**
-//     * 프로젝트 검색 (기본 페이징) - VO 직접 반환
-//     */
-//    public Page<StudySummaryVo> searchStudies(StudySearchRequestDto requestDto) {
-//        log.info("Facade: Searching studies with default pagination - keyword: {}", requestDto.getKeyword());
-//
-//        // DTO → Query Object 변환
-//        SearchStudiesQuery query = queryMapper.toSearchStudiesQuery(requestDto);
-//
-//        // Query Service 호출 (VO 반환)
-//        Page<StudySummaryVo> studies = studyQueryService.searchStudies(query);
-//
-//        log.info("Facade: Study search completed - found {} studies", studies.getTotalElements());
-//        return studies;
-//    }
 
     // ================================================================
     // ADDITIONAL QUERY METHODS - 첨부파일/회의록 조회

@@ -46,7 +46,7 @@ public class CurrentUser implements UserDetails {
         this.username = username;
         this.email = email;
         this.name = name;
-        this.role = role != null ? role : "MEMBER";
+        this.role = role != null ? role : "NONE"; // role 값이 null 이므로 아무 권한을 줄 수 없음
         this.enabled = true;
         this.accountNonExpired = true;
         this.accountNonLocked = true;
@@ -67,11 +67,6 @@ public class CurrentUser implements UserDetails {
     @Override
     public String getPassword() {
         return null;
-    }
-
-    @Override
-    public String getUsername() {
-        return username;
     }
 
     @Override

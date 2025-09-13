@@ -21,11 +21,13 @@ import org.certis.studyplatform.project.presentation.dto.response.ProjectMeeting
 import org.certis.studyplatform.project.presentation.dto.response.ProjectMeetingDetailResponseDto;
 import org.certis.studyplatform.response.GlobalResponseHandler;
 import org.certis.studyplatform.response.ResponseStatus;
+import org.certis.studyplatform.shared.security.CurrentUser;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -60,18 +62,18 @@ public class ProjectController {
     private final ProjectFacadeService projectFacadeService;
 
     /**
-     * 프로젝트 생성 (임시 - Spring Security 미구축 상태)
-     *
      * @param request 프로젝트 생성 요청 DTO (leaderId, creatorName 포함)
      * @return 생성된 프로젝트 정보
      */
     @PostMapping("/create")
     public ResponseEntity<GlobalResponseHandler<Void>> createProject(
-            @Valid @RequestBody ProjectCreateRequestDto request) {
+            @Valid @RequestBody ProjectCreateRequestDto request,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
         log.info("REST: Creating project - {}", request.getTitle());
 
         // Facade Service 호출
-        projectFacadeService.createProject(request);
+        projectFacadeService.createProject(request, currentUser.getId());
 
         log.info("REST: Project created successfully");
 
@@ -79,18 +81,18 @@ public class ProjectController {
     }
 
     /**
-     * 프로젝트 정보 수정 (임시 - Spring Security 미구축 상태)
-     *
      * @param request 프로젝트 수정 요청 DTO (projectId, requesterId 포함)
      * @return 수정된 프로젝트 정보
      */
     @PutMapping("/update")
     public ResponseEntity<GlobalResponseHandler<Void>> updateProject(
-            @Valid @RequestBody ProjectUpdateRequestDto request) {
+            @Valid @RequestBody ProjectUpdateRequestDto request,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
         log.info("REST: Updating project - ID: {}", request.getProjectId());
 
         // Facade Service 호출
-        projectFacadeService.updateProject(request);
+        projectFacadeService.updateProject(request, currentUser.getId());
 
         return GlobalResponseHandler.success(ResponseStatus.PROJECT_UPDATE_SUCCESS);
     }
@@ -103,11 +105,13 @@ public class ProjectController {
      */
     @DeleteMapping("/delete")
     public ResponseEntity<GlobalResponseHandler<Void>> deleteProject(
-            @Valid @RequestBody ProjectDeleteRequestDto request) {
-        log.info("REST: Deleting project - ID: {} by requester: {}", request.getProjectId(), request.getRequesterId());
+            @Valid @RequestBody ProjectDeleteRequestDto request,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
+        log.info("REST: Deleting project - ID: {} by requester: {}", request.getProjectId(),  currentUser.getId());
 
         // Facade Service 호출
-        projectFacadeService.deleteProject(request);
+        projectFacadeService.deleteProject(request, currentUser.getId());
 
         log.info("REST: Project deleted successfully - ID: {}", request.getProjectId());
 
@@ -184,82 +188,6 @@ public class ProjectController {
 
         return GlobalResponseHandler.success(ResponseStatus.PROJECT_SEARCH_SUCCESS, result);
     }
-
-
-
-
-    //    /**
-//     * 프로젝트 생성 (Spring Security 구축 후 사용)
-//     *
-//     * @param request 프로젝트 생성 요청 DTO
-//     * @param currentUser 현재 로그인한 사용자 (리더)
-//     * @return 생성된 프로젝트 정보
-//     */
-//    @PostMapping("/create")
-//    public ResponseEntity<GlobalResponseHandler<ProjectCreatedVo>> createProject(
-//            @Valid @RequestBody ProjectCreateRequestDto request,
-//            @AuthenticationPrincipal CurrentUser currentUser) {
-//        log.info("REST: Creating project - {}", request.getTitle());
-//
-//        // Facade Service 호출
-//        ProjectCreatedVo createdVo = projectFacadeService.createProject(
-//            request,
-//            currentUser.getId(),
-//            currentUser.getName()
-//        );
-//
-//        log.info("REST: Project created successfully - ID: {}", createdVo.id());
-//
-//        return GlobalResponseHandler.success(ResponseStatus.PROJECT_CREATE_SUCCESS, createdVo);
-//    }
-//
-//    /**
-//     * 프로젝트 정보 수정 (Spring Security 구축 후 사용)
-//     *
-//     * @param projectId 프로젝트 ID (쿼리 파라미터)
-//     * @param request 프로젝트 수정 요청 DTO
-//     * @param currentUser 현재 로그인한 사용자
-//     * @return 수정된 프로젝트 정보
-//     */
-//    @PutMapping("/update")
-//    public ResponseEntity<GlobalResponseHandler<ProjectUpdatedVo>> updateProject(
-//            @RequestParam Long projectId,
-//            @Valid @RequestBody ProjectUpdateRequestDto request,
-//            @AuthenticationPrincipal CurrentUser currentUser) {
-//        log.info("REST: Updating project - ID: {}", projectId);
-//
-//        // Facade Service 호출
-//        ProjectUpdatedVo updatedVo = projectFacadeService.updateProject(
-//            projectId,
-//            request,
-//            currentUser.getId()
-//        );
-//
-//        log.info("REST: Project updated successfully - ID: {}", updatedVo.id());
-//
-//        return GlobalResponseHandler.success(ResponseStatus.PROJECT_UPDATE_SUCCESS, updatedVo);
-//    }
-//
-//    /**
-//     * 프로젝트 정보 삭제 (Spring Security 구축 후 사용)
-//     *
-//     * @param projectId 프로젝트 ID (쿼리 파라미터)
-//     * @param currentUser 현재 로그인한 사용자
-//     * @return 성공 응답
-//     */
-//    @DeleteMapping("/delete")
-//    public ResponseEntity<GlobalResponseHandler<Void>> deleteProject(
-//            @RequestParam Long projectId,
-//            @AuthenticationPrincipal CurrentUser currentUser) {
-//        log.info("REST: Deleting project - ID: {}", projectId);
-//
-//        // Facade Service 호출
-//        projectFacadeService.deleteProject(projectId, currentUser.getId());
-//
-//        log.info("REST: Project deleted successfully - ID: {}", projectId);
-//
-//        return GlobalResponseHandler.success(ResponseStatus.PROJECT_DELETE_SUCCESS);
-//    }
 
     /**
      * 프로젝트 회의록 요약 목록 조회

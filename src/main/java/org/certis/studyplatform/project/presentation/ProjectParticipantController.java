@@ -9,10 +9,12 @@ import org.certis.studyplatform.project.presentation.dto.request.*;
 import org.certis.studyplatform.project.presentation.dto.response.*;
 import org.certis.studyplatform.response.GlobalResponseHandler;
 import org.certis.studyplatform.response.ResponseStatus;
+import org.certis.studyplatform.shared.security.CurrentUser;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -41,11 +43,13 @@ public class ProjectParticipantController {
      */
     @PostMapping("/join/register")
     public ResponseEntity<GlobalResponseHandler<ProjectJoinResponseDto>> registerJoinProject(
-            @Valid @RequestBody ProjectJoinRequestDto requestDto) {
+            @Valid @RequestBody ProjectJoinRequestDto requestDto,
+            @AuthenticationPrincipal CurrentUser currentUser
+            ) {
 
         log.info("Controller: Register project join request - projectId: {}", requestDto.getProjectId());
 
-        ProjectJoinResponseDto responseDto = projectParticipantFacadeService.registerJoinProject(requestDto);
+        ProjectJoinResponseDto responseDto = projectParticipantFacadeService.registerJoinProject(requestDto, currentUser.getId());
 
         log.info("Controller: Project join registered successfully - participantId: {}",
                 responseDto.getParticipantId());
@@ -61,11 +65,13 @@ public class ProjectParticipantController {
      */
     @DeleteMapping("/join/cancel")
     public ResponseEntity<GlobalResponseHandler<Void>> cancelJoinProject(
-            @Valid @RequestBody ProjectJoinCancelRequestDto requestDto) {
+            @Valid @RequestBody ProjectJoinCancelRequestDto requestDto,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
 
         log.info("Controller: Cancel project join request - projectId: {}", requestDto.getProjectId());
 
-        projectParticipantFacadeService.cancelJoinProject(requestDto);
+        projectParticipantFacadeService.cancelJoinProject(requestDto, currentUser.getId());
 
         log.info("Controller: Project join cancelled successfully - projectId: {}",
                 requestDto.getProjectId());
@@ -81,13 +87,15 @@ public class ProjectParticipantController {
      */
     @PostMapping("/join/approve")
     public ResponseEntity<GlobalResponseHandler<ProjectParticipantStatusUpdateResponseDto>> approveJoinProject(
-            @Valid @RequestBody ProjectJoinApproveRequestDto requestDto) {
+            @Valid @RequestBody ProjectJoinApproveRequestDto requestDto,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
 
         log.info("Controller: Approve project join request - participantId: {}",
                 requestDto.getParticipantId());
 
         ProjectParticipantStatusUpdateResponseDto responseDto =
-                projectParticipantFacadeService.approveJoinProject(requestDto);
+                projectParticipantFacadeService.approveJoinProject(requestDto, currentUser.getId());
 
         log.info("Controller: Project join approved successfully - participantId: {}",
                 responseDto.getParticipantId());
@@ -103,13 +111,15 @@ public class ProjectParticipantController {
      */
     @PostMapping("/join/reject")
     public ResponseEntity<GlobalResponseHandler<ProjectParticipantStatusUpdateResponseDto>> rejectJoinProject(
-            @Valid @RequestBody ProjectJoinRejectRequestDto requestDto) {
+            @Valid @RequestBody ProjectJoinRejectRequestDto requestDto,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
 
         log.info("Controller: Reject project join request - participantId: {}",
                 requestDto.getParticipantId());
 
         ProjectParticipantStatusUpdateResponseDto responseDto =
-                projectParticipantFacadeService.rejectJoinProject(requestDto);
+                projectParticipantFacadeService.rejectJoinProject(requestDto, currentUser.getId());
 
         log.info("Controller: Project join rejected successfully - participantId: {}",
                 responseDto.getParticipantId());

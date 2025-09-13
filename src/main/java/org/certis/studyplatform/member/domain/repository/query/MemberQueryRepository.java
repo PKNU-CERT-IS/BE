@@ -1,5 +1,6 @@
 package org.certis.studyplatform.member.domain.repository.query;
 
+import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.vo.*;
 import org.certis.studyplatform.member.application.object.query.SearchMembersQuery;
 import org.certis.studyplatform.member.application.object.query.GetMembersQuery;
@@ -36,6 +37,11 @@ public interface MemberQueryRepository {
      * @return 회원 상세 정보 VO (Optional)
      */
     Optional<MemberVo> findById(MemberIdVo memberId);
+
+    /**
+     * 회원 권한만 조회
+     */
+    Optional<MemberRole> findRoleByMemberId(MemberIdVo memberId);
 
 
     Page<MemberSummaryVo> findMembers(MemberSearchCriteriaVo searchCriteria, Pageable pageable);

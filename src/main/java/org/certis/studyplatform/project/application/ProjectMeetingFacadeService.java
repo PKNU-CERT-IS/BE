@@ -17,9 +17,11 @@ import org.certis.studyplatform.project.presentation.dto.request.ProjectMeetingD
 import org.certis.studyplatform.project.presentation.dto.request.ProjectMeetingAllRequestDto;
 import org.certis.studyplatform.project.presentation.dto.response.ProjectMeetingDetailResponseDto;
 import org.certis.studyplatform.project.presentation.dto.response.ProjectMeetingSummaryResponseDto;
+import org.certis.studyplatform.shared.security.CurrentUser;
 import org.springframework.data.domain.Page;
 
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 
 
@@ -48,14 +50,15 @@ public class ProjectMeetingFacadeService {
      *
      * @param request 회의록 생성 요청 DTO
      */
-    public void createProjectMeeting(ProjectMeetingCreateRequestDto request) {
+    public void createProjectMeeting(ProjectMeetingCreateRequestDto request,Long writerId
+    ) {
         log.info("MeetingFacade: Creating project meeting - projectId: {}, title: {}", 
                 request.getProjectId(), request.getTitle());
         
         // DTO → Command 변환
         CreateProjectMeetingCommand command = CreateProjectMeetingCommand.of(
             request.getProjectId(),
-            request.getWriterId(),
+            writerId,
             request.getTitle(),
             request.getContent(),
             request.getParticipantIds(),
@@ -105,14 +108,14 @@ public class ProjectMeetingFacadeService {
      *
      * @param request 회의록 수정 요청 DTO
      */
-    public void updateProjectMeeting(ProjectMeetingUpdateRequestDto request) {
+    public void updateProjectMeeting(ProjectMeetingUpdateRequestDto request, Long requesterId) {
         log.info("MeetingFacade: Updating project meeting - meetingId: {}, requesterId: {}", 
-                request.getMeetingId(), request.getWriterId());
+                request.getMeetingId(), requesterId);
         
         // DTO → Command 변환
         UpdateProjectMeetingCommand command = UpdateProjectMeetingCommand.of(
             request.getMeetingId(),
-            request.getWriterId(),
+                requesterId,
             request.getTitle(),
             request.getContent(),
             request.getParticipants(),
@@ -130,14 +133,14 @@ public class ProjectMeetingFacadeService {
      *
      * @param request 회의록 삭제 요청 DTO
      */
-    public void deleteProjectMeeting(ProjectMeetingDeleteRequestDto request) {
+    public void deleteProjectMeeting(ProjectMeetingDeleteRequestDto request,Long requesterId) {
         log.info("MeetingFacade: Deleting project meeting - meetingId: {}, requesterId: {}", 
-                request.getMeetingId(), request.getRequesterId());
+                request.getMeetingId(),requesterId);
         
         // DTO → Command 변환
         DeleteProjectMeetingCommand command = DeleteProjectMeetingCommand.of(
             request.getMeetingId(),
-            request.getRequesterId()
+                requesterId
         );
         
         // Command Service 호출

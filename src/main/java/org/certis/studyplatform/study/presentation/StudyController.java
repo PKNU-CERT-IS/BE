@@ -3,6 +3,7 @@ package org.certis.studyplatform.study.presentation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.certis.studyplatform.shared.security.CurrentUser;
 import org.certis.studyplatform.study.application.StudyFacadeService;
 import org.certis.studyplatform.study.presentation.dto.request.StudyCreateRequestDto;
 import org.certis.studyplatform.study.presentation.dto.request.StudyDeleteRequestDto;
@@ -19,6 +20,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -60,11 +62,13 @@ public class StudyController {
      */
     @PostMapping("/create")
     public ResponseEntity<GlobalResponseHandler<Void>> createStudy(
-            @Valid @RequestBody StudyCreateRequestDto request) {
+            @Valid @RequestBody StudyCreateRequestDto request,
+            @AuthenticationPrincipal CurrentUser currentUser
+            ) {
         log.info("REST: Creating study - {}", request.getTitle());
 
         // Facade Service 호출
-        studyFacadeService.createStudy(request);
+        studyFacadeService.createStudy(request, currentUser.getId());
 
         log.info("REST: Study created successfully");
 
@@ -79,11 +83,13 @@ public class StudyController {
      */
     @PutMapping("/update")
     public ResponseEntity<GlobalResponseHandler<Void>> updateStudy(
-            @Valid @RequestBody StudyUpdateRequestDto request) {
+            @Valid @RequestBody StudyUpdateRequestDto request,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
         log.info("REST: Updating study - ID: {}", request.getStudyId());
 
         // Facade Service 호출
-        studyFacadeService.updateStudy(request);
+        studyFacadeService.updateStudy(request,currentUser.getId());
 
         return GlobalResponseHandler.success(ResponseStatus.STUDY_UPDATE_SUCCESS);
     }
@@ -96,11 +102,13 @@ public class StudyController {
      */
     @DeleteMapping("/delete")
     public ResponseEntity<GlobalResponseHandler<Void>> deleteStudy(
-            @Valid @RequestBody StudyDeleteRequestDto request) {
-        log.info("REST: Deleting study - ID: {} by requester: {}", request.getStudyId(), request.getRequesterId());
+            @Valid @RequestBody StudyDeleteRequestDto request,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
+        log.info("REST: Deleting study - ID: {} by requester: {}", request.getStudyId());
 
         // Facade Service 호출
-        studyFacadeService.deleteStudy(request);
+        studyFacadeService.deleteStudy(request,currentUser.getId());
 
         log.info("REST: Study deleted successfully - ID: {}", request.getStudyId());
 

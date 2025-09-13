@@ -1,7 +1,7 @@
-insert into auth (member_id, account_number, password, created_at, updated_at, deleted_at) values (1, 'TG3467', 123456789, '2025-03-26 21:26:27', '2025-05-19 13:44:43', null);
-insert into auth (member_id, account_number, password, created_at, updated_at, deleted_at) values (2, 'AA6647', 1234, '2025-07-06 21:54:09', '2025-06-04 04:20:44', null);
-insert into auth (member_id, account_number, password, created_at, updated_at, deleted_at) values (3, 'SA3372', 1234, '2025-05-01 23:15:16', '2024-09-05 11:05:06', null);
-insert into auth (member_id, account_number, password, created_at, updated_at, deleted_at) values (4, 'AM5776', 1234, '2024-12-06 07:03:31', '2025-07-22 00:06:36', null);
+insert into auth (member_id, account_number, password, created_at, updated_at, deleted_at) values (1, 'TG3467', '$2b$12$fvUXyjkDIuIADQ4LUna4yuccnG42ttp411PwoYAuKCIl2z5pv0qDS', '2025-03-26 21:26:27', '2025-05-19 13:44:43', null);
+insert into auth (member_id, account_number, password, created_at, updated_at, deleted_at) values (2, 'AA6647', '$2b$12$JIEQFDnSLp2zCnvKr7PUIOUZr9jyl8PsYhFuXFufU/oZ0XaWEO9Z2', '2025-07-06 21:54:09', '2025-06-04 04:20:44', null);
+insert into auth (member_id, account_number, password, created_at, updated_at, deleted_at) values (3, 'SA3372', '$2b$12$DcrQwgi4GmDrHNZF10GklOYxS8Tn5OS..NwYRtduIt6q.by4k.HOi', '2025-05-01 23:15:16', '2024-09-05 11:05:06', null);
+insert into auth (member_id, account_number, password, created_at, updated_at, deleted_at) values (4, 'AM5776', '$2b$12$Gy3Z64AZDuc56RmH4ChjT.YHA/DU9UCwIYDFg3VHZuZVDLdVr.4MK', '2024-12-06 07:03:31', '2025-07-22 00:06:36', null);
 insert into auth (member_id, account_number, password, created_at, updated_at, deleted_at) values (5, 'AC5771', 1234, '2025-07-09 07:35:34', '2025-03-21 00:09:57', null);
 insert into auth (member_id, account_number, password, created_at, updated_at, deleted_at) values (6, 'UA5646', 1234, '2024-11-08 11:38:59', '2025-05-14 18:04:43', null);
 insert into auth (member_id, account_number, password, created_at, updated_at, deleted_at) values (7, 'QF9304', 1234, '2025-07-04 20:05:38', '2024-11-06 13:02:55', null);

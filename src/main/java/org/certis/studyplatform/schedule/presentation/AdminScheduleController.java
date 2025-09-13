@@ -10,8 +10,8 @@ import org.certis.studyplatform.schedule.presentation.dto.request.AdminScheduleD
 import org.certis.studyplatform.schedule.presentation.dto.request.AdminScheduleUpdateRequestDto;
 import org.certis.studyplatform.schedule.presentation.dto.response.AdminScheduleResponseDto;
 import org.certis.studyplatform.shared.security.CurrentUser;
-import org.certis.studyplatform.shared.security.MockCurrentUserProvider;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,18 +20,15 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/admin/schedule")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('STAFF') or hasRole('VICECHAIRMAN') or hasRole('CHAIRMAN') or hasRole('ADMIN')") // 관리자 페이지의 회원 관리 api로 STAFF 이상의 권한이 필요함
 public class AdminScheduleController {
 
     private final ScheduleFacadeService scheduleFacadeService;
-    private final MockCurrentUserProvider mockCurrentUserProvider;
    // 스케줄 정보 생성
     @PostMapping("/create")
     public ResponseEntity<GlobalResponseHandler<Void>> createScheduleByAdmin(
-//            @AuthenticationPrincipal CurrentUser currentUser,
+            @AuthenticationPrincipal CurrentUser currentUser,
             @Valid @RequestBody AdminScheduleCreateRequestDto requestDto) {
-
-        CurrentUser currentUser = mockCurrentUserProvider.getMockCurrentUser();
-
         scheduleFacadeService.createScheduleByAdmin(currentUser.getId(), requestDto);
 
         return GlobalResponseHandler.success(ResponseStatus.SCHEDULE_CREATE_SUCCESS);
@@ -40,10 +37,8 @@ public class AdminScheduleController {
     // 동방 예약 승인 거절
     @PutMapping("/update")
     public ResponseEntity<GlobalResponseHandler<Void>> approveOrRejectScheduleRequest(
-//            @AuthenticationPrincipal CurrentUser currentUser,
+            @AuthenticationPrincipal CurrentUser currentUser,
             @Valid @RequestBody AdminScheduleUpdateRequestDto requestDto) {
-        CurrentUser currentUser = mockCurrentUserProvider.getMockCurrentUser();
-
         scheduleFacadeService.approveOrRejectScheduleRequest(currentUser.getId(), requestDto);
 
         return GlobalResponseHandler.success(ResponseStatus.SCHEDULE_UPDATE_SUCCESS);
@@ -52,9 +47,8 @@ public class AdminScheduleController {
    // 스케줄 삭제
     @DeleteMapping("/delete")
     public ResponseEntity<GlobalResponseHandler<Void>> deleteSchedule(
-//            @AuthenticationPrincipal CurrentUser currentUser,
+            @AuthenticationPrincipal CurrentUser currentUser,
             @Valid @RequestBody AdminScheduleDeleteRequestDto requestDto) {
-        CurrentUser currentUser = mockCurrentUserProvider.getMockCurrentUser();
 
         scheduleFacadeService.deleteSchedule(currentUser.getId(),requestDto);
 
@@ -64,11 +58,8 @@ public class AdminScheduleController {
     // 동방 예약 정보 조회 ( 사용자 이름 포함 )
     @GetMapping("/requests")
     public ResponseEntity<GlobalResponseHandler<List<AdminScheduleResponseDto>>> getPendingScheduleRequests(
-//            @AuthenticationPrincipal CurrentUser currentUser
+            @AuthenticationPrincipal CurrentUser currentUser
     ) {
-
-        CurrentUser currentUser = mockCurrentUserProvider.getMockCurrentUser();
-
         List<AdminScheduleResponseDto> schedules = scheduleFacadeService.getPendingScheduleRequests(
                 currentUser.getId());
 
