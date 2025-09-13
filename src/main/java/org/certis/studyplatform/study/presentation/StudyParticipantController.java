@@ -3,6 +3,7 @@ package org.certis.studyplatform.study.presentation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.certis.studyplatform.shared.security.CurrentUser;
 import org.certis.studyplatform.study.application.StudyParticipantFacadeService;
 import org.certis.studyplatform.study.domain.StudyParticipantStatus;
 import org.certis.studyplatform.study.presentation.dto.request.*;
@@ -13,6 +14,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -42,11 +45,12 @@ StudyParticipantController {
      */
     @PostMapping("/join/register")
     public ResponseEntity<GlobalResponseHandler<StudyJoinResponseDto>> registerJoinStudy(
-            @Valid @RequestBody StudyJoinRequestDto requestDto) {
-
+            @Valid @RequestBody StudyJoinRequestDto requestDto,
+            @AuthenticationPrincipal CurrentUser currentUser
+            ) {
         log.info("Controller: Register study join request - studyId: {}", requestDto.getStudyId());
 
-        StudyJoinResponseDto responseDto = studyParticipantFacadeService.registerJoinStudy(requestDto);
+        StudyJoinResponseDto responseDto = studyParticipantFacadeService.registerJoinStudy(requestDto, currentUser.getId());
 
         log.info("Controller: Study join registered successfully - participantId: {}",
                 responseDto.getParticipantId());
@@ -62,11 +66,13 @@ StudyParticipantController {
      */
     @DeleteMapping("/join/cancel")
     public ResponseEntity<GlobalResponseHandler<Void>> cancelJoinStudy(
-            @Valid @RequestBody StudyJoinCancelRequestDto requestDto) {
+            @Valid @RequestBody StudyJoinCancelRequestDto requestDto,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
 
         log.info("Controller: Cancel study join request - studyId: {}", requestDto.getStudyId());
 
-        studyParticipantFacadeService.cancelJoinStudy(requestDto);
+        studyParticipantFacadeService.cancelJoinStudy(requestDto, currentUser.getId());
 
         log.info("Controller: Study join cancelled successfully - studyId: {}",
                 requestDto.getStudyId());
@@ -82,13 +88,15 @@ StudyParticipantController {
      */
     @PostMapping("/join/approve")
     public ResponseEntity<GlobalResponseHandler<StudyParticipantStatusUpdateResponseDto>> approveJoinStudy(
-            @Valid @RequestBody StudyJoinApproveRequestDto requestDto) {
+            @Valid @RequestBody StudyJoinApproveRequestDto requestDto,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
 
         log.info("Controller: Approve study join request - participantId: {}",
                 requestDto.getParticipantId());
 
         StudyParticipantStatusUpdateResponseDto responseDto =
-                studyParticipantFacadeService.approveJoinStudy(requestDto);
+                studyParticipantFacadeService.approveJoinStudy(requestDto, currentUser.getId());
 
         log.info("Controller: Study join approved successfully - participantId: {}",
                 responseDto.getParticipantId());
@@ -104,13 +112,15 @@ StudyParticipantController {
      */
     @PostMapping("/join/reject")
     public ResponseEntity<GlobalResponseHandler<StudyParticipantStatusUpdateResponseDto>> rejectJoinStudy(
-            @Valid @RequestBody StudyJoinRejectRequestDto requestDto) {
+            @Valid @RequestBody StudyJoinRejectRequestDto requestDto,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
 
         log.info("Controller: Reject study join request - participantId: {}",
                 requestDto.getParticipantId());
 
         StudyParticipantStatusUpdateResponseDto responseDto =
-                studyParticipantFacadeService.rejectJoinStudy(requestDto);
+                studyParticipantFacadeService.rejectJoinStudy(requestDto, currentUser.getId());
 
         log.info("Controller: Study join rejected successfully - participantId: {}",
                 responseDto.getParticipantId());

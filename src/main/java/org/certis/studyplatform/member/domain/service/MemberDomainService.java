@@ -540,9 +540,13 @@ public class MemberDomainService {
         MemberIdVo memberIdVo = memberDomainMapper.toMemberIdVo(command.memberId());
         GracePeriodVo gracePeriodVo = GracePeriodVo.of(command.gracePeriod());
 
-        validateMemberExists(memberIdVo);
+        MemberRole role = memberQueryRepository.findRoleByMemberId(memberIdVo)
+                .orElseThrow(() -> new DomainException(ExceptionStatus.MEMBER_INFRASTRUCTURE_NOT_FOUND));
+        if (role != MemberRole.UPSOLVER) {
+            throw new DomainException(ExceptionStatus.MEMBER_DOMAIN_INVALID_ROLE,
+                    "유예기간 부여는 UPSOLVER만 가능합니다.");
+        }
 
-        // STEP 2: Repository 호출 (VO 전달)
         memberCommandRepository.updateGracePeriod(memberIdVo, gracePeriodVo);
 
         log.info("✅ Domain: Grace period granted successfully - memberId={}", command.memberId());
@@ -559,9 +563,15 @@ public class MemberDomainService {
         MemberIdVo memberIdVo = memberDomainMapper.toMemberIdVo(command.memberId());
         PenaltyPointsVo penaltyPointsVo = PenaltyPointsVo.of(command.penaltyPoints());
 
-        validateMemberExists(memberIdVo);
+        // STEP 2: 권한 검증
+        MemberRole role = memberQueryRepository.findRoleByMemberId(memberIdVo)
+                .orElseThrow(() -> new DomainException(ExceptionStatus.MEMBER_INFRASTRUCTURE_NOT_FOUND));
+        if (!(role == MemberRole.UPSOLVER || role == MemberRole.PLAYER)) {
+            throw new DomainException(ExceptionStatus.MEMBER_DOMAIN_INVALID_ROLE,
+                    "패널티 부여는 UPSOLVER 또는 PLAYER만 가능합니다.");
+        }
 
-        // STEP 2: Repository 호출 (VO 전달)
+        // STEP 3: Repository 호출 (VO 전달)
         memberCommandRepository.updatePenalty(memberIdVo, penaltyPointsVo);
 
         log.info("✅ Domain: Penalty assigned successfully - memberId={}, points={}",

@@ -27,23 +27,16 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/admin/member")
+@PreAuthorize("hasRole('STAFF') or hasRole('VICECHAIRMAN') or hasRole('CHAIRMAN') or hasRole('ADMIN')") // 관리자 페이지의 회원 관리 api로 STAFF 이상의 권한이 필요함
 public class AdminMemberController {
 
     private final MemberFacadeService memberFacadeService;
 
     @PostMapping("/update")
-//    @PreAuthorize("hasRole('STAFF') or hasRole('VICECHAIRMAN') or hasRole('CHAIRMAN') or hasRole('ADMIN')")
     public ResponseEntity<GlobalResponseHandler<AdminMemberUpdateResponseDto>> updateMemberAdminFields(
-            @Valid @RequestBody AdminMemberUpdateRequestDto request
-//            @AuthenticationPrincipal CurrentUser currentUser
+            @Valid @RequestBody AdminMemberUpdateRequestDto request,
+            @AuthenticationPrincipal CurrentUser currentUser
     ){
-        CurrentUser currentUser = new CurrentUser(
-                1L,                    // 관리자 ID
-                "testAdmin",           // username
-                "test@admin.com",      // email
-                "테스트 관리자",        // name
-                "ADMIN");            // role);
-
         // 자기 자신의 권한/학년 변경 방지
         if (currentUser.getId().equals(request.getTargetMemberId())) {
             throw new ApplicationException(ExceptionStatus.MEMBER_APPLICATION_CANNOT_CHANGE_OWN_ADMIN_FIELDS);

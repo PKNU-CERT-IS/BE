@@ -12,9 +12,9 @@ import org.certis.studyplatform.board.presentation.dto.response.BoardListRespons
 import org.certis.studyplatform.response.GlobalResponseHandler;
 import org.certis.studyplatform.response.ResponseStatus;
 import org.certis.studyplatform.shared.security.CurrentUser;
-import org.certis.studyplatform.shared.security.MockCurrentUserProvider;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.certis.studyplatform.board.presentation.dto.response.BoardStatsResponseDto;
 
@@ -24,7 +24,6 @@ import org.certis.studyplatform.board.presentation.dto.response.BoardStatsRespon
 public class BoardController {
 
     private final BoardFacadeService boardFacadeService;
-    private final MockCurrentUserProvider mockCurrentUserProvider;
 
     // 게시글 키워드 검색 조회
     @GetMapping("/keyword")
@@ -38,11 +37,9 @@ public class BoardController {
    // 게시글 id 에 의한 상세 페이지 정보 조회
     @GetMapping("/detail/{id}")
     public ResponseEntity<GlobalResponseHandler<BoardDetailResponseDto>> getBoardDetail(
-            @PathVariable Long id
-//            , @AuthenticationPrincipal CurrentUser currentUser
+            @PathVariable Long id,
+            @AuthenticationPrincipal CurrentUser currentUser
     ) {
-        CurrentUser currentUser = mockCurrentUserProvider.getMockCurrentUser();
-
         BoardDetailResponseDto boardDetail = boardFacadeService.getBoardDetail(id, currentUser.getId());
 
         return GlobalResponseHandler.success(ResponseStatus.BOARD_FIND_SUCCESS, boardDetail);
@@ -52,10 +49,8 @@ public class BoardController {
     @PostMapping("/create")
     public ResponseEntity<GlobalResponseHandler<Void>> createBoard(
             @Valid @RequestBody BoardCreateRequestDto request
-//            , @AuthenticationPrincipal CurrentUser currentUser
+            , @AuthenticationPrincipal CurrentUser currentUser
     ) {
-        CurrentUser currentUser = mockCurrentUserProvider.getMockCurrentUser();
-
         boardFacadeService.createBoard(request, currentUser.getId());
 
         return GlobalResponseHandler.success(ResponseStatus.BOARD_CREATE_SUCCESS);
@@ -66,9 +61,8 @@ public class BoardController {
     public ResponseEntity<GlobalResponseHandler<Void>> updateBoard(
             @PathVariable Long id,
             @Valid @RequestBody BoardUpdateRequestDto request
-//            , @AuthenticationPrincipal CurrentUser currentUser
+            , @AuthenticationPrincipal CurrentUser currentUser
     ) {
-        CurrentUser currentUser = mockCurrentUserProvider.getMockCurrentUser();
 
         boardFacadeService.updateBoard(id, request, currentUser.getId());
 
@@ -79,10 +73,8 @@ public class BoardController {
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<GlobalResponseHandler<Void>> deleteBoard(
             @PathVariable Long id
-//            , @AuthenticationPrincipal CurrentUser currentUser
+            , @AuthenticationPrincipal CurrentUser currentUser
     ) {
-
-        CurrentUser currentUser = mockCurrentUserProvider.getMockCurrentUser();
 
         boardFacadeService.deleteBoard(id, currentUser.getId(),currentUser.getRole());
 
@@ -93,10 +85,8 @@ public class BoardController {
     @PostMapping("/like/{id}")
     public ResponseEntity<GlobalResponseHandler<BoardLikeResponseDto>> toggleLike(
             @PathVariable Long id
-//            , @AuthenticationPrincipal CurrentUser currentUser
+            , @AuthenticationPrincipal CurrentUser currentUser
     ) {
-        CurrentUser currentUser = mockCurrentUserProvider.getMockCurrentUser();
-
         BoardLikeResponseDto likeResponse = boardFacadeService.toggleLike(id, currentUser.getId());
 
         if(likeResponse.isLiked()){

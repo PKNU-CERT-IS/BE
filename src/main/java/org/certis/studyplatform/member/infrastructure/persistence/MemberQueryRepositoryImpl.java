@@ -92,6 +92,21 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
         }
     }
 
+    @Override
+    public Optional<MemberRole> findRoleByMemberId(MemberIdVo memberId) {
+        String roleString = dsl
+                .select(MEMBER.ROLE)
+                .from(MEMBER)
+                .where(MEMBER.ID.eq(memberId.value())
+                        .and(MEMBER.DELETED_AT.isNull())) // deleted_at 조건도 추가
+                .fetchOne(MEMBER.ROLE);
+
+
+        MemberRole role = MemberRole.valueOf(roleString);
+
+        return Optional.of(role);
+    }
+
 
     @Override
     public Page<MemberSummaryVo> findMembers(MemberSearchCriteriaVo searchCriteria, Pageable pageable) {

@@ -393,7 +393,7 @@ public enum ExceptionStatus {
     SYSTEM_INFRASTRUCTURE_SERVICE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "서비스를 사용할 수 없습니다"),
     SYSTEM_INFRASTRUCTURE_ASYNC_PROCESSING_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "비동기 처리 오류가 발생했습니다"),
     SYSTEM_INFRASTRUCTURE_CACHE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "캐시 처리 오류가 발생했습니다"),
-    SYSTEM_INFRASTRUCTURE_MESSAGING_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "메시징 처리 오류가 발생했습니다"), ;
+    SYSTEM_INFRASTRUCTURE_MESSAGING_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "메시징 처리 오류가 발생했습니다");
 
     private final int statusCode;
     private final String message;
