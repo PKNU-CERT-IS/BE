@@ -3,6 +3,7 @@ package org.certis.studyplatform.study.presentation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.certis.studyplatform.shared.security.CurrentUser;
 import org.certis.studyplatform.study.application.StudyMeetingFacadeService;
 import org.certis.studyplatform.study.presentation.dto.request.StudyMeetingCreateRequestDto;
 import org.certis.studyplatform.study.presentation.dto.request.StudyMeetingDeleteRequestDto;
@@ -14,6 +15,7 @@ import org.certis.studyplatform.study.presentation.dto.response.StudyMeetingSumm
 import org.certis.studyplatform.response.GlobalResponseHandler;
 import org.certis.studyplatform.response.ResponseStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -53,11 +55,13 @@ public class StudyMeetingController {
      */
     @PostMapping("/meeting/create")
     public ResponseEntity<GlobalResponseHandler<Void>> createStudyMeeting(
-            @Valid @RequestBody StudyMeetingCreateRequestDto request) {
+            @Valid @RequestBody StudyMeetingCreateRequestDto request,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
         log.info("REST: Creating study meeting - studyId: {}, title: {}", request.getStudyId(), request.getTitle());
 
         // Facade Service 호출
-        studyMeetingFacadeService.createStudyMeeting(request);
+        studyMeetingFacadeService.createStudyMeeting(request,currentUser.getId());
 
         log.info("REST: Study meeting created successfully");
 
@@ -91,12 +95,14 @@ public class StudyMeetingController {
      */
     @PutMapping("/meeting/edit")
     public ResponseEntity<GlobalResponseHandler<Void>> updateStudyMeeting(
-            @Valid @RequestBody StudyMeetingUpdateRequestDto request) {
+            @Valid @RequestBody StudyMeetingUpdateRequestDto request,
+            @AuthenticationPrincipal CurrentUser currentUser
+            ) {
         log.info("REST: Updating study meeting - meetingId: {}, requesterId: {}",
-                request.getMeetingId(), request.getWriterId());
+                request.getMeetingId(),currentUser.getId());
 
         // Facade Service 호출
-        studyMeetingFacadeService.updateStudyMeeting(request);
+        studyMeetingFacadeService.updateStudyMeeting(request,currentUser.getId());
 
         log.info("REST: Study meeting updated successfully");
 
@@ -111,12 +117,14 @@ public class StudyMeetingController {
      */
     @DeleteMapping("/meeting/delete")
     public ResponseEntity<GlobalResponseHandler<Void>> deleteStudyMeeting(
-            @Valid @RequestBody StudyMeetingDeleteRequestDto request) {
+            @Valid @RequestBody StudyMeetingDeleteRequestDto request,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
         log.info("REST: Deleting study meeting - meetingId: {}, requesterId: {}",
-                request.getMeetingId(), request.getRequesterId());
+                request.getMeetingId(),currentUser.getId());
 
         // Facade Service 호출
-        studyMeetingFacadeService.deleteStudyMeeting(request);
+        studyMeetingFacadeService.deleteStudyMeeting(request,currentUser.getId());
 
         log.info("REST: Study meeting deleted successfully");
 

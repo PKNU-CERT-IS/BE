@@ -21,7 +21,8 @@ import org.springframework.web.bind.annotation.*;
 /**
  * Study Participant Controller
  *
- * 프로젝트 참가 관련 REST API 컨트롤러
+ *스터디
+ *  참가 관련 REST API 컨트롤러
  * Clean Architecture Presentation Layer
  */
 @RestController
@@ -34,12 +35,12 @@ StudyParticipantController {
     private final StudyParticipantFacadeService studyParticipantFacadeService;
 
     // ================================================================
-    // STUDY JOIN OPERATIONS - 프로젝트 참가 관리
+    // STUDY JOIN OPERATIONS -스터디
+    // 참가 관리
     // ================================================================
 
     /**
-     * 프로젝트 참가 신청
-     *
+     * 스터디 참가 신청
      * @param requestDto 참가 신청 요청 DTO
      * @return 참가 신청 결과
      */
@@ -59,7 +60,7 @@ StudyParticipantController {
     }
 
     /**
-     * 프로젝트 참가 신청 취소
+     * 스터디 참가 신청 취소
      *
      * @param requestDto 참가 신청 취소 요청 DTO
      * @return 취소 결과
@@ -81,7 +82,7 @@ StudyParticipantController {
     }
 
     /**
-     * 프로젝트 참가 승인
+     * 스터디 참가 승인
      *
      * @param requestDto 참가 승인 요청 DTO
      * @return 승인 결과
@@ -105,7 +106,8 @@ StudyParticipantController {
     }
 
     /**
-     * 프로젝트 참가 거절
+     *스터디
+     *  참가 거절
      *
      * @param requestDto 참가 거절 요청 DTO
      * @return 거절 결과
@@ -129,13 +131,16 @@ StudyParticipantController {
     }
 
     // ================================================================
-    // STUDY PRESENTATION QUERY OPERATIONS - 프로젝트 참가자 조회
+    // STUDY PRESENTATION QUERY OPERATIONS -스터디
+    // 참가자 조회
     // ================================================================
 
     /**
-     * 프로젝트별 참가자 목록 조회
+     *스터디
+     * 별 참가자 목록 조회
      *
-     * @param studyId 프로젝트 ID
+     * @param studyId 스터디
+     * ID
      * @param status 참가자 상태 (선택적)
      * @param pageable 페이징 정보
      * @return 참가자 목록
@@ -157,9 +162,11 @@ StudyParticipantController {
     }
 
     /**
-     * 프로젝트별 모든 참가자 목록 조회
+     *스터디
+     * 별 모든 참가자 목록 조회
      *
-     * @param studyId 프로젝트 ID
+     * @param studyId 스터디
+     * ID
      * @param pageable 페이징 정보
      * @return 모든 참가자 목록
      */
@@ -179,11 +186,13 @@ StudyParticipantController {
     }
 
     /**
-     * 사용자별 참가 프로젝트 목록 조회
+     * 사용자별 참가스터디
+     * 목록 조회
      *
      * @param memberId 회원 ID
      * @param pageable 페이징 정보
-     * @return 참가 프로젝트 목록
+     * @return 참가스터디
+     * 목록
      */
     @GetMapping("/members/{memberId}/participations")
     public ResponseEntity<GlobalResponseHandler<Page<StudyParticipantSummaryResponseDto>>> getMemberParticipations(
@@ -206,9 +215,12 @@ StudyParticipantController {
     // ================================================================
 
     /**
-     * 프로젝트별 대기 중인 참가 신청 목록 조회 (프로젝트 생성자용)
+     *스터디
+     * 별 대기 중인 참가 신청 목록 조회 스터디
+     * 생성자용)
      *
-     * @param studyId 프로젝트 ID
+     * @param studyId 스터디
+     * ID
      * @param pageable 페이징 정보
      * @return 대기 중인 참가 신청 목록
      */
@@ -228,9 +240,11 @@ StudyParticipantController {
     }
 
     /**
-     * 프로젝트별 승인된 참가자 목록 조회
+     *스터디
+     * 별 승인된 참가자 목록 조회
      *
-     * @param studyId 프로젝트 ID
+     * @param studyId 스터디 ID
+     *
      * @param pageable 페이징 정보
      * @return 승인된 참가자 목록
      */
