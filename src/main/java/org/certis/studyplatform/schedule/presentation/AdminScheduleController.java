@@ -11,6 +11,7 @@ import org.certis.studyplatform.schedule.presentation.dto.request.AdminScheduleU
 import org.certis.studyplatform.schedule.presentation.dto.response.AdminScheduleResponseDto;
 import org.certis.studyplatform.shared.security.CurrentUser;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,6 +20,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/admin/schedule")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('STAFF') or hasRole('VICECHAIRMAN') or hasRole('CHAIRMAN') or hasRole('ADMIN')") // 관리자 페이지의 회원 관리 api로 STAFF 이상의 권한이 필요함
 public class AdminScheduleController {
 
     private final ScheduleFacadeService scheduleFacadeService;

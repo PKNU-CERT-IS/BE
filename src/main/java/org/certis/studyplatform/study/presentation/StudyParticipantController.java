@@ -136,11 +136,8 @@ StudyParticipantController {
     // ================================================================
 
     /**
-     *스터디
-     * 별 참가자 목록 조회
-     *
-     * @param studyId 스터디
-     * ID
+     *스터디별 참가자 목록 조회
+     * @param studyId 스터디 ID
      * @param status 참가자 상태 (선택적)
      * @param pageable 페이징 정보
      * @return 참가자 목록
@@ -162,11 +159,9 @@ StudyParticipantController {
     }
 
     /**
-     *스터디
-     * 별 모든 참가자 목록 조회
+     *스터디별 모든 참가자 목록 조회
      *
-     * @param studyId 스터디
-     * ID
+     * @param studyId 스터디 ID
      * @param pageable 페이징 정보
      * @return 모든 참가자 목록
      */
@@ -186,13 +181,11 @@ StudyParticipantController {
     }
 
     /**
-     * 사용자별 참가스터디
-     * 목록 조회
+     * 사용자별 참가스터디 목록 조회
      *
      * @param memberId 회원 ID
      * @param pageable 페이징 정보
-     * @return 참가스터디
-     * 목록
+     * @return 참가스터디 목록
      */
     @GetMapping("/members/{memberId}/participations")
     public ResponseEntity<GlobalResponseHandler<Page<StudyParticipantSummaryResponseDto>>> getMemberParticipations(
@@ -215,12 +208,10 @@ StudyParticipantController {
     // ================================================================
 
     /**
-     *스터디
-     * 별 대기 중인 참가 신청 목록 조회 스터디
+     * 스터디별 대기 중인 참가 신청 목록 조회 스터디
      * 생성자용)
      *
-     * @param studyId 스터디
-     * ID
+     * @param studyId 스터디 ID
      * @param pageable 페이징 정보
      * @return 대기 중인 참가 신청 목록
      */
@@ -240,8 +231,7 @@ StudyParticipantController {
     }
 
     /**
-     *스터디
-     * 별 승인된 참가자 목록 조회
+     * 스터디별 승인된 참가자 목록 조회
      *
      * @param studyId 스터디 ID
      *

@@ -55,14 +55,10 @@ public class BlogFacadeService {
     // ================================================================
 
     /**
-     * 블로그 생성 (임시 - Spring Security 미구축 상태)
+     * 블로그 생성
      */
-    public void createBlog(BlogCreateRequestDto requestDto) {
+    public void createBlog(BlogCreateRequestDto requestDto, Long creatorId) {
         log.info("Facade: Creating blog - {}", requestDto.getTitle());
-
-        // 임시: RequestDto에서 authorId, creatorName 추출 (Spring Security 구축 후 제거)
-        // TODO: Spring Security 구축 후 @AuthenticationPrincipal CurrentUser 사용
-        Long creatorId = 1L; // 임시 하드코딩
 
         // DTO → Command Object 변환
         CreateBlogCommand command = commandMapper.toCreateBlogCommand(requestDto, creatorId);
@@ -74,14 +70,14 @@ public class BlogFacadeService {
     }
 
     /**
-     * 블로그 수정 (임시 - Spring Security 미구축 상태)
+     * 블로그 수정
      */
-    public void updateBlog(BlogUpdateRequestDto requestDto) {
+    public void updateBlog(BlogUpdateRequestDto requestDto, Long requesterId) {
         log.info("Facade: Updating blog - ID: {}", requestDto.getBlogId());
 
         // DTO → Command Object 변환
         // TODO: 하드코딩 변경 필요
-        UpdateBlogCommand command = commandMapper.toUpdateBlogCommand(requestDto, 1L);
+        UpdateBlogCommand command = commandMapper.toUpdateBlogCommand(requestDto, requesterId);
 
         // Command Service 호출 (VO 반환)
         BlogVo updatedVo = blogCommandService.updateBlog(command);
@@ -90,13 +86,13 @@ public class BlogFacadeService {
     }
 
     /**
-     * 블로그 삭제 (임시 - Spring Security 미구축 상태)
+     * 블로그 삭제
      */
-    public void deleteBlog(BlogDeleteRequestDto requestDto) {
-        log.info("Facade: Deleting blog - ID: {} by requester: {}", requestDto.getBlogId(), requestDto.getRequesterId());
+    public void deleteBlog(BlogDeleteRequestDto requestDto,Long requesterId) {
+        log.info("Facade: Deleting blog - ID: {} by requester: {}", requestDto.getBlogId(), requesterId);
 
         // DTO → Command Object 변환
-        DeleteBlogCommand command = commandMapper.toDeleteBlogCommand(requestDto.getBlogId(), requestDto.getRequesterId());
+        DeleteBlogCommand command = commandMapper.toDeleteBlogCommand(requestDto.getBlogId(),requesterId);
 
         // Command Service 호출 (void 반환)
         blogCommandService.deleteBlog(command);
@@ -222,73 +218,5 @@ public class BlogFacadeService {
             return result;
         }
     }
-
-
-    // ================================================================
-    // LEGACY METHODS - 기존 호환성 유지 (Spring Security 구축 후 사용)
-    // ================================================================
-
-//    /**
-//     * 블로그 생성 (Spring Security 구축 후 사용) - VO 직접 반환
-//     */
-//    public BlogCreatedVo createBlog(BlogCreateRequestDto requestDto, Long authorId, String authorName) {
-//        log.info("Facade: Creating blog - {}", requestDto.getTitle());
-//
-//        // DTO → Command Object 변환
-//        CreateBlogCommand command = commandMapper.toCreateBlogCommand(requestDto, authorId, authorName);
-//
-//        // Command Service 호출 (VO 반환)
-//        BlogCreatedVo createdVo = blogCommandService.createBlog(command);
-//
-//        log.info("Facade: Blog created successfully - ID: {}", createdVo.id());
-//        return createdVo;
-//    }
-//
-//    /**
-//     * 블로그 수정 (Spring Security 구축 후 사용) - VO 직접 반환
-//     */
-//    public BlogUpdatedVo updateBlog(Long blogId, BlogUpdateRequestDto requestDto, Long requesterId) {
-//        log.info("Facade: Updating blog - ID: {}", blogId);
-//
-//        // DTO → Command Object 변환
-//        UpdateBlogCommand command = commandMapper.toUpdateBlogCommand(blogId, requestDto, requesterId);
-//
-//        // Command Service 호출 (VO 반환)
-//        BlogUpdatedVo updatedVo = blogCommandService.updateBlog(command);
-//
-//        log.info("Facade: Blog updated successfully - ID: {}", updatedVo.id());
-//        return updatedVo;
-//    }
-//
-//    /**
-//     * 블로그 삭제 (Spring Security 구축 후 사용)
-//     */
-//    public void deleteBlog(Long blogId, Long requesterId) {
-//        log.info("Facade: Deleting blog - ID: {}", blogId);
-//
-//        // DTO → Command Object 변환
-//        DeleteBlogCommand command = commandMapper.toDeleteBlogCommand(blogId, requesterId);
-//
-//        // Command Service 호출 (void 반환)
-//        blogCommandService.deleteBlog(command);
-//
-//        log.info("Facade: Blog deleted successfully - ID: {}", blogId);
-//    }
-//
-//    /**
-//     * 블로그 검색 (기본 페이징) - VO 직접 반환
-//     */
-//    public Page<BlogSummaryVo> searchBlogs(BlogSearchRequestDto requestDto) {
-//        log.info("Facade: Searching blogs with default pagination - keyword: {}", requestDto.getKeyword());
-//
-//        // DTO → Query Object 변환
-//        SearchBlogsQuery query = queryMapper.toSearchBlogsQuery(requestDto);
-//
-//        // Query Service 호출 (VO 반환)
-//        Page<BlogSummaryVo> blogs = blogQueryService.searchBlogs(query);
-//
-//        log.info("Facade: Blog search completed - found {} blogs", blogs.getTotalElements());
-//        return blogs;
-//    }
 
 }
