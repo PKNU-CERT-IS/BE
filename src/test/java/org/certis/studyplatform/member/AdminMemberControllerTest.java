@@ -2,6 +2,7 @@ package org.certis.studyplatform.member;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.certis.studyplatform.config.TestEmbeddedPostgresConfig;
+import org.certis.studyplatform.config.TestWebMvcConfig;
 import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.presentation.dto.request.AdminMemberUpdateRequestDto;
@@ -14,6 +15,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -32,12 +34,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import(TestEmbeddedPostgresConfig.class)
+@Import({TestEmbeddedPostgresConfig.class, TestWebMvcConfig.class})
 @ActiveProfiles("test")
 @TestPropertySource(locations = "classpath:application-test.yml")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @DisplayName("🚀 AdminMemberController 통합 테스트")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@WithMockUser(username = "admin", roles = {"ADMIN"})
 class AdminMemberControllerTest {
 
     @Autowired
@@ -65,10 +68,6 @@ class AdminMemberControllerTest {
         dsl.execute("TRUNCATE TABLE member_contact RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
 
-        // 보안 컨텍스트에 Mock 관리자 설정 (admin)
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken("admin", "password")
-        );
         setupTestData();
         System.out.println("✅ 관리자 테스트 데이터 설정 완료");
     }
@@ -229,7 +228,7 @@ class AdminMemberControllerTest {
                 .set(MEMBER.NAME, TEST_TARGET_MEMBER_NAME)
                 .set(MEMBER.STUDENT_NUMBER, "20200002")
                 .set(MEMBER.GRADE, MemberGrade.SOPHOMORE.name())
-                .set(MEMBER.ROLE, MemberRole.PLAYER.name())
+                .set(MEMBER.ROLE, MemberRole.UPSOLVER.name())
                 .set(MEMBER.MAJOR, "컴퓨터공학과")
                 .set(MEMBER.BIRTHDAY, OffsetDateTime.now().minusYears(20))
                 .set(MEMBER.GENDER, "FEMALE")

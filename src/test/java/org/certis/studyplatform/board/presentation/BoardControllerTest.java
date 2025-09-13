@@ -5,6 +5,7 @@ import jakarta.persistence.EntityManager;
 import org.certis.studyplatform.board.presentation.dto.request.BoardCreateRequestDto;
 import org.certis.studyplatform.board.presentation.dto.request.BoardUpdateRequestDto;
 import org.certis.studyplatform.config.TestEmbeddedPostgresConfig;
+import org.certis.studyplatform.config.TestWebMvcConfig;
 import org.certis.studyplatform.response.ResponseStatus;
 import org.hibernate.Session;
 import org.junit.jupiter.api.*;
@@ -31,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import(TestEmbeddedPostgresConfig.class)
+@Import({TestEmbeddedPostgresConfig.class, TestWebMvcConfig.class})
 @ActiveProfiles("test")
 @TestPropertySource(locations = "classpath:application-test.yml")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
@@ -49,7 +50,7 @@ public class BoardControllerTest {
 
     @Test
     @Order(1)
-    @WithMockUser(username = "user1", roles = "UPSOLVER")
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
     @DisplayName("1️⃣ 게시글 생성 - 전체 플로우 테스트")
     @Transactional
     void createBoard_FullFlow_Success() throws Exception {
@@ -170,7 +171,7 @@ public class BoardControllerTest {
 
     @Test
     @Order(6)
-    @WithMockUser(username = "user", roles = "UPSOLVER")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     @DisplayName("5️⃣ 게시글 수정 - 실제 데이터 변경 확인")
     @Transactional
     void updateBoard_ModifyRealData_Success() throws Exception {
@@ -194,7 +195,7 @@ public class BoardControllerTest {
 
     @Test
     @Order(7)
-    @WithMockUser(username = "staff", roles = "STAFF")
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
     @DisplayName("6️⃣ 게시글 삭제 - 관리자 권한 삭제")
     @Transactional
     void deleteBoard_AdminPermission_Success() throws Exception {
