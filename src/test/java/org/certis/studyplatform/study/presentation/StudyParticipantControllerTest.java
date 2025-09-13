@@ -2,6 +2,7 @@ package org.certis.studyplatform.study.presentation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.certis.studyplatform.config.TestEmbeddedPostgresConfig;
+import org.certis.studyplatform.config.TestWebMvcConfig;
 import org.certis.studyplatform.study.domain.StudyParticipantStatus;
 import org.certis.studyplatform.study.presentation.dto.request.*;
 import org.jooq.DSLContext;
@@ -11,6 +12,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -49,7 +51,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import(TestEmbeddedPostgresConfig.class)
+@Import({TestEmbeddedPostgresConfig.class, TestWebMvcConfig.class})
 @ActiveProfiles("test")
 @TestPropertySource(locations = "classpath:application-test.yml")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
@@ -96,10 +98,6 @@ class StudyParticipantControllerTest {
         dsl.execute("SELECT setval('study_participant_id_seq', 1, false)");
         dsl.execute("SELECT setval('member_id_seq', 1, false)");
 
-        // 보안 컨텍스트에 Mock 사용자 설정 (user2 -> id 2L)
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(new CurrentUser(TEST_PARTICIPANT_ID, "user2", "user2@certis.org", "유저2", "UPSOLVER"), null)
-        );
         setupTestData();
         
         // setupTestData() 후 시퀀스를 다음 값으로 설정하여 충돌 방지
@@ -123,6 +121,7 @@ class StudyParticipantControllerTest {
     @Test
     @Order(1)
     @DisplayName("📝 스터디 참가 신청 - 성공적인 비즈니스 시나리오")
+    @WithMockUser(username = "user2", roles = {"PLAYER"})
     void registerJoinStudy_SuccessfulBusinessScenario() throws Exception {
         // Given: 유효한 스터디와 참가 신청자가 존재하고, 참가 신청 요청이 준비됨
         StudyJoinRequestDto request = createValidJoinRequest();
@@ -150,19 +149,15 @@ class StudyParticipantControllerTest {
     @Test
     @Order(2)
     @DisplayName("✅ 스터디 참가 승인 - 스터디 생성자의 성공적인 승인")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     void approveJoinStudy_StudyCreatorSuccessfulApproval() throws Exception {
         // Given: 참가 신청이 존재하고, 스터디 생성자가 승인을 요청함
         createTestParticipantInDatabase(StudyParticipantStatus.PENDING);
         
         StudyJoinApproveRequestDto request = new StudyJoinApproveRequestDto();
         request.setParticipantId(TEST_STUDY_PARTICIPANT_ID);
-        // Note: ApproverId is handled by security context in real implementation
 
-        // When: 참가 승인 API 호출
-        // 승인자는 스터디 생성자여야 하므로 보안 컨텍스트를 생성자로 설정
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(new CurrentUser(TEST_MEMBER_ID, "user1", "user1@certis.org", "유저1", "UPSOLVER"), null)
-        );
+
         mockMvc.perform(post("/api/v1/study/participant/join/approve")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -183,6 +178,7 @@ class StudyParticipantControllerTest {
     @Test
     @Order(3)
     @DisplayName("❌ 스터디 참가 거절 - 스터디 생성자의 성공적인 거절")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     void rejectJoinStudy_StudyCreatorSuccessfulRejection() throws Exception {
         // Given: 참가 신청이 존재하고, 스터디 생성자가 거절을 요청함
         createTestParticipantInDatabase(StudyParticipantStatus.PENDING);
@@ -191,11 +187,6 @@ class StudyParticipantControllerTest {
         request.setParticipantId(TEST_STUDY_PARTICIPANT_ID);
         // Note: RejecterId and RejectReason are handled by security context and service layer
 
-        // When: 참가 거절 API 호출
-        // 거절자는 스터디 생성자여야 하므로 보안 컨텍스트를 생성자로 설정
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(new CurrentUser(TEST_MEMBER_ID, "user1", "user1@certis.org", "유저1", "UPSOLVER"), null)
-        );
         mockMvc.perform(post("/api/v1/study/participant/join/reject")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -251,15 +242,11 @@ class StudyParticipantControllerTest {
     @Test
     @Order(10)
     @DisplayName("📋 스터디별 참가자 목록 조회 - 전체 참가자")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     void getStudyParticipants_AllParticipants() throws Exception {
         // Given: 여러 상태의 참가자들이 존재함
         createMultipleParticipantsInDatabase();
 
-        // When: 스터디별 전체 참가자 목록 조회
-        // 조회자는 스터디 생성자여야 하므로 보안 컨텍스트를 생성자로 설정
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(new CurrentUser(TEST_MEMBER_ID, "user1", "user1@certis.org", "유저1", "UPSOLVER"), null)
-        );
         mockMvc.perform(get("/api/v1/study/participant/{studyId}/participants/all", TEST_STUDY_ID)
                         .param("page", "0")
                         .param("size", "10"))
@@ -280,15 +267,11 @@ class StudyParticipantControllerTest {
     @Test
     @Order(11)
     @DisplayName("⏳ 스터디별 대기 중인 참가자 목록 조회")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     void getPendingParticipants_OnlyPendingStatus() throws Exception {
         // Given: 여러 상태의 참가자들이 존재함
         createMultipleParticipantsInDatabase();
 
-        // When: 스터디별 대기 중인 참가자 목록 조회
-        // 조회자는 스터디 생성자여야 하므로 보안 컨텍스트를 생성자로 설정
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(new CurrentUser(TEST_MEMBER_ID, "user1", "user1@certis.org", "유저1", "UPSOLVER"), null)
-        );
         mockMvc.perform(get("/api/v1/study/participant/{studyId}/participants/pending", TEST_STUDY_ID)
                         .param("page", "0")
                         .param("size", "10"))
@@ -306,15 +289,11 @@ class StudyParticipantControllerTest {
     @Test
     @Order(12)
     @DisplayName("✅ 스터디별 승인된 참가자 목록 조회")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     void getApprovedParticipants_OnlyApprovedStatus() throws Exception {
         // Given: 여러 상태의 참가자들이 존재함
         createMultipleParticipantsInDatabase();
 
-        // When: 스터디별 승인된 참가자 목록 조회
-        // 조회자는 스터디 생성자여야 하므로 보안 컨텍스트를 생성자로 설정
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(new CurrentUser(TEST_MEMBER_ID, "user1", "user1@certis.org", "유저1", "UPSOLVER"), null)
-        );
         mockMvc.perform(get("/api/v1/study/participant/{studyId}/participants/approved", TEST_STUDY_ID)
                         .param("page", "0")
                         .param("size", "10"))
@@ -332,15 +311,11 @@ class StudyParticipantControllerTest {
     @Test
     @Order(13)
     @DisplayName("👤 회원별 참가 스터디 목록 조회")
+    @WithMockUser(username = "user2", roles = {"PLAYER"})
     void getMemberParticipations_MemberStudyList() throws Exception {
         // Given: 회원이 여러 스터디에 참가함
         createMultipleStudiesWithParticipations();
 
-        // When: 회원별 참가 스터디 목록 조회
-        // 조회자는 해당 회원이거나 관리자여야 하므로 보안 컨텍스트를 신청자로 설정
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(new CurrentUser(TEST_PARTICIPANT_ID, "user2", "user2@certis.org", "유저2", "UPSOLVER"), null)
-        );
         mockMvc.perform(get("/api/v1/study/participant/members/{memberId}/participations", TEST_PARTICIPANT_ID)
                         .param("page", "0")
                         .param("size", "10"))
@@ -380,16 +355,12 @@ class StudyParticipantControllerTest {
     @Test
     @Order(21)
     @DisplayName("❌ 중복 참가 신청 실패 - 이미 신청한 사용자")
+    @WithMockUser(username = "user2", roles = {"PLAYER"})
     void registerJoinStudy_BusinessFailure_DuplicateApplication() throws Exception {
         // Given: 이미 참가 신청한 사용자가 다시 신청을 시도
         createTestParticipantInDatabase(StudyParticipantStatus.PENDING);
         StudyJoinRequestDto request = createValidJoinRequest();
 
-        // When & Then: HTTP 400 BadRequest 응답 (중복 신청)
-        // 신청자는 user2여야 하므로 보안 컨텍스트를 신청자로 설정
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(new CurrentUser(TEST_PARTICIPANT_ID, "user2", "user2@certis.org", "유저2", "UPSOLVER"), null)
-        );
         mockMvc.perform(post("/api/v1/study/participant/join/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -404,6 +375,7 @@ class StudyParticipantControllerTest {
     @Test
     @Order(22)
     @DisplayName("❌ 참가 승인 실패 - 권한 없는 사용자")
+    @WithMockUser(username = "user2", roles = {"PLAYER"})
     void approveJoinStudy_AuthorizationFailure_UnauthorizedUser() throws Exception {
         // Given: 참가 신청이 존재하지만, 스터디 생성자가 아닌 사용자가 승인을 시도
         createTestParticipantInDatabase(StudyParticipantStatus.PENDING);
@@ -412,11 +384,7 @@ class StudyParticipantControllerTest {
         request.setParticipantId(TEST_STUDY_PARTICIPANT_ID);
         // Note: ApproverId validation is handled by service layer
 
-        // When & Then: HTTP 400 BadRequest 응답 (권한 없음)
-        // 권한 없는 사용자(user2)로 승인 시도
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(new CurrentUser(TEST_PARTICIPANT_ID, "user2", "user2@certis.org", "유저2", "UPSOLVER"), null)
-        );
+
         mockMvc.perform(post("/api/v1/study/participant/join/approve")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))

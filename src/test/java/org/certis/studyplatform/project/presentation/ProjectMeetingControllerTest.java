@@ -2,6 +2,7 @@ package org.certis.studyplatform.project.presentation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.certis.studyplatform.config.TestEmbeddedPostgresConfig;
+import org.certis.studyplatform.config.TestWebMvcConfig;
 import org.certis.studyplatform.project.presentation.dto.request.*;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.*;
@@ -10,6 +11,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -49,7 +51,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import(TestEmbeddedPostgresConfig.class)
+@Import({TestEmbeddedPostgresConfig.class, TestWebMvcConfig.class})
 @ActiveProfiles("test")
 @TestPropertySource(locations = "classpath:application-test.yml")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
@@ -91,10 +93,6 @@ class ProjectMeetingControllerTest {
         dsl.execute("TRUNCATE TABLE project RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
 
-        // 보안 컨텍스트에 Mock 사용자 설정 (user1)
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken("user1", "password")
-        );
         setupTestData();
         System.out.println("✅ 테스트 데이터 설정 완료");
     }
@@ -166,13 +164,13 @@ class ProjectMeetingControllerTest {
     @Test
     @Order(3)
     @DisplayName("✏️ 프로젝트 회의록 수정 - 권한 있는 사용자의 성공적인 수정")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     void updateProjectMeeting_AuthorizedUserSuccessfulUpdate() throws Exception {
         // Given: 회의록이 존재하고, 작성자가 수정을 요청함
         createTestMeetingInDatabase();
         
         ProjectMeetingUpdateRequestDto request = new ProjectMeetingUpdateRequestDto();
         request.setMeetingId(TEST_MEETING_ID);
-        request.setWriterId(TEST_MEMBER_ID); // 작성자가 수정 요청
         request.setTitle("수정된 회의록 제목");
         request.setContent("수정된 회의록 내용입니다.");
         request.setParticipants(List.of(TEST_MEMBER_ID, TEST_MEMBER_2_ID));
@@ -224,13 +222,13 @@ class ProjectMeetingControllerTest {
     @Test
     @Order(5)
     @DisplayName("🗑️ 프로젝트 회의록 삭제 - 권한 있는 사용자의 성공적인 삭제")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     void deleteProjectMeeting_AuthorizedUserSuccessfulDeletion() throws Exception {
         // Given: 회의록이 존재하고, 작성자가 삭제를 요청함
         createTestMeetingInDatabase();
         
         ProjectMeetingDeleteRequestDto request = new ProjectMeetingDeleteRequestDto();
         request.setMeetingId(TEST_MEETING_ID);
-        request.setRequesterId(TEST_MEMBER_ID); // 작성자가 삭제 요청
 
         // When: 회의록 삭제 API 호출
         mockMvc.perform(delete("/api/v1/project/meeting/delete")
@@ -275,11 +273,11 @@ class ProjectMeetingControllerTest {
     @Test
     @Order(11)
     @DisplayName("❌ 회의록 생성 실패 - 잘못된 데이터 형식")
+    @WithMockUser(username = "wrong", roles = {"NONE"})
     void createProjectMeeting_ValidationFailure_InvalidDataFormat() throws Exception {
         // Given: 잘못된 형식의 데이터
         ProjectMeetingCreateRequestDto request = new ProjectMeetingCreateRequestDto();
         request.setProjectId(-1L); // 음수 ID
-        request.setWriterId(0L); // 0 ID
         request.setTitle(""); // 빈 제목
         request.setContent(""); // 빈 내용
         request.setParticipantIds(List.of()); // 빈 참가자 목록
@@ -338,13 +336,13 @@ class ProjectMeetingControllerTest {
     @Test
     @Order(14)
     @DisplayName("❌ 회의록 수정 실패 - 권한 없는 사용자")
+    @WithMockUser(username = "user2", roles = {"PLAYER"})
     void updateProjectMeeting_AuthorizationFailure_UnauthorizedUser() throws Exception {
         // Given: 회의록이 존재하지만, 다른 사용자가 수정을 시도
         createTestMeetingInDatabase();
         
         ProjectMeetingUpdateRequestDto request = new ProjectMeetingUpdateRequestDto();
         request.setMeetingId(TEST_MEETING_ID);
-        request.setWriterId(TEST_MEMBER_2_ID); // 작성자가 아닌 다른 사용자
         request.setTitle("무단 수정 시도");
         request.setContent("권한이 없는 사용자의 수정 시도");
         request.setAttachedUrl("https://malicious.com/unauthorized-link.pdf");
@@ -462,7 +460,6 @@ class ProjectMeetingControllerTest {
         // Given: 최대 길이의 제목과 내용 (고유한 데이터 사용)
         ProjectMeetingCreateRequestDto request = createValidMeetingRequest();
         request.setProjectId(999L); // 고유한 프로젝트 ID
-        request.setWriterId(999L); // 고유한 작성자 ID  
         request.setTitle("A".repeat(100)); // 최대 100자 (안전한 길이)
         request.setContent("B".repeat(1000)); // 최대 1000자
         request.setParticipantIds(List.of(999L)); // 고유한 참가자 ID
@@ -487,7 +484,6 @@ class ProjectMeetingControllerTest {
         // Given: 첨부 URL이 포함된 유효한 회의록 생성 요청
         ProjectMeetingCreateRequestDto request = createValidMeetingRequest();
         request.setProjectId(TEST_PROJECT_ID + 100); // 고유한 프로젝트 ID
-        request.setWriterId(TEST_MEMBER_ID + 100); // 고유한 작성자 ID
         request.setAttachedUrl("https://docs.google.com/document/d/test-meeting-notes");
 
         // When: 회의록 생성 API 호출
@@ -514,7 +510,6 @@ class ProjectMeetingControllerTest {
         // Given: 첨부 URL이 없는 회의록 생성 요청
         ProjectMeetingCreateRequestDto request = createValidMeetingRequest();
         request.setProjectId(TEST_PROJECT_ID + 200); // 고유한 프로젝트 ID
-        request.setWriterId(TEST_MEMBER_ID + 200); // 고유한 작성자 ID
         request.setAttachedUrl(null); // 첨부 URL 없음
 
         // When: 회의록 생성 API 호출
@@ -537,6 +532,7 @@ class ProjectMeetingControllerTest {
     @Test
     @Order(34)
     @DisplayName("🔗 회의록 수정 시 첨부 URL 변경 - 기존 링크 삭제 후 새 링크 저장")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     void updateProjectMeeting_ChangeAttachedUrl_ReplaceExistingLink() throws Exception {
         // Given: 기존 회의록과 링크가 존재함
         createTestMeetingInDatabase();
@@ -544,7 +540,6 @@ class ProjectMeetingControllerTest {
         
         ProjectMeetingUpdateRequestDto request = new ProjectMeetingUpdateRequestDto();
         request.setMeetingId(TEST_MEETING_ID);
-        request.setWriterId(TEST_MEMBER_ID);
         request.setTitle("수정된 회의록 제목");
         request.setContent("수정된 회의록 내용");
         request.setParticipants(List.of(TEST_MEMBER_ID, TEST_MEMBER_2_ID));
@@ -572,7 +567,6 @@ class ProjectMeetingControllerTest {
     private ProjectMeetingCreateRequestDto createValidMeetingRequest() {
         ProjectMeetingCreateRequestDto request = new ProjectMeetingCreateRequestDto();
         request.setProjectId(TEST_PROJECT_ID);
-        request.setWriterId(TEST_MEMBER_ID);
         request.setTitle(TEST_MEETING_TITLE);
         request.setContent(TEST_MEETING_CONTENT);
         request.setParticipantIds(List.of(TEST_MEMBER_ID, TEST_MEMBER_2_ID));
@@ -734,7 +728,6 @@ class ProjectMeetingControllerTest {
         assertThat(meeting).isNotNull();
         assertThat(meeting.getTitle()).isEqualTo(request.getTitle());
         assertThat(meeting.getContent()).isEqualTo(request.getContent());
-        assertThat(meeting.getMemberId()).isEqualTo(request.getWriterId());
     }
 
     /**

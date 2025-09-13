@@ -101,6 +101,8 @@ public class StudyMeetingController {
         log.info("REST: Updating study meeting - meetingId: {}, requesterId: {}",
                 request.getMeetingId(),currentUser.getId());
 
+        log.warn("CurrentUser debug: {}", currentUser);
+
         // Facade Service 호출
         studyMeetingFacadeService.updateStudyMeeting(request,currentUser.getId());
 

@@ -275,7 +275,7 @@ class BlogControllerTest {
         
         BlogDeleteRequestDto request = new BlogDeleteRequestDto();
         request.setBlogId(TEST_BLOG_ID);
-        request.setRequesterId(TEST_MEMBER_ID); // 작성자가 삭제 요청
+//        request.setRequesterId(TEST_MEMBER_ID); // 작성자가 삭제 요청
 
         // When: 블로그 삭제 API 호출
         mockMvc.perform(delete("/api/v1/blog/delete")

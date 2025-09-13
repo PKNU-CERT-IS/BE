@@ -2,6 +2,7 @@ package org.certis.studyplatform.study.presentation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.certis.studyplatform.config.TestEmbeddedPostgresConfig;
+import org.certis.studyplatform.config.TestWebMvcConfig;
 import org.certis.studyplatform.study.presentation.dto.request.*;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.*;
@@ -10,6 +11,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -49,7 +51,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import(TestEmbeddedPostgresConfig.class)
+@Import({TestEmbeddedPostgresConfig.class, TestWebMvcConfig.class})
 @ActiveProfiles("test")
 @TestPropertySource(locations = "classpath:application-test.yml")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
@@ -85,11 +87,6 @@ class StudyMeetingControllerTest {
         dsl.execute("TRUNCATE TABLE study_meeting RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE study RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
-
-        // 보안 컨텍스트에 Mock 사용자 설정 (user1)
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken("user1", "password")
-        );
 
         setupTestData();
         System.out.println("✅ 테스트 데이터 설정 완료");
@@ -162,13 +159,13 @@ class StudyMeetingControllerTest {
     @Test
     @Order(3)
     @DisplayName("✏️ 스터디 회의록 수정 - 권한 있는 사용자의 성공적인 수정")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     void updateStudyMeeting_AuthorizedUserSuccessfulUpdate() throws Exception {
         // Given: 회의록이 존재하고, 작성자가 수정을 요청함
         createTestMeetingInDatabase();
         
         StudyMeetingUpdateRequestDto request = new StudyMeetingUpdateRequestDto();
         request.setMeetingId(TEST_MEETING_ID);
-        request.setWriterId(TEST_MEMBER_ID); // 작성자가 수정 요청
         request.setTitle("수정된 회의록 제목");
         request.setContent("수정된 회의록 내용입니다.");
         request.setParticipants(List.of(TEST_MEMBER_ID, TEST_MEMBER_2_ID));
@@ -218,13 +215,13 @@ class StudyMeetingControllerTest {
     @Test
     @Order(5)
     @DisplayName("🗑️ 스터디 회의록 삭제 - 권한 있는 사용자의 성공적인 삭제")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     void deleteStudyMeeting_AuthorizedUserSuccessfulDeletion() throws Exception {
         // Given: 회의록이 존재하고, 작성자가 삭제를 요청함
         createTestMeetingInDatabase();
         
         StudyMeetingDeleteRequestDto request = new StudyMeetingDeleteRequestDto();
         request.setMeetingId(TEST_MEETING_ID);
-        request.setRequesterId(TEST_MEMBER_ID); // 작성자가 삭제 요청
 
         // When: 회의록 삭제 API 호출
         mockMvc.perform(delete("/api/v1/study/meeting/delete")
@@ -268,11 +265,11 @@ class StudyMeetingControllerTest {
     @Test
     @Order(11)
     @DisplayName("❌ 회의록 생성 실패 - 잘못된 데이터 형식")
+    @WithMockUser(username = "wrong", roles = {"NONE"})
     void createStudyMeeting_ValidationFailure_InvalidDataFormat() throws Exception {
         // Given: 잘못된 형식의 데이터
         StudyMeetingCreateRequestDto request = new StudyMeetingCreateRequestDto();
         request.setStudyId(-1L); // 음수 ID
-        request.setWriterId(0L); // 0 ID
         request.setTitle(""); // 빈 제목
         request.setContent(""); // 빈 내용
         request.setParticipantIds(List.of()); // 빈 참가자 목록
@@ -306,16 +303,18 @@ class StudyMeetingControllerTest {
         System.out.println("✅ 존재하지 않는 회의록 조회 테스트 성공");
     }
 
+
+
     @Test
     @Order(13)
     @DisplayName("❌ 회의록 수정 실패 - 권한 없는 사용자")
+    @WithMockUser(username = "user2", roles = {"PLAYER"})
     void updateStudyMeeting_AuthorizationFailure_UnauthorizedUser() throws Exception {
         // Given: 회의록이 존재하지만, 다른 사용자가 수정을 시도
         createTestMeetingInDatabase();
-        
+
         StudyMeetingUpdateRequestDto request = new StudyMeetingUpdateRequestDto();
         request.setMeetingId(TEST_MEETING_ID);
-        request.setWriterId(TEST_MEMBER_2_ID); // 작성자가 아닌 다른 사용자
         request.setTitle("무단 수정 시도");
         request.setContent("권한이 없는 사용자의 수정 시도");
         request.setAttachedUrl("https://malicious.com/unauthorized-link.pdf");
@@ -393,7 +392,6 @@ class StudyMeetingControllerTest {
     private StudyMeetingCreateRequestDto createValidMeetingRequest() {
         StudyMeetingCreateRequestDto request = new StudyMeetingCreateRequestDto();
         request.setStudyId(TEST_STUDY_ID);
-        request.setWriterId(TEST_MEMBER_ID);
         request.setTitle(TEST_MEETING_TITLE);
         request.setContent(TEST_MEETING_CONTENT);
         request.setParticipantIds(List.of(TEST_MEMBER_ID, TEST_MEMBER_2_ID));
@@ -553,7 +551,6 @@ class StudyMeetingControllerTest {
         assertThat(meeting).isNotNull();
         assertThat(meeting.getTitle()).isEqualTo(request.getTitle());
         assertThat(meeting.getContent()).isEqualTo(request.getContent());
-        assertThat(meeting.getMemberId()).isEqualTo(request.getWriterId());
     }
 
     /**

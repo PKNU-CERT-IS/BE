@@ -1,7 +1,11 @@
 package org.certis.studyplatform.schedule.presentation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.With;
 import org.certis.studyplatform.config.TestEmbeddedPostgresConfig;
+import org.certis.studyplatform.config.TestWebMvcConfig;
+import org.certis.studyplatform.member.domain.MemberGrade;
+import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.schedule.presentation.dto.request.AdminScheduleCreateRequestDto;
 import org.certis.studyplatform.schedule.presentation.dto.request.AdminScheduleUpdateRequestDto;
 import org.certis.studyplatform.schedule.presentation.dto.request.AdminScheduleDeleteRequestDto;
@@ -12,6 +16,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -45,12 +50,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import(TestEmbeddedPostgresConfig.class)
+@Import({TestEmbeddedPostgresConfig.class, TestWebMvcConfig.class})
 @ActiveProfiles("test")
 @TestPropertySource(locations = "classpath:application-test.yml")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @DisplayName("🚀 AdminScheduleController 완전한 통합 테스트")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@WithMockUser(username = "admin",roles = {"ADMIN"})
 class AdminScheduleControllerTest {
 
     @Autowired
@@ -63,7 +69,7 @@ class AdminScheduleControllerTest {
     private DSLContext dsl; // JOOQ로 직접 데이터베이스 조작
 
     // 테스트 상수
-    private static final Long TEST_ADMIN_ID = 10L;
+    private static final Long TEST_ADMIN_ID = 99L;
     private static final Long TEST_USER_ID = 1L;
     private static final Long TEST_USER_2_ID = 2L;
     private static final Long TEST_SCHEDULE_ID = 1L;
@@ -422,10 +428,10 @@ class AdminScheduleControllerTest {
                     .set(MEMBER.ID, TEST_ADMIN_ID)
                     .set(MEMBER.NAME, TEST_ADMIN_NAME)
                     .set(MEMBER.STUDENT_NUMBER, "20210010")
-                    .set(MEMBER.ROLE, "ADMIN")
+                    .set(MEMBER.ROLE, MemberRole.ADMIN.name())
                     .set(MEMBER.BIRTHDAY, now.minusYears(23))
                     .set(MEMBER.GENDER, "MALE")
-                    .set(MEMBER.GRADE, "4")
+                    .set(MEMBER.GRADE, MemberGrade.SENIOR.name())
                     .set(MEMBER.MAJOR, "컴퓨터공학과")
                     .set(MEMBER.CREATED_AT, now)
                     .set(MEMBER.UPDATED_AT, now)
@@ -436,10 +442,10 @@ class AdminScheduleControllerTest {
                     .set(MEMBER.ID, TEST_USER_ID)
                     .set(MEMBER.NAME, TEST_USER_NAME)
                     .set(MEMBER.STUDENT_NUMBER, "20210001")
-                    .set(MEMBER.ROLE, "PLAYER")
+                    .set(MEMBER.ROLE, MemberRole.UPSOLVER.name())
                     .set(MEMBER.BIRTHDAY, now.minusYears(23))
                     .set(MEMBER.GENDER, "MALE")
-                    .set(MEMBER.GRADE, "4")
+                    .set(MEMBER.GRADE, MemberGrade.SENIOR.name())
                     .set(MEMBER.MAJOR, "컴퓨터공학과")
                     .set(MEMBER.CREATED_AT, now)
                     .set(MEMBER.UPDATED_AT, now)
@@ -450,10 +456,10 @@ class AdminScheduleControllerTest {
                     .set(MEMBER.ID, TEST_USER_2_ID)
                     .set(MEMBER.NAME, TEST_USER_2_NAME)
                     .set(MEMBER.STUDENT_NUMBER, "20210002")
-                    .set(MEMBER.ROLE, "PLAYER")
+                    .set(MEMBER.ROLE, MemberRole.PLAYER.name())
                     .set(MEMBER.BIRTHDAY, now.minusYears(23))
                     .set(MEMBER.GENDER, "MALE")
-                    .set(MEMBER.GRADE, "4")
+                    .set(MEMBER.GRADE, MemberGrade.SENIOR.name())
                     .set(MEMBER.MAJOR, "컴퓨터공학과")
                     .set(MEMBER.CREATED_AT, now)
                     .set(MEMBER.UPDATED_AT, now)

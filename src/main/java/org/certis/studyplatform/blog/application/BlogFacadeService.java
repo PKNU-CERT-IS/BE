@@ -76,7 +76,6 @@ public class BlogFacadeService {
         log.info("Facade: Updating blog - ID: {}", requestDto.getBlogId());
 
         // DTO → Command Object 변환
-        // TODO: 하드코딩 변경 필요
         UpdateBlogCommand command = commandMapper.toUpdateBlogCommand(requestDto, requesterId);
 
         // Command Service 호출 (VO 반환)
