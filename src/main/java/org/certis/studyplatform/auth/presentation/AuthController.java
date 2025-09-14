@@ -1,5 +1,6 @@
 package org.certis.studyplatform.auth.presentation;
 
+import jakarta.security.auth.message.AuthException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -23,6 +24,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 
 @Slf4j
@@ -84,27 +89,17 @@ public class AuthController {
      */
     @PostMapping("/token/refresh")
     public ResponseEntity<GlobalResponseHandler<RefreshAccessTokenResponseDto>> refreshToken(
-            HttpServletRequest request,
-            @AuthenticationPrincipal CurrentUser currentUser
+            HttpServletRequest request
     ) {
+        log.info("토큰 갱신 요청 시작");
 
-        log.info("토큰 갱신 요청: memberId={}", currentUser.getId());
+        String refreshToken = extractRefreshTokenFromCookies(request.getCookies());
+        RefreshAccessTokenResponseDto responseDto = authFacadeService.refreshAccessToken(refreshToken);
 
-        // 만료된 AccessToken 에서 role 추출 (Command Service를 통해)
-        String accessToken = extractTokenFromHeader(request);
-        String username = extractUserNameFromAccessToken(accessToken);
-        String name = extractNameFromAccessToken(accessToken);
-        String email = extractEmailFromAccessToken(accessToken);
-        MemberRole currentRole = extractRoleFromAccessToken(accessToken);
-
-
-        // 토큰 갱신 ( memberId는 검증된 값 currentRole 도 또한 검증된 값 따라서 dto 감싸는건 과다하다고 생각)
-        RefreshAccessTokenResponseDto responseDto = authFacadeService.refreshAccessToken(currentUser.getId(),username,name,email, currentRole);
-
-        log.info("토큰 갱신 성공: memberId={}", currentUser.getId()
-        );
+        log.info("토큰 갱신 성공");
         return GlobalResponseHandler.success(ResponseStatus.AUTH_TOKEN_REFRESH_SUCCESS,responseDto);
     }
+
 
     @PostMapping("/register")
     public ResponseEntity<GlobalResponseHandler<Void>> register(@Valid @RequestBody RegisterRequestDto request) {
@@ -165,13 +160,13 @@ public class AuthController {
         response.addCookie(cookie);
     }
 
-    // Authorization 헤더에서 토큰 추출
-    private String extractTokenFromHeader(HttpServletRequest request) {
-        String authHeader = request.getHeader("Authorization");
 
-        if (!StringUtils.hasText(authHeader) || !authHeader.startsWith("Bearer ")) {
-            throw new PresentationException(ExceptionStatus.AUTH_PRESENTATION_INVALID_REQUEST);
-        }
-        return authHeader.substring(7).trim();
+    // 쿠키에서 refreshToken 추출
+    private String extractRefreshTokenFromCookies(Cookie[] cookies) {
+        return Optional.ofNullable(cookies).stream().flatMap(Arrays::stream)
+                .filter(c -> "refreshToken".equals(c.getName()))
+                .map(Cookie::getValue)
+                .findFirst()
+                .orElseThrow(() -> new PresentationException(ExceptionStatus.AUTH_REFRESH_TOKEN_NOT_FOUND));
     }
 }

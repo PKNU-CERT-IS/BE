@@ -12,9 +12,10 @@ import org.certis.studyplatform.board.presentation.dto.response.BoardListRespons
 import org.certis.studyplatform.response.GlobalResponseHandler;
 import org.certis.studyplatform.response.ResponseStatus;
 import org.certis.studyplatform.shared.security.CurrentUser;
-import org.certis.studyplatform.shared.security.MockCurrentUserProvider;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.certis.studyplatform.board.presentation.dto.response.BoardStatsResponseDto;
 
@@ -24,7 +25,6 @@ import org.certis.studyplatform.board.presentation.dto.response.BoardStatsRespon
 public class BoardController {
 
     private final BoardFacadeService boardFacadeService;
-    private final MockCurrentUserProvider mockCurrentUserProvider;
 
     // 게시글 키워드 검색 조회
     @GetMapping("/keyword")
@@ -38,11 +38,9 @@ public class BoardController {
    // 게시글 id 에 의한 상세 페이지 정보 조회
     @GetMapping("/detail/{id}")
     public ResponseEntity<GlobalResponseHandler<BoardDetailResponseDto>> getBoardDetail(
-            @PathVariable Long id
-//            , @AuthenticationPrincipal CurrentUser currentUser
+            @PathVariable Long id,
+            @AuthenticationPrincipal CurrentUser currentUser
     ) {
-        CurrentUser currentUser = mockCurrentUserProvider.getMockCurrentUser();
-
         BoardDetailResponseDto boardDetail = boardFacadeService.getBoardDetail(id, currentUser.getId());
 
         return GlobalResponseHandler.success(ResponseStatus.BOARD_FIND_SUCCESS, boardDetail);
@@ -50,12 +48,11 @@ public class BoardController {
 
     // 게시글 생성
     @PostMapping("/create")
+    @PreAuthorize("hasRole('STAFF') or hasRole('VICECHAIRMAN') or hasRole('CHAIRMAN') or hasRole('ADMIN')") // 게시글 생성은 STAFF 이상 부터
     public ResponseEntity<GlobalResponseHandler<Void>> createBoard(
-            @Valid @RequestBody BoardCreateRequestDto request
-//            , @AuthenticationPrincipal CurrentUser currentUser
+            @Valid @RequestBody BoardCreateRequestDto request,
+            @AuthenticationPrincipal CurrentUser currentUser
     ) {
-        CurrentUser currentUser = mockCurrentUserProvider.getMockCurrentUser();
-
         boardFacadeService.createBoard(request, currentUser.getId());
 
         return GlobalResponseHandler.success(ResponseStatus.BOARD_CREATE_SUCCESS);
@@ -63,12 +60,12 @@ public class BoardController {
 
     // 게시글 수정
     @PutMapping("/edit/{id}")
+    @PreAuthorize("hasRole('STAFF') or hasRole('VICECHAIRMAN') or hasRole('CHAIRMAN') or hasRole('ADMIN')") // 게시글 수정은 STAFF 이상 부터
     public ResponseEntity<GlobalResponseHandler<Void>> updateBoard(
             @PathVariable Long id,
-            @Valid @RequestBody BoardUpdateRequestDto request
-//            , @AuthenticationPrincipal CurrentUser currentUser
+            @Valid @RequestBody BoardUpdateRequestDto request,
+            @AuthenticationPrincipal CurrentUser currentUser
     ) {
-        CurrentUser currentUser = mockCurrentUserProvider.getMockCurrentUser();
 
         boardFacadeService.updateBoard(id, request, currentUser.getId());
 
@@ -77,12 +74,11 @@ public class BoardController {
 
     // 게시글 삭제
     @DeleteMapping("/delete/{id}")
+    @PreAuthorize("hasRole('STAFF') or hasRole('VICECHAIRMAN') or hasRole('CHAIRMAN') or hasRole('ADMIN')") // 게시글 삭제는 STAFF 이상 부터
     public ResponseEntity<GlobalResponseHandler<Void>> deleteBoard(
-            @PathVariable Long id
-//            , @AuthenticationPrincipal CurrentUser currentUser
+            @PathVariable Long id,
+            @AuthenticationPrincipal CurrentUser currentUser
     ) {
-
-        CurrentUser currentUser = mockCurrentUserProvider.getMockCurrentUser();
 
         boardFacadeService.deleteBoard(id, currentUser.getId(),currentUser.getRole());
 
@@ -92,11 +88,9 @@ public class BoardController {
     // 게시글 좋아요 토글 ( Redis 활용 )
     @PostMapping("/like/{id}")
     public ResponseEntity<GlobalResponseHandler<BoardLikeResponseDto>> toggleLike(
-            @PathVariable Long id
-//            , @AuthenticationPrincipal CurrentUser currentUser
+            @PathVariable Long id,
+            @AuthenticationPrincipal CurrentUser currentUser
     ) {
-        CurrentUser currentUser = mockCurrentUserProvider.getMockCurrentUser();
-
         BoardLikeResponseDto likeResponse = boardFacadeService.toggleLike(id, currentUser.getId());
 
         if(likeResponse.isLiked()){

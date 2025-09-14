@@ -3,6 +3,7 @@ package org.certis.studyplatform.study.presentation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.certis.studyplatform.shared.security.CurrentUser;
 import org.certis.studyplatform.study.application.StudyParticipantFacadeService;
 import org.certis.studyplatform.study.domain.StudyParticipantStatus;
 import org.certis.studyplatform.study.presentation.dto.request.*;
@@ -13,12 +14,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 /**
  * Study Participant Controller
  *
- * 프로젝트 참가 관련 REST API 컨트롤러
+ *스터디
+ *  참가 관련 REST API 컨트롤러
  * Clean Architecture Presentation Layer
  */
 @RestController
@@ -31,22 +35,23 @@ StudyParticipantController {
     private final StudyParticipantFacadeService studyParticipantFacadeService;
 
     // ================================================================
-    // STUDY JOIN OPERATIONS - 프로젝트 참가 관리
+    // STUDY JOIN OPERATIONS -스터디
+    // 참가 관리
     // ================================================================
 
     /**
-     * 프로젝트 참가 신청
-     *
+     * 스터디 참가 신청
      * @param requestDto 참가 신청 요청 DTO
      * @return 참가 신청 결과
      */
     @PostMapping("/join/register")
     public ResponseEntity<GlobalResponseHandler<StudyJoinResponseDto>> registerJoinStudy(
-            @Valid @RequestBody StudyJoinRequestDto requestDto) {
-
+            @Valid @RequestBody StudyJoinRequestDto requestDto,
+            @AuthenticationPrincipal CurrentUser currentUser
+            ) {
         log.info("Controller: Register study join request - studyId: {}", requestDto.getStudyId());
 
-        StudyJoinResponseDto responseDto = studyParticipantFacadeService.registerJoinStudy(requestDto);
+        StudyJoinResponseDto responseDto = studyParticipantFacadeService.registerJoinStudy(requestDto, currentUser.getId());
 
         log.info("Controller: Study join registered successfully - participantId: {}",
                 responseDto.getParticipantId());
@@ -55,18 +60,20 @@ StudyParticipantController {
     }
 
     /**
-     * 프로젝트 참가 신청 취소
+     * 스터디 참가 신청 취소
      *
      * @param requestDto 참가 신청 취소 요청 DTO
      * @return 취소 결과
      */
     @DeleteMapping("/join/cancel")
     public ResponseEntity<GlobalResponseHandler<Void>> cancelJoinStudy(
-            @Valid @RequestBody StudyJoinCancelRequestDto requestDto) {
+            @Valid @RequestBody StudyJoinCancelRequestDto requestDto,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
 
         log.info("Controller: Cancel study join request - studyId: {}", requestDto.getStudyId());
 
-        studyParticipantFacadeService.cancelJoinStudy(requestDto);
+        studyParticipantFacadeService.cancelJoinStudy(requestDto, currentUser.getId());
 
         log.info("Controller: Study join cancelled successfully - studyId: {}",
                 requestDto.getStudyId());
@@ -75,20 +82,22 @@ StudyParticipantController {
     }
 
     /**
-     * 프로젝트 참가 승인
+     * 스터디 참가 승인
      *
      * @param requestDto 참가 승인 요청 DTO
      * @return 승인 결과
      */
     @PostMapping("/join/approve")
     public ResponseEntity<GlobalResponseHandler<StudyParticipantStatusUpdateResponseDto>> approveJoinStudy(
-            @Valid @RequestBody StudyJoinApproveRequestDto requestDto) {
+            @Valid @RequestBody StudyJoinApproveRequestDto requestDto,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
 
         log.info("Controller: Approve study join request - participantId: {}",
                 requestDto.getParticipantId());
 
         StudyParticipantStatusUpdateResponseDto responseDto =
-                studyParticipantFacadeService.approveJoinStudy(requestDto);
+                studyParticipantFacadeService.approveJoinStudy(requestDto, currentUser.getId());
 
         log.info("Controller: Study join approved successfully - participantId: {}",
                 responseDto.getParticipantId());
@@ -97,20 +106,23 @@ StudyParticipantController {
     }
 
     /**
-     * 프로젝트 참가 거절
+     *스터디
+     *  참가 거절
      *
      * @param requestDto 참가 거절 요청 DTO
      * @return 거절 결과
      */
     @PostMapping("/join/reject")
     public ResponseEntity<GlobalResponseHandler<StudyParticipantStatusUpdateResponseDto>> rejectJoinStudy(
-            @Valid @RequestBody StudyJoinRejectRequestDto requestDto) {
+            @Valid @RequestBody StudyJoinRejectRequestDto requestDto,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
 
         log.info("Controller: Reject study join request - participantId: {}",
                 requestDto.getParticipantId());
 
         StudyParticipantStatusUpdateResponseDto responseDto =
-                studyParticipantFacadeService.rejectJoinStudy(requestDto);
+                studyParticipantFacadeService.rejectJoinStudy(requestDto, currentUser.getId());
 
         log.info("Controller: Study join rejected successfully - participantId: {}",
                 responseDto.getParticipantId());
@@ -119,13 +131,13 @@ StudyParticipantController {
     }
 
     // ================================================================
-    // STUDY PRESENTATION QUERY OPERATIONS - 프로젝트 참가자 조회
+    // STUDY PRESENTATION QUERY OPERATIONS -스터디
+    // 참가자 조회
     // ================================================================
 
     /**
-     * 프로젝트별 참가자 목록 조회
-     *
-     * @param studyId 프로젝트 ID
+     *스터디별 참가자 목록 조회
+     * @param studyId 스터디 ID
      * @param status 참가자 상태 (선택적)
      * @param pageable 페이징 정보
      * @return 참가자 목록
@@ -147,9 +159,9 @@ StudyParticipantController {
     }
 
     /**
-     * 프로젝트별 모든 참가자 목록 조회
+     *스터디별 모든 참가자 목록 조회
      *
-     * @param studyId 프로젝트 ID
+     * @param studyId 스터디 ID
      * @param pageable 페이징 정보
      * @return 모든 참가자 목록
      */
@@ -169,11 +181,11 @@ StudyParticipantController {
     }
 
     /**
-     * 사용자별 참가 프로젝트 목록 조회
+     * 사용자별 참가스터디 목록 조회
      *
      * @param memberId 회원 ID
      * @param pageable 페이징 정보
-     * @return 참가 프로젝트 목록
+     * @return 참가스터디 목록
      */
     @GetMapping("/members/{memberId}/participations")
     public ResponseEntity<GlobalResponseHandler<Page<StudyParticipantSummaryResponseDto>>> getMemberParticipations(
@@ -196,9 +208,10 @@ StudyParticipantController {
     // ================================================================
 
     /**
-     * 프로젝트별 대기 중인 참가 신청 목록 조회 (프로젝트 생성자용)
+     * 스터디별 대기 중인 참가 신청 목록 조회 스터디
+     * 생성자용)
      *
-     * @param studyId 프로젝트 ID
+     * @param studyId 스터디 ID
      * @param pageable 페이징 정보
      * @return 대기 중인 참가 신청 목록
      */
@@ -218,9 +231,10 @@ StudyParticipantController {
     }
 
     /**
-     * 프로젝트별 승인된 참가자 목록 조회
+     * 스터디별 승인된 참가자 목록 조회
      *
-     * @param studyId 프로젝트 ID
+     * @param studyId 스터디 ID
+     *
      * @param pageable 페이징 정보
      * @return 승인된 참가자 목록
      */

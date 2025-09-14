@@ -23,7 +23,6 @@ import org.certis.studyplatform.study.application.query.StudyParticipantQuerySer
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.certis.studyplatform.shared.security.MockCurrentUserProvider;
 
 @Service
 @RequiredArgsConstructor
@@ -36,7 +35,6 @@ public class StudyParticipantFacadeService {
     private final StudyParticipantQueryService participantQueryService;
     private final StudyApplicationCommandMapper commandMapper;
     private final StudyApplicationDtoMapper dtoMapper;
-    private final MockCurrentUserProvider currentUserProvider;
 
     // ================================================================
     // STUDY PARTICIPANT OPERATIONS - 프로젝트 참가 관리
@@ -45,10 +43,8 @@ public class StudyParticipantFacadeService {
     /**
      * 프로젝트 참가 신청
      */
-    public StudyJoinResponseDto registerJoinStudy(StudyJoinRequestDto requestDto) {
+    public StudyJoinResponseDto registerJoinStudy(StudyJoinRequestDto requestDto, Long currentUserId) {
         log.info("Facade: Registering study join - studyId: {}", requestDto.getStudyId());
-
-        Long currentUserId = currentUserProvider.getMockCurrentUser().getId();
 
         // DTO → Command Object 변환
         CreateStudyParticipantCommand command = commandMapper
@@ -67,10 +63,8 @@ public class StudyParticipantFacadeService {
     /**
      * 프로젝트 참가 신청 취소
      */
-    public void cancelJoinStudy(StudyJoinCancelRequestDto requestDto) {
+    public void cancelJoinStudy(StudyJoinCancelRequestDto requestDto, Long currentUserId) {
         log.info("Facade: Cancelling study join - studyId: {}", requestDto.getStudyId());
-
-        Long currentUserId = currentUserProvider.getMockCurrentUser().getId();
 
         // DTO → Command Object 변환
         CancelStudyParticipantCommand command = commandMapper
@@ -85,10 +79,8 @@ public class StudyParticipantFacadeService {
     /**
      * 프로젝트 참가 승인
      */
-    public StudyParticipantStatusUpdateResponseDto approveJoinStudy(StudyJoinApproveRequestDto requestDto) {
+    public StudyParticipantStatusUpdateResponseDto approveJoinStudy(StudyJoinApproveRequestDto requestDto, Long currentUserId) {
         log.info("Facade: Approving study join - participantId: {}", requestDto.getParticipantId());
-
-        Long currentUserId = currentUserProvider.getMockCurrentUser().getId();
 
         // DTO → Command Object 변환
         UpdateStudyParticipantStatusCommand command = commandMapper
@@ -108,10 +100,8 @@ public class StudyParticipantFacadeService {
     /**
      * 프로젝트 참가 거절
      */
-    public StudyParticipantStatusUpdateResponseDto rejectJoinStudy(StudyJoinRejectRequestDto requestDto) {
+    public StudyParticipantStatusUpdateResponseDto rejectJoinStudy(StudyJoinRejectRequestDto requestDto, Long currentUserId) {
         log.info("Facade: Rejecting study join - participantId: {}", requestDto.getParticipantId());
-
-        Long currentUserId = currentUserProvider.getMockCurrentUser().getId();
 
         // DTO → Command Object 변환
         UpdateStudyParticipantStatusCommand command = commandMapper

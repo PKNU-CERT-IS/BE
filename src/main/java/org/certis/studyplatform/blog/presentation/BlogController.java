@@ -14,11 +14,13 @@ import org.certis.studyplatform.blog.presentation.dto.response.BlogEnableReferen
 import org.certis.studyplatform.blog.presentation.dto.response.BlogSummaryResponseDto;
 import org.certis.studyplatform.response.GlobalResponseHandler;
 import org.certis.studyplatform.response.ResponseStatus;
+import org.certis.studyplatform.shared.security.CurrentUser;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -50,18 +52,20 @@ public class BlogController {
     private final BlogFacadeService blogFacadeService;
 
     /**
-     * 블로그 생성 (임시 - Spring Security 미구축 상태)
+     * 블로그 생성
      *
      * @param request 블로그 생성 요청 DTO (authorId, creatorName 포함)
      * @return 생성된 블로그 정보
      */
     @PostMapping("/create")
     public ResponseEntity<GlobalResponseHandler<Void>> createBlog(
-            @Valid @RequestBody BlogCreateRequestDto request) {
+            @Valid @RequestBody BlogCreateRequestDto request,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
         log.info("REST: Creating blog - {}", request.getTitle());
 
         // Facade Service 호출
-        blogFacadeService.createBlog(request);
+        blogFacadeService.createBlog(request, currentUser.getId());
 
         log.info("REST: Blog created successfully");
 
@@ -69,35 +73,39 @@ public class BlogController {
     }
 
     /**
-     * 블로그 정보 수정 (임시 - Spring Security 미구축 상태)
+     * 블로그 정보 수정
      *
      * @param request 블로그 수정 요청 DTO (blogId, requesterId 포함)
      * @return 수정된 블로그 정보
      */
     @PutMapping("/update")
     public ResponseEntity<GlobalResponseHandler<Void>> updateBlog(
-            @Valid @RequestBody BlogUpdateRequestDto request) {
+            @Valid @RequestBody BlogUpdateRequestDto request,
+            @AuthenticationPrincipal CurrentUser currentUser
+            ) {
         log.info("REST: Updating blog - ID: {}", request.getBlogId());
 
         // Facade Service 호출
-        blogFacadeService.updateBlog(request);
+        blogFacadeService.updateBlog(request,currentUser.getId());
 
         return GlobalResponseHandler.success(ResponseStatus.BLOG_UPDATE_SUCCESS);
     }
 
     /**
-     * 블로그 정보 삭제 (임시 - Spring Security 미구축 상태)
+     * 블로그 정보 삭제
      *
      * @param request 블로그 삭제 요청 DTO (blogId, requesterId 포함)
      * @return 성공 응답
      */
     @DeleteMapping("/delete")
     public ResponseEntity<GlobalResponseHandler<Void>> deleteBlog(
-            @Valid @RequestBody BlogDeleteRequestDto request) {
-        log.info("REST: Deleting blog - ID: {} by requester: {}", request.getBlogId(), request.getRequesterId());
+            @Valid @RequestBody BlogDeleteRequestDto request,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
+        log.info("REST: Deleting blog - ID: {} by requester: {}", request.getBlogId(), currentUser.getId());
 
         // Facade Service 호출
-        blogFacadeService.deleteBlog(request);
+        blogFacadeService.deleteBlog(request,currentUser.getId());
 
         log.info("REST: Blog deleted successfully - ID: {}", request.getBlogId());
 
@@ -195,79 +203,4 @@ public class BlogController {
         return GlobalResponseHandler.success(ResponseStatus.BLOG_FIND_SUCCESS, result);
     }
 
-
-
-
-    //    /**
-//     * 블로그 생성 (Spring Security 구축 후 사용)
-//     *
-//     * @param request 블로그 생성 요청 DTO
-//     * @param currentUser 현재 로그인한 사용자 (작성자)
-//     * @return 생성된 블로그 정보
-//     */
-//    @PostMapping("/create")
-//    public ResponseEntity<GlobalResponseHandler<BlogCreatedVo>> createBlog(
-//            @Valid @RequestBody BlogCreateRequestDto request,
-//            @AuthenticationPrincipal CurrentUser currentUser) {
-//        log.info("REST: Creating blog - {}", request.getTitle());
-//
-//        // Facade Service 호출
-//        BlogCreatedVo createdVo = blogFacadeService.createBlog(
-//            request,
-//            currentUser.getId(),
-//            currentUser.getName()
-//        );
-//
-//        log.info("REST: Blog created successfully - ID: {}", createdVo.id());
-//
-//        return GlobalResponseHandler.success(ResponseStatus.BLOG_CREATE_SUCCESS, createdVo);
-//    }
-//
-//    /**
-//     * 블로그 정보 수정 (Spring Security 구축 후 사용)
-//     *
-//     * @param blogId 블로그 ID (쿼리 파라미터)
-//     * @param request 블로그 수정 요청 DTO
-//     * @param currentUser 현재 로그인한 사용자
-//     * @return 수정된 블로그 정보
-//     */
-//    @PutMapping("/update")
-//    public ResponseEntity<GlobalResponseHandler<BlogUpdatedVo>> updateBlog(
-//            @RequestParam Long blogId,
-//            @Valid @RequestBody BlogUpdateRequestDto request,
-//            @AuthenticationPrincipal CurrentUser currentUser) {
-//        log.info("REST: Updating blog - ID: {}", blogId);
-//
-//        // Facade Service 호출
-//        BlogUpdatedVo updatedVo = blogFacadeService.updateBlog(
-//            blogId,
-//            request,
-//            currentUser.getId()
-//        );
-//
-//        log.info("REST: Blog updated successfully - ID: {}", updatedVo.id());
-//
-//        return GlobalResponseHandler.success(ResponseStatus.BLOG_UPDATE_SUCCESS, updatedVo);
-//    }
-//
-//    /**
-//     * 블로그 정보 삭제 (Spring Security 구축 후 사용)
-//     *
-//     * @param blogId 블로그 ID (쿼리 파라미터)
-//     * @param currentUser 현재 로그인한 사용자
-//     * @return 성공 응답
-//     */
-//    @DeleteMapping("/delete")
-//    public ResponseEntity<GlobalResponseHandler<Void>> deleteBlog(
-//            @RequestParam Long blogId,
-//            @AuthenticationPrincipal CurrentUser currentUser) {
-//        log.info("REST: Deleting blog - ID: {}", blogId);
-//
-//        // Facade Service 호출
-//        blogFacadeService.deleteBlog(blogId, currentUser.getId());
-//
-//        log.info("REST: Blog deleted successfully - ID: {}", blogId);
-//
-//        return GlobalResponseHandler.success(ResponseStatus.BLOG_DELETE_SUCCESS);
-//    }
 }

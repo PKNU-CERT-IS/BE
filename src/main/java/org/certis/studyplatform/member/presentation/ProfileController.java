@@ -32,6 +32,7 @@ import java.util.List;
  * - 관련된 스터디/프로젝트/블로그 정보 조회
  * - HTTP 요청/응답 처리
  * - 입력 검증 및 응답 포맷팅
+ * memberId -> currentUser 정보로 조회
  */
 @RestController
 @RequestMapping("/api/v1/profile")
@@ -43,167 +44,84 @@ public class ProfileController {
 
     /**
      * 프로필 정보 조회
-     * GET /api/v1/profile/me/{memberId}
+     * GET /api/v1/profile/me
      */
-    // TODO: 원시타입에서 DTO 로 변환 필요
-    @GetMapping("/me/{memberId}")
+    @GetMapping("/me")
     public ResponseEntity<GlobalResponseHandler<ProfileInfoResponseDto>> getProfile(
-            @PathVariable Long memberId) {
-        log.info("REST: Getting profile for member ID: {}", memberId);
+            @AuthenticationPrincipal CurrentUser currentUser) {
+        log.info("REST: Getting profile for member ID: {}", currentUser.getId());
 
-        ProfileInfoResponseDto profileResponseDto = profileFacadeService.getMyProfile(memberId);
+        ProfileInfoResponseDto profileResponseDto = profileFacadeService.getMyProfile(currentUser.getId());
 
-        log.info("REST: Profile retrieved successfully for member ID: {}", memberId);
+        log.info("REST: Profile retrieved successfully for member ID: {}", currentUser.getId());
 
         return GlobalResponseHandler.success(ResponseStatus.PROFILE_FIND_SUCCESS, profileResponseDto);
     }
 
     /**
      * 프로필 정보 수정
-     * PUT /api/v1/profile/me/{memberId}
+     * PUT /api/v1/profile/me
      */
-    @PutMapping("/me/{memberId}")
+    @PutMapping("/me")
     public ResponseEntity<GlobalResponseHandler<Void>> updateProfile(
-            @PathVariable Long memberId,
+            @AuthenticationPrincipal CurrentUser currentUser,
             @Valid @RequestBody ProfileUpdateRequestDto request) {
-        log.info("REST: Updating profile for member ID: {}", memberId);
+        log.info("REST: Updating profile for member ID: {}", currentUser.getId());
 
-        profileFacadeService.updateMyProfile(memberId, request);
+        profileFacadeService.updateMyProfile(currentUser.getId(), request);
 
-        log.info("REST: Profile updated successfully for member ID: {}", memberId);
+        log.info("REST: Profile updated successfully for member ID: {}", currentUser.getId());
 
         return GlobalResponseHandler.success(ResponseStatus.PROFILE_UPDATE_SUCCESS);
     }
 
     /**
      * 스터디 내용 조회
-     * GET /api/v1/profile/{memberId}/study
+     * GET /api/v1/profile/me/study
      */
-    // TODO: 원시타입에서 DTO 로 변환 필요
-    @GetMapping("/{memberId}/study")
+    @GetMapping("/me/study")
     public ResponseEntity<GlobalResponseHandler<List<ProfileStudyResponseDto>>> getStudies(
-            @PathVariable Long memberId) {
-        log.info("REST: Getting studies for member ID: {}", memberId);
+            @AuthenticationPrincipal CurrentUser currentUser) {
+        log.info("REST: Getting studies for member ID: {}", currentUser);
 
-        List<ProfileStudyResponseDto> studies = profileFacadeService.getMyStudies(memberId);
+        List<ProfileStudyResponseDto> studies = profileFacadeService.getMyStudies(currentUser.getId());
 
-        log.info("REST: Found {} studies for member ID: {}", studies.size(), memberId);
+        log.info("REST: Found {} studies for member ID: {}", studies.size(), currentUser.getId());
 
         return GlobalResponseHandler.success(ResponseStatus.PROFILE_FIND_SUCCESS, studies);
     }
 
     /**
      * 프로젝트 내용 조회
-     * GET /api/v1/profile/{memberId}/project
+     * GET /api/v1/profile/me/project
      */
-    // TODO: 원시타입에서 DTO 로 변환 필요
-    @GetMapping("/{memberId}/project")
+    @GetMapping("/me/project")
     public ResponseEntity<GlobalResponseHandler<List<ProfileProjectResponseDto>>> getProjects(
-            @PathVariable Long memberId) {
-        log.info("REST: Getting projects for member ID: {}", memberId);
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
+        log.info("REST: Getting projects for member ID: {}", currentUser.getId());
 
-        List<ProfileProjectResponseDto> projects = profileFacadeService.getMyProjects(memberId);
+        List<ProfileProjectResponseDto> projects = profileFacadeService.getMyProjects(currentUser.getId());
 
-        log.info("REST: Found {} projects for member ID: {}", projects.size(), memberId);
+        log.info("REST: Found {} projects for member ID: {}", projects.size(), currentUser.getId());
 
         return GlobalResponseHandler.success(ResponseStatus.PROFILE_FIND_SUCCESS, projects);
     }
 
     /**
      * 블로그 내용 조회
-     * GET /api/v1/profile/{memberId}/blog
+     * GET /api/v1/profile/me/blog
      */
-    // TODO: 원시타입에서 DTO 로 변환 필요
-    @GetMapping("/{memberId}/blog")
+    @GetMapping("/me/blog")
     public ResponseEntity<GlobalResponseHandler<List<ProfileBlogResponseDto>>> getBlogs(
-            @PathVariable Long memberId) {
-        log.info("REST: Getting blogs for member ID: {}", memberId);
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
+        log.info("REST: Getting blogs for member ID: {}", currentUser.getId());
 
-        List<ProfileBlogResponseDto> blogs = profileFacadeService.getMyBlogs(memberId);
+        List<ProfileBlogResponseDto> blogs = profileFacadeService.getMyBlogs(currentUser.getId());
 
-        log.info("REST: Found {} blogs for member ID: {}", blogs.size(), memberId);
+        log.info("REST: Found {} blogs for member ID: {}", blogs.size(), currentUser.getId());
 
         return GlobalResponseHandler.success(ResponseStatus.PROFILE_FIND_SUCCESS, blogs);
     }
-
-//    /**
-//     * 자신의 프로필 정보 조회
-//     * GET /api/v1/profile/me
-//     */
-//    @GetMapping("/me")
-//    public ResponseEntity<GlobalResponseHandler<ProfileInfoResponseDto>> getMyProfile(
-//            @AuthenticationPrincipal CurrentUser currentUser) {
-//        log.info("REST: Getting my profile for user ID: {}", currentUser.getId());
-//
-//        ProfileInfoResponseDto profileResponseDto = profileFacadeService.getMyProfile(currentUser.getId());
-//
-//        log.info("REST: My profile retrieved successfully for user ID: {}", currentUser.getId());
-//
-//        return GlobalResponseHandler.success(ResponseStatus.PROFILE_FIND_SUCCESS, profileResponseDto);
-//    }
-//
-//    /**
-//     * 자신의 프로필 정보 수정
-//     * PUT /api/v1/profile/me
-//     */
-//    @PutMapping("/me")
-//    public ResponseEntity<GlobalResponseHandler<Void>> updateMyProfile(
-//            @AuthenticationPrincipal CurrentUser currentUser,
-//            @Valid @RequestBody ProfileUpdateRequestDto request) {
-//        log.info("REST: Updating my profile for user ID: {}", currentUser.getId());
-//
-//        profileFacadeService.updateMyProfile(currentUser.getId(), request);
-//
-//        log.info("REST: My profile updated successfully for user ID: {}", currentUser.getId());
-//
-//        return GlobalResponseHandler.success(ResponseStatus.PROFILE_UPDATE_SUCCESS);
-//    }
-//
-//    /**
-//     * 자신이 관여한 스터디 내용 조회
-//     * GET /api/v1/profile/study
-//     */
-//    @GetMapping("/study")
-//    public ResponseEntity<GlobalResponseHandler<List<ProfileStudyResponseDto>>> getMyStudies(
-//            @AuthenticationPrincipal CurrentUser currentUser) {
-//        log.info("REST: Getting my studies for user ID: {}", currentUser.getId());
-//
-//        List<ProfileStudyResponseDto> studies = profileFacadeService.getMyStudies(currentUser.getId());
-//
-//        log.info("REST: Found {} studies for user ID: {}", studies.size(), currentUser.getId());
-//
-//        return GlobalResponseHandler.success(ResponseStatus.PROFILE_FIND_SUCCESS, studies);
-//    }
-//
-//    /**
-//     * 자신이 관여한 프로젝트 내용 조회
-//     * GET /api/v1/profile/project
-//     */
-//    @GetMapping("/project")
-//    public ResponseEntity<GlobalResponseHandler<List<ProfileProjectResponseDto>>> getMyProjects(
-//            @AuthenticationPrincipal CurrentUser currentUser) {
-//        log.info("REST: Getting my projects for user ID: {}", currentUser.getId());
-//
-//        List<ProfileProjectResponseDto> projects = profileFacadeService.getMyProjects(currentUser.getId());
-//
-//        log.info("REST: Found {} projects for user ID: {}", projects.size(), currentUser.getId());
-//
-//        return GlobalResponseHandler.success(ResponseStatus.PROFILE_FIND_SUCCESS, projects);
-//    }
-//
-//    /**
-//     * 자신이 관여한 블로그 내용 조회
-//     * GET /api/v1/profile/blog
-//     */
-//    @GetMapping("/blog")
-//    public ResponseEntity<GlobalResponseHandler<List<ProfileBlogResponseDto>>> getMyBlogs(
-//            @AuthenticationPrincipal CurrentUser currentUser) {
-//        log.info("REST: Getting my blogs for user ID: {}", currentUser.getId());
-//
-//        List<ProfileBlogResponseDto> blogs = profileFacadeService.getMyBlogs(currentUser.getId());
-//
-//        log.info("REST: Found {} blogs for user ID: {}", blogs.size(), currentUser.getId());
-//
-//        return GlobalResponseHandler.success(ResponseStatus.PROFILE_FIND_SUCCESS, blogs);
-//    }
 }

@@ -2,6 +2,7 @@ package org.certis.studyplatform.project.presentation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.certis.studyplatform.config.TestEmbeddedPostgresConfig;
+import org.certis.studyplatform.config.TestWebMvcConfig;
 import org.certis.studyplatform.project.presentation.dto.request.*;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.*;
@@ -10,6 +11,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -47,9 +49,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import({
-        TestEmbeddedPostgresConfig.class
-})
+@Import({TestEmbeddedPostgresConfig.class, TestWebMvcConfig.class})
 @ActiveProfiles("test")
 @TestPropertySource(locations = "classpath:application-test.yml")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
@@ -90,10 +90,6 @@ class ProjectControllerTest {
         dsl.execute("TRUNCATE TABLE project RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
 
-        // 보안 컨텍스트에 Mock 사용자 설정 (user1)
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken("user1", "password")
-        );
         setupTestData();
         System.out.println("✅ 테스트 데이터 설정 완료");
     }
@@ -163,13 +159,13 @@ class ProjectControllerTest {
     @Test
     @Order(3)
     @DisplayName("✏️ 프로젝트 수정 - 권한 있는 사용자의 성공적인 수정")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     void updateProject_AuthorizedUserSuccessfulUpdate() throws Exception {
         // Given: 프로젝트가 존재하고, 작성자가 수정을 요청함
         createTestProjectInDatabase();
 
         ProjectUpdateRequestDto request = new ProjectUpdateRequestDto();
         request.setProjectId(TEST_PROJECT_ID);
-        request.setRequesterId(TEST_MEMBER_ID); // 프로젝트 생성자가 수정 요청
         request.setTitle("수정된 프로젝트 제목");
         request.setDescription("수정된 프로젝트 설명입니다.");
         request.setContent("수정된 프로젝트 상세 내용입니다.");
@@ -243,13 +239,13 @@ class ProjectControllerTest {
     @Test
     @Order(6)
     @DisplayName("🗑️ 프로젝트 삭제 - 권한 있는 사용자의 성공적인 삭제")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     void deleteProject_AuthorizedUserSuccessfulDeletion() throws Exception {
         // Given: 프로젝트가 존재하고, 생성자가 삭제를 요청함
         createTestProjectInDatabase();
 
         ProjectDeleteRequestDto request = new ProjectDeleteRequestDto();
         request.setProjectId(TEST_PROJECT_ID);
-        request.setRequesterId(TEST_MEMBER_ID); // 프로젝트 생성자가 삭제 요청
 
         // When: 프로젝트 삭제 API 호출
         mockMvc.perform(delete("/api/v1/project/delete")
@@ -355,13 +351,13 @@ class ProjectControllerTest {
     @Test
     @Order(13)
     @DisplayName("❌ 프로젝트 수정 실패 - 권한 없는 사용자")
+    @WithMockUser(username = "user2", roles = {"PLAYER"})
     void updateProject_AuthorizationFailure_UnauthorizedUser() throws Exception {
         // Given: 프로젝트가 존재하지만, 다른 사용자가 수정을 시도
         createTestProjectInDatabase();
 
         ProjectUpdateRequestDto request = new ProjectUpdateRequestDto();
         request.setProjectId(TEST_PROJECT_ID);
-        request.setRequesterId(TEST_MEMBER_2_ID); // 프로젝트 생성자가 아닌 다른 사용자
         request.setTitle("무단 수정 시도");
         request.setDescription("권한이 없는 사용자의 수정 시도");
 
@@ -380,13 +376,13 @@ class ProjectControllerTest {
     @Test
     @Order(14)
     @DisplayName("❌ 프로젝트 삭제 실패 - 권한 없는 사용자")
+    @WithMockUser(username = "user2", roles = {"PLAYER"})
     void deleteProject_AuthorizationFailure_UnauthorizedUser() throws Exception {
         // Given: 프로젝트가 존재하지만, 다른 사용자가 삭제를 시도
         createTestProjectInDatabase();
 
         ProjectDeleteRequestDto request = new ProjectDeleteRequestDto();
         request.setProjectId(TEST_PROJECT_ID);
-        request.setRequesterId(TEST_MEMBER_2_ID); // 프로젝트 생성자가 아닌 다른 사용자
 
         // When & Then: HTTP 400 BadRequest 응답
         mockMvc.perform(delete("/api/v1/project/delete")

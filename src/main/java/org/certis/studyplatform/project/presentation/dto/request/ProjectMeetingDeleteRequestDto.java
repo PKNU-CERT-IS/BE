@@ -18,7 +18,4 @@ public class ProjectMeetingDeleteRequestDto {
     @Positive(message = "회의록 ID는 양수여야 합니다")
     private Long meetingId;
 
-    @NotNull(message = "요청자 ID는 필수입니다")
-    @Positive(message = "요청자 ID는 양수여야 합니다")
-    private Long requesterId;
 } 

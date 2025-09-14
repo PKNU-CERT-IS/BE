@@ -6,6 +6,7 @@ import org.certis.studyplatform.blog.domain.repository.BlogRedisRepository;
 import org.certis.studyplatform.blog.domain.vo.BlogIdVo;
 import org.certis.studyplatform.blog.presentation.dto.request.*;
 import org.certis.studyplatform.config.TestEmbeddedPostgresConfig;
+import org.certis.studyplatform.config.TestWebMvcConfig;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,7 +55,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import(TestEmbeddedPostgresConfig.class)
+@Import({TestEmbeddedPostgresConfig.class, TestWebMvcConfig.class})
 @ActiveProfiles("test")
 @TestPropertySource(locations = "classpath:application-test.yml")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
@@ -94,10 +95,7 @@ class BlogControllerTest {
         dsl.execute("TRUNCATE TABLE study RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
 
-        // 보안 컨텍스트에 Mock 사용자 설정 (user1)
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken("user1", "password")
-        );
+
         setupTestData();
         setupMockRedisRepository();
         System.out.println("✅ 테스트 데이터 설정 완료");
@@ -275,7 +273,7 @@ class BlogControllerTest {
         
         BlogDeleteRequestDto request = new BlogDeleteRequestDto();
         request.setBlogId(TEST_BLOG_ID);
-        request.setRequesterId(TEST_MEMBER_ID); // 작성자가 삭제 요청
+//        request.setRequesterId(TEST_MEMBER_ID); // 작성자가 삭제 요청
 
         // When: 블로그 삭제 API 호출
         mockMvc.perform(delete("/api/v1/blog/delete")

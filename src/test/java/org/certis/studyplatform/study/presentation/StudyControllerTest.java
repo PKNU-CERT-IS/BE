@@ -2,6 +2,7 @@ package org.certis.studyplatform.study.presentation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.certis.studyplatform.config.TestEmbeddedPostgresConfig;
+import org.certis.studyplatform.config.TestWebMvcConfig;
 import org.certis.studyplatform.study.presentation.dto.request.*;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.*;
@@ -10,6 +11,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -47,7 +49,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import(TestEmbeddedPostgresConfig.class)
+@Import({TestEmbeddedPostgresConfig.class, TestWebMvcConfig.class})
 @ActiveProfiles("test")
 @TestPropertySource(locations = "classpath:application-test.yml")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
@@ -82,10 +84,6 @@ class StudyControllerTest {
         dsl.execute("TRUNCATE TABLE study RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
 
-        // 보안 컨텍스트에 Mock 사용자 설정 (user1)
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken("user1", "password")
-        );
         setupTestData();
         System.out.println("✅ 테스트 데이터 설정 완료");
     }
@@ -104,6 +102,7 @@ class StudyControllerTest {
     @Test
     @Order(1)
     @DisplayName("📝 스터디 생성 - 성공적인 비즈니스 시나리오")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     void createStudy_SuccessfulBusinessScenario() throws Exception {
         // Given: 유효한 스터디 생성 요청이 준비됨
         StudyCreateRequestDto request = createValidStudyRequest();
@@ -154,13 +153,13 @@ class StudyControllerTest {
     @Test
     @Order(3)
     @DisplayName("✏️ 스터디 수정 - 권한 있는 사용자의 성공적인 수정")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     void updateStudy_AuthorizedUserSuccessfulUpdate() throws Exception {
         // Given: 스터디가 존재하고, 생성자가 수정을 요청함
         createTestStudyInDatabase();
         
         StudyUpdateRequestDto request = new StudyUpdateRequestDto();
         request.setStudyId(TEST_STUDY_ID);
-        request.setRequesterId(TEST_MEMBER_ID); // 생성자가 수정 요청
         request.setTitle("수정된 스터디 제목");
         request.setDescription("수정된 스터디 설명");
         request.setContent("수정된 스터디 내용입니다.");
@@ -237,13 +236,13 @@ class StudyControllerTest {
     @Test
     @Order(6)
     @DisplayName("🗑️ 스터디 삭제 - 권한 있는 사용자의 성공적인 삭제")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     void deleteStudy_AuthorizedUserSuccessfulDeletion() throws Exception {
         // Given: 스터디가 존재하고, 생성자가 삭제를 요청함
         createTestStudyInDatabase();
         
         StudyDeleteRequestDto request = new StudyDeleteRequestDto();
         request.setStudyId(TEST_STUDY_ID);
-        request.setRequesterId(TEST_MEMBER_ID); // 생성자가 삭제 요청
 
         // When: 스터디 삭제 API 호출
         mockMvc.perform(delete("/api/v1/study/delete")

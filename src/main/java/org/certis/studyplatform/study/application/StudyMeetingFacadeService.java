@@ -46,14 +46,14 @@ public class StudyMeetingFacadeService {
      *
      * @param request 회의록 생성 요청 DTO
      */
-    public void createStudyMeeting(StudyMeetingCreateRequestDto request) {
+    public void createStudyMeeting(StudyMeetingCreateRequestDto request, Long writerId) {
         log.info("MeetingFacade: Creating study meeting - studyId: {}, title: {}",
                 request.getStudyId(), request.getTitle());
         
         // DTO → Command 변환
         CreateStudyMeetingCommand command = CreateStudyMeetingCommand.of(
             request.getStudyId(),
-            request.getWriterId(),
+                writerId,
             request.getTitle(),
             request.getContent(),
             request.getParticipantIds(),
@@ -103,14 +103,14 @@ public class StudyMeetingFacadeService {
      *
      * @param request 회의록 수정 요청 DTO
      */
-    public void updateStudyMeeting(StudyMeetingUpdateRequestDto request) {
+    public void updateStudyMeeting(StudyMeetingUpdateRequestDto request, Long requesterId) {
         log.info("MeetingFacade: Updating study meeting - meetingId: {}, requesterId: {}",
-                request.getMeetingId(), request.getWriterId());
+                request.getMeetingId(),requesterId);
         
         // DTO → Command 변환
         UpdateStudyMeetingCommand command = UpdateStudyMeetingCommand.of(
             request.getMeetingId(),
-            request.getWriterId(),
+                requesterId,
             request.getTitle(),
             request.getContent(),
             request.getParticipants(),
@@ -128,14 +128,14 @@ public class StudyMeetingFacadeService {
      *
      * @param request 회의록 삭제 요청 DTO
      */
-    public void deleteStudyMeeting(StudyMeetingDeleteRequestDto request) {
+    public void deleteStudyMeeting(StudyMeetingDeleteRequestDto request, Long requesterId) {
         log.info("MeetingFacade: Deleting study meeting - meetingId: {}, requesterId: {}",
-                request.getMeetingId(), request.getRequesterId());
+                request.getMeetingId(),requesterId);
         
         // DTO → Command 변환
         DeleteStudyMeetingCommand command = DeleteStudyMeetingCommand.of(
             request.getMeetingId(),
-            request.getRequesterId()
+                requesterId
         );
         
         // Command Service 호출

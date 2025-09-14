@@ -12,7 +12,7 @@ public record RefreshTokenVo(String value, LocalDateTime expiredAt, Long memberI
         return LocalDateTime.now().isAfter(expiredAt);
     }
 
-    public static RefreshTokenVo of(String value, Long memberId, LocalDateTime expiredAt) {
+    public static RefreshTokenVo of(String value, LocalDateTime expiredAt,Long memberId) {
         return new RefreshTokenVo(value, expiredAt, memberId);
     }
 }

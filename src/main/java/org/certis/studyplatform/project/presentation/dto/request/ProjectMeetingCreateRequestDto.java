@@ -22,10 +22,6 @@ public class ProjectMeetingCreateRequestDto {
     @Positive(message = "프로젝트 ID는 양수여야 합니다")
     private Long projectId;
 
-    @NotNull(message = "작성자 ID는 필수입니다")
-    @Positive(message = "작성자 ID는 양수여야 합니다")
-    private Long writerId;
-
     @NotBlank(message = "회의록 제목은 필수입니다")
     @Size(max = 255, message = "제목은 255자를 초과할 수 없습니다")
     private String title;
