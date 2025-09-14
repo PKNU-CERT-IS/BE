@@ -18,7 +18,11 @@ public class CorsConfig {
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:3000",      // React 개발 서버
                 "http://127.0.0.1:3000",      // 동일한 주소의 다른 표현
-                "https://localhost:3000"      // HTTPS 로컬
+                "https://localhost:3000",      // HTTPS 로컬
+                "https://www.cert-is.com",
+                "https://cert-is.com", 
+                "https://cert-is.vercel.app",
+                "https://certis.mooo.com"
         ));
 
         // 허용할 HTTP 메서드

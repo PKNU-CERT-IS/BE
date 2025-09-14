@@ -81,6 +81,10 @@ dependencies {
     implementation 'org.jooq:jooq:3.20.1'
     implementation 'org.jooq:jooq-codegen:3.20.1'
 
+    // ✅ Flyway 의존성 - 운영환경용 마이그레이션
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-database-postgresql'
+
     // ✅ 유틸리티 라이브러리
     implementation('commons-io:commons-io:2.20.0') {
         exclude group: 'commons-logging'
