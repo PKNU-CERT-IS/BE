@@ -8,8 +8,11 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @Configuration
 @EnableJpaAuditing
 @EnableTransactionManagement
-@EnableJpaRepositories(basePackages = "org.certis.studyplatform")
+@EnableJpaRepositories(
+    basePackages = "org.certis.studyplatform.**.infrastructure.persistence.jpa",
+    entityManagerFactoryRef = "entityManagerFactory",
+    transactionManagerRef = "transactionManager"
+)
 public class JpaConfig {
-    // Spring Boot가 자동으로 EntityManagerFactory와 TransactionManager 생성
-    // Primary DataSource를 자동으로 사용
+    // Spring Boot 자동 설정이 Primary DataSource로 EntityManagerFactory 생성
 }

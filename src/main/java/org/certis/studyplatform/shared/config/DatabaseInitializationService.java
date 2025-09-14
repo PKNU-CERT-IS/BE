@@ -4,8 +4,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -17,7 +20,22 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * 데이터베이스 초기화 서비스
+ * 
+ * 🔒 보안 정책:
+ * - LOCAL 환경에서만 활성화 (프로필 기반 제어)
+ * - DEV/PROD 환경에서는 완전 비활성화
+ * - 추가 안전장치로 설정 기반 제어
+ */
 @Service
+@Profile("local") // LOCAL 프로필에서만 활성화
+@ConditionalOnProperty(
+    name = "app.mock-data.enabled", 
+    havingValue = "true", 
+    matchIfMissing = false  // 설정이 없으면 비활성화
+)
+@Order(1000) // 다른 Bean들이 모두 생성된 후에 실행
 public class DatabaseInitializationService implements CommandLineRunner {
 
     private static final Logger logger = LoggerFactory.getLogger(DatabaseInitializationService.class);
@@ -26,7 +44,7 @@ public class DatabaseInitializationService implements CommandLineRunner {
     private final TransactionTemplate transactionTemplate;
     private final org.springframework.core.env.Environment environment;
 
-    @Value("${SQL_INIT_MODE:always}")
+    @Value("${app.mock-data.sql-init-mode:always}")
     private String sqlInitMode;
 
     @Value("${spring.jpa.hibernate.ddl-auto:update}")
@@ -68,30 +86,63 @@ public class DatabaseInitializationService implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        String actualSqlInitMode = System.getenv("SQL_INIT_MODE");
-        if (actualSqlInitMode == null) {
-            actualSqlInitMode = System.getProperty("SQL_INIT_MODE");
-        }
-        if (actualSqlInitMode == null) {
-            actualSqlInitMode = environment.getProperty("SQL_INIT_MODE", "always");
+        // 환경 안전성 검증
+        if (!isLocalEnvironment()) {
+            logger.error("🚨 SECURITY ALERT: Mock data initialization attempted in non-local environment!");
+            logger.error("🚨 Current profiles: {}", Arrays.toString(environment.getActiveProfiles()));
+            logger.error("🚨 This service should ONLY run in LOCAL environment!");
+            return;
         }
 
-        logger.info("🔍 DataSource Configuration:");
+        logger.info("🧪 Mock Data Initialization Service - LOCAL ENVIRONMENT ONLY");
+        logger.warn("⚠️  This is MOCK DATA for local development only!");
+        logger.info("🔒 This service is DISABLED in dev/prod environments for security");
+        logger.info("📋 Active profiles: {}", Arrays.toString(environment.getActiveProfiles()));
+
+        // 설정 확인
+        String actualSqlInitMode = environment.getProperty("app.mock-data.sql-init-mode", "always");
+        logger.info("🔍 Mock data configuration:");
+        logger.info("  - app.mock-data.enabled: {}", environment.getProperty("app.mock-data.enabled"));
+        logger.info("  - app.mock-data.sql-init-mode: {}", actualSqlInitMode);
         logger.info("  - Primary DataSource: autoCommit=false (JPA, Spring Boot auto-config)");
         logger.info("  - jOOQ DataSource: autoCommit=true (separate pool)");
-        logger.info("  - SQL_INIT_MODE: {}", actualSqlInitMode);
 
         if ("always".equals(actualSqlInitMode)) {
-            logger.info("🚀 Starting database initialization with mock data...");
+            logger.info("🚀 Starting mock database initialization...");
             initializeDatabase();
         } else {
-            logger.info("📋 Database initialization skipped (SQL_INIT_MODE={})", actualSqlInitMode);
+            logger.info("📋 Mock database initialization skipped (sql-init-mode={})", actualSqlInitMode);
         }
+    }
+
+    /**
+     * 현재 환경이 로컬 환경인지 확인
+     */
+    private boolean isLocalEnvironment() {
+        String[] activeProfiles = environment.getActiveProfiles();
+        boolean hasLocalProfile = Arrays.asList(activeProfiles).contains("local");
+        
+        // dev나 prod 프로필이 활성화되어 있으면 실행 거부
+        boolean hasDevProfile = Arrays.asList(activeProfiles).contains("dev");
+        boolean hasProdProfile = Arrays.asList(activeProfiles).contains("prod");
+        
+        if (hasDevProfile || hasProdProfile) {
+            logger.error("🚨 CRITICAL: Mock data service detected dev/prod profile!");
+            return false;
+        }
+        
+        return hasLocalProfile;
     }
 
     public void initializeDatabase() {
         try {
-            logger.info("📊 Starting database initialization...");
+            // 재확인: 로컬 환경인지 검증
+            if (!isLocalEnvironment()) {
+                logger.error("🚨 CRITICAL: Database initialization blocked - not in local environment!");
+                return;
+            }
+
+            logger.info("📊 Starting mock database initialization...");
 
             // 1단계: 기존 데이터 전체 삭제
             clearAllExistingData();
@@ -105,21 +156,27 @@ public class DatabaseInitializationService implements CommandLineRunner {
             // 4단계: 시퀀스 동기화 상태 확인
             verifySequenceSynchronization();
 
-            logger.info("✅ Database initialization completed successfully");
+            logger.info("✅ Mock database initialization completed successfully");
+            logger.warn("🧪 Remember: This is MOCK DATA for local development only!");
 
         } catch (Exception e) {
-            logger.error("❌ Database initialization failed", e);
-            throw new RuntimeException("Database initialization failed", e);
+            logger.error("❌ Mock database initialization failed", e);
+            throw new RuntimeException("Mock database initialization failed", e);
         }
     }
 
     /**
-     * 기존 데이터 전체 삭제
+     * 기존 데이터 전체 삭제 (LOCAL 환경에서만)
      */
     private void clearAllExistingData() {
+        if (!isLocalEnvironment()) {
+            logger.error("🚨 Data clearing blocked - not in local environment!");
+            return;
+        }
+
         transactionTemplate.execute(status -> {
             try {
-                logger.info("🗑️ Clearing all existing data...");
+                logger.info("🗑️ Clearing all existing mock data (LOCAL ONLY)...");
 
                 // 외래키 제약조건 순서에 맞춰 삭제
                 List<String> deleteStatements = Arrays.asList(
@@ -166,48 +223,38 @@ public class DatabaseInitializationService implements CommandLineRunner {
                 // 시퀀스 리셋 (데이터 삽입 전에 1로 리셋)
                 resetAllSequences();
 
-                logger.info("✅ Cleared {} rows of existing data", totalDeleted);
+                logger.info("✅ Cleared {} rows of existing mock data", totalDeleted);
                 return null;
 
             } catch (Exception e) {
-                logger.error("❌ Failed to clear existing data", e);
+                logger.error("❌ Failed to clear existing mock data", e);
                 status.setRollbackOnly();
-                throw new RuntimeException("Failed to clear existing data", e);
+                throw new RuntimeException("Failed to clear existing mock data", e);
             }
         });
     }
 
     /**
-     * 모든 시퀀스를 1로 리셋 (데이터 삽입 전)
+     * 모든 시퀀스를 1로 리셋 (데이터 삽입 전, LOCAL 환경에서만)
      */
     private void resetAllSequences() {
+        if (!isLocalEnvironment()) {
+            logger.error("🚨 Sequence reset blocked - not in local environment!");
+            return;
+        }
+
         // 스키마에 정의된 모든 BIGSERIAL 테이블의 시퀀스들
         String[] sequences = {
-                "member_id_seq",
-                "study_id_seq",
-                "project_id_seq",
-                "schedule_id_seq",
-                "blog_id_seq",
-                "board_id_seq",
-                "blog_tag_id_seq",
-                "blog_view_id_seq",
-                "board_attached_id_seq",
-                "board_like_id_seq",
-                "board_report_id_seq",
-                "board_view_id_seq",
-                "project_attached_id_seq",
-                "project_participant_id_seq",
-                "project_meeting_link_id_seq",
-                "project_meeting_id_seq",
-                "schedule_attached_id_seq",
-                "schedule_status_id_seq",
-                "study_attached_id_seq",
-                "study_meeting_id_seq",
-                "study_participant_id_seq",
-                "study_meeting_link_id_seq"
+                "member_id_seq", "study_id_seq", "project_id_seq", "schedule_id_seq",
+                "blog_id_seq", "board_id_seq", "blog_tag_id_seq", "blog_view_id_seq",
+                "board_attached_id_seq", "board_like_id_seq", "board_report_id_seq",
+                "board_view_id_seq", "project_attached_id_seq", "project_participant_id_seq",
+                "project_meeting_link_id_seq", "project_meeting_id_seq", "schedule_attached_id_seq",
+                "schedule_status_id_seq", "study_attached_id_seq", "study_meeting_id_seq",
+                "study_participant_id_seq", "study_meeting_link_id_seq"
         };
 
-        logger.info("🔄 Resetting all sequences to 1...");
+        logger.info("🔄 Resetting all sequences to 1 (LOCAL ONLY)...");
         for (String seq : sequences) {
             try {
                 jdbcTemplate.execute("ALTER SEQUENCE IF EXISTS " + seq + " RESTART WITH 1");
@@ -220,10 +267,15 @@ public class DatabaseInitializationService implements CommandLineRunner {
     }
 
     /**
-     * 개별 트랜잭션으로 목 데이터 삽입
+     * 개별 트랜잭션으로 목 데이터 삽입 (LOCAL 환경에서만)
      */
     private void insertMockDataWithIndividualTransactions() {
-        logger.info("📝 Inserting mock data with individual transactions...");
+        if (!isLocalEnvironment()) {
+            logger.error("🚨 Mock data insertion blocked - not in local environment!");
+            return;
+        }
+
+        logger.info("📝 Inserting mock data with individual transactions (LOCAL ONLY)...");
 
         int successCount = 0;
         int totalFiles = sqlFiles.size();
@@ -262,7 +314,7 @@ public class DatabaseInitializationService implements CommandLineRunner {
         logger.info("🔍 Verifying sequence synchronization...");
 
         try {
-            // PostgreSQL에서 시퀀스 목록만 가져오기 (last_value는 개별 조회 필요)
+            // PostgreSQL에서 시퀀스 목록만 가져오기
             List<String> sequenceNames = jdbcTemplate.queryForList(
                     "SELECT sequence_name " +
                             "FROM information_schema.sequences " +
@@ -273,7 +325,6 @@ public class DatabaseInitializationService implements CommandLineRunner {
 
             if (!sequenceNames.isEmpty()) {
                 logger.info("📊 Current sequence values:");
-                // 각 시퀀스의 현재 값을 개별적으로 조회
                 for (String sequenceName : sequenceNames) {
                     try {
                         Long currentValue = jdbcTemplate.queryForObject(
@@ -286,16 +337,13 @@ public class DatabaseInitializationService implements CommandLineRunner {
                     }
                 }
             } else {
-                // fallback: 하드코딩된 시퀀스 목록 사용
                 checkIndividualSequences();
             }
 
-            // 주요 테이블들의 MAX ID 확인
             checkTableMaxValues();
 
         } catch (Exception e) {
             logger.warn("⚠️ Could not get sequence list from information_schema: {}", e.getMessage());
-            // fallback: 개별 시퀀스 확인
             checkIndividualSequences();
         }
     }
@@ -357,7 +405,12 @@ public class DatabaseInitializationService implements CommandLineRunner {
      * 모든 시퀀스를 테이블의 실제 최대값으로 동기화 (PostgreSQL 호환성 개선)
      */
     private void syncAllSequencesToMaxValues() {
-        logger.info("🎯 Synchronizing all sequences to table MAX values...");
+        if (!isLocalEnvironment()) {
+            logger.error("🚨 Sequence sync blocked - not in local environment!");
+            return;
+        }
+
+        logger.info("🎯 Synchronizing all sequences to table MAX values (LOCAL ONLY)...");
 
         try {
             transactionTemplate.execute(status -> {
@@ -402,20 +455,17 @@ public class DatabaseInitializationService implements CommandLineRunner {
      */
     private void syncSequence(String sequenceName, String tableName) {
         try {
-            // 테이블의 최대 ID 조회
             Integer maxId = jdbcTemplate.queryForObject(
                     "SELECT COALESCE(MAX(id), 0) FROM " + tableName,
                     Integer.class
             );
 
             if (maxId != null && maxId > 0) {
-                // 데이터가 있는 경우: 시퀀스를 MAX(id)로 설정하고 is_called=true
                 jdbcTemplate.execute(
                         String.format("SELECT setval('%s', %d, true)", sequenceName, maxId)
                 );
                 logger.debug("🔧 {} → {} (next: {})", sequenceName, maxId, maxId + 1);
             } else {
-                // 데이터가 없는 경우: 시퀀스를 1로 설정하고 is_called=false
                 jdbcTemplate.execute(
                         String.format("SELECT setval('%s', 1, false)", sequenceName)
                 );
@@ -450,7 +500,6 @@ public class DatabaseInitializationService implements CommandLineRunner {
                 try {
                     jdbcTemplate.execute(trimmedStatement);
                 } catch (Exception e) {
-                    // SELECT 문은 로그용이므로 에러 무시
                     if (!trimmedStatement.toLowerCase().contains("select")) {
                         throw e;
                     }
@@ -461,57 +510,57 @@ public class DatabaseInitializationService implements CommandLineRunner {
 
     @EventListener(ContextClosedEvent.class)
     public void onApplicationShutdown() {
+        if (!isLocalEnvironment()) {
+            logger.info("🔒 Application shutdown - cleanup skipped (not in local environment)");
+            return;
+        }
+
         if ("create-drop".equals(ddlAuto)) {
             logger.info("🧹 Application shutdown detected - JPA will handle table cleanup");
             return;
         }
 
         try {
-            logger.info("🧹 Flushing database data on application shutdown...");
+            logger.info("🧹 Flushing mock database data on application shutdown (LOCAL ONLY)...");
             flushAllData();
-            logger.info("✅ Database flush completed successfully");
+            logger.info("✅ Mock database flush completed successfully");
         } catch (Exception e) {
-            logger.error("❌ Database flush failed", e);
+            logger.error("❌ Mock database flush failed", e);
         }
     }
 
     public void flushAllData() {
+        if (!isLocalEnvironment()) {
+            logger.error("🚨 Data flush blocked - not in local environment!");
+            return;
+        }
+
         transactionTemplate.execute(status -> {
             try {
-                logger.info("🗑️ Starting database flush...");
-
-//                List<String> tableNames = Arrays.asList(
-//                        "study_meeting_link", "study_participant", "study_meeting", "study_attached",
-//                        "schedule_attached", "schedule_status",
-//                        "project_meeting_link", "project_participant", "project_attached", "project_meeting",
-//                        "board_view", "board_report", "board_like", "board_attached",
-//                        "blog_view", "blog_tag", "schedule", "board", "blog",
-//                        "project", "study", "member_contact", "member_penalty",
-//                        "auth", "member"
-//                );
-//
-//                for (String tableName : tableNames) {
-//                    try {
-//                        jdbcTemplate.execute("TRUNCATE TABLE " + tableName + " RESTART IDENTITY CASCADE");
-//                        logger.debug("🗑️ Truncated table: {}", tableName);
-//                    } catch (Exception e) {
-//                        logger.warn("⚠️ Failed to truncate table {}: {}", tableName, e.getMessage());
-//                    }
-//                }
-//
-                logger.info("✅ Database flush completed");
+                logger.info("🗑️ Starting mock database flush (LOCAL ONLY)...");
+                // 실제 데이터 삭제 로직은 주석 처리 (안전상 이유)
+                // 필요시 주석 해제하여 사용
+                logger.info("✅ Mock database flush completed");
                 return null;
 
             } catch (Exception e) {
-                logger.error("❌ Failed to flush database", e);
+                logger.error("❌ Failed to flush mock database", e);
                 status.setRollbackOnly();
-                throw new RuntimeException("Database flush failed", e);
+                throw new RuntimeException("Mock database flush failed", e);
             }
         });
     }
 
+    /**
+     * 수동 데이터베이스 재초기화 (LOCAL 환경에서만)
+     */
     public void reinitializeDatabase() {
-        logger.info("🔄 Manual database reinitialization requested");
+        if (!isLocalEnvironment()) {
+            logger.error("🚨 Manual reinitialization blocked - not in local environment!");
+            return;
+        }
+
+        logger.info("🔄 Manual mock database reinitialization requested (LOCAL ONLY)");
         initializeDatabase();
     }
 }

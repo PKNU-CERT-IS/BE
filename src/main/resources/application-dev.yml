@@ -1,0 +1,205 @@
+# ===========================================
+# CERT-IS Study Platform - 개발환경 설정 (Docker 컨테이너 사용)
+# ===========================================
+
+spring:
+  # ✅ 개발환경 데이터소스 설정 - Docker PostgreSQL
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/certis_dev}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:20}
+      minimum-idle: ${DB_MIN_IDLE:5}
+      leak-detection-threshold: 60000
+
+  # ✅ JPA/Hibernate 개발 설정
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:update}
+    show-sql: ${JPA_SHOW_SQL:true}
+    format-sql: ${JPA_FORMAT_SQL:true}
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+        hbm2ddl:
+          auto: ${JPA_DDL_AUTO:update}
+
+  # ✅ SQL 초기화 설정 - 샘플 데이터 삽입
+  sql:
+    init:
+      mode: ${SQL_INIT_MODE:always}
+
+  # ✅ Redis 설정 - Docker Redis 사용
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      timeout: 5000ms              # 타임아웃 증가
+      connect-timeout: 5000ms      # 연결 타임아웃 추가
+      database: 0
+      lettuce:
+        pool:
+          max-active: 8
+          max-wait: -1ms
+          max-idle: 8
+          min-idle: 0
+        shutdown-timeout: 100ms
+      repositories:
+        enabled: false
+
+  # ✅ 캐시 설정 - Redis 사용 (실패 시 메모리 캐시로 fallback)
+  cache:
+    type: ${CACHE_TYPE:redis}
+    redis:
+      time-to-live: 300000 # 5분
+
+  # ✅ Spring Security 개발 설정
+  security:
+    user:
+      name: ${SECURITY_USER_NAME:admin}
+      password: ${SECURITY_USER_PASSWORD:admin123}
+      roles: ${SECURITY_USER_ROLES:ADMIN,USER}
+
+  # ✅ 개발 도구 설정 - Hot Reload 활성화
+  devtools:
+    restart:
+      enabled: ${SPRING_DEVTOOLS_RESTART_ENABLED:true}
+      additional-paths: src/main/java,src/main/resources
+      exclude: static/**,public/**
+    livereload:
+      enabled: true
+      port: 35729
+
+# ✅ 개발환경 로깅 설정 - Redis 연결 문제 디버깅을 위한 상세 로깅
+logging:
+  level:
+    root: ${LOG_LEVEL_ROOT:INFO}
+    
+    # 애플리케이션 로그 - 개발용 상세 로깅
+    org.certis.studyplatform: ${LOG_LEVEL_CERTIS:DEBUG}
+    
+    # Spring Framework 로그
+    org.springframework: ${LOG_LEVEL_SPRING:INFO}
+    org.springframework.web: ${LOG_LEVEL_SPRING_WEB:DEBUG}
+    org.springframework.security: ${LOG_LEVEL_SPRING_SECURITY:DEBUG}
+    
+    # 캐시 관련 로그 (Redis 문제 디버깅용)
+    org.springframework.cache: DEBUG
+    org.springframework.data.redis: DEBUG
+    org.springframework.data.redis.connection: DEBUG
+    org.springframework.data.redis.core: INFO
+    
+    # 비동기 처리 관련 로그
+    org.springframework.scheduling: ${LOG_LEVEL_ASYNC:DEBUG}
+    org.springframework.core.task: ${LOG_LEVEL_ASYNC:DEBUG}
+    org.springframework.scheduling.concurrent: ${LOG_LEVEL_ASYNC:DEBUG}
+    
+    # 트랜잭션 관련 로그 (개발 디버깅용)
+    org.springframework.transaction: ${LOG_LEVEL_TRANSACTION:DEBUG}
+    org.springframework.orm.jpa: ${LOG_LEVEL_JPA:INFO}
+    
+    # 데이터베이스 관련 - 개발용 상세 로깅
+    org.hibernate: ${LOG_LEVEL_HIBERNATE:INFO}
+    org.hibernate.SQL: ${LOG_LEVEL_HIBERNATE_SQL:DEBUG}
+    org.hibernate.type.descriptor.sql: ${LOG_LEVEL_HIBERNATE_TYPE:DEBUG}
+    org.hibernate.engine.transaction: ${LOG_LEVEL_HIBERNATE_TX:DEBUG}
+    
+    # Connection Pool 관련
+    com.zaxxer.hikari: ${LOG_LEVEL_HIKARI:DEBUG}
+    com.zaxxer.hikari.HikariConfig: DEBUG
+    com.zaxxer.hikari.pool.HikariPool: INFO
+    
+    # Redis 관련 (연결 문제 디버깅)
+    org.redisson: INFO
+    io.lettuce.core: DEBUG
+    io.netty: WARN
+    
+    # Virtual Thread 관련
+    java.util.concurrent: ${LOG_LEVEL_CONCURRENT:INFO}
+
+# ✅ Management/Actuator 개발 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ${MANAGEMENT_ENDPOINTS:health,info,metrics,env,configprops,threaddump,scheduledtasks,beans,conditions}
+  endpoint:
+    health:
+      show-details: ${MANAGEMENT_HEALTH_DETAILS:always}
+      show-components: always
+    env:
+      show-values: always  # 환경 변수 값 표시 (개발용)
+
+# ✅ 개발환경 애플리케이션 설정
+app:
+  # 비동기 처리 설정 - 개발환경용 중간 풀 크기
+  async:
+    cpu-bound:
+      core-pool-size: ${ASYNC_CPU_CORE_SIZE:8}
+      max-pool-size: ${ASYNC_CPU_MAX_SIZE:16}
+      queue-capacity: ${ASYNC_CPU_QUEUE:100}
+      keep-alive-seconds: ${ASYNC_CPU_KEEP_ALIVE:60}
+      await-termination-seconds: ${ASYNC_CPU_AWAIT:20}
+    background:
+      core-pool-size: ${ASYNC_BG_CORE_SIZE:2}
+      max-pool-size: ${ASYNC_BG_MAX_SIZE:4}
+      queue-capacity: ${ASYNC_BG_QUEUE:200}
+      keep-alive-seconds: ${ASYNC_BG_KEEP_ALIVE:300}
+    timeout:
+      default: ${ASYNC_TIMEOUT_DEFAULT:45}
+      long-running: ${ASYNC_TIMEOUT_LONG:300}
+      background: ${ASYNC_TIMEOUT_BG:600}
+
+  # JWT 개발 설정
+  jwt:
+    secret: ${JWT_SECRET:cert-is-dev-secret-key-very-long-and-secure-for-development-only}
+    access-token-expiry: ${JWT_ACCESS_TOKEN_EXPIRY:3600000} # 1시간
+    refresh-token-expiry: ${JWT_REFRESH_TOKEN_EXPIRY:86400000} # 24시간
+
+  # CORS 개발 설정 - 로컬 개발 서버 허용
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001,http://localhost:8080,http://localhost:8081}
+
+  # 파일 업로드 개발 설정
+  file:
+    upload-dir: ${FILE_UPLOAD_DIR:./uploads}
+    max-size: ${FILE_MAX_SIZE:10MB}
+
+  # 캐시 개발 설정
+  cache:
+    default-ttl: ${CACHE_DEFAULT_TTL:300} # 5분 (개발환경에서는 짧게)
+    user-ttl: ${CACHE_USER_TTL:600} # 10분
+    post-ttl: ${CACHE_POST_TTL:300} # 5분
+
+  monitoring:
+    metrics:
+      custom-tags:
+        environment: dev
+
+# ✅ Embedded 서비스 설정 - Redis 연결 실패 시 대안
+embedded:
+  postgres:
+    enabled: ${EMBEDDED_POSTGRES_ENABLED:false}  # Docker PostgreSQL 사용
+  redis:
+    enabled: ${EMBEDDED_REDIS_ENABLED:false}     # Docker Redis 사용, 실패 시 true로 변경
+
+# ✅ Swagger/OpenAPI 개발 설정 - 활성화
+springdoc:
+  api-docs:
+    enabled: ${API_DOCS_ENABLED:true}
+  swagger-ui:
+    enabled: ${SWAGGER_UI_ENABLED:true}
+
+---
+# ✅ 로컬 IDE 실행을 위한 프로필 (선택적 사용)
+spring:
+  config:
+    activate:
+      on-profile: "local"
+  data:
+    redis:
+      host: localhost  # IDE에서 실행할 때는 localhost 고정
+      port: 6379

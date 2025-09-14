@@ -32,7 +32,7 @@ import java.sql.SQLException;
  * - 종료 순서 제어로 연결 문제 해결
  */
 @Configuration
-@Profile({"embedded", "local", "dev", "default"})
+@Profile({"embedded", "local", "default"})
 @ConditionalOnProperty(
         name = "spring.datasource.embedded.enabled",
         havingValue = "true",
