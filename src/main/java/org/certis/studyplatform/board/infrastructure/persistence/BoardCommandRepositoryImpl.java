@@ -9,13 +9,16 @@ import org.certis.studyplatform.board.infrastructure.persistence.entity.BoardAtt
 import org.certis.studyplatform.board.infrastructure.persistence.entity.BoardEntity;
 import org.certis.studyplatform.board.infrastructure.persistence.entity.BoardLikeEntity;
 import org.certis.studyplatform.board.infrastructure.persistence.entity.BoardViewEntity;
+import org.certis.studyplatform.board.infrastructure.persistence.jpa.BoardAttachedJpaRepository;
+import org.certis.studyplatform.board.infrastructure.persistence.jpa.BoardJpaRepository;
+import org.certis.studyplatform.board.infrastructure.persistence.jpa.BoardLikeJpaRepository;
+import org.certis.studyplatform.board.infrastructure.persistence.jpa.BoardViewJpaRepository;
 import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Objects;
 
 
 @Repository

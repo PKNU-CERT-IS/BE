@@ -1,6 +1,7 @@
-package org.certis.studyplatform.schedule.infrastructure.persistence;
+package org.certis.studyplatform.schedule.infrastructure.persistence.jpa;
 
 import io.lettuce.core.dynamic.annotation.Param;
+import org.certis.studyplatform.schedule.infrastructure.persistence.entity.ScheduleStatusEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;

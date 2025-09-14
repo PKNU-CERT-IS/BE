@@ -9,6 +9,10 @@ import org.certis.studyplatform.schedule.domain.model.vo.ScheduleStatusVo;
 import org.certis.studyplatform.schedule.domain.model.vo.ScheduleVo;
 import org.certis.studyplatform.schedule.domain.repository.ScheduleCommandRepository;
 import org.certis.studyplatform.schedule.infrastructure.mapper.ScheduleInfrastructureMapper;
+import org.certis.studyplatform.schedule.infrastructure.persistence.entity.ScheduleEntity;
+import org.certis.studyplatform.schedule.infrastructure.persistence.entity.ScheduleStatusEntity;
+import org.certis.studyplatform.schedule.infrastructure.persistence.jpa.ScheduleJpaRepository;
+import org.certis.studyplatform.schedule.infrastructure.persistence.jpa.ScheduleStatusJpaRepository;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
