@@ -29,7 +29,7 @@ import java.util.List;
  * - 추가 안전장치로 설정 기반 제어
  */
 @Service
-@Profile("local") // LOCAL 프로필에서만 활성화
+@Profile({"dev","local"}) // LOCAL 프로필에서만 활성화
 @ConditionalOnProperty(
     name = "app.mock-data.enabled", 
     havingValue = "true", 
@@ -126,12 +126,12 @@ public class DatabaseInitializationService implements CommandLineRunner {
         boolean hasDevProfile = Arrays.asList(activeProfiles).contains("dev");
         boolean hasProdProfile = Arrays.asList(activeProfiles).contains("prod");
         
-        if (hasDevProfile || hasProdProfile) {
-            logger.error("🚨 CRITICAL: Mock data service detected dev/prod profile!");
+        if (hasProdProfile) {
+            logger.error("🚨 CRITICAL: Mock data serwvice detected dev/prod profile!");
             return false;
         }
         
-        return hasLocalProfile;
+        return true;
     }
 
     public void initializeDatabase() {
