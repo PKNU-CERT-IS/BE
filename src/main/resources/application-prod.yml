@@ -47,6 +47,8 @@ spring:
           max-idle: 20
           min-idle: 5
         shutdown-timeout: 200ms
+      repositories:
+        enabled: false
 
   # ✅ 캐시 설정 - 운영환경에서는 Redis 필수
   cache:
