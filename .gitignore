@@ -61,3 +61,6 @@ tmp/
 .gradle/*
 .cursor/*
 .github/instructions/*
+
+.env.dev
+.env.prod

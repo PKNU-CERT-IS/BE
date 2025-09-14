@@ -1,5 +1,5 @@
 # ===========================================
-# CERT-IS Study Platform - 완전한 설정
+# CERT-IS Study Platform - 공통 설정
 # ===========================================
 
 server:
@@ -20,107 +20,66 @@ server:
 spring:
   # ✅ 프로파일 설정
   profiles:
-    active: ${SPRING_PROFILES_ACTIVE:dev}
+    active: ${SPRING_PROFILES_ACTIVE:local}
 
   # ✅ 애플리케이션 정보
   application:
     name: cert-is-study-platform
 
-  # ✅ 데이터소스 설정 - Virtual Thread 최적화 적용
+  # ✅ 기본 데이터소스 설정
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: ${DB_URL:jdbc:postgresql://localhost:5433/postgres}
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:}
     hikari:
       pool-name: CertisHikariPool
-      # ⭐ Virtual Thread 사용 시 커넥션 풀 크기 증가
-      maximum-pool-size: ${DB_POOL_SIZE:200}
-      minimum-idle: ${DB_MIN_IDLE:20}
       connection-timeout: 30000
       idle-timeout: 600000
       max-lifetime: 1800000
       leak-detection-threshold: 60000
-      # ⭐ 중요: autoCommit을 false로 설정
       auto-commit: false
       connection-test-query: SELECT 1
-      # Virtual Thread 최적화
       register-mbeans: true
       allow-pool-suspension: true
+
   lifecycle:
     timeout-per-shutdown-phase: 30s
 
-  # ✅ JPA/Hibernate 설정 - 경고 제거
+  # ✅ JPA/Hibernate 공통 설정
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: ${JPA_DDL_AUTO:update}
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
         implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
-    show-sql: ${JPA_SHOW_SQL:false}
-    format-sql: ${JPA_FORMAT_SQL:true}
     open-in-view: false
     defer-datasource-initialization: true
     properties:
       hibernate:
-        format_sql: true
-        use_sql_comments: true
         jdbc:
           lob:
             non_contextual_creation: true
-          # Virtual Thread와 함께 사용할 때 배치 크기 최적화
           batch_size: 25
           batch_versioned_data: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
         connection:
           provider_disables_autocommit: true
-        # ✅ JTA 플랫폼 경고 해결
         transaction:
           jta:
             platform: none
-        # ✅ 스키마 검증 최적화
-        hbm2ddl:
-          auto: ${JPA_DDL_AUTO:update}
         temp:
           use_jdbc_metadata_defaults: false
 
-  # ✅ SQL 초기화 설정
+  # ✅ SQL 초기화 기본 설정
   sql:
     init:
-      mode: ${SQL_INIT_MODE:never}
       separator: ";"
       continue-on-error: true
       encoding: utf-8
 
-  # ✅ Redis 설정 - 실패해도 계속 진행
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      timeout: 2000ms
-      database: 0
-      lettuce:
-        pool:
-          max-active: 8
-          max-wait: -1ms
-          max-idle: 8
-          min-idle: 0
-        shutdown-timeout: 100ms
-
-  # ✅ 캐시 설정 - Redis 실패 시 메모리 캐시 사용
+  # ✅ 기본 캐시 설정
   cache:
-    type: ${CACHE_TYPE:simple} # Redis 실패 시 simple로 fallback
     cache-names: users,posts,comments,sessions
     simple:
       spec: maximumSize=1000,expireAfterWrite=10m
-
-  # ✅ Spring Security 설정 - 개발환경 최적화
-  security:
-    user:
-      name: ${SECURITY_USER_NAME:admin}
-      password: ${SECURITY_USER_PASSWORD:admin123}
-      roles: ${SECURITY_USER_ROLES:ADMIN,USER}
 
   # ✅ 파일 업로드 설정
   servlet:
@@ -128,16 +87,6 @@ spring:
       max-file-size: ${FILE_MAX_SIZE:10MB}
       max-request-size: ${FILE_MAX_REQUEST_SIZE:50MB}
       location: ${FILE_TEMP_DIR:${java.io.tmpdir}}
-
-  # ✅ 개발 도구 설정
-  devtools:
-    restart:
-      enabled: ${SPRING_DEVTOOLS_RESTART_ENABLED:true}
-      additional-paths: src/main/java,src/main/resources
-      exclude: static/**,public/**
-    livereload:
-      enabled: true
-      port: 35729
 
   # ✅ Jackson 설정
   jackson:
@@ -158,12 +107,12 @@ spring:
     encoding: UTF-8
     fallback-to-system-locale: false
 
-  # ✅ 트랜잭션 설정 - autoCommit=false에 최적화
+  # ✅ 트랜잭션 설정
   transaction:
     default-timeout: 30
     rollback-on-commit-failure: true
 
-  # ✅ 태스크 실행 설정 (Virtual Thread 지원)
+  # ✅ 태스크 실행 설정
   task:
     execution:
       pool:
@@ -176,85 +125,36 @@ spring:
         await-termination: true
         await-termination-period: 20s
 
-# ✅ 로깅 설정 - 비동기 및 트랜잭션 로그 추가
+# ✅ 기본 로깅 설정
 logging:
-  level:
-    root: ${LOG_LEVEL_ROOT:INFO}
-
-    # 애플리케이션 로그
-    org.certis.studyplatform: ${LOG_LEVEL_CERTIS:DEBUG}
-
-    # 외부 라이브러리 로그 제어
-    org.springframework: ${LOG_LEVEL_SPRING:INFO}
-    org.springframework.web: ${LOG_LEVEL_SPRING_WEB:INFO}
-    org.springframework.security: ${LOG_LEVEL_SPRING_SECURITY:WARN}
-    org.springframework.jcl: ERROR
-    org.apache.commons.logging: ERROR
-
-    # 비동기 처리 관련 로그
-    org.springframework.scheduling: ${LOG_LEVEL_ASYNC:DEBUG}
-    org.springframework.core.task: ${LOG_LEVEL_ASYNC:DEBUG}
-    org.springframework.scheduling.concurrent: ${LOG_LEVEL_ASYNC:DEBUG}
-
-    # 트랜잭션 관련 로그 (autoCommit=false 모니터링용)
-    org.springframework.transaction: ${LOG_LEVEL_TRANSACTION:DEBUG}
-    org.springframework.orm.jpa: ${LOG_LEVEL_JPA:INFO}
-
-    # 데이터베이스 관련
-    org.hibernate: ${LOG_LEVEL_HIBERNATE:WARN}
-    org.hibernate.SQL: ${LOG_LEVEL_HIBERNATE_SQL:INFO}
-    org.hibernate.type.descriptor.sql: ${LOG_LEVEL_HIBERNATE_TYPE:INFO}
-    org.hibernate.engine.transaction: ${LOG_LEVEL_HIBERNATE_TX:DEBUG}
-    io.zonky.test.db: INFO
-
-    # Connection Pool 관련 (Hikari)
-    com.zaxxer.hikari: ${LOG_LEVEL_HIKARI:INFO}
-    com.zaxxer.hikari.HikariConfig: DEBUG
-    com.zaxxer.hikari.pool.HikariPool: INFO
-
-    # Redis 관련
-    redis.embedded: INFO
-    org.redisson: WARN
-    io.netty: WARN
-
-    # DNS resolver 경고 제거
-    io.netty.resolver.dns: ERROR
-    io.netty.resolver.dns.DnsServerAddressStreamProviders: ERROR
-
-    # JTA 경고 제거
-    org.hibernate.engine.transaction.jta.platform.internal.JtaPlatformInitiator: ERROR
-
-    # Virtual Thread 관련 (Java 21)
-    java.util.concurrent: ${LOG_LEVEL_CONCURRENT:INFO}
-    jdk.internal.misc: WARN
-
-    # 기타 라이브러리
-    com.vladsch.flexmark: WARN
-    org.jooq: WARN
-
   pattern:
     console: "%d{HH:mm:ss.SSS} [%thread] %clr(%-5level) %clr(%logger{36}){cyan} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
-
   file:
     name: ${LOG_FILE:logs/application.log}
+  level:
+    # 공통 로그 레벨
+    org.springframework.jcl: ERROR
+    org.apache.commons.logging: ERROR
+    io.netty.resolver.dns: ERROR
+    io.netty.resolver.dns.DnsServerAddressStreamProviders: ERROR
+    org.hibernate.engine.transaction.jta.platform.internal.JtaPlatformInitiator: ERROR
+    jdk.internal.misc: WARN
+    com.vladsch.flexmark: WARN
+    org.jooq: WARN
 
-# ✅ Management/Actuator 설정 - 비동기 모니터링 추가
+# ✅ Management/Actuator 공통 설정
 management:
   endpoints:
     web:
-      exposure:
-        include: ${MANAGEMENT_ENDPOINTS:health,info,metrics,env,configprops,threaddump,scheduledtasks}
       base-path: /actuator
   endpoint:
     health:
-      show-details: ${MANAGEMENT_HEALTH_DETAILS:when-authorized}
       show-components: when-authorized
     info:
       enabled: true
     metrics:
       enabled: true
-    # 스레드 덤프 및 스케줄된 태스크 모니터링
     threaddump:
       enabled: true
     scheduledtasks:
@@ -267,7 +167,6 @@ management:
     git:
       enabled: true
       mode: full
-  # JVM 메트릭 활성화
   metrics:
     export:
       simple:
@@ -279,84 +178,39 @@ management:
       executor: true
       hikaricp: true
 
-# ✅ 애플리케이션 커스텀 설정
+# ✅ 애플리케이션 공통 커스텀 설정
 app:
-  # ⭐ 비동기 처리 설정 (Virtual Thread 최적화)
-  async:
-    # CPU 집약적 작업용 스레드 풀
-    cpu-bound:
-      core-pool-size: ${ASYNC_CPU_CORE_SIZE:8} # CPU 코어 수 * 2
-      max-pool-size: ${ASYNC_CPU_MAX_SIZE:16} # CPU 코어 수 * 4
-      queue-capacity: ${ASYNC_CPU_QUEUE:100} # 대기 큐 크기
-      keep-alive-seconds: ${ASYNC_CPU_KEEP_ALIVE:60} # 유휴 스레드 유지 시간
-      await-termination-seconds: ${ASYNC_CPU_AWAIT:20} # 종료 대기 시간
-    # 백그라운드 작업용 스레드 풀
-    background:
-      core-pool-size: ${ASYNC_BG_CORE_SIZE:2} # 백그라운드 최소 스레드
-      max-pool-size: ${ASYNC_BG_MAX_SIZE:4} # 백그라운드 최대 스레드
-      queue-capacity: ${ASYNC_BG_QUEUE:500} # 백그라운드 대기 큐
-      keep-alive-seconds: ${ASYNC_BG_KEEP_ALIVE:300} # 백그라운드 유지 시간
-    # 비동기 작업 타임아웃 설정
-    timeout:
-      default: ${ASYNC_TIMEOUT_DEFAULT:30} # 기본 타임아웃 (초)
-      long-running: ${ASYNC_TIMEOUT_LONG:300} # 장시간 작업 타임아웃 (초)
-      background: ${ASYNC_TIMEOUT_BG:600} # 백그라운드 작업 타임아웃 (초)
-
-  # JWT 설정
+  # JWT 기본 설정
   jwt:
-    secret: ${JWT_SECRET:cert-is-dev-secret-key-very-long-and-secure-for-development-only}
-    access-token-expiry: ${JWT_ACCESS_TOKEN_EXPIRY:3600000} # 1시간
-    refresh-token-expiry: ${JWT_REFRESH_TOKEN_EXPIRY:86400000} # 24시간
     issuer: cert-is-platform
 
-  # CORS 설정
+  # CORS 기본 설정
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001,http://localhost:8080}
     allowed-methods: GET,POST,PUT,DELETE,PATCH,OPTIONS
     allowed-headers: "*"
     allow-credentials: true
     max-age: 3600
 
-  # 파일 업로드 설정
+  # 파일 업로드 기본 설정
   file:
-    upload-dir: ${FILE_UPLOAD_DIR:./uploads}
-    max-size: ${FILE_MAX_SIZE:10MB}
     allowed-types: ${FILE_ALLOWED_TYPES:jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx,ppt,pptx}
-
-  # 캐시 설정
-  cache:
-    default-ttl: ${CACHE_DEFAULT_TTL:600} # 10분
-    user-ttl: ${CACHE_USER_TTL:3600} # 1시간
-    post-ttl: ${CACHE_POST_TTL:1800} # 30분
 
   # 성능 모니터링 설정
   monitoring:
     performance:
       enabled: ${MONITORING_PERFORMANCE_ENABLED:true}
-      slow-query-threshold: ${MONITORING_SLOW_QUERY:1000} # 1초
-      slow-request-threshold: ${MONITORING_SLOW_REQUEST:2000} # 2초
+      slow-query-threshold: ${MONITORING_SLOW_QUERY:1000}
+      slow-request-threshold: ${MONITORING_SLOW_REQUEST:2000}
     metrics:
       enabled: ${MONITORING_METRICS_ENABLED:true}
       custom-tags:
         service: cert-is-platform
-        environment: ${spring.profiles.active}
 
 # ✅ JWT 설정 (하위 호환성)
 jwt:
   secret: ${JWT_SECRET:cert-is-dev-secret-key-very-long-and-secure-for-development-only}
   access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRY:3600000}
   refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRY:86400000}
-
-# ✅ Embedded 설정
-embedded:
-  postgres:
-    enabled: ${EMBEDDED_POSTGRES_ENABLED:true}
-    port: ${EMBEDDED_POSTGRES_PORT:5433}
-    database: ${EMBEDDED_POSTGRES_DATABASE:postgres}
-  redis:
-    enabled: ${EMBEDDED_REDIS_ENABLED:false} # 문제가 있으므로 기본 비활성화
-    port: ${EMBEDDED_REDIS_PORT:6379}
-    maxmemory: ${EMBEDDED_REDIS_MAXMEMORY:128M}
 
 # ✅ Swagger/OpenAPI 설정
 springdoc:
@@ -368,145 +222,3 @@ springdoc:
     display-request-duration: true
     display-operation-id: true
   show-actuator: true
-
----
-# ✅ 개발 환경별 설정
-spring:
-  config:
-    activate:
-      on-profile: dev
-
-# 개발 환경 특화 설정
-logging:
-  level:
-    org.certis.studyplatform: DEBUG
-    org.springframework.web: DEBUG
-    org.hibernate.SQL: DEBUG
-    org.springframework.transaction: DEBUG # 트랜잭션 디버깅
-    org.springframework.scheduling: DEBUG # 비동기 디버깅
-
-app:
-  cors:
-    allowed-origins: "*" # 개발 환경에서는 모든 origin 허용
-  async:
-    # 개발 환경에서는 작은 풀 크기 사용
-    cpu-bound:
-      core-pool-size: 4
-      max-pool-size: 8
-      queue-capacity: 50
-    background:
-      core-pool-size: 1
-      max-pool-size: 2
-      queue-capacity: 100
-
-  # 개발 환경 HikariCP 설정
-  datasource:
-    hikari:
-      maximum-pool-size: 50 # 개발 환경에서는 작은 풀 크기
-      minimum-idle: 10
-
----
-# ✅ 프로덕션 환경 설정
-spring:
-  config:
-    activate:
-      on-profile: prod
-
-  # 프로덕션 데이터소스 (외부 DB 사용) - Virtual Thread 최적화
-  datasource:
-    url: ${PROD_DB_URL:jdbc:postgresql://localhost:5433/certis_prod}
-    username: ${PROD_DB_USERNAME}
-    password: ${PROD_DB_PASSWORD}
-    hikari:
-      maximum-pool-size: 500 # 프로덕션에서는 큰 풀 크기 (Virtual Thread 대응)
-      minimum-idle: 50
-      auto-commit: false # 프로덕션에서도 autoCommit=false
-      leak-detection-threshold: 30000 # 프로덕션에서는 더 엄격한 누수 감지
-
-  jpa:
-    hibernate:
-      ddl-auto: validate # 프로덕션에서는 validate만
-    show-sql: false
-
-  cache:
-    type: redis # 프로덕션에서는 Redis 필수
-
-# 프로덕션 로깅
-logging:
-  level:
-    root: WARN
-    org.certis.studyplatform: INFO
-    org.springframework.transaction: INFO # 트랜잭션 모니터링
-    org.springframework.scheduling: INFO # 비동기 모니터링
-    com.zaxxer.hikari: INFO # 커넥션 풀 모니터링
-  file:
-    name: /var/log/cert-is/application.log
-
-# 프로덕션 비동기 설정
-app:
-  async:
-    cpu-bound:
-      core-pool-size: 16 # 프로덕션에서는 큰 풀 크기
-      max-pool-size: 32
-      queue-capacity: 200
-    background:
-      core-pool-size: 4
-      max-pool-size: 8
-      queue-capacity: 1000
-    timeout:
-      default: 60 # 프로덕션에서는 더 긴 타임아웃
-      long-running: 600
-      background: 1200
-
-# 프로덕션 설정
-embedded:
-  postgres:
-    enabled: false # 프로덕션에서는 비활성화
-  redis:
-    enabled: false # 프로덕션에서는 외부 Redis 사용
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics,threaddump # 프로덕션에서는 제한적 노출
-
----
-# ✅ 테스트 환경 설정
-spring:
-  config:
-    activate:
-      on-profile: test
-
-  # 테스트 환경에서도 autoCommit=false 설정
-  datasource:
-    hikari:
-      auto-commit: false
-      maximum-pool-size: 10 # 테스트에서는 작은 풀 크기
-      minimum-idle: 2
-
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-
-# 테스트 환경 비동기 설정
-app:
-  async:
-    cpu-bound:
-      core-pool-size: 2
-      max-pool-size: 4
-      queue-capacity: 10
-    background:
-      core-pool-size: 1
-      max-pool-size: 1
-      queue-capacity: 10
-    timeout:
-      default: 10 # 테스트에서는 짧은 타임아웃
-      long-running: 30
-      background: 60
-
-embedded:
-  postgres:
-    enabled: false
-  redis:
-    enabled: false

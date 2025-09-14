@@ -2,8 +2,8 @@ package org.certis.studyplatform.schedule.infrastructure.mapper;
 
 import org.certis.studyplatform.schedule.domain.model.vo.AdminScheduleVo;
 import org.certis.studyplatform.schedule.domain.model.vo.ScheduleVo;
-import org.certis.studyplatform.schedule.infrastructure.persistence.ScheduleEntity;
-import org.certis.studyplatform.schedule.infrastructure.persistence.ScheduleStatusEntity;
+import org.certis.studyplatform.schedule.infrastructure.persistence.entity.ScheduleEntity;
+import org.certis.studyplatform.schedule.infrastructure.persistence.entity.ScheduleStatusEntity;
 import org.springframework.stereotype.Component;
 import org.jooq.Record;
 

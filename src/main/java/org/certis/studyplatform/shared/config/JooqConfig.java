@@ -17,9 +17,10 @@ public class JooqConfig {
     /**
      * jOOQ 전용 DSLContext
      * 별도 DataSource 사용으로 트랜잭션 충돌 방지
+     * 빈 이름을 사용 코드의 Qualifier와 일치시킴
      */
-    @Bean
-    public DSLContext dslContext(@Qualifier("jooqDataSource") DataSource jooqDataSource) {
+    @Bean("jooqDataSource") // 사용 코드의 @Qualifier와 일치하도록 유지
+    public DSLContext dslContext(@Qualifier("jooqDataSourcePool") DataSource jooqDataSource) {
         DefaultConfiguration config = new DefaultConfiguration();
         config.set(SQLDialect.POSTGRES);
         config.set(jooqDataSource);
@@ -32,7 +33,7 @@ public class JooqConfig {
 
     @Bean
     public TransactionAwareDataSourceProxy jooqTransactionAwareDataSource(
-            @Qualifier("jooqDataSource") DataSource jooqDataSource) {
+            @Qualifier("jooqDataSourcePool") DataSource jooqDataSource) { // Qualifier 변경
         return new TransactionAwareDataSourceProxy(jooqDataSource);
     }
 }

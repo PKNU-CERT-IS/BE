@@ -1,4 +1,4 @@
-package org.certis.studyplatform.board.domain.repository;
+package org.certis.studyplatform.board.infrastructure.persistence.jpa;
 
 import org.certis.studyplatform.board.infrastructure.persistence.entity.BoardViewEntity;
 import org.springframework.data.jpa.repository.JpaRepository;

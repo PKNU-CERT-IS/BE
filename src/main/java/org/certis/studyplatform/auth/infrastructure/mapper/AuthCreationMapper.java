@@ -1,7 +1,7 @@
 package org.certis.studyplatform.auth.infrastructure.mapper;
 
 import org.certis.studyplatform.auth.domain.model.vo.AuthCreationVo;
-import org.certis.studyplatform.auth.infrastructure.persistence.AuthEntity;
+import org.certis.studyplatform.auth.infrastructure.persistence.entity.AuthEntity;
 import org.springframework.stereotype.Component;
 
 @Component
