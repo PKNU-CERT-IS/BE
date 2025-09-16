@@ -129,9 +129,6 @@ dependencies {
     testImplementation 'org.junit.platform:junit-platform-suite'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
-//    testImplementation('io.zonky.test:embedded-postgres:2.0.7') {
-//        exclude group: 'org.slf4j', module: 'slf4j-simple'
-//    }
     testImplementation 'it.ozimov:embedded-redis:0.7.3'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation 'org.projectlombok:lombok'
