@@ -9,6 +9,7 @@ import org.certis.studyplatform.auth.domain.repository.RedisRefreshTokenReposito
 import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.exception.InfrastructureException;
 import org.certis.studyplatform.member.domain.vo.MemberIdVo;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -21,6 +22,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class RedisRefreshTokenRepositoryImpl implements RedisRefreshTokenRepository {
 
+    @Autowired(required = false)
     private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper()
             .registerModule(new JavaTimeModule());
