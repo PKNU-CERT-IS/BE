@@ -41,7 +41,7 @@ public class PenaltyScheduler {
      * 
      * 매분 실행 (테스트 목적)
      */
-     @Scheduled(cron = "0 * * * * *") // 매분 실행 - 테스트용
+//     @Scheduled(cron = "0 * * * * *") // 매분 실행 - 테스트용
     public void processExpiredGracePeriods_ForTesting() {
         log.debug("Scheduler: Manual penalty processing for testing");
         

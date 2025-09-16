@@ -3,36 +3,53 @@
 # ===========================================
 
 spring:
-  # ✅ 운영환경 데이터소스 설정 - 외부 PostgreSQL
+
+  # 운영환경 데이터소스 설정 - 외부 PostgreSQL
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgresql:5432/certis_db}
     username: ${SPRING_DATASOURCE_USERNAME:certis_user}
     password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: ${DB_POOL_SIZE:500} # Virtual Thread 대응 큰 풀 크기
-      minimum-idle: ${DB_MIN_IDLE:50}
-      leak-detection-threshold: 30000 # 더 엄격한 누수 감지
+      maximum-pool-size: ${DB_POOL_SIZE:50}  # 500은 너무 큼, 50으로 조정
+      minimum-idle: ${DB_MIN_IDLE:10}        # 50은 너무 큼, 10으로 조정
+      leak-detection-threshold: 30000
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
 
-  # ✅ JPA/Hibernate 운영 설정
+  # JPA/Hibernate 운영 설정 - Flyway와 함께 사용
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: ${JPA_DDL_AUTO:validate} # 운영환경에서는 validate만
-    show-sql: ${JPA_SHOW_SQL:false}
-    format-sql: ${JPA_FORMAT_SQL:false}
+      ddl-auto: validate  # Flyway가 마이그레이션 담당, JPA는 검증만
+    show-sql: false
     properties:
       hibernate:
         format_sql: false
         use_sql_comments: false
-        hbm2ddl:
-          auto: validate
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        connection:
+          provider_disables_autocommit: true
+        jdbc:
+          batch_size: 25
+          batch_versioned_data: true
 
-  # ✅ SQL 초기화 설정 - 운영환경에서는 비활성화
+  # Flyway 설정 - PRODUCTION에서만 활성화
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false  # 운영환경에서는 신중하게
+    validate-on-migrate: true
+    clean-on-validation-error: false  # 운영에서는 절대 clean 안함
+    out-of-order: false
+
+  # SQL 초기화 설정 - 운영환경에서는 비활성화
   sql:
     init:
-      mode: ${SQL_INIT_MODE:never}
+      mode: never
 
-  # ✅ Redis 설정 - 운영환경에서는 필수
+  # Redis 설정 - 운영환경에서는 필수
   data:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:redis}
@@ -47,151 +64,104 @@ spring:
           max-idle: 20
           min-idle: 5
         shutdown-timeout: 200ms
-      repositories:
-        enabled: false
 
-  # ✅ 캐시 설정 - 운영환경에서는 Redis 필수
+  # 캐시 설정 - 운영환경에서는 Redis 필수
   cache:
-    type: ${CACHE_TYPE:redis}
+    type: redis
     redis:
       time-to-live: 600000 # 10분
 
-  # ✅ Spring Security 운영 설정 - 보안 강화
+  # Spring Security 운영 설정
   security:
     user:
       name: ${SECURITY_USER_NAME}
       password: ${SECURITY_USER_PASSWORD}
       roles: ${SECURITY_USER_ROLES:ADMIN}
 
-  # ✅ 개발 도구 설정 - 운영환경에서는 비활성화
+  # 개발 도구 비활성화
   devtools:
     restart:
       enabled: false
     livereload:
       enabled: false
 
-# ✅ 운영환경 로깅 설정 - 최소한의 로깅
+# 운영환경 로깅 설정
 logging:
   level:
-    root: ${LOG_LEVEL_ROOT:WARN}
-    
-    # 애플리케이션 로그 - 운영용 최소 로깅
-    org.certis.studyplatform: ${LOG_LEVEL_CERTIS:INFO}
-    
-    # Spring Framework 로그 - 최소화
-    org.springframework: ${LOG_LEVEL_SPRING:WARN}
-    org.springframework.web: ${LOG_LEVEL_SPRING_WEB:WARN}
-    org.springframework.security: ${LOG_LEVEL_SPRING_SECURITY:WARN}
-    
-    # 비동기 처리 관련 로그 - 모니터링용
-    org.springframework.scheduling: ${LOG_LEVEL_ASYNC:INFO}
-    org.springframework.core.task: ${LOG_LEVEL_ASYNC:INFO}
-    org.springframework.scheduling.concurrent: ${LOG_LEVEL_ASYNC:INFO}
-    
-    # 트랜잭션 관련 로그 - 모니터링용
-    org.springframework.transaction: ${LOG_LEVEL_TRANSACTION:INFO}
-    org.springframework.orm.jpa: ${LOG_LEVEL_JPA:WARN}
-    
-    # 데이터베이스 관련 - 운영용 최소 로깅
-    org.hibernate: ${LOG_LEVEL_HIBERNATE:WARN}
-    org.hibernate.SQL: ${LOG_LEVEL_HIBERNATE_SQL:WARN}
-    org.hibernate.type.descriptor.sql: ${LOG_LEVEL_HIBERNATE_TYPE:WARN}
-    org.hibernate.engine.transaction: ${LOG_LEVEL_HIBERNATE_TX:INFO}
-    
-    # Connection Pool 관련 - 모니터링용
-    com.zaxxer.hikari: ${LOG_LEVEL_HIKARI:INFO}
-    com.zaxxer.hikari.HikariConfig: INFO
-    com.zaxxer.hikari.pool.HikariPool: INFO
-    
-    # Redis 관련
-    org.redisson: WARN
-    io.netty: WARN
-    
-    # Virtual Thread 관련
-    java.util.concurrent: ${LOG_LEVEL_CONCURRENT:WARN}
-  
-  # 운영환경 로그 파일 설정
+    root: WARN
+    org.certis.studyplatform: INFO
+    org.springframework: WARN
+    org.springframework.web: WARN
+    org.springframework.security: WARN
+    org.hibernate: WARN
+    org.hibernate.SQL: WARN
+    org.flywaydb: INFO  # Flyway 로그는 중요하므로 INFO
+    com.zaxxer.hikari: INFO
   file:
     name: ${LOG_FILE:/var/log/cert-is/application.log}
     max-size: 100MB
     max-history: 30
-  
-  # 로그 패턴 - 운영환경용
   pattern:
     file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-},%X{spanId:-}] %logger{50} - %msg%n"
 
-# ✅ Management/Actuator 운영 설정 - 보안 강화
+# Management/Actuator 운영 설정
 management:
   endpoints:
     web:
       exposure:
-        include: ${MANAGEMENT_ENDPOINTS:health,info,metrics,threaddump} # 제한적 노출
+        include: health,info,metrics,threaddump
   endpoint:
     health:
-      show-details: ${MANAGEMENT_HEALTH_DETAILS:when-authorized}
-  # 보안을 위한 포트 분리 (선택사항)
+      show-details: when-authorized
   server:
     port: ${MANAGEMENT_PORT:8081}
 
-# ✅ 운영환경 애플리케이션 설정
+# 운영환경 애플리케이션 설정
 app:
-  # 비동기 처리 설정 - 운영환경용 큰 풀 크기
   async:
     cpu-bound:
-      core-pool-size: ${ASYNC_CPU_CORE_SIZE:16} # 운영환경에서는 큰 풀 크기
-      max-pool-size: ${ASYNC_CPU_MAX_SIZE:32}
-      queue-capacity: ${ASYNC_CPU_QUEUE:200}
-      keep-alive-seconds: ${ASYNC_CPU_KEEP_ALIVE:60}
-      await-termination-seconds: ${ASYNC_CPU_AWAIT:20}
+      core-pool-size: 16
+      max-pool-size: 32
+      queue-capacity: 200
     background:
-      core-pool-size: ${ASYNC_BG_CORE_SIZE:4}
-      max-pool-size: ${ASYNC_BG_MAX_SIZE:8}
-      queue-capacity: ${ASYNC_BG_QUEUE:1000}
-      keep-alive-seconds: ${ASYNC_BG_KEEP_ALIVE:300}
+      core-pool-size: 4
+      max-pool-size: 8
+      queue-capacity: 1000
     timeout:
-      default: ${ASYNC_TIMEOUT_DEFAULT:60} # 운영환경에서는 더 긴 타임아웃
-      long-running: ${ASYNC_TIMEOUT_LONG:600}
-      background: ${ASYNC_TIMEOUT_BG:1200}
+      default: 60
+      long-running: 600
+      background: 1200
 
-  # JWT 운영 설정 - 보안 강화
   jwt:
-    secret: ${JWT_SECRET} # 환경변수에서 반드시 설정해야 함
-    access-token-expiry: ${JWT_ACCESS_TOKEN_EXPIRY:3600000} # 1시간
-    refresh-token-expiry: ${JWT_REFRESH_TOKEN_EXPIRY:86400000} # 24시간
+    secret: ${JWT_SECRET} # 반드시 환경변수에서 설정
+    access-token-expiry: 3600000
+    refresh-token-expiry: 86400000
 
-  # CORS 운영 설정 - 제한적 origin 허용
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:https://your-domain.com,https://www.your-domain.com}
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:https://your-domain.com}
 
-  # 파일 업로드 운영 설정
   file:
     upload-dir: ${FILE_UPLOAD_DIR:/app/uploads}
-    max-size: ${FILE_MAX_SIZE:10MB}
+    max-size: 10MB
 
-  # 캐시 운영 설정
   cache:
-    default-ttl: ${CACHE_DEFAULT_TTL:600} # 10분
-    user-ttl: ${CACHE_USER_TTL:3600} # 1시간
-    post-ttl: ${CACHE_POST_TTL:1800} # 30분
+    default-ttl: 600
+    user-ttl: 3600
+    post-ttl: 1800
 
   monitoring:
     metrics:
       custom-tags:
         environment: prod
 
-# ✅ Embedded 서비스 설정 - 운영환경에서는 비활성화
+# Embedded 서비스 비활성화
 embedded:
   postgres:
-    enabled: ${EMBEDDED_POSTGRES_ENABLED:false}
+    enabled: false
   redis:
-    enabled: ${EMBEDDED_REDIS_ENABLED:false}
+    enabled: false
 
-# ✅ 운영환경 JVM 최적화 설정 (환경변수로 제어)
-# JAVA_OPTS=-Xmx1g -Xms512m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
-# -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/var/log/cert-is/
-# -Dspring.profiles.active=prod
-
-# ✅ 운영환경 보안 헤더 설정
+# 보안 설정
 server:
   forward-headers-strategy: native
   max-http-header-size: 8KB
@@ -202,9 +172,9 @@ server:
         http-only: true
         same-site: strict
 
-# ✅ Swagger/OpenAPI 운영 설정 - 선택적 비활성화
+# API 문서 비활성화
 springdoc:
   api-docs:
-    enabled: ${API_DOCS_ENABLED:false} # 운영환경에서는 비활성화 권장
+    enabled: false
   swagger-ui:
-    enabled: ${SWAGGER_UI_ENABLED:false} # 운영환경에서는 비활성화 권장
+    enabled: false

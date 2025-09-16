@@ -5,7 +5,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 
 @SpringBootApplication
-@EntityScan(basePackages = "org.certis.studyplatform.**.infrastructure.persistence.entity")
+//@EntityScan(basePackages = "org.certis.studyplatform.**.infrastructure.persistence.entity")
+@EntityScan("org.certis.studyplatform")
 public class StudyPlatformApplication {
 
     public static void main(String[] args) {

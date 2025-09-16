@@ -56,10 +56,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
 
     // ✅ 데이터베이스 - Embedded PostgreSQL
-    implementation('io.zonky.test:embedded-postgres:2.0.7') {
-        exclude group: 'org.slf4j'
-        exclude group: 'commons-logging'
-    }
+    implementation 'io.zonky.test:embedded-postgres:2.0.7'
     runtimeOnly 'org.postgresql:postgresql'
 
     // ✅ JWT 인증
@@ -124,6 +121,7 @@ dependencies {
     // ✅ jOOQ Code Generation
     jooqCodegen 'org.postgresql:postgresql'
     jooqCodegen 'org.jooq:jooq-codegen:3.20.1'
+    implementation 'com.vladmihalcea:hibernate-types-60:2.21.1'
 
     // ✅ 테스트 의존성
     testImplementation platform('org.junit:junit-bom:5.10.0')
@@ -131,9 +129,6 @@ dependencies {
     testImplementation 'org.junit.platform:junit-platform-suite'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
-    testImplementation('io.zonky.test:embedded-postgres:2.0.7') {
-        exclude group: 'org.slf4j', module: 'slf4j-simple'
-    }
     testImplementation 'it.ozimov:embedded-redis:0.7.3'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation 'org.projectlombok:lombok'
@@ -149,226 +144,67 @@ test {
     }
 }
 
-// ✅ 환경별 .env 파일 로딩 태스크
-task loadEnv {
-    group = 'environment'
-    description = 'Load environment variables from profile-specific .env file'
+// ===================================================================
+// ✅ [REFACTORED] Environment & Execution Configuration
+// ===================================================================
 
-    doFirst {
-        // 프로필 결정 (시스템 프로퍼티 > 환경변수 > 기본값)
-        def profile = System.getProperty('spring.profiles.active') 
-                   ?: System.getenv('SPRING_PROFILES_ACTIVE') 
-                   ?: 'local'
+// ✅ .env 파일을 로드하여 bootRun 태스크에 시스템 속성으로 설정하는 태스크
+tasks.register('loadEnv') {
+    description = 'Loads environment variables from a .env file based on the active profile.'
 
-        // 프로필에 따른 .env 파일 결정
-        def envFileName = getEnvFileName(profile)
-        def envFile = file(envFileName)
-        
-        println "Active profile: ${profile}"
-        println "Loading environment file: ${envFileName}"
+    // 현재 활성화된 프로필을 결정 (gradle -Pprofile=dev ... 없으면 'local' 기본값)
+    def activeProfile = project.hasProperty('profile') ? project.getProperty('profile') : 'local'
+    project.ext.activeProfile = activeProfile // 다른 태스크에서 사용할 수 있도록 저장
 
-        if (envFile.exists()) {
-            def envVars = [:]
-            envFile.eachLine { line ->
-                if (line && !line.startsWith('#') && line.contains('=')) {
-                    def parts = line.split('=', 2)
-                    if (parts.length == 2) {
-                        def key = parts[0].trim()
-                        def value = parts[1].trim()
-                        
-                        // 따옴표 제거
-                        if ((value.startsWith('"') && value.endsWith('"')) || 
-                            (value.startsWith("'") && value.endsWith("'"))) {
-                            value = value[1..-2]
-                        }
-                        
-                        envVars[key] = value
-                        System.setProperty(key, value)
+    // [FIXED] Groovy 문법에 맞는 switch-case 구문으로 수정
+    def envFileName
+    switch (activeProfile) {
+        case 'dev':
+            envFileName = '.env.dev'
+            break
+        case 'prod':
+            envFileName = '.env.prod'
+            break
+        default:
+            envFileName = '.env'
+            break
+    }
+
+    def envFile = file(envFileName)
+
+    if (envFile.exists()) {
+        println "✅ Loading environment variables from '${envFile.name}' for profile '${activeProfile}'"
+        envFile.eachLine { line ->
+            line = line.trim()
+            if (line && !line.startsWith('#') && line.contains('=')) {
+                def parts = line.split('=', 2)
+                if (parts.length == 2) {
+                    def key = parts[0].trim()
+                    def value = parts[1].trim()
+                    // 따옴표 제거
+                    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+                        value = value.substring(1, value.length() - 1)
+                    }
+                    // bootRun 태스크의 시스템 속성으로 설정
+                    tasks.named('bootRun', org.springframework.boot.gradle.tasks.run.BootRun) {
+                        systemProperty key, value
                     }
                 }
             }
-
-            // bootRun에 환경변수 적용
-            bootRun {
-                environment envVars
-                jvmArgs = ['-Xmx1g', '-Xms512m']
-            }
-
-            println "Successfully loaded ${envVars.size()} environment variables from ${envFileName}"
-            
-            // 주요 설정값 출력 (비밀번호 등은 마스킹)
-            if (envVars.containsKey('SPRING_DATASOURCE_URL')) {
-                println "Database: ${envVars['SPRING_DATASOURCE_URL']}"
-            }
-            if (envVars.containsKey('SPRING_DATA_REDIS_HOST')) {
-                println "Redis: ${envVars['SPRING_DATA_REDIS_HOST']}:${envVars['SPRING_DATA_REDIS_PORT'] ?: '6379'}"
-            }
-            
-        } else {
-            println "WARNING: ${envFileName} file not found"
-            println "Continuing with system environment variables and application.yml defaults..."
-            
-            // 기본 프로필 설정
-            System.setProperty('spring.profiles.active', profile)
         }
+    } else {
+        println "⚠️ WARNING: '${envFile.name}' not found. Continuing without it."
     }
 }
 
-// 프로필에 따른 .env 파일명 결정 함수
-def getEnvFileName(String profile) {
-    switch (profile) {
-        case 'local':
-            return '.env'
-        case 'dev':
-            return '.env.dev'
-        case 'prod':
-            return '.env.prod'
-        default:
-            return '.env'
-    }
-}
-
-// ✅ 환경별 실행 태스크들
-task runLocal {
-    group = 'environment'
-    description = 'Run application with local profile (.env)'
-    
-    doFirst {
-        System.setProperty('spring.profiles.active', 'local')
-    }
-    
-    finalizedBy 'bootRun'
-}
-
-task runDev {
-    group = 'environment'
-    description = 'Run application with dev profile (.env.dev)'
-    
-    doFirst {
-        System.setProperty('spring.profiles.active', 'dev')
-    }
-    
-    finalizedBy 'bootRun'
-}
-
-task runProd {
-    group = 'environment'
-    description = 'Run application with prod profile (.env.prod)'
-    
-    doFirst {
-        System.setProperty('spring.profiles.active', 'prod')
-    }
-    
-    finalizedBy 'bootRun'
-}
-
-// ✅ 개발용 태스크들
-task setupDev {
-    group = 'development'
-    description = 'Setup development environment'
-
-    doLast {
-        println 'Development Environment Setup:'
-        println 'Database: Embedded PostgreSQL (auto-port from 5433)'
-        println 'Redis: In-memory fallback (embedded redis optional)'
-        println 'Security: Development mode (auto-generated passwords)'
-        println 'API Docs: http://localhost:8080/swagger-ui.html'
-        println 'Actuator: http://localhost:8080/actuator'
-        println ''
-        println 'Run commands:'
-        println '  ./gradlew runLocal  - Run with .env file'
-        println '  ./gradlew runDev    - Run with .env.dev file'  
-        println '  ./gradlew runProd   - Run with .env.prod file'
-        println '  ./gradlew bootRun   - Run with auto-detected profile'
-    }
-}
-
-task cleanDev {
-    group = 'development'
-    description = 'Clean development environment'
-
-    doLast {
-        delete 'logs'
-        delete 'uploads'
-        println 'Development environment cleaned'
-    }
-}
-
-// ✅ 환경 파일 생성 헬퍼 태스크
-task createEnvFiles {
-    group = 'environment'
-    description = 'Create template .env files for all environments'
-    
-    doLast {
-        // .env (local)
-        def localEnv = file('.env')
-        if (!localEnv.exists()) {
-            localEnv.text = '''# Local Development Environment
-SPRING_PROFILES_ACTIVE=local
-SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/certis_dev
-SPRING_DATASOURCE_USERNAME=postgres
-SPRING_DATASOURCE_PASSWORD=postgres
-SPRING_DATA_REDIS_HOST=localhost
-SPRING_DATA_REDIS_PORT=6379
-
-# Local Settings
-APP_MOCK_DATA_ENABLED=true
-JWT_SECRET=local-dev-secret-key-12345
-LOG_LEVEL_ROOT=DEBUG
-'''
-            println 'Created .env file for local environment'
-        }
-        
-        // .env.dev
-        def devEnv = file('.env.dev')
-        if (!devEnv.exists()) {
-            devEnv.text = '''# Development Server Environment  
-SPRING_PROFILES_ACTIVE=dev
-SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql-dev:5432/certis_dev
-SPRING_DATASOURCE_USERNAME=postgres
-SPRING_DATASOURCE_PASSWORD=postgres
-SPRING_DATA_REDIS_HOST=redis-dev
-SPRING_DATA_REDIS_PORT=6379
-
-# Dev Settings
-APP_MOCK_DATA_ENABLED=false
-JWT_SECRET=dev-secret-key-67890
-LOG_LEVEL_ROOT=INFO
-'''
-            println 'Created .env.dev file for development environment'
-        }
-        
-        // .env.prod
-        def prodEnv = file('.env.prod')
-        if (!prodEnv.exists()) {
-            prodEnv.text = '''# Production Environment
-SPRING_PROFILES_ACTIVE=prod
-SPRING_DATASOURCE_URL=${DATABASE_URL}
-SPRING_DATASOURCE_USERNAME=${DATABASE_USERNAME}
-SPRING_DATASOURCE_PASSWORD=${DATABASE_PASSWORD}
-SPRING_DATA_REDIS_HOST=${REDIS_HOST}
-SPRING_DATA_REDIS_PORT=${REDIS_PORT}
-
-# Prod Settings
-APP_MOCK_DATA_ENABLED=false
-JWT_SECRET=${JWT_SECRET_KEY}
-LOG_LEVEL_ROOT=WARN
-'''
-            println 'Created .env.prod file for production environment'
-        }
-        
-        println ''
-        println 'Environment files created. Edit them with your specific configuration.'
-    }
-}
-
-// ✅ bootRun 최적화
+// ✅ bootRun 태스크 설정
 bootRun {
-    dependsOn loadEnv
-    
-    // 기본 프로필 설정 (loadEnv에서 오버라이드 가능)
-    if (!System.getProperty('spring.profiles.active')) {
-        systemProperty 'spring.profiles.active', 'local'
+    // 항상 loadEnv 태스크 이후에 실행되도록 설정
+    dependsOn 'loadEnv'
+
+    // loadEnv에서 결정한 활성 프로필을 Spring Boot에 전달
+    doFirst {
+        systemProperty 'spring.profiles.active', project.ext.activeProfile
     }
 
     // JVM 최적화
@@ -381,12 +217,124 @@ bootRun {
     ]
 }
 
+// ✅ 환경별 실행을 위한 편의용 태스크 (type: GradleBuild 로 변경하여 안정성 확보)
+task runLocal(type: GradleBuild) {
+    group = 'application'
+    description = 'Runs the application with the local profile.'
+    tasks = ['bootRun']
+    startParameter.projectProperties = [profile: 'local']
+}
+
+task runDev(type: GradleBuild) {
+    group = 'application'
+    description = 'Runs the application with the dev profile.'
+    tasks = ['bootRun']
+    startParameter.projectProperties = [profile: 'dev']
+}
+
+task runProd(type: GradleBuild) {
+    group = 'application'
+    description = 'Runs the application with the prod profile.'
+    tasks = ['bootRun']
+    startParameter.projectProperties = [profile: 'prod']
+}
+
+// ===================================================================
+// ✅ Helper & Utility Tasks
+// ===================================================================
+
+// ✅ 개발용 태스크들
+task setupDev {
+    group = 'development'
+    description = 'Setup development environment'
+
+    doLast {
+        println 'Development Environment Setup:'
+        println 'Database: Embedded PostgreSQL or external (check application-*.yml)'
+        println 'Redis: Embedded or external (check application-*.yml)'
+        println 'API Docs: http://localhost:8080/swagger-ui.html'
+        println 'Actuator: http://localhost:8080/actuator'
+        println ''
+        println 'Run commands:'
+        println '  ./gradlew runLocal  - Run with .env and application-local.yml'
+        println '  ./gradlew runDev    - Run with .env.dev and application-dev.yml'
+        println '  ./gradlew runProd   - Run with .env.prod and application-prod.yml'
+        println '  ./gradlew bootRun -Pprofile=<profile> - Run with a specific profile'
+    }
+}
+
+task cleanDev {
+    group = 'development'
+    description = 'Clean development environment'
+
+    doLast {
+        delete 'logs'
+        println 'Development environment cleaned'
+    }
+}
+
+// ✅ 환경 파일 생성 헬퍼 태스크 (하이브리드 방식에 맞게 수정)
+task createEnvFiles {
+    group = 'environment'
+    description = 'Create template .env files for secrets and environment-specific values.'
+
+    doLast {
+        println "This task creates .env files for secrets. Other configurations should be in application-*.yml files."
+        // .env (local)
+        def localEnv = file('.env')
+        if (!localEnv.exists()) {
+            localEnv.text = '''# [Local Environment] - 로컬 개발용 민감 정보 및 변수
+# Git에 커밋하지 마세요!
+DB_PASSWORD=
+JWT_SECRET_KEY=cert-is-local-secret-key-very-long-and-secure-for-local-development-only-never-use-in-production
+'''
+            println 'Created .env file for local environment'
+        }
+
+        // .env.dev
+        def devEnv = file('.env.dev')
+        if (!devEnv.exists()) {
+            devEnv.text = '''# [Development Server Environment] - 개발 서버용 민감 정보 및 변수
+# Git에 커밋하지 마세요!
+DB_PASSWORD=your_dev_db_password
+JWT_SECRET_KEY=use-a-secure-random-string-for-dev-environment
+'''
+            println 'Created .env.dev file for development environment'
+        }
+
+        // .env.prod
+        def prodEnv = file('.env.prod')
+        if (!prodEnv.exists()) {
+            prodEnv.text = '''# [Production Environment] - 운영 환경 변수
+# 이 파일은 참조용이며, 실제 값은 외부(Docker, K8s 등)에서 주입됩니다.
+# Git에 커밋하지 마세요!
+DB_URL=
+DB_USERNAME=
+DB_PASSWORD=
+REDIS_HOST=
+REDIS_PORT=
+JWT_SECRET_KEY=
+'''
+            println 'Created .env.prod file for production environment'
+        }
+
+        println ''
+        println 'Environment files created. Edit them with your specific configuration.'
+        println 'Remember to add `.env` and `.env.*` to your .gitignore file!'
+    }
+}
+
+
+// ===================================================================
+// ✅ jOOQ & Build Configuration
+// ===================================================================
+
 // ✅ jOOQ Code Generation Configuration - 개발 시에만 필요
 jooq {
     configuration {
         jdbc {
             driver = 'org.postgresql.Driver'
-            url = "jdbc:postgresql://${System.getenv('JOOQ_DB_HOST') ?: 'localhost'}:${System.getenv('JOOQ_DB_PORT') ?: '5433'}/${System.getenv('JOOQ_DB_NAME') ?: 'certis_local'}"
+            url = "jdbc:postgresql://${System.getenv('JOOQ_DB_HOST') ?: 'localhost'}:${System.getenv('JOOQ_DB_PORT') ?: '5433'}/${System.getenv('JOOQ_DB_NAME') ?: 'postgres'}"
             user = System.getenv('JOOQ_DB_USERNAME') ?: 'postgres'
             password = System.getenv('JOOQ_DB_PASSWORD') ?: ''
         }

@@ -51,7 +51,7 @@ spring:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
         implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
     open-in-view: false
-    defer-datasource-initialization: true
+    defer-datasource-initialization: false  # Flyway 순환 의존성 방지
     properties:
       hibernate:
         jdbc:
@@ -68,16 +68,24 @@ spring:
         temp:
           use_jdbc_metadata_defaults: false
 
+  # ✅ Flyway 기본 설정 (환경별로 Override)
+  flyway:
+    enabled: true
+    locations: classpath:db/migration/common
+    baseline-on-migrate: true
+    clean-disabled: true
+
   # ✅ SQL 초기화 기본 설정
   sql:
     init:
       separator: ";"
       continue-on-error: true
       encoding: utf-8
+      mode: never  # Flyway가 관리하므로 기본값은 never
 
   # ✅ 기본 캐시 설정
   cache:
-    cache-names: users,posts,comments,sessions
+    cache-names: users,posts,comments,sessions,refresh-tokens
     simple:
       spec: maximumSize=1000,expireAfterWrite=10m
 
@@ -124,6 +132,11 @@ spring:
       shutdown:
         await-termination: true
         await-termination-period: 20s
+
+  # ✅ AutoConfiguration - Flyway 제외 제거
+  # autoconfigure:
+  #   exclude:
+  #     - org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration
 
 # ✅ 기본 로깅 설정
 logging:
@@ -180,6 +193,10 @@ management:
 
 # ✅ 애플리케이션 공통 커스텀 설정
 app:
+  # 목 데이터 기본 설정
+  mock-data:
+    enabled: false  # 환경별로 Override
+
   # JWT 기본 설정
   jwt:
     issuer: cert-is-platform

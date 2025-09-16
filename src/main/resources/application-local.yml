@@ -1,0 +1,213 @@
+# ===========================================
+# CERT-IS Study Platform - LOCAL 환경
+# ===========================================
+
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: cert-is-study-platform
+
+  # ✅ Embedded PostgreSQL을 위한 DataSource 설정
+  datasource:
+    url: jdbc:postgresql://localhost:5433/postgres
+    username: postgres
+    password:
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: Local-Primary-HikariPool
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 20000
+      idle-timeout: 300000
+      max-lifetime: 600000
+      leak-detection-threshold: 60000
+
+  # ✅ Flyway 설정 - 공통 스키마 + 목데이터
+  flyway:
+    enabled: true
+    locations:
+      - classpath:db/migration/common # 공통 스키마
+      - classpath:db/migration/mock   # 목데이터
+    clean-disabled: false # 로컬에서는 clean 허용
+    baseline-on-migrate: true
+    validate-on-migrate: true
+    out-of-order: false
+
+  # ✅ JPA/Hibernate 설정
+  jpa:
+    hibernate:
+      ddl-auto: validate # Flyway가 스키마 관리, JPA는 검증만
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
+    show-sql: true
+    open-in-view: false
+    defer-datasource-initialization: false  # Flyway 순환 의존성 해결
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 25
+        connection:
+          provider_disables_autocommit: true
+        temp:
+          use_jdbc_metadata_defaults: false
+
+  # ✅ SQL 초기화 설정 - Flyway가 처리하므로 비활성화
+  sql:
+    init:
+      mode: never
+
+  # ✅ Redis 설정 - Embedded Redis 사용
+  data:
+    redis:
+      enabled: true
+      host: localhost
+      port: 6379  # Embedded Redis 포트
+      timeout: 2000ms
+      connect-timeout: 2000ms
+
+  # ✅ 캐시 설정
+  cache:
+    type: redis
+    redis:
+      time-to-live: 300000 # 5분
+    cache-names: users,posts,comments,sessions,refresh-tokens
+
+  # Security 설정 (개발용)
+  security:
+    user:
+      name: admin
+      password: admin123
+      roles: ADMIN,USER
+
+  # DevTools
+  devtools:
+    restart:
+      enabled: true
+    livereload:
+      enabled: true
+
+  # 파일 업로드
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 25MB
+      location: ./uploads
+
+  # Jackson 설정
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+      indent-output: true
+    deserialization:
+      fail-on-unknown-properties: false
+    time-zone: Asia/Seoul
+
+  # 태스크 실행
+  task:
+    execution:
+      pool:
+        core-size: 2
+        max-size: 4
+        queue-capacity: 25
+      thread-name-prefix: "local-task-"
+
+# ✅ Embedded PostgreSQL 설정 (third-party library)
+# zonky.test.embedded.postgres.enabled: true
+# zonky.test.embedded.postgres.port: 5433
+
+# ✅ Embedded Redis 설정 (커스텀 설정은 별도 Configuration으로 처리)
+# embedded.redis.enabled: true
+# embedded.redis.port: 6380
+
+# 로깅 설정
+logging:
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %clr(%-5level) %clr(%logger{36}){cyan} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
+  file:
+    name: logs/local-application.log
+  level:
+    root: INFO
+    org.certis.studyplatform: DEBUG
+    org.springframework: INFO
+    org.springframework.web: DEBUG
+    org.springframework.security: INFO
+    org.springframework.transaction: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type: INFO
+    com.zaxxer.hikari: INFO
+    io.zonky.test: INFO
+    org.hibernate.orm.tool.schema: DEBUG
+    org.flywaydb: INFO  # Flyway 실행 로그 확인용
+
+# Management Endpoints
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: health,info,metrics,beans,env,flyway
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+# ✅ 애플리케이션 커스텀 설정 (Configuration Properties 클래스로 처리)
+# 아래 설정들은 @ConfigurationProperties로 바인딩되므로 IDE 경고가 나타날 수 있습니다.
+# 해당 Configuration 클래스들을 생성하면 경고가 사라집니다.
+
+app:
+  # 목 데이터 설정
+  mock-data:
+    enabled: false
+
+  # JWT 설정
+  jwt:
+    secret: cert-is-local-secret-key-very-long-and-secure
+    access-token-expiration: 7200000
+    refresh-token-expiration: 172800000
+    issuer: cert-is-platform
+
+  # CORS 설정
+  cors:
+    allowed-origins: http://localhost:3000,http://localhost:8080
+    allowed-methods: GET,POST,PUT,DELETE,PATCH,OPTIONS
+    allowed-headers: "*"
+    allow-credentials: true
+    max-age: 3600
+
+  # 파일 설정
+  file:
+    upload-dir: ./uploads
+    allowed-types: jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,md
+
+  # 캐시 설정
+  cache:
+    default-ttl: 300
+    user-ttl: 600
+    post-ttl: 300
+
+  # 성능 모니터링
+  monitoring:
+    performance:
+      enabled: true
+      slow-query-threshold: 500
+      slow-request-threshold: 1000
+    metrics:
+      enabled: true
+
+# Swagger/OpenAPI 설정
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: swagger-ui.html
