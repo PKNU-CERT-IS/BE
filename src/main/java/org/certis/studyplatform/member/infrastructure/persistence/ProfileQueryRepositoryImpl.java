@@ -3,12 +3,11 @@ package org.certis.studyplatform.member.infrastructure.persistence;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.member.domain.repository.query.ProfileQueryRepository;
+import org.certis.studyplatform.member.domain.repository.query.MemberQueryRepository;
 import org.certis.studyplatform.member.domain.vo.*;
 import org.certis.studyplatform.member.infrastructure.mapper.MemberInfrastructureMapper;
 import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberEntity;
-import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberContactEntity;
 import org.certis.studyplatform.member.infrastructure.persistence.jpa.MemberJpaRepository;
-import org.certis.studyplatform.member.infrastructure.persistence.jpa.MemberContactJpaRepository;
 import org.certis.studyplatform.project.domain.ProjectStatus;
 import org.certis.studyplatform.schedule.domain.repository.ScheduleQueryRepository;
 import org.certis.studyplatform.study.domain.StudyStatus;
@@ -39,7 +38,7 @@ import java.util.Optional;
 public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
 
     private final MemberJpaRepository memberJpaRepository;
-    private final MemberContactJpaRepository memberContactJpaRepository;
+    private final MemberQueryRepository memberQueryRepository;
     private final MemberInfrastructureMapper memberInfrastructureMapper;
     private final ScheduleQueryRepository scheduleQueryRepository;
 
@@ -68,11 +67,11 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
             List<OffsetDateTime> todaySchedules = scheduleQueryRepository.findTodaySchedulesByMemberId(memberIdVo);
 
             // 연락처 정보 조회
-            Optional<MemberContactEntity> contactOpt = memberContactJpaRepository.findByMemberId(memberIdVo.toLong());
-            String phoneNumber = contactOpt.map(MemberContactEntity::getPhoneNumber).orElse(null);
-            String email = contactOpt.map(MemberContactEntity::getEmail).orElse(null);
-            String githubUrl = contactOpt.map(MemberContactEntity::getGithubUrl).orElse(null);
-            String linkedUrl = contactOpt.map(MemberContactEntity::getLinkedinUrl).orElse(null);
+            Optional<MemberContactVo> contactOpt = memberQueryRepository.findContactByMemberId(memberIdVo.toLong());
+            String phoneNumber = contactOpt.map(MemberContactVo::phoneNumber).map(PhoneNumberVo::value).orElse(null);
+            String email = contactOpt.map(MemberContactVo::email).map(EmailVo::value).orElse(null);
+            String githubUrl = contactOpt.map(MemberContactVo::githubUrl).map(GithubUrlVo::value).orElse(null);
+            String linkedUrl = contactOpt.map(MemberContactVo::linkedinUrl).map(LinkedinUrlVo::value).orElse(null);
 
             // gracePeriod, todaySchedules, contact 정보가 포함된 새로운 ProfileVo 생성
             ProfileVo profileWithEnhancements = new ProfileVo(

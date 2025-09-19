@@ -2,8 +2,6 @@ package org.certis.studyplatform.member.domain.repository.query;
 
 import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.vo.*;
-import org.certis.studyplatform.member.application.object.query.SearchMembersQuery;
-import org.certis.studyplatform.member.application.object.query.GetMembersQuery;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -86,4 +84,12 @@ public interface MemberQueryRepository {
     List<MemberWithPenaltyVo> findExpiredUpsolvers(OffsetDateTime now);
 
     List<MemberWithContactVo> searchMembersWithContact(MemberSearchConditionVo searchConditionVo);
+
+    /**
+     * 회원 연락처 정보 조회
+     *
+     * @param memberId 회원 ID
+     * @return 연락처 정보 VO (Optional)
+     */
+    Optional<MemberContactVo> findContactByMemberId(Long memberId);
 }

@@ -13,8 +13,6 @@ import org.certis.studyplatform.member.domain.vo.*;
 import org.certis.studyplatform.member.infrastructure.mapper.MemberInfrastructureMapper;
 import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberContactEntity;
 import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberEntity;
-import org.certis.studyplatform.member.application.object.query.SearchMembersQuery;
-import org.certis.studyplatform.member.application.object.query.GetMembersQuery;
 import org.jooq.*;
 import org.jooq.Record;
 import org.jooq.impl.DSL;
@@ -543,6 +541,54 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
 
         // 복합 Entity 반환
         return new MemberWithContactEntity(memberEntity, contactEntity);
+    }
+
+    @Override
+    public Optional<MemberContactVo> findContactByMemberId(Long memberId) {
+        log.debug("Query Infrastructure: Finding contact by member ID: {}", memberId);
+
+        if (memberId == null || memberId <= 0) {
+            return Optional.empty();
+        }
+
+        try {
+            Record result = dsl.select(
+                            MEMBER_CONTACT.MEMBER_ID,
+                            MEMBER_CONTACT.PHONE_NUMBER,
+                            MEMBER_CONTACT.EMAIL,
+                            MEMBER_CONTACT.GITHUB_URL,
+                            MEMBER_CONTACT.LINKEDIN_URL
+                    )
+                    .from(MEMBER_CONTACT)
+                    .where(MEMBER_CONTACT.MEMBER_ID.eq(memberId))
+                    .fetchOne();
+
+            if (result == null) {
+                log.debug("Contact not found for member ID: {}", memberId);
+                return Optional.empty();
+            }
+
+            // VO 변환 (null 값 처리)
+            String phoneNumberStr = result.get(MEMBER_CONTACT.PHONE_NUMBER);
+            String emailStr = result.get(MEMBER_CONTACT.EMAIL);
+            String githubUrlStr = result.get(MEMBER_CONTACT.GITHUB_URL);
+            String linkedinUrlStr = result.get(MEMBER_CONTACT.LINKEDIN_URL);
+
+            MemberContactVo contactVo = new MemberContactVo(
+                    new MemberIdVo(result.get(MEMBER_CONTACT.MEMBER_ID)),
+                    emailStr != null ? new EmailVo(emailStr) : null,
+                    phoneNumberStr != null ? new PhoneNumberVo(phoneNumberStr) : null,
+                    githubUrlStr != null ? new GithubUrlVo(githubUrlStr) : null,
+                    linkedinUrlStr != null ? new LinkedinUrlVo(linkedinUrlStr) : null
+            );
+
+            log.debug("Contact found for member ID: {}", memberId);
+            return Optional.of(contactVo);
+
+        } catch (Exception e) {
+            log.error("Error finding contact by member ID {}: {}", memberId, e.getMessage());
+            return Optional.empty();
+        }
     }
 
     /**
