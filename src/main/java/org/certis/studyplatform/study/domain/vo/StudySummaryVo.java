@@ -21,7 +21,9 @@ public record StudySummaryVo(
     String studyCreatorName,
     MemberGrade studyCreatorGrade,
     boolean isParticipantable,
-    List<StudyAttachedVo> attachedVo
+    List<StudyAttachedVo> attachedVo,
+    Integer maxParticipants,
+    Integer currentParticipants
 ) {
     public static StudySummaryVo of(
         Long id,
@@ -34,12 +36,14 @@ public record StudySummaryVo(
         String studyCreatorName,
         MemberGrade studyCreatorRole,
         boolean isParticipantable,
-        List<StudyAttachedVo> attachedVo
+        List<StudyAttachedVo> attachedVo,
+        Integer maxParticipants,
+        Integer currentParticipants
     ) {
         return new StudySummaryVo(
             id, title, description, category, subcategory,
             startDate, endDate, studyCreatorName, studyCreatorRole,
-                isParticipantable, attachedVo
+                isParticipantable, attachedVo, maxParticipants, currentParticipants
         );
     }
 }

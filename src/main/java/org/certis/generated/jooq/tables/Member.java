@@ -147,7 +147,7 @@ public class Member extends TableImpl<MemberRecord> {
     /**
      * The column <code>public.member.grace_period</code>.
      */
-    public final TableField<MemberRecord, LocalDate> GRACE_PERIOD = createField(DSL.name("grace_period"), SQLDataType.LOCALDATE, this, "");
+    public final TableField<MemberRecord, OffsetDateTime> GRACE_PERIOD = createField(DSL.name("grace_period"), SQLDataType.OFFSETDATETIME, this, "");
 
     private Member(Name alias, Table<MemberRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);

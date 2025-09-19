@@ -35,6 +35,7 @@ public class MemberDataForAdminResponseDto {
 
     private String phoneNumber;             // 전화번호
     private String email;                   // 이메일
+    private String gender;                  // 성별
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private OffsetDateTime createdAt;               // 가입일

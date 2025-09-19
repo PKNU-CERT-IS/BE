@@ -21,6 +21,7 @@ public class MemberAdminApplicationMapper {
                 .birthday(vo.birthday() != null ? vo.birthday().toLocalDate().toString() : null)
                 .phoneNumber(vo.phoneNumber())
                 .email(vo.email())
+                .gender(vo.gender())
                 .createdAt(vo.createdAt())
                 .build();
 }

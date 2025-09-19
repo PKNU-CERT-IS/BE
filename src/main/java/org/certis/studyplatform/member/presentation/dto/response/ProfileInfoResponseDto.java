@@ -29,4 +29,13 @@ public class ProfileInfoResponseDto {
     private MemberGrade memberGrade;
     private List<String> skills;
     private OffsetDateTime createdAt;
+    
+    // Enhanced profile fields
+    private String major;
+    private OffsetDateTime birthday;
+    private String phoneNumber;
+    private String studentNumber;
+    private String email;
+    private String githubUrl;
+    private String linkedinUrl;
 }

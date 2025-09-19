@@ -27,9 +27,16 @@ public class ProjectMeetingSummaryResponseDto {
 
     private boolean isEditable;
 
-    private String meetingAttachedUrl;
+    private java.util.List<ProjectMeetingSummaryResponseDto.Link> links;
 
-    private String meetingAttachedTitle;
+    @Getter
+    @Builder(toBuilder = true)
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Link {
+        private String title;
+        private String url;
+    }
 
     // toString for logging
     @Override

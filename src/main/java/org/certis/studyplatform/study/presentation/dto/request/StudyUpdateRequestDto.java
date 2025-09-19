@@ -36,7 +36,7 @@ public class StudyUpdateRequestDto {
 
     private OffsetDateTime endDate;
 
-    private List<StudyAttachedCreateRequestDto> attachedFiles;
+    private List<StudyAttachedCreateRequestDto> attachments;
 
     private String githubUrl;
 

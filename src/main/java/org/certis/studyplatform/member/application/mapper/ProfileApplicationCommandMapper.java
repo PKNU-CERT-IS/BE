@@ -20,11 +20,20 @@ public class ProfileApplicationCommandMapper {
      * ProfileUpdateRequestDto → UpdateProfileCommand 변환
      */
     public UpdateProfileCommand toUpdateProfileCommand(Long memberId, ProfileUpdateRequestDto requestDto) {
-        return new UpdateProfileCommand(
-                memberId,
-                requestDto.getName(),
-                requestDto.getDescription(),
-                requestDto.getProfileImage()
-        );
+        return UpdateProfileCommand.builder()
+                .memberId(memberId)
+                .name(requestDto.getName())
+                .description(requestDto.getDescription())
+                .profileImage(requestDto.getProfileImage())
+                .major(requestDto.getMajor())
+                .birthday(requestDto.getBirthday())
+                .phoneNumber(requestDto.getPhoneNumber())
+                .studentNumber(requestDto.getStudentNumber())
+                .skills(requestDto.getSkills())
+                .grade(requestDto.getGrade())
+                .email(requestDto.getEmail())
+                .githubUrl(requestDto.getGithubUrl())
+                .linkedinUrl(requestDto.getLinkedinUrl())
+                .build();
     }
 }

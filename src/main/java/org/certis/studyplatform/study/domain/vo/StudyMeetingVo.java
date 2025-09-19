@@ -20,6 +20,7 @@ public record StudyMeetingVo(
     OffsetDateTime createdAt,
     OffsetDateTime updatedAt
 ) {
+    private static final int MAX_TITLE_LENGTH = 30;
     /**
      * 기본 팩토리 메서드
      */
@@ -34,6 +35,15 @@ public record StudyMeetingVo(
             OffsetDateTime createdAt,
             OffsetDateTime updatedAt
     ) {
+        if (title == null || title.trim().isEmpty() || title.length() > MAX_TITLE_LENGTH) {
+            throw new org.certis.studyplatform.exception.DomainException(org.certis.studyplatform.exception.ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION, "invalid meeting title");
+        }
+        if (content == null || content.trim().isEmpty()) {
+            throw new org.certis.studyplatform.exception.DomainException(org.certis.studyplatform.exception.ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION, "invalid meeting content");
+        }
+        if (participantIds == null) {
+            throw new org.certis.studyplatform.exception.DomainException(org.certis.studyplatform.exception.ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION, "participants must not be null");
+        }
         return new StudyMeetingVo(
             id, studyId, title, content,
             participantIds, writerId, isEditable,

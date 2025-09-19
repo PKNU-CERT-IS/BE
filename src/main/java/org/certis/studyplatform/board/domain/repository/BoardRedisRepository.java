@@ -33,4 +33,7 @@ public interface BoardRedisRepository {
     // 조회수 조회
     Long getViewCount(BoardIdVo boardId);
 
+    // 조회수 증가
+    void incrementViewCount(BoardIdVo boardId);
+
 }

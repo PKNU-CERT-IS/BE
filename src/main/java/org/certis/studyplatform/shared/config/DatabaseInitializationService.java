@@ -173,7 +173,8 @@ public class DatabaseInitializationService {
         try {
             log.info("Verifying PostgreSQL sequences...");
 
-            String sql = """
+            String sql =
+                """
                 SELECT sequence_name, last_value, is_called 
                 FROM information_schema.sequences s
                 JOIN pg_sequences ps ON s.sequence_name = ps.sequencename

@@ -16,8 +16,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.OffsetDateTime;
 
@@ -132,7 +130,7 @@ class StudyControllerTest {
         createTestStudyInDatabase();
 
         // When: 스터디 상세 조회 API 호출
-        mockMvc.perform(get("/api/v1/study/detail")
+        var mvcResult = mockMvc.perform(get("/api/v1/study/detail")
                         .param("studyId", TEST_STUDY_ID.toString()))
                 .andDo(print())
                 // Then: HTTP 200 OK 응답과 완전한 스터디 정보 반환
@@ -141,11 +139,26 @@ class StudyControllerTest {
                 .andExpect(jsonPath("$.message").value("스터디를 성공적으로 조회했습니다"))
                 .andExpect(jsonPath("$.data").exists())
                 .andExpect(jsonPath("$.data.id").value(TEST_STUDY_ID))
+                .andExpect(jsonPath("$.data.creatorId").value(TEST_MEMBER_ID))
                 .andExpect(jsonPath("$.data.title").value(TEST_STUDY_TITLE))
                 .andExpect(jsonPath("$.data.description").value(TEST_STUDY_DESCRIPTION))
                 .andExpect(jsonPath("$.data.content").value(TEST_STUDY_CONTENT))
+                // 추가 필드 검증: 참가자 수/최대 인원/첨부 스터디 목록
+                .andExpect(jsonPath("$.data.currentParticipantNumber").exists())
+                .andExpect(jsonPath("$.data.maxParticipantNumber").value(10))
+                .andExpect(jsonPath("$.data.attachments").isArray())
                 .andExpect(jsonPath("$.data.createdAt").exists())
-                .andExpect(jsonPath("$.data.updatedAt").exists());
+                .andExpect(jsonPath("$.data.updatedAt").exists())
+                .andReturn();
+
+        // And: DB의 member_id와 응답의 creatorId가 일치하는지 검증
+        String content = mvcResult.getResponse().getContentAsString();
+        long responseCreatorId = objectMapper.readTree(content).at("/data/creatorId").asLong();
+        Long dbCreatorId = dsl.select(STUDY.MEMBER_ID)
+                .from(STUDY)
+                .where(STUDY.ID.eq(TEST_STUDY_ID))
+                .fetchOne(STUDY.MEMBER_ID);
+        assertThat(responseCreatorId).isEqualTo(dbCreatorId);
 
         System.out.println("✅ 스터디 상세 조회 테스트 성공");
     }
@@ -207,6 +220,25 @@ class StudyControllerTest {
                 .andExpect(jsonPath("$.data.last").value(true));
 
         System.out.println("✅ 스터디 목록 조회 테스트 성공");
+    }
+
+    @Test
+    @Order(5)
+    @DisplayName("📋 스터디 목록 조회 응답 필드 - 참가자 수와 첨부 포함")
+    void getAllStudies_ResponseContainsParticipantNumbersAndAttachments() throws Exception {
+        // Given
+        createMultipleStudiesInDatabase();
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/study")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content[0].currentParticipantNumber").exists())
+                .andExpect(jsonPath("$.data.content[0].maxParticipantNumber").exists())
+                .andExpect(jsonPath("$.data.content[0].attachments").exists());
     }
 
     @Test

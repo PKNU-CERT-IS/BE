@@ -23,6 +23,7 @@ import java.util.Optional;
 import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.table;
 import static org.jooq.impl.DSL.extract;
+import org.jooq.DatePart;
 
 @Repository
 @RequiredArgsConstructor
@@ -237,6 +238,45 @@ public class ScheduleQueryRepositoryImpl implements ScheduleQueryRepository {
                     scheduleId.value(), e.getMessage(), e);
             throw new InfrastructureException(ExceptionStatus.SCHEDULE_INFRASTRUCTURE_DATABASE_ERROR,
                     "Failed to check pending status: " + e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OffsetDateTime> findTodaySchedulesByMemberId(MemberIdVo memberIdVo) {
+        log.debug("Infrastructure: Finding today's schedules for member ID: {}", memberIdVo.value());
+
+        try {
+            OffsetDateTime today = OffsetDateTime.now();
+            
+            Result<Record1<OffsetDateTime>> records = dsl
+                    .select(field("s.ended_at", OffsetDateTime.class).as("ended_at"))
+                    .from(table("schedule").as("s"))
+                    .join(table("schedule_status").as("ss"))
+                    .on(field("s.id").eq(field("ss.schedule_id")))
+                    .where(field("s.member_id").eq(memberIdVo.value())
+                            .and(field("s.deleted_at").isNull())
+                            .and(field("ss.status").eq("APPROVED"))
+                            .and(extract(field("s.ended_at"), DatePart.DAY).eq(today.getDayOfMonth()))
+                            .and(extract(field("s.ended_at"), DatePart.MONTH).eq(today.getMonthValue()))
+                            .and(extract(field("s.ended_at"), DatePart.YEAR).eq(today.getYear())))
+                    .orderBy(field("s.ended_at").asc())
+                    .fetch();
+
+            List<OffsetDateTime> todaySchedules = records.stream()
+                    .map(r -> r.get("ended_at", OffsetDateTime.class))
+                    .toList();
+
+            log.debug("Infrastructure: Found {} today's schedules for member ID: {}", 
+                    todaySchedules.size(), memberIdVo.value());
+
+            return todaySchedules;
+
+        } catch (Exception e) {
+            log.error("Infrastructure: Failed to find today's schedules for member {}: {}",
+                    memberIdVo.value(), e.getMessage(), e);
+            throw new InfrastructureException(ExceptionStatus.SCHEDULE_INFRASTRUCTURE_DATABASE_ERROR,
+                    "Failed to find today's schedules: " + e.getMessage());
         }
     }
 }

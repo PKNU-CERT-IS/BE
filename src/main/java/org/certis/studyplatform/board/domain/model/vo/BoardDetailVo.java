@@ -1,5 +1,7 @@
 package org.certis.studyplatform.board.domain.model.vo;
 
+import org.certis.studyplatform.member.domain.MemberRole;
+
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -11,6 +13,7 @@ public record BoardDetailVo(
         String category,
         Long authorId,
         String authorName,
+        MemberRole authorRole,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt,
         List<AttachmentVo> attachments,
@@ -19,7 +22,7 @@ public record BoardDetailVo(
         boolean isLikedByCurrentUser
 ) {
 
-    public static BoardDetailVo of(BoardVo board, String authorName, Long likeCount,
+    public static BoardDetailVo of(BoardVo board, String authorName, MemberRole authorRole, Long likeCount,
                                    Long viewCount, boolean isLikedByCurrentUser) {
         return new BoardDetailVo(
                 board.id(),
@@ -29,6 +32,7 @@ public record BoardDetailVo(
                 board.category(),
                 board.authorId(),
                 authorName,
+                authorRole,
                 board.createdAt(),
                 board.updatedAt(),
                 board.attachments(),

@@ -235,11 +235,11 @@ public class BoardDomainService {
         // 4. 현재 사용자 좋아요 상태 확인
         boolean isLikedByCurrentUser = isLikedByMemberInRedis(boardIdVo, query.viewerId());
 
-        // 5. 작성자 정보 조회
-        String authorName = boardQueryRepository.getAuthorName(boardIdVo);
+        // 5. 작성자 정보 조회 (이름과 역할)
+        BoardAuthorInfoVo authorInfo = boardQueryRepository.getAuthorInfo(boardIdVo);
 
         // 6. 통계가 포함된 DetailVo 생성
-        BoardDetailVo result = BoardDetailVo.of(board, authorName, likeCount, viewCount, isLikedByCurrentUser);
+        BoardDetailVo result = BoardDetailVo.of(board, authorInfo.name(), authorInfo.role(), likeCount, viewCount, isLikedByCurrentUser);
 
         log.info("Domain: Board detail retrieved - ID: {}, title: {}", board.id(), board.title());
         return result;

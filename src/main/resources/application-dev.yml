@@ -3,7 +3,6 @@
 # ===========================================
 
 spring:
-
   # 개발환경 데이터소스 설정 - Docker PostgreSQL
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/certis_dev}
@@ -22,7 +21,7 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: update  # 개발서버에서도 DDL 자동 관리
+      ddl-auto: update # 개발서버에서도 DDL 자동 관리
     show-sql: true
     properties:
       hibernate:
@@ -34,8 +33,9 @@ spring:
   flyway:
     enabled: true
     locations:
-      - classpath:db/migration/common # 공통 스키마
-      - classpath:db/migration/mock   # 로컬/개발용 목 데이터
+      - classpath:db/migration
+      - classpath:db/common # 공통 스키마
+      - classpath:db/mock # 로컬/개발용 목 데이터
     clean-disabled: false # 공유 환경이므로 clean 명령어 비활성화
 
   # SQL 초기화 설정 - 샘플 데이터 삽입
@@ -169,9 +169,9 @@ app:
 # Embedded 서비스 설정 - Docker 사용하므로 비활성화
 embedded:
   postgres:
-    enabled: false  # Docker PostgreSQL 사용
+    enabled: false # Docker PostgreSQL 사용
   redis:
-    enabled: false  # Docker Redis 사용 (실패 시 fallback으로 true 설정 가능)
+    enabled: false # Docker Redis 사용 (실패 시 fallback으로 true 설정 가능)
 
 # API 문서 활성화
 springdoc:

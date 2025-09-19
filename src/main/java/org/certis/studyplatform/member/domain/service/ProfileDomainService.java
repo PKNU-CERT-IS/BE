@@ -70,13 +70,20 @@ public class ProfileDomainService {
                     command.name(),
                     command.description(),
                     command.profileImage(),
-                    List.of(),
-                    0,
-                    null,
-                    null,
-                    null,
-                    List.of(),
-                    OffsetDateTime.now()
+                    List.of(), // todaySchedules
+                    0, // penaltyCount
+                    null, // gracePeriod
+                    null, // memberRole
+                    null, // memberGrade
+                    List.of(), // skills
+                    OffsetDateTime.now(), // createdAt
+                    null, // major
+                    null, // birthday
+                    null, // phoneNumber
+                    null, // studentNumber
+                    null, // email
+                    null, // githubUrl
+                    null  // linkedUrl
             );
             log.info("Domain: No existing profile found. Returning transient profile for member ID: {}", command.memberId());
             return unsaved;
@@ -91,6 +98,15 @@ public class ProfileDomainService {
         String newName = command.name() != null ? command.name() : existing.name();
         String newDescription = command.description() != null ? command.description() : existing.description();
         String newProfileImage = command.profileImage() != null ? command.profileImage() : existing.profileImage();
+        String newMajor = command.major() != null ? command.major() : existing.major();
+        java.time.OffsetDateTime newBirthday = command.birthday() != null ? command.birthday() : existing.birthday();
+        String newPhoneNumber = command.phoneNumber() != null ? command.phoneNumber() : existing.phoneNumber();
+        String newStudentNumber = command.studentNumber() != null ? command.studentNumber() : existing.studentNumber();
+        java.util.List<String> newSkills = command.skills() != null ? command.skills() : existing.skills();
+        String newEmail = command.email() != null ? command.email() : existing.email();
+        String newGithubUrl = command.githubUrl() != null ? command.githubUrl() : existing.githubUrl();
+        String newLinkedUrl = command.linkedinUrl() != null ? command.linkedinUrl() : existing.linkedUrl();
+        org.certis.studyplatform.member.domain.MemberGrade newGrade = command.grade() != null ? command.grade() : existing.memberGrade();
 
         ProfileVo toSave = new ProfileVo(
                 existing.memberId(),
@@ -101,9 +117,16 @@ public class ProfileDomainService {
                 existing.penaltyCount(),
                 existing.gracePeriod(),
                 existing.memberRole(),
-                existing.memberGrade(),
-                existing.skills(),
-                existing.createdAt()
+                newGrade,
+                newSkills,
+                existing.createdAt(),
+                newMajor,
+                newBirthday,
+                newPhoneNumber,
+                newStudentNumber,
+                newEmail,
+                newGithubUrl,
+                newLinkedUrl
         );
 
         // 4. 영속화
@@ -168,7 +191,14 @@ public class ProfileDomainService {
             originalProfile.memberRole(),
             originalProfile.memberGrade(),
             originalProfile.skills(),
-            originalProfile.createdAt()
+            originalProfile.createdAt(),
+            originalProfile.major(),
+            originalProfile.birthday(),
+            originalProfile.phoneNumber(),
+            originalProfile.studentNumber(),
+            originalProfile.email(),
+            originalProfile.githubUrl(),
+            originalProfile.linkedUrl()
         );
 
         log.info("Domain: Profile VO found for member ID: {} with calculated grace period: {}", memberIdVo, gracePeriod);

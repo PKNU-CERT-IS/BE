@@ -444,9 +444,9 @@ class BlogControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.statusCode").value(409))
-                .andExpect(jsonPath("$.message").value("데이터 무결성 제약 조건 위반입니다"));
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.statusCode").value(400))
+                .andExpect(jsonPath("$.message").value("블로그 제목이 올바르지 않습니다."));
 
         System.out.println("✅ 최대 길이 제약조건 테스트 성공");
     }

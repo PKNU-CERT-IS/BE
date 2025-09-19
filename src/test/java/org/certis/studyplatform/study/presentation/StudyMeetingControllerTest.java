@@ -16,9 +16,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
-
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -148,7 +145,9 @@ class StudyMeetingControllerTest {
                 .andExpect(jsonPath("$.data.title").value(TEST_MEETING_TITLE))
                 .andExpect(jsonPath("$.data.content").value(TEST_MEETING_CONTENT))
                 .andExpect(jsonPath("$.data.writerId").value(TEST_MEMBER_ID))
-                .andExpect(jsonPath("$.data.participantIds").isArray())
+                .andExpect(jsonPath("$.data.writerName").exists())
+                .andExpect(jsonPath("$.data.participantNumber").isNumber())
+                .andExpect(jsonPath("$.data.links").isArray())
                 .andExpect(jsonPath("$.data.createdAt").exists())
                 .andExpect(jsonPath("$.data.updatedAt").exists())
                 .andExpect(jsonPath("$.data.editable").isBoolean());
@@ -202,6 +201,7 @@ class StudyMeetingControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.content").isArray())
                 .andExpect(jsonPath("$.data.content.length()").value(3)) // 3개 회의록
+                .andExpect(jsonPath("$.data.content[0].links").isArray())
                 .andExpect(jsonPath("$.data.totalElements").value(3))
                 .andExpect(jsonPath("$.data.totalPages").value(1))
                 .andExpect(jsonPath("$.data.size").value(10))

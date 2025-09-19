@@ -35,7 +35,7 @@ public class ProjectUpdateRequestDto {
 
     private OffsetDateTime endDate;
 
-    private List<ProjectAttachedCreateRequestDto> attachedFiles;
+    private List<ProjectAttachedCreateRequestDto> attachments;
 
     private String githubUrl;
 

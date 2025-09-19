@@ -29,9 +29,16 @@ public class StudyMeetingSummaryResponseDto {
 
     private boolean isEditable;
 
-    private String meetingAttachedUrl;
+    private List<StudyMeetingSummaryResponseDto.Link> links;
 
-    private String meetingAttachedTitle;
+    @Getter
+    @Builder(toBuilder = true)
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Link {
+        private String title;
+        private String url;
+    }
 
     // toString for logging
     @Override

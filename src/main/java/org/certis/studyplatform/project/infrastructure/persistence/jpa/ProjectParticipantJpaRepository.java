@@ -61,5 +61,19 @@ public interface ProjectParticipantJpaRepository extends JpaRepository<ProjectPa
             "WHERE p.projectId = :projectId AND p.deletedAt IS NULL")
     int bulkSoftDeleteByProjectId(@Param("projectId") Long projectId,
                                   @Param("deletedAt") OffsetDateTime deletedAt);
+
+    /**
+     * 단건 하드 삭제 (승인 취소 등)
+     */
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM ProjectParticipantEntity p WHERE p.id = :id")
+    int hardDeleteById(@Param("id") Long id);
+
+    /**
+     * 단건 소프트 삭제 (거절 등)
+     */
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE ProjectParticipantEntity p SET p.deletedAt = :deletedAt, p.updatedAt = :deletedAt WHERE p.id = :id AND p.deletedAt IS NULL")
+    int softDeleteById(@Param("id") Long id, @Param("deletedAt") OffsetDateTime deletedAt);
 }
 

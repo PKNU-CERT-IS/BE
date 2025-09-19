@@ -1,6 +1,7 @@
 package org.certis.studyplatform.board.domain.repository;
 
 import org.certis.studyplatform.board.domain.model.vo.*;
+import org.certis.studyplatform.member.domain.MemberRole;
 import org.springframework.data.domain.Page;
 
 import java.util.List;
@@ -14,6 +15,9 @@ public interface BoardQueryRepository {
     Optional<BoardVo> findByIdWithAttachments(BoardIdVo boardIdVo);
 
     String getAuthorName(BoardIdVo boardIdVo);
+    
+    // Get author information with role for board detail
+    BoardAuthorInfoVo getAuthorInfo(BoardIdVo boardIdVo);
 
     // 모든 활성 게시글 id 반환
     List<Long> findAllActiveBoardIds();

@@ -16,6 +16,7 @@ public record MemberSearchForAdminVo(
         Long penaltyPoints,
         OffsetDateTime gracePeriod,
         String grade,
+        String gender,
         OffsetDateTime birthday,
         String phoneNumber,
         String email,

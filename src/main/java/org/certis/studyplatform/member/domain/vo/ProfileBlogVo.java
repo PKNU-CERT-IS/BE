@@ -20,7 +20,10 @@ public record ProfileBlogVo(
         OffsetDateTime blogEndDate,
         String[] tags,
         Integer viewCount,
-        Integer likeCount
+        Integer likeCount,
+        
+        // Category information (blogs only have category, no subcategory)
+        String category
 ) {
 
     /**
@@ -40,7 +43,7 @@ public record ProfileBlogVo(
      */
     public ProfileBlogVo(Long blogId, String title, String description, ProjectStatus projectStatus,
                          OffsetDateTime blogStartDate, OffsetDateTime blogEndDate, String[] tags) {
-        this(blogId, title, description, projectStatus, blogStartDate, blogEndDate, tags, 0, 0);
+        this(blogId, title, description, projectStatus, blogStartDate, blogEndDate, tags, 0, 0, null);
     }
 
     /**

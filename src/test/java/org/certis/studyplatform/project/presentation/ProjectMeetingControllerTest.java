@@ -16,9 +16,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
-
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -28,6 +25,7 @@ import static org.certis.generated.jooq.Tables.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
 /**
  * ProjectMeetingController 완전 새로운 통합 테스트
@@ -134,6 +132,24 @@ class ProjectMeetingControllerTest {
 
     @Test
     @Order(2)
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
+    @DisplayName("프로젝트 미팅 생성 - 매우 긴 content 허용")
+    void createProjectMeeting_AllowsVeryLongContent() throws Exception {
+        String longContent = "y".repeat(200_000);
+        ProjectMeetingCreateRequestDto request = createValidMeetingRequest();
+        request.setProjectId(TEST_PROJECT_ID + 500);
+        request.setContent(longContent);
+
+        mockMvc.perform(post("/api/v1/project/meeting/create")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    @Order(2)
     @DisplayName("🔍 프로젝트 회의록 상세 조회 - 완전한 정보 반환")
     void getProjectMeetingDetail_CompleteInformationReturned() throws Exception {
         // Given: 회의록이 미리 생성되어 있음
@@ -153,7 +169,9 @@ class ProjectMeetingControllerTest {
                 .andExpect(jsonPath("$.data.title").value(TEST_MEETING_TITLE))
                 .andExpect(jsonPath("$.data.content").value(TEST_MEETING_CONTENT))
                 .andExpect(jsonPath("$.data.writerId").value(TEST_MEMBER_ID))
-                .andExpect(jsonPath("$.data.participantIds").isArray())
+                .andExpect(jsonPath("$.data.writerName").exists())
+                .andExpect(jsonPath("$.data.participantNumber").isNumber())
+                .andExpect(jsonPath("$.data.links").isArray())
                 .andExpect(jsonPath("$.data.createdAt").exists())
                 .andExpect(jsonPath("$.data.updatedAt").exists())
                 .andExpect(jsonPath("$.data.editable").isBoolean());
@@ -209,6 +227,7 @@ class ProjectMeetingControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.content").isArray())
                 .andExpect(jsonPath("$.data.content.length()").value(3)) // 3개 회의록
+                .andExpect(jsonPath("$.data.content[0].links").isArray())
                 .andExpect(jsonPath("$.data.totalElements").value(3))
                 .andExpect(jsonPath("$.data.totalPages").value(1))
                 .andExpect(jsonPath("$.data.size").value(10))
@@ -470,9 +489,9 @@ class ProjectMeetingControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.statusCode").value(409))
-                .andExpect(jsonPath("$.message").value("데이터 무결성 제약 조건 위반입니다"));
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.statusCode").value(400))
+                .andExpect(jsonPath("$.message").value("제목이 너무 깁니다 (최대 50자)"));
 
         System.out.println("✅ 최대 길이 회의록 생성 테스트 성공");
     }

@@ -9,6 +9,9 @@ public record BoardDescriptionVo(String value) {
         if (value == null || value.trim().isEmpty()) {
             throw new DomainException(ExceptionStatus.BOARD_DOMAIN_INVALID_DESCRIPTION);
         }
+        if (value.trim().length() > 100) {
+            throw new DomainException(ExceptionStatus.BOARD_DOMAIN_INVALID_DESCRIPTION);
+        }
         return new BoardDescriptionVo(value);
     }
 }

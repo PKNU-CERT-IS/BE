@@ -6,6 +6,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import jakarta.validation.constraints.Size;
+import java.time.OffsetDateTime;
+import java.util.List;
+import org.certis.studyplatform.member.domain.MemberGrade;
 
 /**
  * 내 프로필 수정 요청 DTO
@@ -22,12 +25,20 @@ import jakarta.validation.constraints.Size;
 @Builder
 public class ProfileUpdateRequestDto {
 
-    @Size(max = 50, message = "이름은 50자를 초과할 수 없습니다.")
     private String name;
 
-    @Size(max = 500, message = "설명은 500자를 초과할 수 없습니다.")
     private String description;
 
-    @Size(max = 500, message = "프로필 이미지 URL은 500자를 초과할 수 없습니다.")
     private String profileImage; // profileImageUrl에서 profileImage로 변경
+
+    // 추가 필드들 (선택적 갱신)
+    private String major;
+    private OffsetDateTime birthday;
+    private String phoneNumber;
+    private String studentNumber;
+    private List<String> skills;
+    private MemberGrade grade;
+    private String email;
+    private String githubUrl;
+    private String linkedinUrl;
 }

@@ -81,7 +81,7 @@ class ScheduleControllerTest {
     private static final String TEST_ADMIN_NAME = "박관리자";
     private static final String TEST_SCHEDULE_TITLE = "동아리방 사용 신청";
     private static final String TEST_SCHEDULE_DESCRIPTION = "프로젝트 회의를 위한 동아리방 사용";
-    private static final String TEST_SCHEDULE_TYPE = "INFORMATION";
+    private static final String TEST_SCHEDULE_TYPE = "WORKSHOP";
     private static final String TEST_SCHEDULE_PLACE = "동아리방";
 
     @BeforeEach

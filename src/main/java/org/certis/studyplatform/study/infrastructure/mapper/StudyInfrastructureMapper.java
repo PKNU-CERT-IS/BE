@@ -250,7 +250,9 @@ public class StudyInfrastructureMapper {
                 firstRecord.get("creator_name", String.class),
                 memberGrade,
                 isParticipantable,
-                attachedVos
+                attachedVos,
+                firstRecord.get("max_participants_number", Integer.class),
+                firstRecord.get("current_participants", Integer.class)
         );
     }
 

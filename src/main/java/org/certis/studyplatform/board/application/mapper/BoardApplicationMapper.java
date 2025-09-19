@@ -26,11 +26,17 @@ public class BoardApplicationMapper {
      * BoardSearchRequestDto → SearchBoardsQuery 변환
      */
     public SearchBoardsQuery toSearchBoardsQuery(BoardSearchRequestDto request) {
+        boolean noFilter = (request.getSearch() == null || request.getSearch().trim().isEmpty())
+                && (request.getCategory() == null || request.getCategory().trim().isEmpty());
+
+        int page = noFilter ? 0 : request.getPage();
+        int size = noFilter ? Integer.MAX_VALUE : request.getSize();
+
         return SearchBoardsQuery.of(
                 request.getSearch(),
                 request.getCategory(),
-                request.getPage(),
-                request.getSize()
+                page,
+                size
         );
     }
 
@@ -167,6 +173,7 @@ public class BoardApplicationMapper {
                 .author(AuthorResponseDto.builder()
                         .memberId(boardDetailVo.authorId())
                         .name(boardDetailVo.authorName())
+                        .role(boardDetailVo.authorRole())
                         .build())
                 .attachments(toAttachmentResponseDtoList(boardDetailVo.attachments()))
                 .likeCount(boardDetailVo.likeCount())

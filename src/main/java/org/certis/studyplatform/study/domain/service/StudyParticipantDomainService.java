@@ -33,6 +33,8 @@ public class StudyParticipantDomainService {
     private final StudyParticipantCommandRepository commandRepository;
     private final StudyParticipantQueryRepository queryRepository;
     private final StudyQueryRepository studyQueryRepository;
+    private final org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository projectParticipantQueryRepository;
+    private final org.certis.studyplatform.member.domain.repository.query.MemberQueryRepository memberQueryRepository;
 
     // ================================================================
     // COMMAND OPERATIONS
@@ -48,23 +50,26 @@ public class StudyParticipantDomainService {
         // 1. 스터디 존재 및 상태 검증
         StudyVo study = validateStudyForJoin(command.studyId());
 
-        // 2. 스터디 생성자가 자신의 스터디에 참가 신청하는 것 방지
+        // 2. 중복 신청 검증 (먼저 확인)
+        validateDuplicateParticipation(command.studyId(), command.memberId());
+
+        // 3. 신청 제한 규칙 검증 (도메인 상한 규칙을 우선 적용)
+        enforceApplicationLimits(command.memberId());
+
+        // 4. 스터디 생성자가 자신의 스터디에 참가 신청하는 것 방지
         if (study.creatorId().equals(command.memberId())) {
             throw new DomainException(ExceptionStatus.STUDY_DOMAIN_INVALID_STATUS,
                     "스터디 생성자는 자신의 스터디에 참가 신청할 수 없습니다.");
         }
 
-        // 3. 중복 신청 검증
-        validateDuplicateParticipation(command.studyId(), command.memberId());
-
-        // 4. 참가자 수 제한 검증
+        // 5. 참가자 수 제한 검증 (동시성 고려를 위해 마지막에 재확인)
         validateParticipantLimit(command.studyId(), study.maxParticipants());
 
-        // 5. 새로운 참가 신청 생성
+        // 6. 새로운 참가 신청 생성
         StudyParticipantVo participantVo = StudyParticipantVo.createNew(
                 command.studyId(), command.memberId());
 
-        // 6. 저장
+        // 7. 저장
         StudyParticipantCreatedVo result = commandRepository.save(participantVo);
 
         log.info("Domain: Participant request created - ID: {}", result.id());
@@ -90,11 +95,11 @@ public class StudyParticipantDomainService {
                     "본인의 참가 신청만 취소할 수 있습니다.");
         }
 
-        // 3. 취소 처리 (소프트 삭제)
-        commandRepository.deleteByStudyIdAndMemberId(command.studyId(), command.memberId());
+        // 3. 취소 처리 (하드 삭제)
+        commandRepository.deleteByIdHard(participant.id());
 
-        log.info("Domain: Participant request cancelled - studyId: {}, memberId: {}",
-                command.studyId(), command.memberId());
+        log.info("Domain: Pending participant cancelled (hard deleted) - participantId: {}",
+                participant.id());
     }
 
     /**
@@ -133,7 +138,7 @@ public class StudyParticipantDomainService {
     }
 
     /**
-     * 스터디 참가 거절
+     * 스터디 참가 거절 (소프트 삭제)
      */
     public StudyParticipantStatusUpdatedVo rejectParticipant(UpdateStudyParticipantStatusCommand command) {
         log.info("Domain: Rejecting participant - participantId: {}, requesterId: {}",
@@ -153,12 +158,45 @@ public class StudyParticipantDomainService {
         // 3. 스터디 생성자 권한 확인
         validateStudyLeaderPermission(participant.studyId(), command.requesterId());
 
-        // 4. 거절 처리
-        StudyParticipantVo updatedParticipant = participant.updateStatus(StudyParticipantStatus.REJECTED);
-        StudyParticipantStatusUpdatedVo result = commandRepository.updateStatus(updatedParticipant);
+        // 4. 거절 처리 (소프트 삭제)
+        commandRepository.softDeleteById(command.participantId());
+        StudyParticipantStatusUpdatedVo result = StudyParticipantStatusUpdatedVo.of(
+                command.participantId(),
+                participant.studyId(),
+                participant.memberId(),
+                participant.status(),
+                StudyParticipantStatus.REJECTED
+        );
 
-        log.info("Domain: Participant rejected - ID: {}", result.id());
+        log.info("Domain: Participant rejected (soft deleted) - ID: {}", result.id());
         return result;
+    }
+
+    /**
+     * 승인된 참가자 취소 (하드 삭제)
+     */
+    public void cancelApprovedParticipant(Long participantId, Long requesterId) {
+        log.info("Domain: Cancelling approved participant - participantId: {}, requesterId: {}",
+                participantId, requesterId);
+
+        // 1. 참가 신청 조회
+        StudyParticipantVo participant = queryRepository.findById(participantId)
+                .orElseThrow(() -> new DomainException(ExceptionStatus.STUDY_DOMAIN_NOT_FOUND,
+                        "참가 신청을 찾을 수 없습니다."));
+
+        // 2. APPROVED 상태인지 확인
+        if (!participant.isApproved()) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_PERMISSION_DENINED,
+                    "승인된 참가자만 취소할 수 있습니다.");
+        }
+
+        // 3. 스터디 생성자 권한 확인
+        validateStudyLeaderPermission(participant.studyId(), requesterId);
+
+        // 4. 하드 삭제 처리
+        commandRepository.deleteByIdHard(participantId);
+
+        log.info("Domain: Approved participant cancelled (hard deleted) - ID: {}", participantId);
     }
 
     /**
@@ -234,6 +272,28 @@ public class StudyParticipantDomainService {
     }
 
     /**
+     * 신청 제한 규칙 적용
+     * - 진행 중인 study >= 2 면 추가 신청 불가
+     * - 진행 중인 project >= 1 이고 진행 중인 study >= 1 이면 study 추가 신청 불가
+     */
+    private void enforceApplicationLimits(Long memberId) {
+        long activeStudies = queryRepository.countActiveStudiesByMemberId(memberId);
+        long activeProjects = projectParticipantQueryRepository.countActiveProjectsByMemberId(memberId);
+
+        // 프로젝트 미진행 시: 스터디 2개까지 허용 (즉, 3번째부터 제한)
+        if (activeProjects == 0 && activeStudies >= 2) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_PERMISSION_DENINED,
+                    "프로젝트 미진행 시 스터디 2개까지 가능합니다.");
+        }
+
+        // 프로젝트 진행 중이면 스터디는 최대 1개만 (즉, 2번째부터 제한)
+        if (activeProjects >= 1 && activeStudies >= 1) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_PERMISSION_DENINED,
+                    "프로젝트 진행 중에는 스터디 1개까지만 신청할 수 있습니다.");
+        }
+    }
+
+    /**
      * 참가자 수 제한 검증
      */
     private void validateParticipantLimit(Long studyId, Integer maxParticipants) {
@@ -256,9 +316,14 @@ public class StudyParticipantDomainService {
                 .orElseThrow(() -> new DomainException(ExceptionStatus.STUDY_DOMAIN_NOT_FOUND,
                         "스터디를 찾을 수 없습니다."));
 
-        if (!study.creatorId().equals(requesterId)) {
+        boolean isLeader = study.creatorId().equals(requesterId);
+        boolean isAdmin = memberQueryRepository.findRoleByMemberId(new org.certis.studyplatform.member.domain.vo.MemberIdVo(requesterId))
+                .map(org.certis.studyplatform.member.domain.MemberRole::isStaffOrAbove)
+                .orElse(false);
+
+        if (!(isLeader || isAdmin)) {
             throw new DomainException(ExceptionStatus.STUDY_DOMAIN_PERMISSION_DENINED,
-                    "스터디 생성자만 참가 승인/거절을 할 수 있습니다.");
+                    "스터디 생성자 또는 관리자만 참가 승인/거절을 할 수 있습니다.");
         }
     }
 

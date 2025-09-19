@@ -6,8 +6,11 @@ import org.certis.studyplatform.member.domain.repository.query.ProfileQueryRepos
 import org.certis.studyplatform.member.domain.vo.*;
 import org.certis.studyplatform.member.infrastructure.mapper.MemberInfrastructureMapper;
 import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberEntity;
+import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberContactEntity;
 import org.certis.studyplatform.member.infrastructure.persistence.jpa.MemberJpaRepository;
+import org.certis.studyplatform.member.infrastructure.persistence.jpa.MemberContactJpaRepository;
 import org.certis.studyplatform.project.domain.ProjectStatus;
+import org.certis.studyplatform.schedule.domain.repository.ScheduleQueryRepository;
 import org.certis.studyplatform.study.domain.StudyStatus;
 import org.certis.studyplatform.shared.util.GracePeriodCalculator;
 import org.certis.studyplatform.shared.util.GracePeriodCalculator.ActivityInfo;
@@ -36,7 +39,9 @@ import java.util.Optional;
 public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
 
     private final MemberJpaRepository memberJpaRepository;
+    private final MemberContactJpaRepository memberContactJpaRepository;
     private final MemberInfrastructureMapper memberInfrastructureMapper;
+    private final ScheduleQueryRepository scheduleQueryRepository;
 
     @Override
     public Optional<ProfileVo> findByMemberId(MemberIdVo memberIdVo) {
@@ -59,22 +64,40 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
             // 목 데이터를 통해 gracePeriod 계산
             OffsetDateTime gracePeriod = calculateGracePeriodFromMockData(memberIdVo.toLong());
 
-            // gracePeriod가 포함된 새로운 ProfileVo 생성
-            ProfileVo profileWithGracePeriod = new ProfileVo(
+            // 오늘의 스케줄 시간 조회
+            List<OffsetDateTime> todaySchedules = scheduleQueryRepository.findTodaySchedulesByMemberId(memberIdVo);
+
+            // 연락처 정보 조회
+            Optional<MemberContactEntity> contactOpt = memberContactJpaRepository.findByMemberId(memberIdVo.toLong());
+            String phoneNumber = contactOpt.map(MemberContactEntity::getPhoneNumber).orElse(null);
+            String email = contactOpt.map(MemberContactEntity::getEmail).orElse(null);
+            String githubUrl = contactOpt.map(MemberContactEntity::getGithubUrl).orElse(null);
+            String linkedUrl = contactOpt.map(MemberContactEntity::getLinkedinUrl).orElse(null);
+
+            // gracePeriod, todaySchedules, contact 정보가 포함된 새로운 ProfileVo 생성
+            ProfileVo profileWithEnhancements = new ProfileVo(
                 baseProfile.memberId(),
                 baseProfile.name(),
                 baseProfile.description(),
                 baseProfile.profileImage(),
-                baseProfile.todaySchedules(),
+                todaySchedules, // 실제 조회된 오늘의 스케줄 시간들
                 baseProfile.penaltyCount(),
                 gracePeriod, // 계산된 gracePeriod
                 baseProfile.memberRole(),
                 baseProfile.memberGrade(),
                 baseProfile.skills(),
-                baseProfile.createdAt()
+                baseProfile.createdAt(),
+                // Enhanced profile fields
+                baseProfile.major(),
+                baseProfile.birthday(),
+                phoneNumber,
+                baseProfile.studentNumber(),
+                email,
+                githubUrl,
+                linkedUrl
             );
 
-            return Optional.of(profileWithGracePeriod);
+            return Optional.of(profileWithEnhancements);
 
         } catch (Exception e) {
             log.error("Error finding profile by member ID {}: {}", memberIdVo.toLong(), e.getMessage(), e);
@@ -283,7 +306,9 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
                 StudyStatus.INPROGRESS, // 현재 진행 중
                 now.minusWeeks(2), // 2주 전 시작 (현재 진행 중)
                 now.plusWeeks(2),  // 2주 후 종료 예정 (4주 기간 → 1주 유예)
-                new String[]{"Spring Boot", "Java", "JPA"}
+                new String[]{"Spring Boot", "Java", "JPA"},
+                "TECH", // category
+                "BACKEND" // subcategory
             ),
             new ProfileStudyVo(
                 2L,
@@ -292,7 +317,9 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
                 StudyStatus.COMPLETED, // 완료됨
                 now.minusWeeks(8), // 8주 전 시작
                 now.minusWeeks(2), // 2주 전 종료 (6주 기간 → 2주 유예)
-                new String[]{"React", "JavaScript", "TypeScript"}
+                new String[]{"React", "JavaScript", "TypeScript"},
+                "TECH", // category
+                "FRONTEND" // subcategory
             ),
             new ProfileStudyVo(
                 3L,
@@ -301,7 +328,9 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
                 StudyStatus.READY, // 아직 시작 안함
                 now.plusWeeks(1),   // 1주 후 시작 예정 (아직 진행 중 아님)
                 now.plusWeeks(4),   // 4주 후 종료 예정 (3주 기간)
-                new String[]{"Algorithm", "Problem Solving", "Python"}
+                new String[]{"Algorithm", "Problem Solving", "Python"},
+                "TECH", // category
+                "ALGORITHM" // subcategory
             )
         );
     }
@@ -320,7 +349,9 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
                 ProjectStatus.INPROGRESS, // 현재 진행 중
                 now.minusWeeks(3), // 3주 전 시작 (현재 진행 중)
                 now.plusWeeks(1),  // 1주 후 종료 예정 (4주 기간 → 1주 유예)
-                new String[]{"Spring Boot", "React", "PostgreSQL"}
+                new String[]{"Spring Boot", "React", "PostgreSQL"},
+                "SECURITY", // category
+                "WEB_PLATFORM" // subcategory
             ),
             new ProfileProjectVo(
                 2L,
@@ -329,7 +360,9 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
                 ProjectStatus.COMPLETED, // 완료됨
                 now.minusWeeks(16), // 16주 전 시작
                 now.minusWeeks(4),  // 4주 전 종료 (12주 기간 → 2주 유예)
-                new String[]{"Node.js", "Vue.js", "MongoDB"}
+                new String[]{"Node.js", "Vue.js", "MongoDB"},
+                "SECURITY", // category
+                "E_COMMERCE" // subcategory
             ),
             new ProfileProjectVo(
                 3L,
@@ -338,7 +371,9 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
                 ProjectStatus.READY, // 아직 시작 안함
                 now.plusWeeks(2),  // 2주 후 시작 예정 (아직 진행 중 아님)
                 now.plusWeeks(6),  // 6주 후 종료 예정 (4주 기간)
-                new String[]{"React Native", "Firebase", "TypeScript"}
+                new String[]{"React Native", "Firebase", "TypeScript"},
+                "SECURITY", // category
+                "MOBILE" // subcategory
             )
         );
     }
@@ -359,7 +394,8 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
                 now.minusWeeks(2), // 2주 전 완료
                 new String[]{"Spring Boot", "Java", "Tutorial"},
                 150,
-                25
+                25,
+                "TECH" // category
             ),
             new ProfileBlogVo(
                 2L,
@@ -370,7 +406,8 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
                 now.plusWeeks(1),  // 1주 후 완료 예정 (4주 작성 기간)
                 new String[]{"React", "JavaScript", "Hooks"},
                 89,
-                12
+                12,
+                "TECH" // category
             ),
             new ProfileBlogVo(
                 3L,
@@ -381,7 +418,8 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
                 now.plusWeeks(3),   // 3주 후 완료 예정 (2주 작성 기간)
                 new String[]{"Algorithm", "Problem Solving", "Coding Test"},
                 0,
-                0
+                0,
+                "TECH" // category
             )
         );
     }

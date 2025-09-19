@@ -32,14 +32,15 @@ public record NameVo(String value) {
 
         String trimmedName = name.trim();
 
-        if (trimmedName.length() < 2 || trimmedName.length() > 50) {
-            throw new DomainException(ExceptionStatus.MEMBER_DOMAIN_INVALID_NAME,
-                    "이름은 2자 이상 50자 이하여야 합니다");
-        }
-
         if (!trimmedName.matches("^[가-힣a-zA-Z\\s]+$")) {
             throw new DomainException(ExceptionStatus.MEMBER_DOMAIN_INVALID_NAME,
                     "이름은 한글, 영문, 공백만 포함할 수 있습니다");
         }
+
+        if (trimmedName.length() < 1 || trimmedName.length() > 10) {
+            throw new DomainException(ExceptionStatus.MEMBER_DOMAIN_INVALID_NAME,
+                    "이름은 1자 이상 10자 이하여야 합니다");
+        }
+
     }
 }

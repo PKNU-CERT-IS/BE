@@ -14,7 +14,7 @@ public record ScheduleDescriptionVo(String value) {
     }
 
     private void validateLength(String value) {
-        if (value != null && value.length() > 50) {
+        if (value != null && value.length() > 30) {
             throw new DomainException(ExceptionStatus.SCHEDULE_DOMAIN_INVALID_DESCRIPTION);
         }
     }

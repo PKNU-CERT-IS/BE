@@ -10,12 +10,10 @@ import java.util.Optional;
 import org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository;
 import org.certis.studyplatform.project.domain.ProjectParticipantStatus;
 import org.certis.studyplatform.project.domain.vo.ProjectParticipantSummaryVo;
-// import org.certis.studyplatform.project.domain.vo.ProjectParticipantVo; // 현재 미사용
 import org.certis.studyplatform.shared.util.GracePeriodCalculator;
 import org.certis.studyplatform.study.domain.repository.StudyParticipantQueryRepository;
 import org.certis.studyplatform.study.domain.StudyParticipantStatus;
 import org.certis.studyplatform.study.domain.vo.StudyParticipantSummaryVo;
-// import org.certis.studyplatform.study.domain.vo.StudyParticipantVo; // 현재 미사용
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -25,16 +23,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
 
 /**
  * 벌점제도 비즈니스 로직 테스트
@@ -127,8 +121,8 @@ class PenaltySystemDomainServiceTest {
                 new StudyParticipantSummaryVo(2L, 2L, "m2", StudyParticipantStatus.APPROVED, now),
                 new StudyParticipantSummaryVo(3L, 3L, "m3", StudyParticipantStatus.APPROVED, now)
             );
-            when(studyParticipantQueryRepository.findByStudyId(eq(studyId), eq(StudyParticipantStatus.APPROVED), eq(Pageable.unpaged())))
-                .thenReturn(new PageImpl<>(summaries));
+            when(studyParticipantQueryRepository.findAllApprovedByStudyId(eq(studyId)))
+                .thenReturn(summaries);
 
             // 기본 stubbing 으로 모두 UPSOLVER 처리
 
@@ -161,8 +155,8 @@ class PenaltySystemDomainServiceTest {
                 new ProjectParticipantSummaryVo(2L, 2L, "m2", ProjectParticipantStatus.APPROVED, now),
                 new ProjectParticipantSummaryVo(3L, 3L, "m3", ProjectParticipantStatus.APPROVED, now)
             );
-            when(projectParticipantQueryRepository.findByProjectId(eq(projectId), eq(ProjectParticipantStatus.APPROVED), eq(Pageable.unpaged())))
-                .thenReturn(new PageImpl<>(summaries));
+            when(projectParticipantQueryRepository.findAllApprovedByProjectId(eq(projectId)))
+                .thenReturn(summaries);
 
             // 기본 stubbing 으로 모두 UPSOLVER 처리
 
@@ -242,8 +236,8 @@ class PenaltySystemDomainServiceTest {
             OffsetDateTime now = OffsetDateTime.now();
             OffsetDateTime endDate = now.plusWeeks(2);
 
-            when(studyParticipantQueryRepository.findByStudyId(eq(studyId), eq(StudyParticipantStatus.APPROVED), eq(Pageable.unpaged())))
-                .thenReturn(new PageImpl<>(List.of()));
+            when(studyParticipantQueryRepository.findAllApprovedByStudyId(eq(studyId)))
+                .thenReturn(List.of());
 
             assertThatCode(() ->
                 gracePeriodExtensionDomainService.extendGracePeriodForApprovedStudy(
@@ -265,8 +259,8 @@ class PenaltySystemDomainServiceTest {
                 new StudyParticipantSummaryVo(101L, 2L, "m2", StudyParticipantStatus.APPROVED, now),
                 new StudyParticipantSummaryVo(102L, 3L, "m3", StudyParticipantStatus.APPROVED, now)
             );
-            when(studyParticipantQueryRepository.findByStudyId(eq(studyId), eq(StudyParticipantStatus.APPROVED), eq(Pageable.unpaged())))
-                .thenReturn(new PageImpl<>(summaries));
+            when(studyParticipantQueryRepository.findAllApprovedByStudyId(eq(studyId)))
+                .thenReturn(summaries);
 
             lenient().doThrow(new RuntimeException("DB error")).when(memberCommandRepository)
                 .updateGracePeriod(eq(MemberIdVo.of(2L)), any(GracePeriodVo.class));
@@ -291,8 +285,8 @@ class PenaltySystemDomainServiceTest {
                 new StudyParticipantSummaryVo(2L, 12L, "p1", StudyParticipantStatus.APPROVED, now), // PLAYER
                 new StudyParticipantSummaryVo(3L, 13L, "s1", StudyParticipantStatus.APPROVED, now)  // STAFF
             );
-            when(studyParticipantQueryRepository.findByStudyId(eq(studyId), eq(StudyParticipantStatus.APPROVED), eq(Pageable.unpaged())))
-                .thenReturn(new PageImpl<>(summaries));
+            when(studyParticipantQueryRepository.findAllApprovedByStudyId(eq(studyId)))
+                .thenReturn(summaries);
 
             // 특정 멤버는 UPSOLVER 아님
             when(memberQueryRepository.findById(eq(MemberIdVo.of(12L))))
@@ -322,8 +316,8 @@ class PenaltySystemDomainServiceTest {
                 new ProjectParticipantSummaryVo(2L, 22L, "p1", ProjectParticipantStatus.APPROVED, now), // PLAYER
                 new ProjectParticipantSummaryVo(3L, 23L, "s1", ProjectParticipantStatus.APPROVED, now)  // STAFF
             );
-            when(projectParticipantQueryRepository.findByProjectId(eq(projectId), eq(ProjectParticipantStatus.APPROVED), eq(Pageable.unpaged())))
-                .thenReturn(new PageImpl<>(summaries));
+            when(projectParticipantQueryRepository.findAllApprovedByProjectId(eq(projectId)))
+                .thenReturn(summaries);
 
             when(memberQueryRepository.findById(eq(MemberIdVo.of(22L))))
                 .thenReturn(Optional.of(MemberVo.of(22L, "p1", null, null, null, MemberRole.PLAYER, List.of(), null, null, now, now)));

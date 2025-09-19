@@ -108,4 +108,26 @@ public class ProjectParticipantCommandRepositoryImpl implements ProjectParticipa
         log.debug("Command: Participant request bulk cancelled successfully - projectId: {}, memberId: {}",
                 projectId, memberId);
     }
+
+    @Override
+    public void deleteByIdHard(Long participantId) {
+        log.debug("Command: Hard deleting participant - id: {}", participantId);
+        int affectedRows = jpaRepository.hardDeleteById(participantId);
+        if (affectedRows == 0) {
+            throw new InfrastructureException(ExceptionStatus.PROJECT_INFRASTRUCTURE_NOT_FOUND,
+                    "삭제할 참가자를 찾을 수 없습니다");
+        }
+        log.debug("Command: Participant hard deleted - id: {}", participantId);
+    }
+
+    @Override
+    public void softDeleteById(Long participantId) {
+        log.debug("Command: Soft deleting participant - id: {}", participantId);
+        int affectedRows = jpaRepository.softDeleteById(participantId, OffsetDateTime.now());
+        if (affectedRows == 0) {
+            throw new InfrastructureException(ExceptionStatus.PROJECT_INFRASTRUCTURE_NOT_FOUND,
+                    "삭제할 참가자를 찾을 수 없습니다");
+        }
+        log.debug("Command: Participant soft deleted - id: {}", participantId);
+    }
 }

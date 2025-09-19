@@ -9,6 +9,7 @@ public enum MemberGrade {
     JUNIOR("3학년"),
     SENIOR("4학년"),
     GRADUATED("졸업생"),
+    LEAVE("휴학생"),
     NONE("미지정");
 
     private final String description;
@@ -54,12 +55,14 @@ public enum MemberGrade {
                 case "3학년", "3" -> JUNIOR;
                 case "4학년", "4" -> SENIOR;
                 case "졸업생", "졸업", "수료생" -> GRADUATED;
+                case "휴학생", "휴학" -> LEAVE;
                 // 데이터베이스에서 직접 오는 enum 문자열 값들 처리
                 case "FRESHMAN" -> FRESHMAN;
                 case "SOPHOMORE" -> SOPHOMORE;
                 case "JUNIOR" -> JUNIOR;
                 case "SENIOR" -> SENIOR;
                 case "GRADUATED" -> GRADUATED;
+                case "LEAVE" -> LEAVE;
                 case "NONE" -> NONE;
                 default -> NONE;
             };
@@ -86,7 +89,15 @@ public enum MemberGrade {
         return this == GRADUATED;
     }
 
+    public boolean isLeave() {
+        return this == LEAVE;
+    }
+
     public boolean isUndergraduate() {
+        return this == FRESHMAN || this == SOPHOMORE || this == JUNIOR || this == SENIOR;
+    }
+
+    public boolean isActiveStudent() {
         return this == FRESHMAN || this == SOPHOMORE || this == JUNIOR || this == SENIOR;
     }
 }

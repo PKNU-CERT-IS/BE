@@ -27,4 +27,7 @@ public class ProfileBlogResponseDto {
     private String[] tags;
     private Integer viewCount;
     private Integer likeCount;
+    
+    // Category information (blogs only have category, no subcategory)
+    private String category;
 }

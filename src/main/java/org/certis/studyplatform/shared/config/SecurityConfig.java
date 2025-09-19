@@ -49,7 +49,8 @@ public class SecurityConfig {
                         // 인증이 필요하지 않은 경로
                         .requestMatchers(
                                 "/api/v1/auth/login",
-                                "/api/v1/auth/signup",
+                                "/api/v1/auth/register",     // 회원가입
+                                "/api/v1/auth/refresh",      // 토큰 갱신
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",

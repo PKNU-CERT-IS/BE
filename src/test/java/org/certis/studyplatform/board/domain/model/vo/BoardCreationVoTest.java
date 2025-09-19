@@ -19,7 +19,7 @@ class BoardCreationVoTest {
         String title = "제목";
         String content = "내용";
         String description = "설명";
-        String category = "STUDY";
+        String category = "TECH";
         Long authorId = 1L;
 
         // When
@@ -41,7 +41,7 @@ class BoardCreationVoTest {
         Long nullAuthorId = null;
 
         // When & Then
-        assertThatThrownBy(() -> BoardCreationVo.of("제목", "내용", "설명", "STUDY", nullAuthorId, List.of()))
+        assertThatThrownBy(() -> BoardCreationVo.of("제목", "내용", "설명", "TECH", nullAuthorId, List.of()))
                 .isInstanceOf(DomainException.class)
                 .hasFieldOrPropertyWithValue("status", ExceptionStatus.BOARD_DOMAIN_INVALID_ID);
     }
@@ -53,7 +53,7 @@ class BoardCreationVoTest {
         Long negativeAuthorId = -1L;
 
         // When & Then
-        assertThatThrownBy(() -> BoardCreationVo.of("제목", "내용", "설명", "STUDY", negativeAuthorId, List.of()))
+        assertThatThrownBy(() -> BoardCreationVo.of("제목", "내용", "설명", "TECH", negativeAuthorId, List.of()))
                 .isInstanceOf(DomainException.class)
                 .hasFieldOrPropertyWithValue("status", ExceptionStatus.BOARD_DOMAIN_INVALID_ID);
     }
@@ -65,7 +65,7 @@ class BoardCreationVoTest {
         Long zeroAuthorId = 0L;
 
         // When & Then
-        assertThatThrownBy(() -> BoardCreationVo.of("제목", "내용", "설명", "STUDY", zeroAuthorId, List.of()))
+        assertThatThrownBy(() -> BoardCreationVo.of("제목", "내용", "설명", "TECH", zeroAuthorId, List.of()))
                 .isInstanceOf(DomainException.class)
                 .hasFieldOrPropertyWithValue("status", ExceptionStatus.BOARD_DOMAIN_INVALID_ID);
     }
@@ -77,7 +77,7 @@ class BoardCreationVoTest {
         List<AttachmentVo> nullAttachments = null;
 
         // When
-        BoardCreationVo result = BoardCreationVo.of("제목", "내용", "설명", "STUDY", 1L, nullAttachments);
+        BoardCreationVo result = BoardCreationVo.of("제목", "내용", "설명", "TECH", 1L, nullAttachments);
 
         // Then
         assertThat(result.attachments()).isNotNull();
@@ -94,7 +94,7 @@ class BoardCreationVoTest {
         );
 
         // When
-        BoardCreationVo result = BoardCreationVo.of("제목", "내용", "설명", "STUDY", 1L, attachments);
+        BoardCreationVo result = BoardCreationVo.of("제목", "내용", "설명", "TECH", 1L, attachments);
 
         // Then
         assertThat(result.attachments()).hasSize(2);

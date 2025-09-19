@@ -22,6 +22,7 @@ public record StudyMeetingLinkVo(
      * 생성용 정적 팩토리 메서드
      */
     public static StudyMeetingLinkVo forCreation(Long studyId, Long memberId, String name, String attachedUrl) {
+        validate(name, attachedUrl);
         return new StudyMeetingLinkVo(
                 null, // ID는 생성 시 null
                 studyId,
@@ -37,6 +38,7 @@ public record StudyMeetingLinkVo(
      * 수정용 정적 팩토리 메서드
      */
     public static StudyMeetingLinkVo forUpdate(Long id, String name, String attachedUrl) {
+        validate(name, attachedUrl);
         return new StudyMeetingLinkVo(
                 id,
                 null, // studyId는 변경하지 않음
@@ -49,6 +51,7 @@ public record StudyMeetingLinkVo(
     }
 
     public static StudyMeetingLinkVo of(Long id, Long studyId, Long memberId, String name, String attachedUrl, OffsetDateTime createdAt, OffsetDateTime updatedAt) {
+        validate(name, attachedUrl);
         return new StudyMeetingLinkVo(
                 id,
                 studyId,
@@ -59,5 +62,14 @@ public record StudyMeetingLinkVo(
                 null  // updatedAt은 Repository에서 설정
         );
 
+    }
+
+    private static void validate(String name, String attachedUrl) {
+        if (name == null || name.trim().isEmpty() || name.length() > 30) {
+            throw new org.certis.studyplatform.exception.DomainException(org.certis.studyplatform.exception.ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION, "invalid link name");
+        }
+        if (attachedUrl == null || attachedUrl.trim().isEmpty()) {
+            throw new org.certis.studyplatform.exception.DomainException(org.certis.studyplatform.exception.ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION, "invalid link url");
+        }
     }
 }

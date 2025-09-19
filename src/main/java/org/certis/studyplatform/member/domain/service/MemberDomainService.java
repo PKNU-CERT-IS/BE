@@ -140,7 +140,9 @@ public class MemberDomainService {
         MemberContactVo contactVo = MemberContactVo.of(
                 createdMember.id(),
                 memberDomainMapper.toEmailVo(command.email()),
-                PhoneNumberVo.of(command.phoneNumber())
+                PhoneNumberVo.of(command.phoneNumber()),
+                null,
+                null
         );
         memberContactCommandRepository.createContact(contactVo);
 

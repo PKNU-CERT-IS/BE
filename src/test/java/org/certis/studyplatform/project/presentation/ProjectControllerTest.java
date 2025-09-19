@@ -16,8 +16,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.OffsetDateTime;
 
@@ -136,7 +134,7 @@ class ProjectControllerTest {
         createTestProjectInDatabase();
 
         // When: 프로젝트 상세 조회 API 호출
-        mockMvc.perform(get("/api/v1/project/detail")
+        var mvcResult = mockMvc.perform(get("/api/v1/project/detail")
                         .param("projectId", TEST_PROJECT_ID.toString()))
                 .andDo(print())
                 // Then: HTTP 200 OK 응답과 완전한 프로젝트 정보 반환
@@ -145,13 +143,24 @@ class ProjectControllerTest {
                 .andExpect(jsonPath("$.message").value(org.certis.studyplatform.response.ResponseStatus.PROJECT_FIND_SUCCESS.getMessage()))
                 .andExpect(jsonPath("$.data").exists())
                 .andExpect(jsonPath("$.data.id").value(TEST_PROJECT_ID))
+                .andExpect(jsonPath("$.data.creatorId").value(TEST_MEMBER_ID))
                 .andExpect(jsonPath("$.data.title").value(TEST_PROJECT_TITLE))
                 .andExpect(jsonPath("$.data.description").value(TEST_PROJECT_DESCRIPTION))
                 .andExpect(jsonPath("$.data.content").value(TEST_PROJECT_CONTENT))
                 .andExpect(jsonPath("$.data.category").value(TEST_PROJECT_CATEGORY))
                 .andExpect(jsonPath("$.data.subCategory").value(TEST_PROJECT_SUBCATEGORY))
                 .andExpect(jsonPath("$.data.maxParticipants").exists())
-                .andExpect(jsonPath("$.data.currentParticipants").exists());
+                .andExpect(jsonPath("$.data.currentParticipants").exists())
+                .andReturn();
+
+        // And: DB의 member_id와 응답의 creatorId가 일치하는지 검증
+        String content = mvcResult.getResponse().getContentAsString();
+        long responseCreatorId = objectMapper.readTree(content).at("/data/creatorId").asLong();
+        Long dbCreatorId = dsl.select(PROJECT.MEMBER_ID)
+                .from(PROJECT)
+                .where(PROJECT.ID.eq(TEST_PROJECT_ID))
+                .fetchOne(PROJECT.MEMBER_ID);
+        assertThat(responseCreatorId).isEqualTo(dbCreatorId);
 
         System.out.println("✅ 프로젝트 상세 조회 테스트 성공");
     }

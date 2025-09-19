@@ -22,6 +22,18 @@ public record ProjectAttachedVo(
             String type,
             String size,
             String attachedUrl) {
+        if (name == null || name.trim().isEmpty()) {
+            throw new org.certis.studyplatform.exception.DomainException(org.certis.studyplatform.exception.ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION, "invalid attached name");
+        }
+        if (type == null || type.trim().isEmpty()) {
+            throw new org.certis.studyplatform.exception.DomainException(org.certis.studyplatform.exception.ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION, "invalid attached type");
+        }
+        if (size == null || size.trim().isEmpty()) {
+            throw new org.certis.studyplatform.exception.DomainException(org.certis.studyplatform.exception.ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION, "invalid attached size");
+        }
+        if (attachedUrl == null || attachedUrl.trim().isEmpty()) {
+            throw new org.certis.studyplatform.exception.DomainException(org.certis.studyplatform.exception.ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION, "invalid attached url");
+        }
         return new ProjectAttachedVo(id, name, type, size, attachedUrl);
     }
 } 

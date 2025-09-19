@@ -27,7 +27,6 @@ public class StudyMeetingCreateRequestDto {
     private String title;
 
     @NotBlank(message = "회의록 내용은 필수입니다")
-    @Size(max = 5000, message = "내용은 5000자를 초과할 수 없습니다")
     private String content;
 
     @NotNull(message = "참가자 목록은 필수입니다")

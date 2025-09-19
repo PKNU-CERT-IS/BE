@@ -355,21 +355,36 @@ public class MemberCommandRepositoryImpl implements MemberCommandRepository {
     @Override
     @Transactional
     public void updateGracePeriod(MemberIdVo memberIdVo, GracePeriodVo gracePeriodVo) {
-        log.info("Infrastructure: Updating grace period for memberId={}, until={}",
-                memberIdVo.value(), gracePeriodVo.value());
+        try {
+            log.info("Infrastructure: Updating grace period for memberId={}, until={}",
+                    memberIdVo.value(), gracePeriodVo.value());
 
-        MemberEntity member = memberJpaRepository.findById(memberIdVo.value())
-                .orElseThrow(() -> new DomainException(ExceptionStatus.MEMBER_INFRASTRUCTURE_NOT_FOUND,
-                        "회원을 찾을 수 없습니다: " + memberIdVo.value()));
+            MemberEntity member = memberJpaRepository.findById(memberIdVo.value())
+                    .orElseThrow(() -> new DomainException(ExceptionStatus.MEMBER_INFRASTRUCTURE_NOT_FOUND,
+                            "회원을 찾을 수 없습니다: " + memberIdVo.value()));
 
-        // MemberEntity에 gracePeriod 업데이트
-        MemberEntity updated = member.toBuilder()
-                .gracePeriod(gracePeriodVo.value())
-                .updatedAt(OffsetDateTime.now())
-                .build();
+            log.info("Infrastructure: Found member - id={}, currentGracePeriod={}", 
+                    member.getId(), member.getGracePeriod());
 
-        memberJpaRepository.save(updated);
+            // MemberEntity에 gracePeriod 업데이트
+            MemberEntity updated = member.toBuilder()
+                    .gracePeriod(gracePeriodVo.value())
+                    .updatedAt(OffsetDateTime.now())
+                    .build();
 
-        log.info("✅ Infrastructure: Grace period updated successfully for memberId={}", memberIdVo.value());
+            log.info("Infrastructure: Built updated member - id={}, newGracePeriod={}", 
+                    updated.getId(), updated.getGracePeriod());
+
+            MemberEntity saved = memberJpaRepository.save(updated);
+            
+            log.info("Infrastructure: Saved member - id={}, savedGracePeriod={}", 
+                    saved.getId(), saved.getGracePeriod());
+
+            log.info("✅ Infrastructure: Grace period updated successfully for memberId={}", memberIdVo.value());
+        } catch (Exception e) {
+            log.error("❌ Infrastructure: Failed to update grace period for memberId={}, error: {}", 
+                    memberIdVo.value(), e.getMessage(), e);
+            throw e;
+        }
     }
 }

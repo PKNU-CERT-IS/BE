@@ -32,6 +32,9 @@ spring:
     init:
       mode: never # 테스트에서는 SQL 초기화 비활성화
 
+  flyway:
+    enabled: false
+
   # Redis 설정 (EmbeddedRedis 사용)
   data:
     redis:
@@ -63,6 +66,14 @@ app:
     upload-dir: ./test-uploads
     max-size: 10MB
 
+# AWS 설정
+aws:
+  access-key-id: ${AWS_ACCESS_KEY_ID:}
+  secret-access-key: ${AWS_SECRET_ACCESS_KEY:}
+  region: ${AWS_DEFAULT_REGION:ap-northeast-2}
+  s3:
+    bucket: ${AWS_S3_BUCKET:test-bucket}
+
 # Embedded PostgreSQL 설정
 spring.datasource.embedded.enabled: true
 
@@ -91,3 +102,6 @@ embedded:
   redis:
     enabled: true
     port: 6379
+
+# Redis 데이터 저장소 비활성화 (테스트에서는 Redis Repository 사용 안함)
+spring.data.redis.repositories.enabled: false

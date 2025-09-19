@@ -18,7 +18,11 @@ public record ProfileProjectVo(
         ProjectStatus projectStatus,
         OffsetDateTime projectStartDate,
         OffsetDateTime projectEndDate,
-        String[] tags
+        String[] tags,
+        
+        // Category information
+        String category,
+        String subcategory
 ) {
 
     /**

@@ -23,7 +23,16 @@ public record ProfileVo(
         MemberRole memberRole,
         MemberGrade memberGrade,
         List<String> skills,
-        OffsetDateTime createdAt
+        OffsetDateTime createdAt,
+        
+        // Enhanced profile fields
+        String major,
+        OffsetDateTime birthday,
+        String phoneNumber,
+        String studentNumber,
+        String email,
+        String githubUrl,
+        String linkedUrl
 ) {
 
     /**
@@ -44,9 +53,12 @@ public record ProfileVo(
                                MemberRole memberRole,
                                MemberGrade memberGrade,
                                List<String> skills,
-                               OffsetDateTime createdAt) {
+                               OffsetDateTime createdAt,
+                               String major, OffsetDateTime birthday, String phoneNumber,
+                               String studentNumber, String email, String githubUrl, String linkedUrl) {
         return new ProfileVo(memberId, name, description, profileImage, todaySchedules,
-                penaltyCount, gracePeriod, memberRole, memberGrade, skills, createdAt);
+                penaltyCount, gracePeriod, memberRole, memberGrade, skills, createdAt,
+                major, birthday, phoneNumber, studentNumber, email, githubUrl, linkedUrl);
     }
 
     // =================================================================

@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.certis.generated.jooq.Tables.*;
+import static org.jooq.impl.DSL.currentOffsetDateTime;
 
 /**
  * Project Participant Query Repository Implementation using Generated jOOQ Tables
@@ -255,6 +256,54 @@ public class ProjectParticipantQueryRepositoryImpl implements ProjectParticipant
                 .fetchOne(0, long.class);
 
         log.info("jOOQ: Pending participant count: {} - projectId: {}", count, projectId);
+        return count;
+    }
+
+    @Override
+    public List<ProjectParticipantSummaryVo> findAllApprovedByProjectId(Long projectId) {
+        log.info("jOOQ: Finding all approved participants by project - projectId: {}", projectId);
+
+        var pp = PROJECT_PARTICIPANT.as("pp");
+        var m = MEMBER.as("m");
+
+        List<ProjectParticipantSummaryVo> participants = dsl.select(
+                        pp.ID,
+                        pp.MEMBER_ID,
+                        m.NAME.as("member_name"),
+                        pp.STATUS,
+                        pp.CREATED_AT
+                )
+                .from(pp)
+                .leftJoin(m).on(pp.MEMBER_ID.eq(m.ID))
+                .where(pp.PROJECT_ID.eq(projectId)
+                        .and(pp.STATUS.eq(ProjectParticipantStatus.APPROVED.name()))
+                        .and(pp.DELETED_AT.isNull()))
+                .orderBy(pp.CREATED_AT.desc())
+                .fetch(mapper::toSummaryVoFromRecord);
+
+        log.info("jOOQ: Found {} approved participants", participants.size());
+        return participants;
+    }
+
+    @Override
+    public long countActiveProjectsByMemberId(Long memberId) {
+        log.info("jOOQ: Counting active projects for member - memberId: {}", memberId);
+
+        var pp = PROJECT_PARTICIPANT.as("pp");
+        var pj = PROJECT.as("p");
+
+        long count = dsl.selectCount()
+                .from(pp)
+                .join(pj).on(pp.PROJECT_ID.eq(pj.ID))
+                .where(pp.MEMBER_ID.eq(memberId))
+                .and(pp.STATUS.eq(ProjectParticipantStatus.APPROVED.name()))
+                .and(pp.DELETED_AT.isNull())
+                .and(pj.DELETED_AT.isNull())
+                .and(pj.STARTED_AT.le(currentOffsetDateTime()))
+                .and(pj.ENDED_AT.gt(currentOffsetDateTime()))
+                .fetchOne(0, long.class);
+
+        log.info("jOOQ: Active projects count: {} - memberId: {}", count, memberId);
         return count;
     }
 }

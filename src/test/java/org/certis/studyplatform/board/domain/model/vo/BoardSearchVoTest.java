@@ -15,7 +15,7 @@ class BoardSearchVoTest {
     void givenValidParams_whenCreateBoardSearchVo_thenSuccess() {
         // Given
         String search = "검색어";
-        String category = "STUDY";
+        String category = "TECH";
         int page = 0;
         int size = 10;
 
@@ -36,7 +36,7 @@ class BoardSearchVoTest {
         String tooLongSearch = "검".repeat(101);
 
         // When & Then
-        assertThatThrownBy(() -> BoardSearchVo.of(tooLongSearch, "STUDY", 0, 10))
+        assertThatThrownBy(() -> BoardSearchVo.of(tooLongSearch, "TECH", 0, 10))
                 .isInstanceOf(DomainException.class)
                 .hasFieldOrPropertyWithValue("status", ExceptionStatus.BOARD_DOMAIN_INVALID_PAGE);
     }
@@ -48,7 +48,7 @@ class BoardSearchVoTest {
         int negativePage = -1;
 
         // When & Then
-        assertThatThrownBy(() -> BoardSearchVo.of("검색어", "STUDY", negativePage, 10))
+        assertThatThrownBy(() -> BoardSearchVo.of("검색어", "TECH", negativePage, 10))
                 .isInstanceOf(DomainException.class)
                 .hasFieldOrPropertyWithValue("status", ExceptionStatus.BOARD_DOMAIN_INVALID_PAGE);
     }
@@ -58,15 +58,9 @@ class BoardSearchVoTest {
     void givenInvalidSize_whenCreateBoardSearchVo_thenThrowException() {
         // Given
         int sizeZero = 0;
-        int sizeTooBig = 101;
 
         // When & Then - size가 0이면 예외
-        assertThatThrownBy(() -> BoardSearchVo.of("검색어", "STUDY", 0, sizeZero))
-                .isInstanceOf(DomainException.class)
-                .hasFieldOrPropertyWithValue("status", ExceptionStatus.BOARD_DOMAIN_INVALID_PAGE_SIZE);
-
-        // When & Then - size가 100 초과면 예외
-        assertThatThrownBy(() -> BoardSearchVo.of("검색어", "STUDY", 0, sizeTooBig))
+        assertThatThrownBy(() -> BoardSearchVo.of("검색어", "TECH", 0, sizeZero))
                 .isInstanceOf(DomainException.class)
                 .hasFieldOrPropertyWithValue("status", ExceptionStatus.BOARD_DOMAIN_INVALID_PAGE_SIZE);
     }

@@ -198,8 +198,8 @@ class StudyParticipantControllerTest {
                 .andExpect(jsonPath("$.data.participantId").value(TEST_STUDY_PARTICIPANT_ID))
                 .andExpect(jsonPath("$.data.currentStatus").value("REJECTED"));
 
-        // Then: 데이터베이스에서 거절 상태 확인
-        verifyParticipantStatusInDatabase(TEST_STUDY_PARTICIPANT_ID, StudyParticipantStatus.REJECTED);
+        // Then: 데이터베이스에서 소프트 삭제 확인 (deleted_at 설정)
+        verifyParticipantSoftDeletedInDatabase(TEST_STUDY_PARTICIPANT_ID);
         
         System.out.println("✅ 스터디 참가 거절 테스트 성공");
     }
@@ -391,7 +391,7 @@ class StudyParticipantControllerTest {
                 .andDo(print())
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400))
-                .andExpect(jsonPath("$.message").value("스터디 생성자만 참가 승인/거절을 할 수 있습니다."));
+                .andExpect(jsonPath("$.message").value("스터디 생성자 또는 관리자만 참가 승인/거절을 할 수 있습니다."));
 
         System.out.println("✅ 권한 없는 사용자 승인 시도 테스트 성공");
     }
@@ -701,7 +701,7 @@ class StudyParticipantControllerTest {
     }
 
     /**
-     * 참가자 취소 검증
+     * 참가자 취소 검증 (소프트 삭제)
      */
     private void verifyParticipantCancelledInDatabase(Long studyId, Long memberId) {
         var participant = dsl.selectFrom(STUDY_PARTICIPANT)
@@ -709,10 +709,19 @@ class StudyParticipantControllerTest {
                 .and(STUDY_PARTICIPANT.MEMBER_ID.eq(memberId))
                 .fetchOne();
 
-        // 소프트 삭제 확인 또는 상태 변경 확인
-        assertThat(participant).satisfiesAnyOf(
-            p -> assertThat(p.getDeletedAt()).isNotNull(), // 소프트 삭제
-            p -> assertThat(p.getStatus()).isEqualTo(StudyParticipantStatus.CANCELLED.name()) // 상태 변경
-        );
+        // 하드 삭제 확인 (레코드가 존재하지 않아야 함)
+        assertThat(participant).isNull();
+    }
+
+    /**
+     * 참가자 소프트 삭제 검증 (거절)
+     */
+    private void verifyParticipantSoftDeletedInDatabase(Long participantId) {
+        var participant = dsl.selectFrom(STUDY_PARTICIPANT)
+                .where(STUDY_PARTICIPANT.ID.eq(participantId))
+                .fetchOne();
+
+        assertThat(participant).isNotNull();
+        assertThat(participant.getDeletedAt()).isNotNull();
     }
 }

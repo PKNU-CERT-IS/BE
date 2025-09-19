@@ -31,4 +31,7 @@ public interface ScheduleQueryRepository {
 
     //  스케줄이 PENDING 상태인지 확인
     boolean isPendingStatus(ScheduleIdVo scheduleId);
+
+    // 오늘 종료되는 스케줄의 시간 목록 조회 (프로필용)
+    List<java.time.OffsetDateTime> findTodaySchedulesByMemberId(MemberIdVo memberIdVo);
 }
