@@ -39,7 +39,7 @@ public class ProjectCreateRequestDto {
     @NotNull(message = "종료일은 필수입니다")
     private OffsetDateTime endDate;
 
-    private List<ProjectAttachedCreateRequestDto> attachedFiles;
+    private List<ProjectAttachedCreateRequestDto> attachments;
 
     private String githubUrl;
 

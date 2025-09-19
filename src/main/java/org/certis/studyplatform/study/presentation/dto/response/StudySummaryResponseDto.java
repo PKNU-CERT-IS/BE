@@ -48,7 +48,7 @@ public class StudySummaryResponseDto {
 
     private Integer maxParticipantNumber;
 
-    private List<StudyAttachedResponseDto> attachedStudies;
+    private List<StudyAttachedResponseDto> attachments;
 
     // toString for logging
     @Override

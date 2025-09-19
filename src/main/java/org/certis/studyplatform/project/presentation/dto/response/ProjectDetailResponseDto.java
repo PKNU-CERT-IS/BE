@@ -39,6 +39,8 @@ public class ProjectDetailResponseDto {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private OffsetDateTime endDate;
 
+    private Long creatorId;
+
     private String creatorName;
 
     private String githubUrl;
@@ -47,7 +49,7 @@ public class ProjectDetailResponseDto {
 
     private String thumbnailUrl;
 
-    private List<ProjectAttachedResponseDto> attachedFiles;
+    private List<ProjectAttachedResponseDto> attachments;
 
     private List<ProjectMeetingSummaryResponseDto> meetingSummaries;
 

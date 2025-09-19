@@ -6,7 +6,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.certis.studyplatform.member.domain.MemberGrade;
-import org.certis.studyplatform.study.presentation.dto.response.StudyMeetingSummaryResponseDto;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -47,11 +46,13 @@ public class StudyDetailResponseDto {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private OffsetDateTime updatedAt;
 
+    private Long creatorId;
+
     private String creatorName;
 
     private MemberGrade creatorGrade;
 
-    private List<StudyAttachedResponseDto> attachedFiles;
+    private List<StudyAttachedResponseDto> attachments;
 
     private List<StudyMeetingSummaryResponseDto> meetingSummaries;
 

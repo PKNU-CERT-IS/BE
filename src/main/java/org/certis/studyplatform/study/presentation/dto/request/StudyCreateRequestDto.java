@@ -40,13 +40,9 @@ public class StudyCreateRequestDto {
     @NotNull(message = "종료일은 필수입니다")
     private OffsetDateTime endDate;
 
-    private List<StudyAttachedCreateRequestDto> attachedFiles;
+    private List<StudyAttachedCreateRequestDto> attachments;
 
-    private String githubUrl;
-
-    private String externalUrl;
-
-    private String thumbnailUrl;
+    // removed per form: githubUrl, externalUrl, thumbnailUrl
 
     @NotNull(message = "최대 참여자 수는 필수입니다")
     @Positive(message = "최대 참여자 수는 양수여야 합니다")

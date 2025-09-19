@@ -22,8 +22,8 @@ public class StudyApplicationCommandMapper {
     public CreateStudyCommand toCreateStudyCommand(StudyCreateRequestDto dto, Long creatorId) {
         // attachedFiles 리스트를 변환합니다. (null-safe 처리 포함)
         List<CreateStudyAttachedCommand> attachedCommands =
-                (dto.getAttachedFiles() == null) ? Collections.emptyList() :
-                        dto.getAttachedFiles().stream()
+                (dto.getAttachments() == null) ? Collections.emptyList() :
+                        dto.getAttachments().stream()
                                 .map(this::toCreateStudyAttachedCommand) // 람다식(메서드 참조)을 사용한 변환
                                 .collect(Collectors.toList());
 
@@ -35,9 +35,9 @@ public class StudyApplicationCommandMapper {
                 dto.getSubCategory(),
                 dto.getStartDate(),
                 dto.getEndDate(),
-                dto.getGithubUrl(),
-                dto.getExternalUrl(),
-                dto.getThumbnailUrl(),
+                null,
+                null,
+                null,
                 attachedCommands,
                 dto.getMaxParticipants(),
                 creatorId
@@ -52,7 +52,7 @@ public class StudyApplicationCommandMapper {
                 dto.getName(),
                 dto.getType(),
                 dto.getSize(),
-                dto.getUrl()
+                dto.getAttachedUrl()
         );
     }
 
@@ -60,10 +60,10 @@ public class StudyApplicationCommandMapper {
      * StudyUpdateRequestDto를 UpdateStudyCommand로 변환
      */
     public UpdateStudyCommand toUpdateStudyCommand(StudyUpdateRequestDto dto, Long requesterId) {
-        // attachedFiles 리스트를 변환합니다. (null-safe 처리 포함)
+        // attachments 리스트를 변환합니다. (null-safe 처리 포함)
         List<CreateStudyAttachedCommand> attachedCommands =
-                (dto.getAttachedFiles() == null) ? Collections.emptyList() :
-                        dto.getAttachedFiles().stream()
+                (dto.getAttachments() == null) ? Collections.emptyList() :
+                        dto.getAttachments().stream()
                                 .map(this::toCreateStudyAttachedCommand) // 람다식(메서드 참조)을 사용한 변환
                                 .collect(Collectors.toList());
 

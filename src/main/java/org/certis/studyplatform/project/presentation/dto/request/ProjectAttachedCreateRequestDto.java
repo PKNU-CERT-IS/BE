@@ -18,5 +18,5 @@ public class ProjectAttachedCreateRequestDto {
 
     private Long size;
 
-    private String url;
+    private String attachedUrl;
 }
