@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 유예기간 연장 도메인 서비스
@@ -51,6 +52,11 @@ public class GracePeriodExtensionDomainService {
         // 1. 스터디 참가자들 조회 (페이징 없이 모든 참가자)
         List<StudyParticipantSummaryVo> participants = getAllStudyParticipants(studyId);
         
+        log.info("Domain: Found {} participants for study - studyId: {}", participants.size(), studyId);
+        for (StudyParticipantSummaryVo participant : participants) {
+            log.info("Domain: Participant - memberId: {}, status: {}", participant.memberId(), participant.status());
+        }
+        
         if (participants.isEmpty()) {
             log.warn("Domain: No participants found for study - studyId: {}", studyId);
             return;
@@ -68,8 +74,13 @@ public class GracePeriodExtensionDomainService {
 
         // 3. UPSOLVER 참가자에게만 유예기간 업데이트
         for (StudyParticipantSummaryVo participant : participants) {
-            if (isUpsolver(participant.memberId())) {
+            boolean isUpsolverMember = isUpsolver(participant.memberId());
+            log.info("Domain: Member {} is Upsolver: {}", participant.memberId(), isUpsolverMember);
+            if (isUpsolverMember) {
+                log.info("Domain: About to update grace period for memberId={}, newGracePeriod={}", 
+                    participant.memberId(), newGracePeriod);
                 updateMemberGracePeriod(participant.memberId(), newGracePeriod);
+                log.info("Domain: Completed grace period update for memberId={}", participant.memberId());
             } else {
                 log.debug("Domain: Skipping grace period update for non-Upsolver memberId={}", participant.memberId());
             }
@@ -124,28 +135,17 @@ public class GracePeriodExtensionDomainService {
      * 스터디의 모든 참가자 조회 (승인된 참가자만)
      */
     private List<StudyParticipantSummaryVo> getAllStudyParticipants(Long studyId) {
-        // 실제 구현에서는 Repository에 findAllApprovedByStudyId 메서드가 필요
-        // 현재는 기존 메서드를 활용하여 구현
-        Page<StudyParticipantSummaryVo> participantPage = studyParticipantQueryRepository.findByStudyId(
-            studyId, 
-            org.certis.studyplatform.study.domain.StudyParticipantStatus.APPROVED,
-            Pageable.unpaged()
-        );
-        return participantPage.getContent();
+        log.info("Domain: Fetching all approved participants for study - studyId: {}", studyId);
+        List<StudyParticipantSummaryVo> participants = studyParticipantQueryRepository.findAllApprovedByStudyId(studyId);
+        log.info("Domain: Found {} approved participants for study - studyId: {}", participants.size(), studyId);
+        return participants;
     }
 
     /**
      * 프로젝트의 모든 참가자 조회 (승인된 참가자만)
      */
     private List<ProjectParticipantSummaryVo> getAllProjectParticipants(Long projectId) {
-        // 실제 구현에서는 Repository에 findAllApprovedByProjectId 메서드가 필요
-        // 현재는 기존 메서드를 활용하여 구현
-        Page<ProjectParticipantSummaryVo> participantPage = projectParticipantQueryRepository.findByProjectId(
-            projectId, 
-            org.certis.studyplatform.project.domain.ProjectParticipantStatus.APPROVED,
-            Pageable.unpaged()
-        );
-        return participantPage.getContent();
+        return projectParticipantQueryRepository.findAllApprovedByProjectId(projectId);
     }
 
     /**
@@ -158,7 +158,7 @@ public class GracePeriodExtensionDomainService {
             
             memberCommandRepository.updateGracePeriod(memberIdVo, gracePeriodVo);
             
-            log.debug("Domain: Grace period updated for member - memberId: {}, newGracePeriod: {}", 
+            log.info("Domain: Grace period updated for member - memberId: {}, newGracePeriod: {}", 
                 memberId, newGracePeriod);
         } catch (Exception e) {
             log.error("Domain: Failed to update grace period for member - memberId: {}, error: {}", 
@@ -172,12 +172,18 @@ public class GracePeriodExtensionDomainService {
      */
     private boolean isUpsolver(Long memberId) {
         try {
-            return memberQueryRepository.findById(MemberIdVo.of(memberId))
-                    .map(MemberVo::role)
-                    .map(role -> role == MemberRole.UPSOLVER)
-                    .orElse(false);
+            log.info("Domain: Checking if member {} is Upsolver", memberId);
+            Optional<MemberVo> memberOpt = memberQueryRepository.findById(MemberIdVo.of(memberId));
+            if (memberOpt.isEmpty()) {
+                log.warn("Domain: Member {} not found in database", memberId);
+                return false;
+            }
+            MemberVo member = memberOpt.get();
+            boolean isUpsolver = member.role() == MemberRole.UPSOLVER;
+            log.info("Domain: Member {} role: {}, isUpsolver: {}", memberId, member.role(), isUpsolver);
+            return isUpsolver;
         } catch (Exception e) {
-            log.warn("Domain: Failed to determine role for memberId={}, skipping. error={}", memberId, e.getMessage());
+            log.warn("Domain: Failed to determine role for memberId={}, skipping. error={}", memberId, e.getMessage(), e);
             return false;
         }
     }
