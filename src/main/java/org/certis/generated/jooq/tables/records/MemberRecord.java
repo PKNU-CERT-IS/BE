@@ -219,15 +219,15 @@ public class MemberRecord extends UpdatableRecordImpl<MemberRecord> {
     /**
      * Setter for <code>public.member.grace_period</code>.
      */
-    public void setGracePeriod(LocalDate value) {
+    public void setGracePeriod(OffsetDateTime value) {
         set(14, value);
     }
 
     /**
      * Getter for <code>public.member.grace_period</code>.
      */
-    public LocalDate getGracePeriod() {
-        return (LocalDate) get(14);
+    public OffsetDateTime getGracePeriod() {
+        return (OffsetDateTime) get(14);
     }
 
     // -------------------------------------------------------------------------
@@ -253,7 +253,7 @@ public class MemberRecord extends UpdatableRecordImpl<MemberRecord> {
     /**
      * Create a detached, initialised MemberRecord
      */
-    public MemberRecord(Long id, String name, String studentNumber, String profileImage, String grade, String role, String[] skills, String major, OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt, OffsetDateTime birthday, String gender, String description, LocalDate gracePeriod) {
+    public MemberRecord(Long id, String name, String studentNumber, String profileImage, String grade, String role, String[] skills, String major, OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt, OffsetDateTime birthday, String gender, String description, OffsetDateTime gracePeriod) {
         super(Member.MEMBER);
 
         setId(id);

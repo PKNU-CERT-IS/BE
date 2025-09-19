@@ -32,7 +32,7 @@ public class Member implements Serializable {
     private OffsetDateTime birthday;
     private String gender;
     private String description;
-    private LocalDate gracePeriod;
+    private OffsetDateTime gracePeriod;
 
     public Member() {}
 
@@ -69,7 +69,7 @@ public class Member implements Serializable {
         OffsetDateTime birthday,
         String gender,
         String description,
-        LocalDate gracePeriod
+        OffsetDateTime gracePeriod
     ) {
         this.id = id;
         this.name = name;
@@ -287,14 +287,14 @@ public class Member implements Serializable {
     /**
      * Getter for <code>public.member.grace_period</code>.
      */
-    public LocalDate getGracePeriod() {
+    public OffsetDateTime getGracePeriod() {
         return this.gracePeriod;
     }
 
     /**
      * Setter for <code>public.member.grace_period</code>.
      */
-    public void setGracePeriod(LocalDate gracePeriod) {
+    public void setGracePeriod(OffsetDateTime gracePeriod) {
         this.gracePeriod = gracePeriod;
     }
 
