@@ -79,7 +79,7 @@ class AdminScheduleControllerTest {
     private static final String TEST_USER_2_NAME = "이사용자";
     private static final String TEST_ADMIN_SCHEDULE_TITLE = "관리자 생성 스케줄";
     private static final String TEST_ADMIN_SCHEDULE_DESCRIPTION = "관리자가 직접 생성하는 정기 행사";
-    private static final String TEST_ADMIN_SCHEDULE_TYPE = "INFORMATION";
+    private static final String TEST_ADMIN_SCHEDULE_TYPE = "MEETING";
     private static final String TEST_ADMIN_SCHEDULE_PLACE = "대강당";
 
     @BeforeEach
@@ -217,7 +217,6 @@ class AdminScheduleControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
-                // Then: HTTP 200 OK 응답과 성공 메시지
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("일정이 성공적으로 삭제되었습니다"));
@@ -234,19 +233,20 @@ class AdminScheduleControllerTest {
 
     @Test
     @Order(6)
+    @WithMockUser(username = "user", roles = {"USER"})
     @DisplayName("❌ 관리자 스케줄 생성 실패 - 관리자 권한 없음")
     void createScheduleByAdmin_AuthorizationFailure_NotAdminUser() throws Exception {
         // Given: 일반 사용자 권한으로 관리자 API 접근
         // TODO: 실제 구현에서는 Security Context를 일반 사용자로 설정해야 함
         AdminScheduleCreateRequestDto request = createValidAdminScheduleRequest();
 
-        // When & Then: 현재는 Mock 사용자가 ADMIN이므로 성공하지만, 실제로는 403이어야 함
-        // 미래 JWT 구현 시 권한 체크 로직 추가 필요
         mockMvc.perform(post("/api/v1/admin/schedule/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
-                .andExpect(status().isCreated()); // 현재는 성공 (미래 개선 필요)
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.statusCode").value(403))
+                .andExpect(jsonPath("$.message").value("접근 권한이 없습니다"));
 
         System.out.println("✅ 관리자 권한 체크 테스트 (미래 개선 필요)");
     }

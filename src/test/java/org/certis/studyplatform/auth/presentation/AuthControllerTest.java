@@ -294,7 +294,7 @@ class AuthControllerTest {
         mockMvc.perform(post(BASE_URL + "/token/refresh")
                         .header("Cookie", expiredRefreshTokenCookie))
                 .andDo(print())
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isUnauthorized());
     }
 
 

@@ -35,7 +35,7 @@ class BoardVoTest {
         @DisplayName("null 첨부파일 리스트 처리")
         void givenNullAttachments_whenCreateBoardVo_thenEmptyListHandledGracefully() {
             // When
-            BoardVo board = BoardVo.of(1L, "제목", "내용", "설명", "STUDY",
+            BoardVo board = BoardVo.of(1L, "제목", "내용", "설명", "TECH",
                     100L, OffsetDateTime.now(), OffsetDateTime.now(), null);
 
             // Then
@@ -106,11 +106,11 @@ class BoardVoTest {
     // ================================================================
     private BoardVo newBoard(Long authorId) {
         OffsetDateTime now = OffsetDateTime.now();
-        return BoardVo.of(1L, "제목", "내용", "설명", "STUDY", authorId, now, now, List.of());
+        return BoardVo.of(1L, "제목", "내용", "설명", "TECH", authorId, now, now, List.of());
     }
 
     private BoardVo newBoardWithAttachments(List<AttachmentVo> attachments) {
         OffsetDateTime now = OffsetDateTime.now();
-        return BoardVo.of(1L, "제목", "내용", "설명", "STUDY", 100L, now, now, attachments);
+        return BoardVo.of(1L, "제목", "내용", "설명", "TECH", 100L, now, now, attachments);
     }
 }

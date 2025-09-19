@@ -11,7 +11,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -32,13 +31,10 @@ class ProfileControllerTest {
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
 
-    private static final Long TEST_MEMBER_ID = 1L;
-
     @Test
-    @WithMockUser(username = "user1", roles = "UPSOLVER")
     @DisplayName("프로필 조회 - 200 OK")
     void getProfile_Success() throws Exception {
-        mockMvc.perform(get("/api/v1/profile/me/{memberId}", TEST_MEMBER_ID))
+        mockMvc.perform(get("/api/v1/profile/me"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
@@ -46,14 +42,21 @@ class ProfileControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "user1", roles = "UPSOLVER")
     @DisplayName("프로필 수정 - 200 OK")
     void updateProfile_Success() throws Exception {
         ProfileUpdateRequestDto request = ProfileUpdateRequestDto.builder()
+                .name("MockStaff")
+                .major("컴퓨터공학과")
                 .description("통합테스트: 프로필 설명 수정")
+                .studentNumber("20201234")
+                .phoneNumber("010-0000-0000")
+                .email("mock@certis.org")
+                .skills(java.util.List.of("Java","Spring Boot"))
+                .githubUrl("https://github.com/mock")
+                .linkedinUrl("https://www.linkedin.com/in/mock")
                 .build();
 
-        mockMvc.perform(put("/api/v1/profile/me/{memberId}", TEST_MEMBER_ID)
+        mockMvc.perform(put("/api/v1/profile/me")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -64,10 +67,9 @@ class ProfileControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "user1", roles = "UPSOLVER")
     @DisplayName("스터디 목록 조회 - 200 OK")
     void getStudies_Success() throws Exception {
-        mockMvc.perform(get("/api/v1/profile/{memberId}/study", TEST_MEMBER_ID))
+        mockMvc.perform(get("/api/v1/profile/me/study"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
@@ -76,10 +78,9 @@ class ProfileControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "user1", roles = "UPSOLVER")
     @DisplayName("프로젝트 목록 조회 - 200 OK")
     void getProjects_Success() throws Exception {
-        mockMvc.perform(get("/api/v1/profile/{memberId}/project", TEST_MEMBER_ID))
+        mockMvc.perform(get("/api/v1/profile/me/project"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
@@ -88,10 +89,9 @@ class ProfileControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "user1", roles = "UPSOLVER")
     @DisplayName("블로그 목록 조회 - 200 OK")
     void getBlogs_Success() throws Exception {
-        mockMvc.perform(get("/api/v1/profile/{memberId}/blog", TEST_MEMBER_ID))
+        mockMvc.perform(get("/api/v1/profile/me/blog"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))

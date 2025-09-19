@@ -16,10 +16,10 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.annotation.Commit;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Statement;
@@ -35,7 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({TestEmbeddedPostgresConfig.class, TestWebMvcConfig.class})
 @ActiveProfiles("test")
 @TestPropertySource(locations = "classpath:application-test.yml")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @DisplayName("🚀 Board Controller 실제 컨트롤러 매핑 기준 통합 테스트")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -50,9 +50,10 @@ public class BoardControllerTest {
 
     @Test
     @Order(1)
-    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     @DisplayName("1️⃣ 게시글 생성 - 전체 플로우 테스트")
     @Transactional
+    @Commit
     void createBoard_FullFlow_Success() throws Exception {
         em.unwrap(Session.class).doWork(conn -> {
             try (Statement stmt = conn.createStatement()) {
@@ -64,26 +65,25 @@ public class BoardControllerTest {
                 .title("실제 통합 테스트 게시글")
                 .content("실제 데이터베이스에 저장되는 게시글 내용입니다.")
                 .description("통합 테스트를 위한 게시글 설명")
-                .category("STUDY")
+                .category("TECH")
                 .attachments(List.of())
                 .build();
 
-        MvcResult result = mockMvc.perform(post("/api/v1/board/create")
+        mockMvc.perform(post("/api/v1/board/create")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.statusCode").value(201))
-                .andExpect(jsonPath("$.message").value(ResponseStatus.BOARD_CREATE_SUCCESS.getMessage()))
-                .andReturn();
+                .andExpect(jsonPath("$.message").value(ResponseStatus.BOARD_CREATE_SUCCESS.getMessage()));
 
         // 두 번째 게시글 생성 (id=2)
         BoardCreateRequestDto request2 = BoardCreateRequestDto.builder()
                 .title("두번째 통합 테스트 게시글")
                 .content("두번째 게시글 내용입니다.")
                 .description("두번째 게시글 설명")
-                .category("STUDY")
+                .category("TECH")
                 .attachments(List.of())
                 .build();
 
@@ -117,9 +117,24 @@ public class BoardControllerTest {
     void searchBoards_FindCreatedBoard_Success() throws Exception {
         mockMvc.perform(get("/api/v1/board/keyword")
                         .param("keyword", "실제 통합")
-                        .param("category", "STUDY")
+                        .param("category", "TECH")
                         .param("page", "1")
                         .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.message").value(ResponseStatus.BOARD_SEARCH_SUCCESS.getMessage()))
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.totalElements").exists());
+    }
+
+    @Test
+    @Order(3)
+    @WithMockUser(username = "user1", roles = "UPSOLVER")
+    @DisplayName("3️⃣-추가 키워드/카테고리 없이 전체 조회")
+    @Transactional(readOnly = true)
+    void searchBoards_NoParams_ReturnsAll() throws Exception {
+        mockMvc.perform(get("/api/v1/board/keyword"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
@@ -179,7 +194,7 @@ public class BoardControllerTest {
                 .title("수정된 통합 테스트 게시글")
                 .content("수정된 게시글 내용입니다.")
                 .description("수정된 게시글 설명")
-                .category("PROJECT")
+                .category("TECH")
                 .attachments(List.of())
                 .build();
 

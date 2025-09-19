@@ -11,7 +11,15 @@ import org.springframework.security.core.context.SecurityContextHolder;
 public class MockCurrentUserProvider {
     public CurrentUser getMockCurrentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getName() != null) {
+        if (auth != null) {
+            // If the test already placed a CurrentUser into the SecurityContext, use it as-is
+            Object principal = auth.getPrincipal();
+            if (principal instanceof CurrentUser) {
+                return (CurrentUser) principal;
+            }
+
+            // Fallback to mapping by username if only name is present
+            if (auth.getName() != null) {
             String username = auth.getName();
             log.info("📌 MockCurrentUserProvider username={}", username);
 
@@ -30,6 +38,7 @@ public class MockCurrentUserProvider {
                     return new CurrentUser(99L, "admin", "admin@certis.org", "관리자", "ADMIN");
                 default:
                     return new CurrentUser(1L, username, username + "@certis.org", "테스트 사용자", "UPSOLVER");
+            }
             }
         }
         return new CurrentUser(

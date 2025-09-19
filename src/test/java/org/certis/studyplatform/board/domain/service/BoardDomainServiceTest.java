@@ -1,12 +1,14 @@
 package org.certis.studyplatform.board.domain.service;
 
 import org.certis.studyplatform.board.application.object.command.*;
+import org.certis.studyplatform.board.application.object.query.GetBoardDetailQuery;
 import org.certis.studyplatform.board.domain.model.vo.*;
 import org.certis.studyplatform.board.domain.repository.BoardCommandRepository;
 import org.certis.studyplatform.board.domain.repository.BoardQueryRepository;
 import org.certis.studyplatform.board.domain.repository.BoardRedisRepository;
 import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
+import org.certis.studyplatform.member.domain.MemberRole;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -56,7 +58,7 @@ import static org.mockito.Mockito.times;
             @DisplayName("유효한 명령으로 게시글 생성 성공")
             void createBoard_WithValidCommand_Success() {
                 CreateBoardCommand command = CreateBoardCommand.of(
-                        "제목", "내용", "설명", "STUDY", 1L, List.of()
+                        "제목", "내용", "설명", "TECH", 1L, List.of()
                 );
                 BoardIdVo expectedBoardId = BoardIdVo.of(100L);
                 given(boardCommandRepository.createBoard(any())).willReturn(expectedBoardId);
@@ -74,7 +76,7 @@ import static org.mockito.Mockito.times;
                         AttachmentCommand.ofNew("새파일1.pdf", "application/pdf", "1MB", "http://example.com/new1.pdf"),
                         AttachmentCommand.ofNew("새파일2.jpg", "image/jpeg", "500KB", "http://example.com/new2.jpg")
                 );
-                CreateBoardCommand command = CreateBoardCommand.of("제목", "내용", "설명", "STUDY", 1L, attachments);
+                CreateBoardCommand command = CreateBoardCommand.of("제목", "내용", "설명", "TECH", 1L, attachments);
                 BoardIdVo expectedBoardId = BoardIdVo.of(100L);
                 given(boardCommandRepository.createBoard(any())).willReturn(expectedBoardId);
 
@@ -134,7 +136,7 @@ import static org.mockito.Mockito.times;
             @Test
             @DisplayName("존재하지 않는 게시글 수정 시 예외")
             void updateBoard_NotFound_Throws() {
-                var cmd = UpdateBoardCommand.of(999L, "t","c","d","STUDY", 1L, List.of());
+                var cmd = UpdateBoardCommand.of(999L, "t","c","d","TECH", 1L, List.of());
                 given(boardQueryRepository.findById(any())).willReturn(Optional.empty());
 
                 assertThatThrownBy(() -> boardDomainService.updateBoard(cmd))
@@ -151,7 +153,7 @@ import static org.mockito.Mockito.times;
                         AttachmentCommand.of(10L, "old.pdf", "application/pdf","1MB","http://.../old.pdf"),
                         AttachmentCommand.ofNew("new.jpg", "image/jpeg","500KB","http://.../new.jpg")
                 );
-                var cmd = UpdateBoardCommand.of(boardId,"수정제목","수정내용","수정설명","STUDY",authorId,attachments);
+                var cmd = UpdateBoardCommand.of(boardId,"수정제목","수정내용","수정설명","TECH",authorId,attachments);
                 var existing = createMockBoard(boardId, authorId);
                 given(boardQueryRepository.findById(any())).willReturn(Optional.of(existing));
 
@@ -307,8 +309,79 @@ import static org.mockito.Mockito.times;
         }
 
         // =========================
+        @Nested
+        @DisplayName("게시글 상세 조회 테스트 - 새로운 기능")
+        class GetBoardDetailTest {
+
+            @Test
+            @DisplayName("게시글 상세 조회 성공 - 작성자 역할 포함")
+            void getBoardDetail_Success_WithAuthorRole() {
+                // Given
+                Long boardId = 1L;
+                Long memberId = 100L;
+                GetBoardDetailQuery query = new GetBoardDetailQuery(boardId, memberId);
+                
+                BoardVo boardVo = createMockBoard(boardId, 200L);
+                BoardAuthorInfoVo authorInfo = new BoardAuthorInfoVo("작성자", MemberRole.UPSOLVER);
+                
+                given(boardQueryRepository.findByIdWithAttachments(any(BoardIdVo.class))).willReturn(Optional.of(boardVo));
+                given(boardQueryRepository.getAuthorInfo(any(BoardIdVo.class))).willReturn(authorInfo);
+                given(boardRedisRepository.getLikeCount(any(BoardIdVo.class))).willReturn(5L);
+                given(boardRedisRepository.getViewCount(any(BoardIdVo.class))).willReturn(100L);
+                given(boardRedisRepository.isLikedByMember(any(BoardIdVo.class), any())).willReturn(false);
+
+                // When
+                BoardDetailVo result = boardDomainService.getBoardDetail(query);
+
+                // Then
+                assertAll(
+                        () -> assertThat(result.authorName()).isEqualTo("작성자"),
+                        () -> assertThat(result.authorRole()).isEqualTo(MemberRole.UPSOLVER),
+                        () -> assertThat(result.likeCount()).isEqualTo(5L),
+                        () -> assertThat(result.viewCount()).isEqualTo(100L),
+                        () -> assertThat(result.isLikedByCurrentUser()).isFalse()
+                );
+
+                then(boardRedisRepository).should().addView(any(BoardIdVo.class), eq(memberId));
+            }
+
+            @Test
+            @DisplayName("새로운 카테고리로 게시글 생성 성공")
+            void createBoard_WithNewCategories_Success() {
+                // Given - 새로운 카테고리들 테스트
+                List<String> newCategories = List.of("NOTICE", "ACTIVITY", "SECURITY", "TECH", "QUESTION");
+                
+                for (String category : newCategories) {
+                    CreateBoardCommand command = CreateBoardCommand.of(
+                            "제목", "내용", "설명", category, 1L, List.of()
+                    );
+                    BoardIdVo expectedBoardId = BoardIdVo.of(100L);
+                    given(boardCommandRepository.createBoard(any())).willReturn(expectedBoardId);
+
+                    // When & Then
+                    assertThatNoException().isThrownBy(() -> boardDomainService.createBoard(command));
+                }
+            }
+
+            @Test
+            @DisplayName("긴 콘텐츠로 게시글 생성 성공 - 100,000자 제한")
+            void createBoard_WithLongContent_Success() {
+                // Given
+                String longContent = "A".repeat(99999); // 99,999자 (제한 내)
+                CreateBoardCommand command = CreateBoardCommand.of(
+                        "제목", longContent, "설명", "TECH", 1L, List.of()
+                );
+                BoardIdVo expectedBoardId = BoardIdVo.of(100L);
+                given(boardCommandRepository.createBoard(any())).willReturn(expectedBoardId);
+
+                // When & Then
+                assertThatNoException().isThrownBy(() -> boardDomainService.createBoard(command));
+            }
+        }
+
+        // =========================
         private BoardVo createMockBoard(Long boardId, Long authorId) {
-            return BoardVo.of(boardId,"제목","내용","설명","STUDY",
+            return BoardVo.of(boardId,"제목","내용","설명","TECH",
                     authorId, OffsetDateTime.now(), OffsetDateTime.now(), List.of());
         }
     }

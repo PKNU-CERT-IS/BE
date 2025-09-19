@@ -202,8 +202,8 @@ class ProjectParticipantControllerTest {
                 .andExpect(jsonPath("$.data.participantId").value(participantId))
                 .andExpect(jsonPath("$.data.currentStatus").value("REJECTED"));
 
-        // Then: 데이터베이스에서 상태 변경 확인
-        verifyParticipantStatusInDatabase(participantId, ProjectParticipantStatus.REJECTED);
+        // Then: 데이터베이스에서 소프트 삭제 확인 (deleted_at 설정)
+        verifyParticipantSoftDeletedInDatabase(participantId);
 
         System.out.println("프로젝트 참가 거절 테스트 성공");
     }
@@ -506,7 +506,7 @@ class ProjectParticipantControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("프로젝트 참가 인원이 가득찼습니다."));
+                .andExpect(jsonPath("$.message").value("프로젝트 정원이 가득 찼습니다."));
 
         System.out.println("참가자 수 제한 테스트 성공");
     }
@@ -734,5 +734,17 @@ class ProjectParticipantControllerTest {
 
         assertThat(participant).isNotNull();
         assertThat(participant.getStatus()).isEqualTo(expectedStatus.name());
+    }
+
+    /**
+     * 참가자 소프트 삭제 검증 (거절)
+     */
+    private void verifyParticipantSoftDeletedInDatabase(Long participantId) {
+        var participant = dsl.selectFrom(PROJECT_PARTICIPANT)
+                .where(PROJECT_PARTICIPANT.ID.eq(participantId))
+                .fetchOne();
+
+        assertThat(participant).isNotNull();
+        assertThat(participant.getDeletedAt()).isNotNull();
     }
 }

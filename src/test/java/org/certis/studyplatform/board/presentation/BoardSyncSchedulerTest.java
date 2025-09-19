@@ -65,7 +65,7 @@ class BoardSyncSchedulerTest {
                 .set(field("title"), "테스트 게시글")
                 .set(field("content"), "테스트 내용")
                 .set(field("description"), "테스트 설명")
-                .set(field("category"), "STUDY") // 유효한 카테고리 사용
+                .set(field("category"), "TECH") // 유효한 카테고리 사용
                 .set(field("created_at"), OffsetDateTime.now())
                 .set(field("updated_at"), OffsetDateTime.now())
                 .execute();
