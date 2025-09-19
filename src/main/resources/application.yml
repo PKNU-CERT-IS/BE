@@ -51,7 +51,7 @@ spring:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
         implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
     open-in-view: false
-    defer-datasource-initialization: false  # Flyway 순환 의존성 방지
+    defer-datasource-initialization: false # Flyway 순환 의존성 방지
     properties:
       hibernate:
         jdbc:
@@ -81,7 +81,7 @@ spring:
       separator: ";"
       continue-on-error: true
       encoding: utf-8
-      mode: never  # Flyway가 관리하므로 기본값은 never
+      mode: never # Flyway가 관리하므로 기본값은 never
 
   # ✅ 기본 캐시 설정
   cache:
@@ -113,12 +113,14 @@ spring:
   messages:
     basename: messages
     encoding: UTF-8
-    fallback-to-system-locale: false
 
-  # ✅ 트랜잭션 설정
-  transaction:
-    default-timeout: 30
-    rollback-on-commit-failure: true
+# ✅ AWS S3 설정
+aws:
+  s3:
+    bucket-name: ${AWS_S3_BUCKET:test-bucket}
+    region: ${AWS_DEFAULT_REGION:ap-northeast-2}
+    access-key-id: ${AWS_ACCESS_KEY_ID:}
+    secret-access-key: ${AWS_SECRET_ACCESS_KEY:}
 
   # ✅ 태스크 실행 설정
   task:
@@ -195,7 +197,7 @@ management:
 app:
   # 목 데이터 기본 설정
   mock-data:
-    enabled: false  # 환경별로 Override
+    enabled: false # 환경별로 Override
 
   # JWT 기본 설정
   jwt:
