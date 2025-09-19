@@ -15,6 +15,7 @@ import org.certis.studyplatform.schedule.domain.repository.ScheduleQueryReposito
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 @Service
@@ -159,7 +160,7 @@ public class ScheduleDomainService {
 
     private ScheduleVo createScheduleVo(Long memberId, String title, String description,
                                         String type, String place,
-                                        java.time.OffsetDateTime startedAt, java.time.OffsetDateTime endedAt) {
+                                        OffsetDateTime startedAt, OffsetDateTime endedAt) {
         // VO 생성 시 비즈니스 검증 자동 수행
         ScheduleTitleVo titleVo = ScheduleTitleVo.of(title);
         ScheduleDescriptionVo descriptionVo = ScheduleDescriptionVo.of(description);
