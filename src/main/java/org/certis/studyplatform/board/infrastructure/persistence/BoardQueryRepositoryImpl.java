@@ -6,6 +6,7 @@ import org.certis.studyplatform.board.domain.model.vo.*;
 import org.certis.studyplatform.board.domain.repository.BoardQueryRepository;
 import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
+import org.certis.studyplatform.member.domain.MemberRole;
 import org.jetbrains.annotations.NotNull;
 import org.jooq.*;
 import org.jooq.Record;
@@ -92,7 +93,7 @@ public class BoardQueryRepositoryImpl implements BoardQueryRepository {
                 );
             }
 
-            if (searchVo.category() != null && !searchVo.category().trim().isEmpty()) {
+            if (searchVo.category() != null && !searchVo.category().trim().isEmpty() && !"ALL".equals(searchVo.category().trim().toUpperCase())) {
                 baseQuery = baseQuery.and(field("b.category").eq(searchVo.category()));
             }
 
@@ -100,7 +101,7 @@ public class BoardQueryRepositoryImpl implements BoardQueryRepository {
                     .from(baseQuery)
                     .fetchOne(0, Long.class);
 
-            Result<Record> records = (Result<Record>) baseQuery
+            var records = baseQuery
                     .orderBy(field("b.updated_at").desc())
                     .limit(searchVo.size())
                     .offset(searchVo.page() * searchVo.size())
@@ -161,6 +162,36 @@ public class BoardQueryRepositoryImpl implements BoardQueryRepository {
         } catch (Exception e) {
             log.error("❌ Infrastructure: Failed to get author name for board: {}", boardIdVo.value(), e);
             return "Unknown";
+        }
+    }
+
+    @Override
+    public BoardAuthorInfoVo getAuthorInfo(BoardIdVo boardIdVo) {
+        try {
+            Record record = dsl.select(field("m.name"), field("m.role"))
+                    .from(table("board").as("b"))
+                    .leftJoin(table("member").as("m"))
+                    .on(field("b.member_id").eq(field("m.id")))
+                    .where(field("b.id").eq(boardIdVo.value()))
+                    .and(field("b.deleted_at").isNull())
+                    .and(field("m.deleted_at").isNull())
+                    .fetchOne();
+
+            if (record != null) {
+                String name = record.get(field("m.name"), String.class);
+                String roleString = record.get(field("m.role"), String.class);
+                MemberRole role = roleString != null ? MemberRole.valueOf(roleString) : MemberRole.NONE;
+                
+                return new BoardQueryRepository.AuthorInfo(
+                    name != null ? name : "Unknown",
+                    role
+                );
+            }
+            
+            return new BoardQueryRepository.AuthorInfo("Unknown", MemberRole.NONE);
+        } catch (Exception e) {
+            log.error("❌ Infrastructure: Failed to get author info for board: {}", boardIdVo.value(), e);
+            return new BoardQueryRepository.AuthorInfo("Unknown", MemberRole.NONE);
         }
     }
 
