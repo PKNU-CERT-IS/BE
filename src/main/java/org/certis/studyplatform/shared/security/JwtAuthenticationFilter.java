@@ -112,11 +112,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // 인증 관련
                 "/api/v1/member/**",
                 "/api/v1/auth/login",
-                "/api/v1/auth/signup",
+                "/api/v1/auth/register",  // 회원가입 추가
+                "/api/v1/auth/refresh",   // 토큰 갱신
                 //문서 모니터링
                 "/swagger-ui.html",
                 "/swagger-ui",
-                "/v3/api-docs"
+                "/v3/api-docs",
+                "/actuator/health",
+                "/favicon.ico",
+                "/error"
         );
 
         String path = request.getRequestURI();
