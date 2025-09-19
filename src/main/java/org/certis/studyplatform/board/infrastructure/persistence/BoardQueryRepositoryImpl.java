@@ -182,16 +182,16 @@ public class BoardQueryRepositoryImpl implements BoardQueryRepository {
                 String roleString = record.get(field("m.role"), String.class);
                 MemberRole role = roleString != null ? MemberRole.valueOf(roleString) : MemberRole.NONE;
                 
-                return new BoardQueryRepository.AuthorInfo(
+                return new BoardAuthorInfoVo(
                     name != null ? name : "Unknown",
                     role
                 );
             }
             
-            return new BoardQueryRepository.AuthorInfo("Unknown", MemberRole.NONE);
+            return new BoardAuthorInfoVo("Unknown", MemberRole.NONE);
         } catch (Exception e) {
             log.error("❌ Infrastructure: Failed to get author info for board: {}", boardIdVo.value(), e);
-            return new BoardQueryRepository.AuthorInfo("Unknown", MemberRole.NONE);
+            return new BoardAuthorInfoVo("Unknown", MemberRole.NONE);
         }
     }
 

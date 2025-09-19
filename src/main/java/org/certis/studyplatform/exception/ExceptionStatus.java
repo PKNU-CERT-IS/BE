@@ -62,7 +62,7 @@ public enum ExceptionStatus {
     AUTH_PRESENTATION_INVALID_REQUEST(HttpStatus.BAD_REQUEST, "인증 요청 데이터가 유효하지 않습니다"),
 
     // Auth - Domain Layer
-    AUTH_DOMAIN_JWT_TOKEN_PARSE_ERROR(HttpStatus.UNAUTHORIZED, "JWT 토큰 파싱 중 오류가 발생했습니다"),
+    AUTH_DOMAIN_JWT_TOKEN_PARSE_ERROR(HttpStatus.BAD_REQUEST, "JWT 토큰 파싱 중 오류가 발생했습니다"),
     AUTH_DOMAIN_JWT_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "JWT 토큰이 만료되었습니다"),
     AUTH_DOMAIN_ACCOUNT_NOT_FOUND(HttpStatus.UNAUTHORIZED, "존재하지 않는 계정입니다"),
 
@@ -233,6 +233,14 @@ public enum ExceptionStatus {
     PROJECT_DOMAIN_INVALID_CREATOR(HttpStatus.BAD_REQUEST, "유효하지 않은 멤버 정보입니다."),
     PROJECT_DOMAIN_ACCESS_DENIED(HttpStatus.BAD_REQUEST, "접근 권한이 유효하지 않습니다."),
 
+    // PROJECT_MEETING 관련 도메인 에러
+    PROJECT_MEETING_DOMAIN_INVALID_TITLE(HttpStatus.BAD_REQUEST, "제목이 유효하지 않습니다"),
+    PROJECT_MEETING_DOMAIN_TITLE_TOO_SHORT(HttpStatus.BAD_REQUEST, "제목이 너무 짧습니다"),
+    PROJECT_MEETING_DOMAIN_TITLE_TOO_LONG(HttpStatus.BAD_REQUEST, "제목이 너무 깁니다 (최대 50자)"),
+    PROJECT_MEETING_DOMAIN_INVALID_CONTENT(HttpStatus.BAD_REQUEST, "내용이 유효하지 않습니다"),
+    PROJECT_MEETING_DOMAIN_CONTENT_TOO_SHORT(HttpStatus.BAD_REQUEST, "내용이 너무 짧습니다"),
+    PROJECT_MEETING_DOMAIN_CONTENT_TOO_LONG(HttpStatus.BAD_REQUEST, "내용이 너무 깁니다 (최대 500자)"),
+
     // Project - Infrastructure Layer
     PROJECT_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "프로젝트를 찾을 수 없습니다"),
     PROJECT_INFRASTRUCTURE_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 존재하는 프로젝트입니다"),
@@ -380,6 +388,13 @@ public enum ExceptionStatus {
     FILE_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일을 찾을 수 없습니다"),
     FILE_INFRASTRUCTURE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 삭제에 실패했습니다"),
     FILE_INFRASTRUCTURE_STORAGE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "파일 저장소 오류가 발생했습니다"),
+
+    // S3 - Infrastructure Layer
+    S3_INFRASTRUCTURE_CONNECTION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "S3 연결에 실패했습니다"),
+    S3_INFRASTRUCTURE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "S3 파일 업로드에 실패했습니다"),
+    S3_INFRASTRUCTURE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "S3 파일 삭제에 실패했습니다"),
+    S3_INFRASTRUCTURE_FILE_TOO_LARGE(HttpStatus.BAD_REQUEST, "파일 크기가 제한을 초과했습니다"),
+    S3_INFRASTRUCTURE_INVALID_FILE_TYPE(HttpStatus.BAD_REQUEST, "지원하지 않는 파일 형식입니다"),
 
     // Notification - Infrastructure Layer
     NOTIFICATION_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다"),

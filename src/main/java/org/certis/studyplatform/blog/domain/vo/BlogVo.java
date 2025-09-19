@@ -37,27 +37,27 @@ public record BlogVo(
     public BlogVo {
         // 제목 검증
         if (title == null || title.trim().isEmpty()) {
-            throw new DomainException(ExceptionStatus.BLOG_DOMAIN_INVALID_TITLE, "블로그 제목은 필수입니다");
+            throw new DomainException(ExceptionStatus.BLOG_DOMAIN_INVALID_TITLE, "블로그 제목이 올바르지 않습니다.");
         }
 
         // 설명 검증
         if (description == null || description.trim().isEmpty()) {
-            throw new DomainException(ExceptionStatus.BLOG_DOMAIN_INVALID_DESCRIPTION, "블로그 설명은 필수입니다");
+            throw new DomainException(ExceptionStatus.BLOG_DOMAIN_INVALID_DESCRIPTION, "블로그 설명이 올바르지 않습니다.");
         }
 
         // 내용 검증
         if (content == null || content.trim().isEmpty()) {
-            throw new DomainException(ExceptionStatus.BLOG_DOMAIN_INVALID_CONTENT, "블로그 내용은 필수입니다");
+            throw new DomainException(ExceptionStatus.BLOG_DOMAIN_INVALID_CONTENT, "블로그 내용이 올바르지 않습니다.");
         }
 
         // 카테고리 검증
         if (category == null || category.trim().isEmpty()) {
-            throw new DomainException(ExceptionStatus.BLOG_DOMAIN_INVALID_CATEGORY, "블로그 카테고리는 필수입니다");
+            throw new DomainException(ExceptionStatus.BLOG_DOMAIN_INVALID_CATEGORY, "블로그 카테고리가 올바르지 않습니다.");
         }
 
         // 참조 타입 검증
         if (referenceType == null) {
-            throw new DomainException(ExceptionStatus.BLOG_DOMAIN_INVALID_REFERENCE, "참조 타입은 필수입니다");
+            throw new DomainException(ExceptionStatus.BLOG_DOMAIN_INVALID_REFERENCE, "참조 타입이 올바르지 않습니다.");
         }
 
         // 참조 ID 검증

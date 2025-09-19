@@ -8,6 +8,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -406,6 +407,19 @@ public class GlobalExceptionHandler {
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "비동기 작업 처리 중 오류가 발생했습니다",
                 createErrorDetails("COMPLETION_ERROR", request)
+        );
+    }
+
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<GlobalResponseHandler<Object>> handleAuthorizationDenied(
+            AuthorizationDeniedException ex, WebRequest request) {
+
+        log.warn("Authorization denied for request: {}",  ex.getMessage());
+
+        return GlobalResponseHandler.error(
+                HttpStatus.FORBIDDEN.value(),
+                "접근 권한이 없습니다",
+                createErrorDetails("AUTHORIZATION_ERROR", request)
         );
     }
 
