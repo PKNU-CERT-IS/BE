@@ -82,6 +82,10 @@ dependencies {
     implementation 'org.flywaydb:flyway-core'
     implementation 'org.flywaydb:flyway-database-postgresql'
 
+    // ✅ AWS S3 SDK
+    implementation 'software.amazon.awssdk:s3:2.28.11'
+    implementation 'software.amazon.awssdk:auth:2.28.11'
+
     // ✅ 유틸리티 라이브러리
     implementation('commons-io:commons-io:2.20.0') {
         exclude group: 'commons-logging'
@@ -148,25 +152,23 @@ test {
 // ✅ [REFACTORED] Environment & Execution Configuration
 // ===================================================================
 
-// ✅ .env 파일을 로드하여 bootRun 태스크에 시스템 속성으로 설정하는 태스크
-tasks.register('loadEnv') {
-    description = 'Loads environment variables from a .env file based on the active profile.'
-
+// ✅ .env 파일을 로드하는 함수
+def loadEnvironmentVariables() {
     // 현재 활성화된 프로필을 결정 (gradle -Pprofile=dev ... 없으면 'local' 기본값)
     def activeProfile = project.hasProperty('profile') ? project.getProperty('profile') : 'local'
     project.ext.activeProfile = activeProfile // 다른 태스크에서 사용할 수 있도록 저장
 
-    // [FIXED] Groovy 문법에 맞는 switch-case 구문으로 수정
+    // 환경별 .env 파일 경로 결정 (BE 디렉토리 내부)
     def envFileName
     switch (activeProfile) {
         case 'dev':
-            envFileName = '.env.dev'
+            envFileName = '.env.dev'  // BE 디렉토리의 .env.dev
             break
         case 'prod':
-            envFileName = '.env.prod'
+            envFileName = '.env.prod'  // BE 디렉토리의 .env.prod
             break
         default:
-            envFileName = '.env'
+            envFileName = '.env'  // BE 디렉토리의 .env
             break
     }
 
@@ -181,30 +183,53 @@ tasks.register('loadEnv') {
                 if (parts.length == 2) {
                     def key = parts[0].trim()
                     def value = parts[1].trim()
+                    
                     // 따옴표 제거
                     if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
                         value = value.substring(1, value.length() - 1)
                     }
-                    // bootRun 태스크의 시스템 속성으로 설정
-                    tasks.named('bootRun', org.springframework.boot.gradle.tasks.run.BootRun) {
-                        systemProperty key, value
+                    
+                    // 민감한 정보는 로그에 출력하지 않음
+                    def sensitiveKeys = ['PASSWORD', 'SECRET', 'KEY', 'TOKEN', 'CREDENTIAL']
+                    def isSensitive = sensitiveKeys.any { key.toUpperCase().contains(it) }
+                    
+                    if (isSensitive) {
+                        println "   ${key}=***masked***"
+                    } else {
+                        println "   ${key}=${value}"
                     }
+                    
+                    // 시스템 속성으로 설정 (bootRun 및 jOOQ에서 사용)
+                    System.setProperty(key, value)
                 }
             }
         }
     } else {
-        println "⚠️ WARNING: '${envFile.name}' not found. Continuing without it."
+        println "⚠️ WARNING: '${envFile.name}' not found."
+        println "   Please create the .env file"
     }
 }
 
+
 // ✅ bootRun 태스크 설정
 bootRun {
-    // 항상 loadEnv 태스크 이후에 실행되도록 설정
-    dependsOn 'loadEnv'
-
-    // loadEnv에서 결정한 활성 프로필을 Spring Boot에 전달
+    // 환경변수 로딩 후 활성 프로필을 Spring Boot에 전달
     doFirst {
+        // 환경변수 로딩
+        loadEnvironmentVariables()
+        
+        // 활성 프로필 설정
         systemProperty 'spring.profiles.active', project.ext.activeProfile
+        
+        // 로드된 시스템 속성들을 bootRun에 전달
+        System.properties.each { key, value ->
+            if (key.toString().startsWith('POSTGRES_') || 
+                key.toString().startsWith('REDIS_') || 
+                key.toString().startsWith('JWT_') || 
+                key.toString().startsWith('AWS_')) {
+                systemProperty key.toString(), value.toString()
+            }
+        }
     }
 
     // JVM 최적화
@@ -273,57 +298,6 @@ task cleanDev {
     }
 }
 
-// ✅ 환경 파일 생성 헬퍼 태스크 (하이브리드 방식에 맞게 수정)
-task createEnvFiles {
-    group = 'environment'
-    description = 'Create template .env files for secrets and environment-specific values.'
-
-    doLast {
-        println "This task creates .env files for secrets. Other configurations should be in application-*.yml files."
-        // .env (local)
-        def localEnv = file('.env')
-        if (!localEnv.exists()) {
-            localEnv.text = '''# [Local Environment] - 로컬 개발용 민감 정보 및 변수
-# Git에 커밋하지 마세요!
-DB_PASSWORD=
-JWT_SECRET_KEY=cert-is-local-secret-key-very-long-and-secure-for-local-development-only-never-use-in-production
-'''
-            println 'Created .env file for local environment'
-        }
-
-        // .env.dev
-        def devEnv = file('.env.dev')
-        if (!devEnv.exists()) {
-            devEnv.text = '''# [Development Server Environment] - 개발 서버용 민감 정보 및 변수
-# Git에 커밋하지 마세요!
-DB_PASSWORD=your_dev_db_password
-JWT_SECRET_KEY=use-a-secure-random-string-for-dev-environment
-'''
-            println 'Created .env.dev file for development environment'
-        }
-
-        // .env.prod
-        def prodEnv = file('.env.prod')
-        if (!prodEnv.exists()) {
-            prodEnv.text = '''# [Production Environment] - 운영 환경 변수
-# 이 파일은 참조용이며, 실제 값은 외부(Docker, K8s 등)에서 주입됩니다.
-# Git에 커밋하지 마세요!
-DB_URL=
-DB_USERNAME=
-DB_PASSWORD=
-REDIS_HOST=
-REDIS_PORT=
-JWT_SECRET_KEY=
-'''
-            println 'Created .env.prod file for production environment'
-        }
-
-        println ''
-        println 'Environment files created. Edit them with your specific configuration.'
-        println 'Remember to add `.env` and `.env.*` to your .gitignore file!'
-    }
-}
-
 
 // ===================================================================
 // ✅ jOOQ & Build Configuration
@@ -334,7 +308,7 @@ jooq {
     configuration {
         jdbc {
             driver = 'org.postgresql.Driver'
-            url = "jdbc:postgresql://${System.getenv('JOOQ_DB_HOST') ?: 'localhost'}:${System.getenv('JOOQ_DB_PORT') ?: '5433'}/${System.getenv('JOOQ_DB_NAME') ?: 'postgres'}"
+            url = System.getenv('JOOQ_DB_URL') ?: 'jdbc:postgresql://localhost:5433/postgres'
             user = System.getenv('JOOQ_DB_USERNAME') ?: 'postgres'
             password = System.getenv('JOOQ_DB_PASSWORD') ?: ''
         }
@@ -366,6 +340,21 @@ task generateJooqCode {
     group = 'jooq'
     description = 'Generate jOOQ code from database schema'
     dependsOn 'jooqCodegen'
+
+    doFirst {
+        // 환경변수 로딩
+        loadEnvironmentVariables()
+        
+        // 환경변수가 설정되었는지 확인
+        def requiredVars = ['JOOQ_DB_URL', 'JOOQ_DB_USERNAME', 'JOOQ_DB_PASSWORD']
+        def missingVars = requiredVars.findAll { !System.getProperty(it) && !System.getenv(it) }
+        
+        if (missingVars) {
+            throw new GradleException("Missing required environment variables for jOOQ: ${missingVars.join(', ')}")
+        }
+        
+        println "✅ jOOQ environment variables validated"
+    }
 
     doLast {
         println 'jOOQ code generation completed'
