@@ -13,8 +13,12 @@ public record BoardCategoryVo(String value) {
         // 허용된 카테고리만 통과
         switch (upper) {
             case "NOTICE":
-            case "STUDY":
+            case "ACTIVITY":
+            case "SECURITY":
+            case "TECH":
+            case "QUESTION":
             case "PROJECT":
+            case "ALL":  // Special case for fetching all posts
                 return new BoardCategoryVo(upper);
             default:
                 throw new DomainException(ExceptionStatus.BOARD_DOMAIN_INVALID_CATEGORY);
