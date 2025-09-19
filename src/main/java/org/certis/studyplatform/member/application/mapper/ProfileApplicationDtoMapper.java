@@ -42,6 +42,14 @@ public class ProfileApplicationDtoMapper {
                 .memberGrade(profileVo.memberGrade())
                 .skills(profileVo.skills())
                 .createdAt(profileVo.createdAt())
+                // Enhanced profile fields
+                .major(profileVo.major())
+                .birthday(profileVo.birthday())
+                .phoneNumber(profileVo.phoneNumber())
+                .studentNumber(profileVo.studentNumber())
+                .email(profileVo.email())
+                .githubUrl(profileVo.githubUrl())
+                .linkedinUrl(profileVo.linkedUrl())
                 .build();
     }
 
@@ -63,6 +71,8 @@ public class ProfileApplicationDtoMapper {
                 .studyStartDate(studyVo.studyStartDate())
                 .studyEndDate(studyVo.studyEndDate())
                 .tags(studyVo.tags())
+                .category(studyVo.category())
+                .subcategory(studyVo.subcategory())
                 .build();
     }
 
@@ -95,6 +105,8 @@ public class ProfileApplicationDtoMapper {
                 .projectStartDate(projectVo.projectStartDate())
                 .projectEndDate(projectVo.projectEndDate())
                 .tags(projectVo.tags())
+                .category(projectVo.category())
+                .subcategory(projectVo.subcategory())
                 .build();
     }
 
@@ -129,6 +141,7 @@ public class ProfileApplicationDtoMapper {
                 .tags(blogVo.tags())
                 .viewCount(blogVo.viewCount())
                 .likeCount(blogVo.likeCount())
+                .category(blogVo.category())
                 .build();
     }
 

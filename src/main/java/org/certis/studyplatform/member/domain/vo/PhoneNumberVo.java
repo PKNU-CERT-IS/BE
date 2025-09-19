@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 public record PhoneNumberVo(String value) {
 
     private static final Pattern PHONE_PATTERN =
-            Pattern.compile("^010-\\d{4}-\\d{4}$"); // 한국 휴대폰 기본 패턴 (예시)
+            Pattern.compile("^.{1,255}$");
 
     public PhoneNumberVo {
         if (value == null || value.isBlank()) {

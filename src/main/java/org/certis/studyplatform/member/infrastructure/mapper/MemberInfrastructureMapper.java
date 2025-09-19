@@ -226,13 +226,21 @@ public class MemberInfrastructureMapper {
                 entity.getName(),
                 entity.getDescription(),
                 entity.getProfileImage(),
-                List.of(), // todaySchedules (TODO: 실제 스케줄 데이터 조회)
+                List.of(), // todaySchedules (ProfileQueryRepositoryImpl에서 별도 조회하여 설정)
                 0,         // penaltyCount (TODO: 실제 벌점 데이터 조회)
                 null,      // gracePeriod (도메인 서비스에서 계산됨)
                 memberRole,
                 memberGrade,
                 skills,
-                entity.getCreatedAt()
+                entity.getCreatedAt(),
+                // Enhanced profile fields
+                entity.getMajor(),
+                entity.getBirthday(),
+                null, // phoneNumber (ProfileQueryRepositoryImpl에서 contact 정보 조회하여 설정)
+                entity.getStudentNumber(),
+                null, // email (ProfileQueryRepositoryImpl에서 contact 정보 조회하여 설정)
+                null, // githubUrl (ProfileQueryRepositoryImpl에서 contact 정보 조회하여 설정)
+                null  // linkedUrl (ProfileQueryRepositoryImpl에서 contact 정보 조회하여 설정)
         );
     }
 
