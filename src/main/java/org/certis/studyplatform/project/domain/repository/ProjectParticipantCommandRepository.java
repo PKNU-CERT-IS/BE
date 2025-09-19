@@ -27,4 +27,14 @@ public interface ProjectParticipantCommandRepository {
      * 프로젝트 참가 신청 취소 (소프트 삭제)
      */
     void deleteByProjectIdAndMemberId(Long projectId, Long memberId);
+
+    /**
+     * 참가 신청 단건 하드 삭제 (승인 취소 등)
+     */
+    void deleteByIdHard(Long participantId);
+
+    /**
+     * 참가 신청 단건 소프트 삭제 (거절 등)
+     */
+    void softDeleteById(Long participantId);
 }

@@ -4,6 +4,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
+import org.certis.studyplatform.member.domain.MemberRole;
+import org.certis.studyplatform.member.domain.repository.query.MemberQueryRepository;
+import org.certis.studyplatform.member.domain.vo.MemberIdVo;
 import org.certis.studyplatform.project.application.object.command.*;
 import org.certis.studyplatform.project.domain.ProjectParticipantStatus;
 import org.certis.studyplatform.project.domain.repository.ProjectParticipantCommandRepository;
@@ -28,6 +31,7 @@ public class ProjectParticipantDomainService {
     private final ProjectParticipantCommandRepository commandRepository;
     private final ProjectParticipantQueryRepository queryRepository;
     private final ProjectQueryRepository projectQueryRepository;
+    private final MemberQueryRepository memberQueryRepository;
 
     // ================================================================
     // COMMAND OPERATIONS
@@ -52,14 +56,17 @@ public class ProjectParticipantDomainService {
         // 3. 중복 신청 검증
         validateDuplicateParticipation(command.projectId(), command.memberId());
 
-        // 4. 참가자 수 제한 검증
+        // 4. 신청 제한 규칙 검증 (프로젝트: 진행 중 1개 초과 금지)
+        enforceApplicationLimits(command.memberId());
+
+        // 5. 참가자 수 제한 검증
         validateParticipantLimit(command.projectId(), project.maxParticipants());
 
-        // 5. 새로운 참가 신청 생성
+        // 6. 새로운 참가 신청 생성
         ProjectParticipantVo participantVo = ProjectParticipantVo.createNew(
                 command.projectId(), command.memberId());
 
-        // 6. 저장
+        // 7. 저장
         ProjectParticipantCreatedVo result = commandRepository.save(participantVo);
 
         log.info("Domain: Participant request created - ID: {}", result.id());
@@ -73,11 +80,11 @@ public class ProjectParticipantDomainService {
         log.info("Domain: Cancelling participant request - projectId: {}, memberId: {}",
                 command.projectId(), command.memberId());
 
-        // 1. PENDING 상태의 참가 신청 조회
+        // 1. 참가 신청 조회 (상태 무관)
         ProjectParticipantVo participant = queryRepository
                 .findPendingByProjectIdAndMemberId(command.projectId(), command.memberId())
                 .orElseThrow(() -> new DomainException(ExceptionStatus.PROJECT_DOMAIN_NOT_FOUND,
-                        "대기 중인 참가 신청을 찾을 수 없습니다."));
+                        "참가 신청을 찾을 수 없습니다."));
 
         // 2. 본인만 취소 가능
         if (!participant.memberId().equals(command.memberId())) {
@@ -85,11 +92,11 @@ public class ProjectParticipantDomainService {
                     "본인의 참가 신청만 취소할 수 있습니다.");
         }
 
-        // 3. 취소 처리 (소프트 삭제)
-        commandRepository.deleteByProjectIdAndMemberId(command.projectId(), command.memberId());
+        // 3. 하드 삭제 수행
+        commandRepository.deleteByIdHard(participant.id());
 
-        log.info("Domain: Participant request cancelled - projectId: {}, memberId: {}",
-                command.projectId(), command.memberId());
+        log.info("Domain: Approved participant cancelled (hard deleted) - participantId: {}",
+                participant.id());
     }
 
     /**
@@ -128,7 +135,7 @@ public class ProjectParticipantDomainService {
     }
 
     /**
-     * 프로젝트 참가 거절
+     * 프로젝트 참가 거절 (소프트 삭제)
      */
     public ProjectParticipantStatusUpdatedVo rejectParticipant(UpdateProjectParticipantStatusCommand command) {
         log.info("Domain: Rejecting participant - participantId: {}, requesterId: {}",
@@ -148,12 +155,45 @@ public class ProjectParticipantDomainService {
         // 3. 프로젝트 생성자 권한 확인
         validateProjectLeaderPermission(participant.projectId(), command.requesterId());
 
-        // 4. 거절 처리
-        ProjectParticipantVo updatedParticipant = participant.updateStatus(ProjectParticipantStatus.REJECTED);
-        ProjectParticipantStatusUpdatedVo result = commandRepository.updateStatus(updatedParticipant);
+        // 4. 거절 처리 (소프트 삭제)
+        commandRepository.softDeleteById(command.participantId());
+        ProjectParticipantStatusUpdatedVo result = ProjectParticipantStatusUpdatedVo.of(
+                command.participantId(),
+                participant.projectId(),
+                participant.memberId(),
+                participant.status(),
+                ProjectParticipantStatus.REJECTED
+        );
 
-        log.info("Domain: Participant rejected - ID: {}", result.id());
+        log.info("Domain: Participant rejected (soft deleted) - ID: {}", result.id());
         return result;
+    }
+
+    /**
+     * 승인된 참가자 취소 (하드 삭제)
+     */
+    public void cancelApprovedParticipant(Long participantId, Long requesterId) {
+        log.info("Domain: Cancelling approved participant - participantId: {}, requesterId: {}",
+                participantId, requesterId);
+
+        // 1. 참가 신청 조회
+        ProjectParticipantVo participant = queryRepository.findById(participantId)
+                .orElseThrow(() -> new DomainException(ExceptionStatus.PROJECT_DOMAIN_NOT_FOUND,
+                        "참가 신청을 찾을 수 없습니다."));
+
+        // 2. APPROVED 상태인지 확인
+        if (!participant.isApproved()) {
+            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_PERMISSION,
+                    "승인된 참가자만 취소할 수 있습니다.");
+        }
+
+        // 3. 프로젝트 생성자 권한 확인
+        validateProjectLeaderPermission(participant.projectId(), requesterId);
+
+        // 4. 하드 삭제 처리
+        commandRepository.deleteByIdHard(participantId);
+
+        log.info("Domain: Approved participant cancelled (hard deleted) - ID: {}", participantId);
     }
 
     /**
@@ -240,7 +280,7 @@ public class ProjectParticipantDomainService {
         long currentCount = queryRepository.countApprovedParticipantsByProjectId(projectId);
         if (currentCount >= maxParticipants) {
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_PERMISSION,
-                    "프로젝트 참가 인원이 가득찼습니다.");
+                    "프로젝트 정원이 가득 찼습니다.");
         }
     }
 
@@ -252,9 +292,22 @@ public class ProjectParticipantDomainService {
                 .orElseThrow(() -> new DomainException(ExceptionStatus.PROJECT_DOMAIN_NOT_FOUND,
                         "프로젝트를 찾을 수 없습니다."));
 
-        if (!project.creatorId().equals(requesterId)) {
+        boolean isLeader = project.creatorId().equals(requesterId);
+        boolean isAdmin = memberQueryRepository.findRoleByMemberId(new MemberIdVo(requesterId))
+                .map(MemberRole::isStaffOrAbove)
+                .orElse(false);
+
+        if (!(isLeader || isAdmin)) {
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_PERMISSION_DENINED,
-                    "프로젝트 생성자만 참가 승인/거절을 할 수 있습니다.");
+                    "프로젝트 생성자 또는 관리자만 참가 승인/거절을 할 수 있습니다.");
+        }
+    }
+
+    private void enforceApplicationLimits(Long memberId) {
+        long activeProjects = queryRepository.countActiveProjectsByMemberId(memberId);
+        if (activeProjects >= 1) {
+            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_PERMISSION,
+                    "진행 중인 프로젝트가 1개 있으면 추가 신청이 불가합니다.");
         }
     }
 

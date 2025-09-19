@@ -21,11 +21,6 @@ import java.util.Optional;
 public interface StudyParticipantJpaRepository extends JpaRepository<StudyParticipantEntity, Long> {
 
     /**
-     * 기존 단일 조회 메서드 (Query Repository에서만 사용)
-     */
-    Optional<StudyParticipantEntity> findByIdAndDeletedAtIsNull(Long id);
-
-    /**
      * 참가자 상태 벌크 업데이트
      */
     @Modifying(clearAutomatically = true)
@@ -59,5 +54,19 @@ public interface StudyParticipantJpaRepository extends JpaRepository<StudyPartic
             "WHERE p.studyId = :studyId AND p.deletedAt IS NULL")
     int bulkSoftDeleteByStudyId(@Param("studyId") Long studyId,
                                   @Param("deletedAt") OffsetDateTime deletedAt);
+
+    /**
+     * 단건 하드 삭제 (승인 취소 등)
+     */
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM StudyParticipantEntity p WHERE p.id = :id")
+    int hardDeleteById(@Param("id") Long id);
+
+    /**
+     * 단건 소프트 삭제 (거절 등)
+     */
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE StudyParticipantEntity p SET p.deletedAt = :deletedAt, p.updatedAt = :deletedAt WHERE p.id = :id AND p.deletedAt IS NULL")
+    int softDeleteById(@Param("id") Long id, @Param("deletedAt") OffsetDateTime deletedAt);
 }
 

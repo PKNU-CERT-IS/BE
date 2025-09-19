@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.certis.generated.jooq.Tables.*;
+import static org.jooq.impl.DSL.currentOffsetDateTime;
 
 /**
  * Study Participant Query Repository Implementation using Generated jOOQ Tables
@@ -256,6 +257,67 @@ public class StudyParticipantQueryRepositoryImpl implements StudyParticipantQuer
                 .fetchOne(0, long.class);
 
         log.info("jOOQ: Pending participant count: {} - studyId: {}", count, studyId);
+        return count;
+    }
+
+    @Override
+    public List<StudyParticipantSummaryVo> findAllApprovedByStudyId(Long studyId) {
+        log.info("jOOQ: Finding all approved participants by study - studyId: {}", studyId);
+        System.out.println("=== DEBUG: findAllApprovedByStudyId called with studyId: " + studyId + " ===");
+
+        var s = STUDY_PARTICIPANT.as("ss");
+        var m = MEMBER.as("m");
+
+        try {
+            List<StudyParticipantSummaryVo> participants = dsl.select(
+                            s.ID,
+                            s.MEMBER_ID,
+                            m.NAME.as("member_name"),
+                            s.STATUS,
+                            s.CREATED_AT
+                    )
+                    .from(s)
+                    .leftJoin(m).on(s.MEMBER_ID.eq(m.ID))
+                    .where(s.STUDY_ID.eq(studyId)
+                            .and(s.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
+                            .and(s.DELETED_AT.isNull()))
+                    .orderBy(s.CREATED_AT.desc())
+                    .fetch(mapper::toSummaryVoFromRecord);
+
+            log.info("jOOQ: Found {} approved participants", participants.size());
+            System.out.println("=== DEBUG: Found " + participants.size() + " approved participants ===");
+            for (StudyParticipantSummaryVo participant : participants) {
+                System.out.println("=== DEBUG: Participant - memberId: " + participant.memberId() + 
+                                 ", status: " + participant.status() + " ===");
+            }
+            return participants;
+        } catch (Exception e) {
+            log.error("jOOQ: Error finding approved participants - studyId: {}, error: {}", studyId, e.getMessage(), e);
+            System.out.println("=== DEBUG: Error finding participants: " + e.getMessage() + " ===");
+            e.printStackTrace();
+            throw e;
+        }
+    }
+
+    @Override
+    public long countActiveStudiesByMemberId(Long memberId) {
+        log.info("jOOQ: Counting active studies for member - memberId: {}", memberId);
+
+        var s = STUDY_PARTICIPANT.as("sp");
+        var st = STUDY.as("s");
+
+        long count = dsl.selectCount()
+                .from(s)
+                .join(st).on(s.STUDY_ID.eq(st.ID))
+                .where(s.MEMBER_ID.eq(memberId))
+                .and(s.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
+                .and(s.DELETED_AT.isNull())
+                .and(st.DELETED_AT.isNull())
+                .and(st.STARTED_AT.le(currentOffsetDateTime()))
+                .and(st.ENDED_AT.gt(currentOffsetDateTime()))
+                .fetchOne(0, long.class);
+
+        log.info("jOOQ: Active studies count: {} - memberId: {}", count, memberId);
         return count;
     }
 }

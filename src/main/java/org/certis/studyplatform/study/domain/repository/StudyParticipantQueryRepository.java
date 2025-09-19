@@ -6,6 +6,7 @@ import org.certis.studyplatform.study.domain.vo.StudyParticipantVo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -61,4 +62,14 @@ public interface StudyParticipantQueryRepository {
      * 스터디의 대기 중인 참가 신청 수 조회
      */
     long countPendingParticipantsByStudyId(Long studyId);
+
+    /**
+     * 스터디의 모든 승인된 참가자 목록 조회 (페이징 없음)
+     */
+    List<StudyParticipantSummaryVo> findAllApprovedByStudyId(Long studyId);
+
+    /**
+     * 현재 진행 중(기간 내)이며 APPROVED인 스터디 수 (회원 기준)
+     */
+    long countActiveStudiesByMemberId(Long memberId);
 }
