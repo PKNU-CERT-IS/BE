@@ -22,7 +22,7 @@ CREATE TABLE member (
     birthday TIMESTAMPTZ NOT NULL,
     gender VARCHAR NOT NULL,
     description VARCHAR,
-    grace_period DATE
+    grace_period TIMESTAMPTZ
 );
 
 -- Create dependent tables for member
