@@ -186,4 +186,21 @@ public class BoardRedisRepositoryImpl implements BoardRedisRepository {
                     "조회수 조회에 실패했습니다: " + e.getMessage());
         }
     }
+
+    @Override
+    public void incrementViewCount(BoardIdVo boardId) {
+        try {
+            String boardIdStr = boardId.value().toString();
+            RAtomicLong viewCount = redissonClient.getAtomicLong(VIEW_COUNT_PREFIX + boardIdStr);
+            
+            viewCount.incrementAndGet();
+            
+            log.debug("✅ Redis: View count incremented for board: {}", boardId.value());
+
+        } catch (Exception e) {
+            log.error("❌ Redis: Failed to increment view count for board: {}", boardId.value(), e);
+            throw new DomainException(ExceptionStatus.BOARD_INFRASTRUCTURE_REDIS_ERROR,
+                    "조회수 증가에 실패했습니다: " + e.getMessage());
+        }
+    }
 }
