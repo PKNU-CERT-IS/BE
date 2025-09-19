@@ -25,4 +25,8 @@ public class ProfileProjectResponseDto {
     private OffsetDateTime projectStartDate;
     private OffsetDateTime projectEndDate;
     private String[] tags;
+    
+    // Category information
+    private String category;
+    private String subcategory;
 }

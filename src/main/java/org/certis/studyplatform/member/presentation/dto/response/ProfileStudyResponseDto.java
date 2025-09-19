@@ -25,4 +25,8 @@ public class ProfileStudyResponseDto {
     private OffsetDateTime studyStartDate;
     private OffsetDateTime studyEndDate;
     private String[] tags;
+    
+    // Category information
+    private String category;
+    private String subcategory;
 }
