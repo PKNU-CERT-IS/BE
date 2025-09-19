@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Project Application DTO Mapper
@@ -38,9 +39,10 @@ public class ProjectApplicationDtoMapper {
                 .subCategory(vo.subCategory())
                 .startDate(vo.startDate())
                 .endDate(vo.endDate())
+                .creatorId(vo.creatorId())
                 .creatorName(vo.creatorName())
                 .githubUrl(vo.githubUrl())
-                .attachedFiles(Collections.emptyList()) // 초기값은 빈 리스트, Facade에서 추가됨
+                .attachments(Collections.emptyList()) // 초기값은 빈 리스트, Facade에서 추가됨
                 .meetingSummaries(Collections.emptyList()) // 초기값은 빈 리스트, Facade에서 추가됨
                 .maxParticipants(vo.maxParticipants())
                 .currentParticipants(vo.currentParticipants())
@@ -115,6 +117,7 @@ public class ProjectApplicationDtoMapper {
                 .participantNumber(vo.participantNumber())
                 .creatorName(vo.creatorName())
                 .isEditable(vo.isEditable())
+                .links(vo.hasLinks() ? createMockLinks(vo.safeLinkCount()) : Collections.emptyList())
                 .build();
     }
 
@@ -126,12 +129,22 @@ public class ProjectApplicationDtoMapper {
             return null;
         }
 
+        // 기존 meetingAttachedUrl과 meetingAttachedTitle을 links로 변환
+        List<ProjectMeetingSummaryResponseDto.Link> links = Collections.emptyList();
+        if (vo.meetingAttachedUrl() != null && !vo.meetingAttachedUrl().isEmpty()) {
+            links = List.of(ProjectMeetingSummaryResponseDto.Link.builder()
+                    .title(vo.meetingAttachedTitle() != null ? vo.meetingAttachedTitle() : "회의록 첨부 링크")
+                    .url(vo.meetingAttachedUrl())
+                    .build());
+        }
+
         return ProjectMeetingSummaryResponseDto.builder()
                 .id(vo.id())
                 .title(vo.title())
                 .participantNumber(vo.participantNumber())
                 .creatorName(vo.creatorName())
                 .isEditable(vo.isEditable())
+                .links(links)
                 .build();
     }
 
@@ -145,6 +158,22 @@ public class ProjectApplicationDtoMapper {
 
         return vos.stream()
                 .map(this::toProjectMeetingSummaryResponseDto)
+                .toList();
+    }
+
+    /**
+     * 테스트용 링크 목록 생성
+     */
+    private List<ProjectMeetingSummaryResponseDto.Link> createMockLinks(int count) {
+        if (count <= 0) {
+            return Collections.emptyList();
+        }
+        
+        return IntStream.range(0, count)
+                .mapToObj(i -> ProjectMeetingSummaryResponseDto.Link.builder()
+                        .title("회의록 첨부 링크 " + (i + 1))
+                        .url("https://example.com/meeting-notes-" + (i + 1) + ".pdf")
+                        .build())
                 .toList();
     }
 

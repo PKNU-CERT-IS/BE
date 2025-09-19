@@ -20,10 +20,10 @@ public class ProjectApplicationCommandMapper {
      * ProjectCreateRequestDto를 CreateProjectCommand로 변환
      */
     public CreateProjectCommand toCreateProjectCommand(ProjectCreateRequestDto dto, Long creatorId) {
-        // attachedFiles 리스트를 변환합니다. (null-safe 처리 포함)
+        // attachments 리스트를 변환합니다. (null-safe 처리 포함)
         List<CreateProjectAttachedCommand> attachedCommands =
-                (dto.getAttachedFiles() == null) ? Collections.emptyList() :
-                        dto.getAttachedFiles().stream()
+                (dto.getAttachments() == null) ? Collections.emptyList() :
+                        dto.getAttachments().stream()
                                 .map(this::toCreateProjectAttachedCommand) // 람다식(메서드 참조)을 사용한 변환
                                 .collect(Collectors.toList());
 
@@ -52,7 +52,7 @@ public class ProjectApplicationCommandMapper {
                 dto.getName(),
                 dto.getType(),
                 dto.getSize(),
-                dto.getUrl()
+                dto.getAttachedUrl()
         );
     }
 
@@ -60,10 +60,10 @@ public class ProjectApplicationCommandMapper {
      * ProjectUpdateRequestDto를 UpdateProjectCommand로 변환
      */
     public UpdateProjectCommand toUpdateProjectCommand(ProjectUpdateRequestDto dto, Long requesterId) {
-        // attachedFiles 리스트를 변환합니다. (null-safe 처리 포함)
+        // attachments 리스트를 변환합니다. (null-safe 처리 포함)
         List<CreateProjectAttachedCommand> attachedCommands =
-                (dto.getAttachedFiles() == null) ? Collections.emptyList() :
-                        dto.getAttachedFiles().stream()
+                (dto.getAttachments() == null) ? Collections.emptyList() :
+                        dto.getAttachments().stream()
                                 .map(this::toCreateProjectAttachedCommand) // 람다식(메서드 참조)을 사용한 변환
                                 .collect(Collectors.toList());
 

@@ -28,15 +28,30 @@ public class ProjectMeetingDetailResponseDto {
 
     private String content;
 
+    private Integer participantNumber;
+
     private List<Long> participantIds;
 
     private Long writerId;
+
+    private String writerName;
 
     private OffsetDateTime createdAt;
 
     private OffsetDateTime updatedAt;
 
     private boolean isEditable;
+
+    private List<ProjectMeetingDetailResponseDto.Link> links;
+
+    @Getter
+    @Builder(toBuilder = true)
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Link {
+        private String title;
+        private String url;
+    }
 
     // toString for logging
     @Override

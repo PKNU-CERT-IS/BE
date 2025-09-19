@@ -19,10 +19,13 @@ import org.certis.studyplatform.project.presentation.dto.response.ProjectMeeting
 import org.certis.studyplatform.project.presentation.dto.response.ProjectMeetingSummaryResponseDto;
 import org.certis.studyplatform.shared.security.CurrentUser;
 import org.springframework.data.domain.Page;
-
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.IntStream;
 
 
 
@@ -93,10 +96,18 @@ public class ProjectMeetingFacadeService {
                 .title(meetingVo.title())
                 .content(meetingVo.content())
                 .participantIds(meetingVo.participantIds())
+                .participantNumber(meetingVo.participantIds() != null ? meetingVo.participantIds().size() : 0)
                 .writerId(meetingVo.writerId())
+                .writerName("알 수 없음")
                 .createdAt(meetingVo.createdAt())
                 .updatedAt(meetingVo.updatedAt())
                 .isEditable(meetingVo.isEditable())
+                .links(meetingVo.attachedLinks() == null ? java.util.Collections.emptyList() : meetingVo.attachedLinks().stream()
+                        .map(linkVo -> ProjectMeetingDetailResponseDto.Link.builder()
+                                .title(linkVo.name())
+                                .url(linkVo.attachedUrl())
+                                .build())
+                        .toList())
                 .build();
         
         log.info("MeetingFacade: Project meeting detail retrieved successfully - ID: {}", responseDto.getId());
@@ -174,10 +185,27 @@ public class ProjectMeetingFacadeService {
                         .participantNumber(vo.participantNumber())
                         .creatorName(vo.creatorName())
                         .isEditable(vo.isEditable())
+                        .links(vo.hasLinks() ? createMockLinks(vo.safeLinkCount()) : Collections.emptyList())
                         .build());
 
         log.info("MeetingFacade: Found {} meetings for project - ID: {}", result.getTotalElements(), request.getProjectId());
         
         return result;
+    }
+
+    /**
+     * 테스트용 링크 목록 생성
+     */
+    private List<ProjectMeetingSummaryResponseDto.Link> createMockLinks(int count) {
+        if (count <= 0) {
+            return Collections.emptyList();
+        }
+        
+        return IntStream.range(0, count)
+                .mapToObj(i -> ProjectMeetingSummaryResponseDto.Link.builder()
+                        .title("회의록 첨부 링크 " + (i + 1))
+                        .url("https://example.com/meeting-notes-" + (i + 1) + ".pdf")
+                        .build())
+                .toList();
     }
 } 
