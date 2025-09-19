@@ -16,7 +16,11 @@ public record ProfileStudyVo(
         StudyStatus studyStatus,
         OffsetDateTime studyStartDate,
         OffsetDateTime studyEndDate,
-        String[] tags
+        String[] tags,
+        
+        // Category information
+        String category,
+        String subcategory
 ) {
 
     /**
