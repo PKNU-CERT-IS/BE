@@ -23,14 +23,14 @@ insert into auth (member_id, account_number, password, created_at, updated_at, d
 values (9003, 'ADMIN003', '$2a$10$N9qo8uLOickgx2ZMRZoMye1J2LyGgJ/YJwCwGJF1Qn7xPKgNBdJZW', '2025-09-16 09:00:00', '2025-09-16 09:00:00', null);
 
 -- Insert member contact information for admin accounts
-insert into member_contact (member_id, phone_number, email, github_url, linked_url, created_at, updated_at, deleted_at)
-values (9001, '010-0000-0001', 'admin.super@certis.org', 'https://github.com/certis-admin1', 'https://linkedin.com/in/certis-admin1', '2025-09-16 09:00:00', '2025-09-16 09:00:00', null);
+insert into member_contact (member_id, phone_number, email, github_url, linkedin_url, updated_at)
+values (9001, '010-0000-0001', 'admin.super@certis.org', 'https://github.com/certis-admin1', 'https://linkedin.com/in/certis-admin1', '2025-09-16 09:00:00');
 
-insert into member_contact (member_id, phone_number, email, github_url, linked_url, created_at, updated_at, deleted_at)
-values (9002, '010-0000-0002', 'admin.content@certis.org', 'https://github.com/certis-admin2', 'https://linkedin.com/in/certis-admin2', '2025-09-16 09:00:00', '2025-09-16 09:00:00', null);
+insert into member_contact (member_id, phone_number, email, github_url, linkedin_url, updated_at)
+values (9002, '010-0000-0002', 'admin.content@certis.org', 'https://github.com/certis-admin2', 'https://linkedin.com/in/certis-admin2', '2025-09-16 09:00:00');
 
-insert into member_contact (member_id, phone_number, email, github_url, linked_url, created_at, updated_at, deleted_at)
-values (9003, '010-0000-0003', 'admin.tech@certis.org', 'https://github.com/certis-admin3', 'https://linkedin.com/in/certis-admin3', '2025-09-16 09:00:00', '2025-09-16 09:00:00', null);
+insert into member_contact (member_id, phone_number, email, github_url, linkedin_url, updated_at)
+values (9003, '010-0000-0003', 'admin.tech@certis.org', 'https://github.com/certis-admin3', 'https://linkedin.com/in/certis-admin3', '2025-09-16 09:00:00');
 
 -- Note: The password hash above corresponds to "1234" for easy testing
 -- Account numbers: ADMIN001, ADMIN002, ADMIN003
