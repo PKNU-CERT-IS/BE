@@ -38,7 +38,7 @@ public class ProjectMeetingEntity {
     @Column(name = "title", nullable = false)
     private String title;
 
-    @Column(name = "content", nullable = false)
+    @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;
 
     @Column(name = "participants", nullable = false, columnDefinition = "Integer[]")

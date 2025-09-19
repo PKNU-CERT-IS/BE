@@ -40,43 +40,55 @@ public record StudyVo(
      * Compact constructor with validation
      */
     public StudyVo {
-        // 제목 검증
-        if (title == null || title.trim().isEmpty()) {
-            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_TITLE, "프로젝트 제목은 필수입니다");
+        // 제목/설명/내용/카테고리 길이 검증
+        if (title == null || title.trim().isEmpty() || title.length() > 30) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_INVALID_TITLE, "스터디 제목은 필수입니다");
+        }
+        if (description != null && description.length() > 100) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION);
+        }
+        if (content != null && content.length() > 255) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION);
+        }
+        if (category != null && category.length() > 20) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION);
+        }
+        if (subCategory != null && subCategory.length() > 100) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION);
         }
 
         // 기간 검증
         if (startDate == null || endDate == null) {
-            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_DATE, "프로젝트 시작일과 종료일은 필수입니다");
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_DATE_INVALID, "스터디 시작일과 종료일은 필수입니다");
         }
 
         if (startDate.isAfter(endDate)) {
-            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_DATE, "시작일은 종료일보다 빨라야 합니다");
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_DATE_INVALID, "시작일은 종료일보다 빨라야 합니다");
         }
 
         // 과거 날짜 검증 (id가 null인 경우만 - 새로 생성하는 경우)
         if (id == null && startDate.isBefore(OffsetDateTime.now())) {
-            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_DATE, "프로젝트 시작일은 현재보다 미래여야 합니다");
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_DATE_INVALID, "스터디 시작일은 현재보다 미래여야 합니다");
         }
 
         // 최대 참가자 수 검증
         if (maxParticipants == null || maxParticipants < 1) {
-            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_PARTICIPANTS, "최대 참가자 수는 1명 이상이어야 합니다");
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_MAX_PARTICIPANTS_INVALID, "최대 참가자 수는 1명 이상이어야 합니다");
         }
 
         // 현재 참가자 수 검증
         if (currentParticipants != null && currentParticipants < 0) {
-            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_PARTICIPANTS, "현재 참가자 수는 0명 이상이어야 합니다");
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_MAX_PARTICIPANTS_INVALID, "현재 참가자 수는 0명 이상이어야 합니다");
         }
 
         // 현재 참가자 수가 최대 참가자 수를 초과하는지 검증
         if (currentParticipants != null && currentParticipants > maxParticipants) {
-            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_PARTICIPANTS, "현재 참가자 수는 최대 참가자 수를 초과할 수 없습니다");
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_MAX_PARTICIPANTS_TOO_SMALL, "현재 참가자 수는 최대 참가자 수를 초과할 수 없습니다");
         }
 
         // Creator ID 검증
         if (creatorId == null) {
-            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_CREATOR, "프로젝트 생성자 ID는 필수입니다");
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_INVALID_CREATOR, "스터디 생성자 ID는 필수입니다");
         }
     }
 

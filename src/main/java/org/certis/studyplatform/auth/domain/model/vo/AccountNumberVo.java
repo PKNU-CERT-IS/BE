@@ -7,7 +7,10 @@ import org.certis.studyplatform.exception.ExceptionStatus;
 
 public record AccountNumberVo(String accountNumber) {
     public AccountNumberVo{
-        if(accountNumber.length()<6||accountNumber.length()>20){
+        if(accountNumber == null || accountNumber.trim().isEmpty()){
+            throw new DomainException(ExceptionStatus.AUTH_DOMAIN_INVALID_ACCOUNT_NUMBER_LENGTH);
+        }
+        if(accountNumber.length()>20){
             throw new DomainException(ExceptionStatus.AUTH_DOMAIN_INVALID_ACCOUNT_NUMBER_LENGTH);
         }
     }

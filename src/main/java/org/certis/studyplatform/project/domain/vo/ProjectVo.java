@@ -36,9 +36,30 @@ public record ProjectVo(
      * Compact constructor with validation
      */
     public ProjectVo {
-        // 제목 검증
-        if (title == null || title.trim().isEmpty()) {
+        // 제목/설명/내용/카테고리 길이 검증
+        if (title == null || title.trim().isEmpty() || title.length() > 30) {
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_TITLE, "프로젝트 제목은 필수입니다");
+        }
+        if (description != null && description.length() > 100) {
+            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_DESCRIPTION);
+        }
+        if (content != null && content.length() > 255) {
+            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION);
+        }
+        if (category != null && category.length() > 20) {
+            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION);
+        }
+        if (subCategory != null && subCategory.length() > 100) {
+            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION);
+        }
+        if (thumbnailUrl != null && thumbnailUrl.length() > 1000) {
+            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION);
+        }
+        if (githubUrl != null && githubUrl.length() > 1000) {
+            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION);
+        }
+        if (externalUrl != null && externalUrl.length() > 1000) {
+            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION);
         }
 
         // 기간 검증
