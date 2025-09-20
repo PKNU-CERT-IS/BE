@@ -48,3 +48,6 @@ insert into blog (id, member_id, study_id, project_id, title, description, is_pu
 insert into blog (id, member_id, study_id, project_id, title, description, is_public, content, category, created_at, updated_at, deleted_at) values (48, 48, 1, null, 'Solarbreeze', 'Schöningen', true, 'WYOMISSING', 'WEB_SECURITY', '2024-08-31 19:01:49', '2024-08-15 23:00:55', null);
 insert into blog (id, member_id, study_id, project_id, title, description, is_public, content, category, created_at, updated_at, deleted_at) values (49, 49, null, 1, 'Tin', 'MILANO', true, 'Sint-Jans-Molenbeek', 'WEB_SECURITY', '2025-02-27 13:02:49', '2025-07-03 21:52:01', null);
 insert into blog (id, member_id, study_id, project_id, title, description, is_public, content, category, created_at, updated_at, deleted_at) values (50, 50, 1, null, 'Latlux', 'EVANSTON', true, 'SAINT PETER', 'WEB_SECURITY', '2024-09-29 12:07:42', '2025-01-19 00:02:54', null);
+
+-- 시퀀스 오프셋 조정 (목데이터 삽입 후)
+SELECT setval('blog_id_seq', (SELECT MAX(id) FROM blog));

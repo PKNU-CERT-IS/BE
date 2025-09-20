@@ -48,3 +48,6 @@ insert into project_meeting (id, project_id, member_id, title, content, particip
 insert into project_meeting (id, project_id, member_id, title, content, participants, created_at, updated_at, deleted_at) values (48, 16, 3, '학습 진도 추적', '학습자 진도 관리 시스템', ARRAY[1, 2], '2024-08-12 16:22:07', '2024-11-29 09:12:41', null);
 insert into project_meeting (id, project_id, member_id, title, content, participants, created_at, updated_at, deleted_at) values (49, 17, 1, '소셜 미디어 플랫폼', 'SNS 서비스 기획', ARRAY[1, 2], '2025-04-03 11:57:33', '2025-01-23 15:28:16', null);
 insert into project_meeting (id, project_id, member_id, title, content, participants, created_at, updated_at, deleted_at) values (50, 17, 2, '콘텐츠 추천 알고리즘', '개인화 추천 시스템', ARRAY[1, 2], '2025-05-20 07:41:58', '2024-12-05 22:54:32', null);
+
+-- 시퀀스 오프셋 조정 (목데이터 삽입 후)
+SELECT setval('project_meeting_id_seq', (SELECT MAX(id) FROM project_meeting));

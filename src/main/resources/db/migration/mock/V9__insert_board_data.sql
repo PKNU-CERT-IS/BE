@@ -48,3 +48,6 @@ insert into board (id, member_id, title, description, content, category, created
 insert into board (id, member_id, title, description, content, category, created_at, updated_at, deleted_at) values (48, 3, 'Sub-Ex', 'Ameline', 'Chetter', 'INFORMATION', '2024-12-21 09:36:09', '2024-08-14 12:52:50', null);
 insert into board (id, member_id, title, description, content, category, created_at, updated_at, deleted_at) values (49, 1, 'Vagram', 'Emmy', 'Ewbank', 'INFORMATION', '2025-03-31 21:53:39', '2024-10-19 19:46:39', null);
 insert into board (id, member_id, title, description, content, category, created_at, updated_at, deleted_at) values (50, 2, 'Zaam-Dox', 'Raynell', 'Danielczyk', 'ADVERTISE', '2025-05-20 11:03:39', '2025-04-21 17:16:32', null);
+
+-- 시퀀스 오프셋 조정 (목데이터 삽입 후)
+SELECT setval('board_id_seq', (SELECT MAX(id) FROM board));

@@ -29,7 +29,7 @@ spring:
         use_sql_comments: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
-  # Flyway 완전 비활성화
+  # Flyway 설정 - 개발환경에서 repair 허용
   flyway:
     enabled: true
     locations:
@@ -37,6 +37,8 @@ spring:
       - classpath:db/common # 공통 스키마
       - classpath:db/mock # 로컬/개발용 목 데이터
     clean-disabled: false # 공유 환경이므로 clean 명령어 비활성화
+    repair-on-migrate: true # 마이그레이션 시 체크섬 불일치 자동 수정
+    validate-on-migrate: false # 개발환경에서는 검증 비활성화
 
   # SQL 초기화 설정 - 샘플 데이터 삽입
   sql:

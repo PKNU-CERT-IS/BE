@@ -48,3 +48,6 @@ insert into board_like (id, board_id, member_id, like_number, updated_at) values
 insert into board_like (id, board_id, member_id, like_number, updated_at) values (48, 48, 48, 1, '2025-01-22 23:17:26');
 insert into board_like (id, board_id, member_id, like_number, updated_at) values (49, 49, 49, 1, '2025-06-29 13:15:47');
 insert into board_like (id, board_id, member_id, like_number, updated_at) values (50, 50, 50, 1, '2025-01-14 05:39:58');
+
+-- 시퀀스 오프셋 조정 (목데이터 삽입 후)
+SELECT setval('board_like_id_seq', (SELECT MAX(id) FROM board_like));

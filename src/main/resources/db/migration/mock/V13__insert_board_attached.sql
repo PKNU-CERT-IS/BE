@@ -148,3 +148,6 @@ insert into board_attached (id, board_id, member_id, name, type, size, attached_
 insert into board_attached (id, board_id, member_id, name, type, size, attached_url, created_at, updated_at, deleted_at) values (148, 50, 148, 'Ayliff', 'pdf', 1000, 'http://dummyimage.com/226x100.png/dddddd/000000', '2024-12-27 19:57:33', '2025-05-19 05:50:29', null);
 insert into board_attached (id, board_id, member_id, name, type, size, attached_url, created_at, updated_at, deleted_at) values (149, 50, 149, 'Hebdon', 'png', 100, 'http://dummyimage.com/191x100.png/cc0000/ffffff', '2025-02-21 18:21:08', '2025-07-25 02:31:51', null);
 insert into board_attached (id, board_id, member_id, name, type, size, attached_url, created_at, updated_at, deleted_at) values (150, 50, 150, 'Zaple', 'zip', 10, 'http://dummyimage.com/248x100.png/dddddd/000000', '2025-07-29 13:30:41', '2025-05-22 05:02:33', null);
+
+-- 시퀀스 오프셋 조정 (목데이터 삽입 후)
+SELECT setval('board_attached_id_seq', (SELECT MAX(id) FROM board_attached));
