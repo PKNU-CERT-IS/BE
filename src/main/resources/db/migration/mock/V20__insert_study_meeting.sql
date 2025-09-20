@@ -48,3 +48,6 @@ insert into study_meeting (id, study_id, member_id, title, content, participants
 insert into study_meeting (id, study_id, member_id, title, content, participants, created_at, updated_at, deleted_at) values (48, 48, 16, 'Konklab', 'Hickinbottom', ARRAY[1, 2], '2025-06-23 19:57:56', '2024-08-04 22:20:10', null);
 insert into study_meeting (id, study_id, member_id, title, content, participants, created_at, updated_at, deleted_at) values (49, 49, 17, 'Fix San', 'Levett', ARRAY[1, 2], '2025-07-09 12:51:45', '2025-01-02 08:05:59', null);
 insert into study_meeting (id, study_id, member_id, title, content, participants, created_at, updated_at, deleted_at) values (50, 50, 17, 'Overhold', 'Book', ARRAY[1, 2], '2024-09-02 14:09:11', '2024-09-18 22:14:54', null);
+
+-- 시퀀스 오프셋 조정 (목데이터 삽입 후)
+SELECT setval('study_meeting_id_seq', (SELECT MAX(id) FROM study_meeting));

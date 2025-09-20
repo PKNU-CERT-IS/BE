@@ -148,3 +148,6 @@ insert into blog_tag (id, blog_id, content, created_at, updated_at, deleted_at) 
 insert into blog_tag (id, blog_id, content, created_at, updated_at, deleted_at) values (148, 50, 'Cowdery', '2024-12-02 16:07:16', '2024-11-27 12:29:40', null);
 insert into blog_tag (id, blog_id, content, created_at, updated_at, deleted_at) values (149, 50, 'Antoni', '2024-11-30 07:21:44', '2024-10-30 21:41:17', null);
 insert into blog_tag (id, blog_id, content, created_at, updated_at, deleted_at) values (150, 50, 'Handrok', '2024-09-15 10:09:53', '2025-05-28 07:48:47', null);
+
+-- 시퀀스 오프셋 조정 (목데이터 삽입 후)
+SELECT setval('blog_tag_id_seq', (SELECT MAX(id) FROM blog_tag));

@@ -48,3 +48,6 @@ insert into study (id, member_id, title, description, content, category, subcate
 insert into study (id, member_id, title, description, content, category, subcategory, max_participants_number, started_at, ended_at, created_at, updated_at, deleted_at) values (48, 3, 'Trippledex', 'Joline', 'Delgardillo', 'WEB_SECURITY', 'WEB_SECURITY', 10, '2024-08-08 05:27:54', '2025-02-21 02:30:19', '2025-03-31 21:36:00', '2024-10-27 18:39:37', null);
 insert into study (id, member_id, title, description, content, category, subcategory, max_participants_number, started_at, ended_at, created_at, updated_at, deleted_at) values (49, 1, 'Temp', 'Parnell', 'McLellan', 'WEB_SECURITY', 'WEB_SECURITY', 10, '2024-07-28 20:51:39', '2025-07-13 19:14:34', '2025-01-04 21:11:41', '2025-03-22 14:19:27', null);
 insert into study (id, member_id, title, description, content, category, subcategory, max_participants_number, started_at, ended_at, created_at, updated_at, deleted_at) values (50, 2, 'Temp', 'Lana', 'Perigeaux', 'WEB_SECURITY', 'WEB_SECURITY', 10, '2024-08-11 13:50:12', '2025-10-17 21:38:32', '2025-01-30 05:34:36', '2024-10-09 13:27:58', null);
+
+-- 시퀀스 오프셋 조정 (목데이터 삽입 후)
+SELECT setval('study_id_seq', (SELECT MAX(id) FROM study));
