@@ -3,3 +3,5 @@ insert into schedule (id, member_id, type, title, description, place, started_at
 insert into schedule (id, member_id, type, title, description, place, started_at, ended_at, created_at, updated_at, deleted_at) values (3, 3, 'INFORMATION', 'Onfre', 'Wapol', 'CLUBROOM', '2025-08-20 20:37:29', '2025-08-09 11:40:05', '2025-07-01 00:00:00', '2025-07-01 00:00:00', null);
 insert into schedule (id, member_id, type, title, description, place, started_at, ended_at, created_at, updated_at, deleted_at) values (4, 1, 'INFORMATION', 'Willie', 'Holston', 'CLUBROOM', '2025-08-11 21:28:09', '2025-08-05 14:14:42', '2025-07-01 00:00:00', '2025-07-01 00:00:00', null);
 insert into schedule (id, member_id, type, title, description, place, started_at, ended_at, created_at, updated_at, deleted_at) values (5, 2, 'ADVERTISE', 'Iago', 'Bennoe', 'CLUBROOM', '2025-08-10 20:45:34', '2025-08-11 11:26:05', '2025-07-01 00:00:00', '2025-07-01 00:00:00', null);
+
+SELECT setval('schedule_id_seq', (SELECT MAX(id) FROM schedule));

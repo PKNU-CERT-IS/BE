@@ -48,3 +48,5 @@ insert into blog_view (id, blog_id, view_number, created_at) values (47, 47, 1, 
 insert into blog_view (id, blog_id, view_number, created_at) values (48, 48, 1, '2025-04-22 12:57:58');
 insert into blog_view (id, blog_id, view_number, created_at) values (49, 49, 1, '2025-05-24 20:28:10');
 insert into blog_view (id, blog_id, view_number, created_at) values (50, 50, 1, '2024-08-16 00:48:57');
+
+SELECT setval('blog_view_id_seq', (SELECT MAX(id) FROM blog_view));
