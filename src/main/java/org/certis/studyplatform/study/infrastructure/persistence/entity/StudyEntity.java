@@ -31,13 +31,13 @@ public class StudyEntity {
     @Column(nullable = false, name = "member_id")
     private Long memberId;
 
-    @Column(nullable = false, length = 30)
+    @Column(nullable = false)
     private String title;
 
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false)
     private String description;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false)
     private String content;
 
     @Column(nullable = false, length = 20)

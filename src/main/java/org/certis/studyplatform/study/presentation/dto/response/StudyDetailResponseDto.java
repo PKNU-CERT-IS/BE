@@ -48,9 +48,13 @@ public class StudyDetailResponseDto {
 
     private Long creatorId;
 
-    private String creatorName;
+    private String studyCreatorName;
 
-    private MemberGrade creatorGrade;
+    private String studyCreatorGrade;
+
+    private String semester;
+
+    private String status;
 
     private List<StudyAttachedResponseDto> attachments;
 
@@ -62,6 +66,8 @@ public class StudyDetailResponseDto {
 
     private Integer currentParticipantNumber;
 
+    private boolean isParticipantable;
+
 
 
     // toString for logging
@@ -70,7 +76,7 @@ public class StudyDetailResponseDto {
         return "StudyDetailResponseDto{" +
                 "id=" + id +
                 ", title='" + title + '\'' +
-                ", creatorName='" + creatorName + '\'' +
+                ", studyCreatorName='" + studyCreatorName + '\'' +
                 ", startDate=" + startDate +
                 ", endDate=" + endDate +
                 '}';

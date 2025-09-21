@@ -42,6 +42,10 @@ public class StudySummaryResponseDto {
 
     private MemberGrade studyCreatorGrade;
 
+    private String semester;
+
+    private String status;
+
     private boolean isParticipantable;
 
     private Integer currentParticipantNumber;

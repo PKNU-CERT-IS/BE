@@ -137,4 +137,58 @@ public class StudyApplicationCommandMapper {
                 requesterId
         );
     }
+
+    /**
+     * AdminStudyParticipantApprovalRequestDto → UpdateStudyParticipantStatusCommand 변환 (관리자 승인용)
+     */
+    public UpdateStudyParticipantStatusCommand toApproveStudyParticipantByAdminCommand(
+            AdminStudyParticipantApprovalRequestDto requestDto, Long adminId) {
+        return new UpdateStudyParticipantStatusCommand(
+                requestDto.getParticipantId(),
+                org.certis.studyplatform.study.domain.StudyParticipantStatus.APPROVED,
+                adminId
+        );
+    }
+
+    /**
+     * AdminStudyParticipantApprovalRequestDto → UpdateStudyParticipantStatusCommand 변환 (관리자 거절용)
+     */
+    public UpdateStudyParticipantStatusCommand toRejectStudyParticipantByAdminCommand(
+            AdminStudyParticipantApprovalRequestDto requestDto, Long adminId) {
+        return new UpdateStudyParticipantStatusCommand(
+                requestDto.getParticipantId(),
+                org.certis.studyplatform.study.domain.StudyParticipantStatus.REJECTED,
+                adminId
+        );
+    }
+
+    /**
+     * StudyMeetingCreateRequestDto → CreateStudyMeetingCommand 변환
+     */
+    public CreateStudyMeetingCommand toCreateStudyMeetingCommand(
+            StudyMeetingCreateRequestDto requestDto, Long writerId) {
+        return CreateStudyMeetingCommand.of(
+                requestDto.getStudyId(),
+                writerId,
+                requestDto.getTitle(),
+                requestDto.getContent(),
+                requestDto.getParticipantNumber(),
+                requestDto.getLinks()
+        );
+    }
+
+    /**
+     * StudyMeetingUpdateRequestDto → UpdateStudyMeetingCommand 변환
+     */
+    public UpdateStudyMeetingCommand toUpdateStudyMeetingCommand(
+            StudyMeetingUpdateRequestDto requestDto, Long requesterId) {
+        return UpdateStudyMeetingCommand.of(
+                requestDto.getMeetingId(),
+                requesterId,
+                requestDto.getTitle(),
+                requestDto.getContent(),
+                requestDto.getParticipantNumber(),
+                requestDto.getLinks()
+        );
+    }
 }

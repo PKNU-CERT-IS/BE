@@ -29,8 +29,11 @@ public record StudyVo(
         Long creatorId,
         String creatorName,
         MemberGrade creatorGrade,
+        String semester,
+        String status,
         Integer maxParticipants,
         Integer currentParticipants,
+        boolean isParticipantable,
         List<StudyAttachedVo> attached,
         List<StudyMeetingSummaryVo> summaryVoList,
         List<StudyParticipantVo> participantVoList
@@ -41,20 +44,20 @@ public record StudyVo(
      */
     public StudyVo {
         // 제목/설명/내용/카테고리 길이 검증
-        if (title == null || title.trim().isEmpty() || title.length() > 30) {
+        if (title == null || title.trim().isEmpty()) {
             throw new DomainException(ExceptionStatus.STUDY_DOMAIN_INVALID_TITLE, "스터디 제목은 필수입니다");
         }
-        if (description != null && description.length() > 100) {
-            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION);
+        if (description != null && description.trim().isEmpty()) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION, "스터디 설명은 비어있을 수 없습니다");
         }
-        if (content != null && content.length() > 255) {
-            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION);
+        if (content != null && content.trim().isEmpty()) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION, "스터디 내용은 비어있을 수 없습니다");
         }
-        if (category != null && category.length() > 20) {
-            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION);
+        if (category != null && category.trim().isEmpty()) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION, "스터디 카테고리는 비어있을 수 없습니다");
         }
-        if (subCategory != null && subCategory.length() > 100) {
-            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION);
+        if (subCategory != null && subCategory.trim().isEmpty()) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION, "스터디 하위 카테고리는 비어있을 수 없습니다");
         }
 
         // 기간 검증
@@ -62,7 +65,11 @@ public record StudyVo(
             throw new DomainException(ExceptionStatus.STUDY_DOMAIN_DATE_INVALID, "스터디 시작일과 종료일은 필수입니다");
         }
 
-        if (startDate.isAfter(endDate)) {
+        // 스터디 종료 시에는 시작일과 종료일 비교를 건너뛰기
+        // (ended_at을 현재 시간으로 설정할 때 startDate가 현재 시간보다 늦을 수 있음)
+        if (id != null && endDate != null && endDate.isAfter(OffsetDateTime.now().minusMinutes(1))) {
+            // 스터디 종료 중인 경우 validation 건너뛰기
+        } else if (startDate.isAfter(endDate)) {
             throw new DomainException(ExceptionStatus.STUDY_DOMAIN_DATE_INVALID, "시작일은 종료일보다 빨라야 합니다");
         }
 
@@ -110,16 +117,22 @@ public record StudyVo(
             Long creatorId,
             String creatorName,
             MemberGrade creatorGrade,
+            String semester,
+            String status,
             Integer maxParticipants,
-            Integer currentParticipants
+            Integer currentParticipants,
+            boolean isParticipantable,
+            List<StudyAttachedVo> attached
     ) {
         return new StudyVo(
                 id, title, description, content, category, subCategory,
                 startDate, endDate, createdAt, updatedAt,
                 creatorId, creatorName, creatorGrade,
+                semester, status,
                 maxParticipants, currentParticipants,
-                Collections.emptyList(), Collections.emptyList(),
-                Collections.emptyList()
+                isParticipantable,
+                attached,
+                Collections.emptyList(), Collections.emptyList()
         );
     }
 
@@ -145,7 +158,10 @@ public record StudyVo(
                 title, description, content, category, subCategory,
                 startDate, endDate, now, now, // createdAt, updatedAt
                 creatorId, creatorName, creatorGrade,
+                calculateSemester(endDate), // semester 계산
+                calculateStatus(endDate), // status 계산
                 maxParticipants, 0, // 초기 참가자는 0명
+                true, // 새로 생성된 스터디는 참여 가능
                 Collections.emptyList(),
                 Collections.emptyList(), // 초기 회의록 목록은 비어 있음
                 Collections.emptyList()  // 초기 참가자 목록은 비어 있음
@@ -164,6 +180,8 @@ public record StudyVo(
                                      OffsetDateTime startDate,
                                      OffsetDateTime endDate,
                                      Integer maxParticipants) {
+        OffsetDateTime newEndDate = endDate != null ? endDate : existing.endDate();
+        
         return new StudyVo(
                 existing.id(),
                 title != null ? title : existing.title(),
@@ -172,18 +190,60 @@ public record StudyVo(
                 category != null ? category : existing.category(),
                 subCategory != null ? subCategory : existing.subCategory(),
                 startDate != null ? startDate : existing.startDate(),
-                endDate != null ? endDate : existing.endDate(),
+                newEndDate,
                 existing.createdAt(), // 기존 createdAt 유지
                 OffsetDateTime.now(), // updatedAt은 현재 시간으로 갱신
                 existing.creatorId(),
                 existing.creatorName(),
                 existing.creatorGrade(), // 기존 creatorGrade 유지
+                calculateSemester(newEndDate), // semester 재계산
+                calculateStatus(newEndDate), // status 재계산
                 maxParticipants != null ? maxParticipants : existing.maxParticipants(),
                 existing.currentParticipants(),
+                existing.isParticipantable(), // 기존 참여 가능 여부 유지
                 existing.attached(),
                 existing.summaryVoList(),    // 기존 summaryVoList 유지
                 existing.participantVoList() // 기존 participantVoList 유지
 
         );
     }
+
+    // ================================================================
+    // 비즈니스 로직 계산 메서드들
+    // ================================================================
+
+    /**
+     * ended_at을 기준으로 semester 계산
+     * 3월~8월: 해당 년도 1학기
+     * 9월~다음해 2월: 해당 년도 2학기
+     */
+    private static String calculateSemester(OffsetDateTime endedAt) {
+        if (endedAt == null) {
+            return null;
+        }
+        
+        java.time.LocalDate endDate = endedAt.toLocalDate();
+        int year = endDate.getYear();
+        int month = endDate.getMonthValue();
+        
+        if (month >= 3 && month <= 8) {
+            return year + "-1"; // 1학기
+        } else {
+            return year + "-2"; // 2학기
+        }
+    }
+
+    /**
+     * ended_at을 기준으로 status 계산
+     * ended_at이 현재 시간보다 지났으면 "ENDED", 아니면 "ACTIVE"
+     */
+    private static String calculateStatus(OffsetDateTime endedAt) {
+        if (endedAt == null) {
+            return "ACTIVE"; // 종료일이 없으면 활성 상태
+        }
+        
+        OffsetDateTime now = OffsetDateTime.now();
+        return endedAt.isBefore(now) ? "ENDED" : "ACTIVE";
+    }
+
 }

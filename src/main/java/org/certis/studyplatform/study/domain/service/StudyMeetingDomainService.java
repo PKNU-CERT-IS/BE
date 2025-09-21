@@ -50,7 +50,7 @@ public class StudyMeetingDomainService {
                 command.studyId(),
                 command.title(),
                 command.content(),
-                command.participantIds(),
+                command.participantNumber(),
                 command.writerId(),
                 true,
                 null,
@@ -59,15 +59,17 @@ public class StudyMeetingDomainService {
 
         StudyMeetingCreatedVo createdVo = studyMeetingCommandRepository.save(meetingVo);
 
-        if (command.attachedUrl() != null && !command.attachedUrl().trim().isEmpty()) {
-            StudyMeetingLinkVo linkVo = StudyMeetingLinkVo.forCreation(
-                    createdVo.studyId(),
-                    createdVo.writerId(),
-                    "회의록 첨부 링크",
-                    command.attachedUrl()
-            );
-            studyMeetingLinkCommandRepository.save(linkVo);
-            log.info("MeetingDomain: Study meeting link saved - URL: {}", command.attachedUrl());
+        if (command.links() != null && !command.links().isEmpty()) {
+            for (var link : command.links()) {
+                StudyMeetingLinkVo linkVo = StudyMeetingLinkVo.forCreation(
+                        createdVo.studyId(),
+                        createdVo.writerId(),
+                        link.getTitle(),
+                        link.getUrl()
+                );
+                studyMeetingLinkCommandRepository.save(linkVo);
+                log.info("MeetingDomain: Study meeting link saved - Title: {}, URL: {}", link.getTitle(), link.getUrl());
+            }
         }
 
         log.info("MeetingDomain: Study meeting created successfully - ID: {}", createdVo.id());
@@ -92,7 +94,7 @@ public class StudyMeetingDomainService {
                 existingMeeting.studyId(),
                 command.title(),
                 command.content(),
-                command.participantIds(),
+                command.participantNumber(),
                 existingMeeting.writerId(),
                 true,
                 existingMeeting.createdAt(),
@@ -101,18 +103,20 @@ public class StudyMeetingDomainService {
 
         StudyMeetingUpdatedVo updatedVo = studyMeetingCommandRepository.update(updatedMeetingVo);
 
-        if (command.attachedUrl() != null) {
+        if (command.links() != null) {
             studyMeetingLinkCommandRepository.deleteByStudyId(existingMeeting.studyId());
 
-            if (!command.attachedUrl().trim().isEmpty()) {
-                StudyMeetingLinkVo linkVo = StudyMeetingLinkVo.forCreation(
-                        existingMeeting.studyId(),
-                        command.requesterId(),
-                        "회의록 첨부 링크",
-                        command.attachedUrl()
-                );
-                studyMeetingLinkCommandRepository.save(linkVo);
-                log.info("MeetingDomain: Study meeting link updated - URL: {}", command.attachedUrl());
+            if (!command.links().isEmpty()) {
+                for (var link : command.links()) {
+                    StudyMeetingLinkVo linkVo = StudyMeetingLinkVo.forCreation(
+                            existingMeeting.studyId(),
+                            command.requesterId(),
+                            link.getTitle(),
+                            link.getUrl()
+                    );
+                    studyMeetingLinkCommandRepository.save(linkVo);
+                    log.info("MeetingDomain: Study meeting link updated - Title: {}, URL: {}", link.getTitle(), link.getUrl());
+                }
             }
         }
 

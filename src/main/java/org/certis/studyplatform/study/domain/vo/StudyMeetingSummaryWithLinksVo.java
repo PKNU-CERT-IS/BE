@@ -1,11 +1,14 @@
 package org.certis.studyplatform.study.domain.vo;
 
+import java.time.OffsetDateTime;
+
 public record StudyMeetingSummaryWithLinksVo(
         Long id,
         String title,
         Integer participantNumber,
         String creatorName,
         boolean isEditable,
+        OffsetDateTime createdAt,
         Integer linkCount
 ) {
 
@@ -19,6 +22,7 @@ public record StudyMeetingSummaryWithLinksVo(
                 summaryVo.participantNumber(),
                 summaryVo.creatorName(),
                 summaryVo.isEditable(),
+                summaryVo.createdAt(),
                 linkCount
         );
     }

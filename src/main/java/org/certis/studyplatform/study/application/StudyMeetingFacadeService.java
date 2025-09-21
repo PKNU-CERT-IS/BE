@@ -57,11 +57,11 @@ public class StudyMeetingFacadeService {
         // DTO → Command 변환
         CreateStudyMeetingCommand command = CreateStudyMeetingCommand.of(
             request.getStudyId(),
-                writerId,
+            writerId,
             request.getTitle(),
             request.getContent(),
-            request.getParticipantIds(),
-            request.getAttachedUrl()
+            request.getParticipantNumber(),
+            request.getLinks()
         );
         
         // Command Service 호출
@@ -91,8 +91,7 @@ public class StudyMeetingFacadeService {
                 .studyId(meetingVo.studyId())
                 .title(meetingVo.title())
                 .content(meetingVo.content())
-                .participantIds(meetingVo.participantIds())
-                .participantNumber(meetingVo.participantIds() != null ? meetingVo.participantIds().size() : 0)
+                .participantNumber(meetingVo.participantNumber())
                 .writerId(meetingVo.writerId())
                 .writerName("알 수 없음")
                 .createdAt(meetingVo.createdAt())
@@ -125,8 +124,8 @@ public class StudyMeetingFacadeService {
                 requesterId,
             request.getTitle(),
             request.getContent(),
-            request.getParticipants(),
-            request.getAttachedUrl()
+            request.getParticipantNumber(),
+            request.getLinks()
         );
         
         // Command Service 호출
@@ -180,6 +179,7 @@ public class StudyMeetingFacadeService {
                         .title(vo.title())
                         .participantNumber(vo.participantNumber())
                         .creatorName(vo.creatorName())
+                        .createdAt(vo.createdAt())
                         .isEditable(vo.isEditable())
                         .links(vo.hasLinks() ? createMockLinks(vo.safeLinkCount()) : Collections.emptyList())
                         .build());

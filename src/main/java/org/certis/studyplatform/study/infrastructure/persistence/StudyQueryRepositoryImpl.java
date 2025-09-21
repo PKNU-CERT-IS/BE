@@ -3,6 +3,7 @@ package org.certis.studyplatform.study.infrastructure.persistence;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.study.domain.repository.StudyQueryRepository;
+import org.certis.studyplatform.study.domain.StudyParticipantStatus;
 import org.certis.studyplatform.study.domain.vo.*;
 import org.certis.studyplatform.study.infrastructure.mapper.StudyInfrastructureMapper;
 import org.jooq.*;
@@ -73,6 +74,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
                                                 .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
+                                                .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
                                                 .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
                                                 .asField("current_participants"),
                                         // StudyAttached 정보
@@ -143,6 +145,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
                                                 .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
+                                                .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
                                                 .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
                                                 .asField("current_participants"),
                                         // StudyAttached 정보
@@ -219,6 +222,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
                                                 .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
+                                                .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
                                                 .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
                                                 .asField("current_participants"),
                                         sa.ID.as("attached_id"),
@@ -280,6 +284,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
                                                 .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
+                                                .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
                                                 .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
                                                 .asField("current_participants"),
                                         sa.ID.as("attached_id"),
@@ -343,6 +348,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
                                                 .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
+                                                .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
                                                 .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
                                                 .asField("current_participants"),
                                         sa.ID.as("attached_id"),
@@ -410,6 +416,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
                                                 .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
+                                                .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
                                                 .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
                                                 .asField("current_participants"),
                                         sa.ID.as("attached_id"),
@@ -474,6 +481,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
                                                 .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
+                                                .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
                                                 .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
                                                 .asField("current_participants"),
                                         sa.ID.as("attached_id"),
@@ -537,6 +545,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
                                                 .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
+                                                .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
                                                 .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
                                                 .asField("current_participants"),
                                         sa.ID.as("attached_id"),
@@ -589,6 +598,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
                                                 .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
+                                                .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
                                                 .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
                                                 .asField("current_participants"),
                                         sa.ID.as("attached_id"),
@@ -676,6 +686,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
                                                 .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
+                                                .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
                                                 .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
                                                 .asField("current_participants"),
                                         sa.ID.as("attached_id"),
@@ -727,6 +738,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
                                                 .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
+                                                .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
                                                 .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
                                                 .asField("current_participants"),
                                         sa.ID.as("attached_id"),

@@ -15,6 +15,7 @@ import org.certis.studyplatform.study.application.mapper.StudyApplicationDtoMapp
 import org.certis.studyplatform.study.application.mapper.StudyApplicationQueryMapper;
 import org.certis.studyplatform.study.application.object.command.CreateStudyCommand;
 import org.certis.studyplatform.study.application.object.command.DeleteStudyCommand;
+import org.certis.studyplatform.study.application.object.command.EndStudyCommand;
 import org.certis.studyplatform.study.application.object.command.UpdateStudyCommand;
 import org.certis.studyplatform.study.application.object.query.GetAllStudyMeetingsQuery;
 import org.certis.studyplatform.study.application.object.query.GetAllStudiesQuery;
@@ -27,6 +28,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -234,6 +237,25 @@ public class StudyFacadeService {
 
         log.info("Facade: Found {} meetings for study - ID: {}", meetings.size(), studyId);
         return meetings;
+    }
+
+    /**
+     * 스터디 종료 (DTO 반환)
+     */
+    public StudyDetailResponseDto endStudy(Long studyId, Long requesterId, List<MultipartFile> files) {
+        log.info("Facade: Ending study - ID: {}, requesterId: {}", studyId, requesterId);
+
+        // Command 객체 생성
+        EndStudyCommand command = EndStudyCommand.of(studyId, requesterId, files);
+
+        // Command Service 호출 (VO 반환)
+        StudyVo endedVo = studyCommandService.endStudy(command);
+
+        // VO → DTO 변환
+        StudyDetailResponseDto responseDto = dtoMapper.toStudyDetailResponseDto(endedVo);
+
+        log.info("Facade: Study ended successfully - ID: {}", endedVo.id());
+        return responseDto;
     }
 
 
