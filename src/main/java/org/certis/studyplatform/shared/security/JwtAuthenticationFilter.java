@@ -14,6 +14,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -29,6 +30,7 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -132,6 +134,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 "/api/v1/project/meeting/all",
                 "/api/v1/project/participant/**/participants/**",
                 "/api/v1/project/participant/members/**/participants",
+                "/api/v1/project/participant/**/participants/all",
 
                 "/api/v1/schedule/requests",
                 "/api/v1/schedule/me/request",
@@ -157,6 +160,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
 
         return excludedPaths.stream()
-                .anyMatch(path::startsWith);
+                .anyMatch(pattern -> pathMatcher.match(pattern, path));
     }
 }

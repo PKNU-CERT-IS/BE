@@ -70,6 +70,7 @@ public class SecurityConfig {
                                 "/api/v1/project/meeting/all",
                                 "/api/v1/project/participant/**/participants/**",
                                 "/api/v1/project/participant/members/**/participants",
+                                "/api/v1/project/participant/**/participants/all",
                 
                                 "/api/v1/schedule/requests",
                                 "/api/v1/schedule/me/request",
