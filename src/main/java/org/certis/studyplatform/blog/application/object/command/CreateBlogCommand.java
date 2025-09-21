@@ -14,7 +14,8 @@ public record CreateBlogCommand(
         String category,
         ArticleReferenceType referenceType,
         Long referenceId,
-        Long creatorId
+        Long creatorId,
+        Boolean isPublic
 ) {
     public static CreateBlogCommand of(
             String title,
@@ -23,11 +24,12 @@ public record CreateBlogCommand(
             String category,
             ArticleReferenceType referenceType,
             Long referenceId,
-            Long creatorId
+            Long creatorId,
+            Boolean isPublic
     ) {
         return new CreateBlogCommand(
                 title, description, content, category,
-                referenceType, referenceId, creatorId
+                referenceType, referenceId, creatorId, isPublic
         );
     }
 }

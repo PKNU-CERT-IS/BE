@@ -116,15 +116,17 @@ public class BlogController {
      * 블로그 세부 정보 조회 (@ModelAttribute 사용)
      *
      * @param request 블로그 상세 조회 요청 DTO
+     * @param currentUser 현재 사용자 정보
      * @return 블로그 상세 정보
      */
     @GetMapping("/detail")
     public ResponseEntity<GlobalResponseHandler<BlogDetailResponseDto>> getBlogDetail(
-            @Valid @ModelAttribute BlogDetailRequestDto request) {
-        log.info("REST: Getting blog detail - ID: {}", request.getBlogId());
+            @Valid @ModelAttribute BlogDetailRequestDto request,
+            @AuthenticationPrincipal CurrentUser currentUser) {
+        log.info("REST: Getting blog detail - ID: {}, viewerId: {}", request.getBlogId(), currentUser.getId());
 
-        // Facade Service 호출
-        BlogDetailResponseDto blogDetail = blogFacadeService.getBlogDetail(request);
+        // Facade Service 호출 (viewerId 포함)
+        BlogDetailResponseDto blogDetail = blogFacadeService.getBlogDetail(request, currentUser.getId());
 
         log.info("REST: Blog detail retrieved successfully - ID: {}", blogDetail.getId());
 
@@ -201,6 +203,27 @@ public class BlogController {
         log.info("REST: Blog reference list retrieved - found {} items", result.size());
 
         return GlobalResponseHandler.success(ResponseStatus.BLOG_FIND_SUCCESS, result);
+    }
+
+    /**
+     * 공개 유무에 따른 블로그 조회 API
+     * GET /api/v1/blog/public
+     */
+    @GetMapping("/public")
+    public ResponseEntity<GlobalResponseHandler<Page<BlogSummaryResponseDto>>> getPublicBlogs(
+            @RequestParam(required = false) Boolean isPublic,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
+        log.info("REST: Getting public blogs - isPublic: {}, page: {}, size: {}",
+                isPublic, pageable.getPageNumber(), pageable.getPageSize());
+
+        // Facade Service 호출
+        Page<BlogSummaryResponseDto> result = blogFacadeService.getBlogsByPublicStatus(isPublic, pageable, currentUser.getId());
+
+        log.info("REST: Public blogs retrieved - found {} results", result.getTotalElements());
+
+        return GlobalResponseHandler.success(ResponseStatus.BLOG_SEARCH_SUCCESS, result);
     }
 
 }

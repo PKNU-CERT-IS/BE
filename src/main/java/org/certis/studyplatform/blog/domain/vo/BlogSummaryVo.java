@@ -16,9 +16,11 @@ public record BlogSummaryVo(
         String description,
         String category,
         OffsetDateTime createdAt,
+        OffsetDateTime updatedAt,
         String blogCreatorName,
         ArticleReferenceType referenceType,
-        String referenceTitle
+        String referenceTitle,
+        Integer views
 ) {
     public static BlogSummaryVo of(
             BlogIdVo id,
@@ -26,14 +28,16 @@ public record BlogSummaryVo(
             String description,
             String category,
             OffsetDateTime createdAt,
+            OffsetDateTime updatedAt,
             String blogCreatorName,
             ArticleReferenceType referenceType,
-            String referenceTitle
+            String referenceTitle,
+            Integer views
     ) {
         return new BlogSummaryVo(
                 id, title, description, category,
-                createdAt, blogCreatorName,
-                referenceType, referenceTitle
+                createdAt, updatedAt, blogCreatorName,
+                referenceType, referenceTitle, views
         );
     }
 }

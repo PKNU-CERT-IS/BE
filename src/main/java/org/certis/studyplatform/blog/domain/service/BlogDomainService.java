@@ -28,6 +28,7 @@ import org.certis.studyplatform.study.domain.vo.StudySummaryVo;
 import org.certis.studyplatform.study.domain.vo.StudyVo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -84,7 +85,8 @@ public class BlogDomainService {
                 command.referenceId(),
                 referenceTitle, // 조회된 참조 제목 설정
                 command.creatorId(),
-                null // creatorName은 저장 후 조회 시 설정
+                null, // creatorName은 저장 후 조회 시 설정
+                command.isPublic()
         );
 
         // Command Repository를 통한 저장
@@ -126,7 +128,8 @@ public class BlogDomainService {
                 command.category(),
                 command.referenceType(),
                 command.referenceId(),
-                null
+                referenceTitle,
+                command.isPublic()
         );
 
         BlogVo savedBlogVo = commandRepository.save(updatedBlogVo);
@@ -196,7 +199,8 @@ public class BlogDomainService {
                 blogVo.creatorId(),
                 blogVo.creatorName(),
                 currentViewCount,
-                blogVo.createdAt()
+                blogVo.createdAt(),
+                blogVo.isPublic()
         );
 
         log.info("Domain: Blog found - ID: {}, viewCount: {}, reference: {} ({})",
@@ -440,9 +444,11 @@ public class BlogDomainService {
                         blog.description(),
                         blog.category(),
                         blog.createdAt(),
+                        blog.updatedAt(),
                         blog.blogCreatorName(),
                         referenceType,
-                        referenceTitle
+                        referenceTitle,
+                        blog.views() // 기존 views 값 유지
                 );
             }
 
@@ -520,5 +526,84 @@ public class BlogDomainService {
         log.warn("Domain: Delete permission denied - requesterId: {}, creatorId: {}", requesterId, blogCreatorId);
         throw new DomainException(ExceptionStatus.BLOG_DOMAIN_ACCESS_DENIED,
                 "블로그를 삭제할 권한이 없습니다");
+    }
+
+    /**
+     * Admin용 블로그 공개 유무 토글
+     */
+    public void toggleBlogPublicStatus(Long blogId, Boolean isPublic, Long adminId) {
+        log.info("Domain: Toggling blog public status - ID: {} to {} by admin: {}", blogId, isPublic, adminId);
+
+        // Admin 권한 검증
+        validateAdminPermission(adminId);
+
+        // 기존 블로그 조회
+        BlogVo existingBlog = queryRepository.findById(blogId)
+                .orElseThrow(() -> new DomainException(ExceptionStatus.BLOG_DOMAIN_NOT_FOUND,
+                        "블로그를 찾을 수 없습니다: " + blogId));
+
+        // 공개 유무 업데이트
+        BlogVo updatedBlogVo = BlogVo.updateFrom(
+                existingBlog,
+                existingBlog.title(),
+                existingBlog.description(),
+                existingBlog.content(),
+                existingBlog.category(),
+                existingBlog.referenceType(),
+                existingBlog.referenceId(),
+                existingBlog.referenceTitle(),
+                isPublic
+        );
+
+        commandRepository.save(updatedBlogVo);
+
+        log.info("Domain: Blog public status toggled successfully - ID: {} to {}", blogId, isPublic);
+    }
+
+    /**
+     * 공개 유무에 따른 블로그 조회 (MemberRole 기준 분기)
+     */
+    public Page<BlogSummaryVo> getBlogsByPublicStatus(Boolean isPublic, Pageable pageable, Long memberId) {
+        log.info("Domain: Getting blogs by public status - isPublic: {}, memberId: {}", isPublic, memberId);
+
+        // MemberRole 조회
+        MemberVo member = memberDomainService.getMemberVo(new GetMemberByIdQuery(memberId));
+        MemberRole memberRole = member.role();
+
+        // Level별 분기 처리
+        if (MemberRole.isLevel4OrAbove(memberRole)) {
+            // Level 4 이상: 공개/비공개 모두 조회 가능
+            return queryRepository.findByPublicStatus(isPublic, pageable);
+        } else if (MemberRole.isLevel5(memberRole)) {
+            // Level 5: 공개 블로그만 조회 가능
+            return queryRepository.findByPublicStatus(true, pageable);
+        } else {
+            // Level 4 미만: 공개 블로그만 조회 가능
+            return queryRepository.findByPublicStatus(true, pageable);
+        }
+    }
+
+    /**
+     * Admin 권한 검증
+     */
+    private void validateAdminPermission(Long adminId) {
+        log.debug("Domain: Validating admin permission - adminId: {}", adminId);
+
+        try {
+            MemberVo adminMember = memberDomainService.getMemberVo(new GetMemberByIdQuery(adminId));
+            MemberRole adminRole = adminMember.role();
+
+            if (!MemberRole.isStaffOrAbove(adminRole)) {
+                log.warn("Domain: Admin permission denied - adminId: {}, role: {}", adminId, adminRole);
+                throw new DomainException(ExceptionStatus.BLOG_DOMAIN_ACCESS_DENIED,
+                        "관리자 권한이 필요합니다");
+            }
+
+            log.debug("Domain: Admin permission granted - adminId: {}, role: {}", adminId, adminRole);
+        } catch (DomainException e) {
+            log.warn("Domain: Admin not found: {}", adminId);
+            throw new DomainException(ExceptionStatus.BLOG_DOMAIN_ACCESS_DENIED,
+                    "관리자 권한이 필요합니다");
+        }
     }
 }

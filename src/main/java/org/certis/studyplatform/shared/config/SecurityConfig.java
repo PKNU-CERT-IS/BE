@@ -51,6 +51,11 @@ public class SecurityConfig {
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/register",     // 회원가입
                                 "/api/v1/auth/refresh",      // 토큰 갱신
+                                "/api/v1/blog",              // 블로그 목록 조회
+                                "/api/v1/blog/detail",       // 블로그 상세 조회
+                                "/api/v1/blog/search",       // 블로그 검색
+                                "/api/v1/blog/search/keyword", // 블로그 고급 검색
+                                "/api/v1/blog/public",       // 블로그 공개 유무별 조회
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",

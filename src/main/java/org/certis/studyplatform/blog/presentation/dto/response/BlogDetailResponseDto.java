@@ -37,6 +37,8 @@ public class BlogDetailResponseDto {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private OffsetDateTime createdAt;
 
+    private Boolean isPublic;
+
     // toString for logging
     @Override
     public String toString() {
