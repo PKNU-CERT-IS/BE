@@ -140,6 +140,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 "/api/v1/project/participant/{projectId}/participants/all",
                 "/api/v1/project/participant/{projectId}/participants/pending",
                 "/api/v1/project/participant/{projectId}/participants/approved",
+                "/api/v1/project/participant/{projectId}/participants/pending/**",
+                "/api/v1/project/participant/{projectId}/participants/approved/**",
 
                 "/api/v1/schedule/requests",
                 "/api/v1/schedule/requests/**",
@@ -155,6 +157,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 "/api/v1/study/participant/members/{memberId}/participants",
                 "/api/v1/study/participant/{studyId}/participants/pending",
                 "/api/v1/study/participant/{studyId}/participants/approved",
+                "/api/v1/study/participant/{studyId}/participants/pending/**",
+                "/api/v1/study/participant/{studyId}/participants/approved/**",
 
                 "/swagger-ui.html",
                 "/swagger-ui",
