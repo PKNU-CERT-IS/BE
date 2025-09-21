@@ -31,6 +31,19 @@ public class S3FileService {
     }
 
     /**
+     * 파일을 S3에 업로드하고 URL 반환 (커스텀 파일명 사용)
+     * @param file 업로드할 파일
+     * @param domain 도메인 폴더명 (예: "schedule-attachments")
+     * @param customFilename 커스텀 파일명
+     * @return S3 URL
+     */
+    public String uploadFileWithCustomName(MultipartFile file, String domain, String customFilename) {
+        // 임시 entityId로 0을 사용 (실제 구현시에는 적절한 ID 생성 로직 필요)
+        Long temporaryEntityId = System.currentTimeMillis(); // 고유성을 위해 타임스탬프 사용
+        return s3AttachmentService.uploadFileWithCustomName(file, domain, temporaryEntityId, customFilename);
+    }
+
+    /**
      * S3에서 파일 URL 조회/생성
      * @param fileKey 파일 키 또는 URL
      * @return 파일 URL
