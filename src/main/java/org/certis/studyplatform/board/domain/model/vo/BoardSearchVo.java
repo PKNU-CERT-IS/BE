@@ -26,9 +26,12 @@ public record BoardSearchVo(
         if (page < 0) {
             throw new DomainException(ExceptionStatus.BOARD_DOMAIN_INVALID_PAGE);
         }
-        // 사이즈 상한을 제거하여 파라미터가 없을 때 전체 조회가 가능하도록 허용
+        // 사이즈 검증 (1 이상 1000 이하로 제한)
         if (size < 1) {
             throw new DomainException(ExceptionStatus.BOARD_DOMAIN_INVALID_PAGE_SIZE);
+        }
+        if (size > 1000) {
+            throw new DomainException(ExceptionStatus.BOARD_DOMAIN_INVALID_PAGE_SIZE, "페이지 크기는 1000을 초과할 수 없습니다.");
         }
 
         return new BoardSearchVo(

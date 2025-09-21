@@ -26,11 +26,13 @@ public class BoardApplicationMapper {
      * BoardSearchRequestDto → SearchBoardsQuery 변환
      */
     public SearchBoardsQuery toSearchBoardsQuery(BoardSearchRequestDto request) {
+        // keyword와 category가 모두 없으면 전체 조회
         boolean noFilter = (request.getKeyword() == null || request.getKeyword().trim().isEmpty())
                 && (request.getCategory() == null || request.getCategory().trim().isEmpty());
 
+        // noFilter일 때는 기본 페이징 사용 (전체 조회를 위해 큰 사이즈 사용)
         int page = noFilter ? 0 : request.getPage();
-        int size = noFilter ? Integer.MAX_VALUE : request.getSize();
+        int size = noFilter ? 1000 : request.getSize(); // Integer.MAX_VALUE 대신 1000 사용
 
         return SearchBoardsQuery.of(
                 request.getKeyword(),
