@@ -17,7 +17,7 @@ public record ProjectMeetingVo(
         Long projectId,
         String title,
         String content,
-        List<Long> participantIds,
+        Integer participantNumber,
         Long writerId,
         boolean isEditable,
         OffsetDateTime createdAt,
@@ -38,7 +38,7 @@ public record ProjectMeetingVo(
             Long projectId,
             String title,
             String content,
-            List<Long> participantIds,
+            Integer participantNumber,
             Long writerId,
             boolean isEditable,
             OffsetDateTime createdAt,
@@ -49,7 +49,7 @@ public record ProjectMeetingVo(
 
         return new ProjectMeetingVo(
                 id, projectId, title, content,
-                participantIds, writerId, isEditable,
+                participantNumber, writerId, isEditable,
                 createdAt, updatedAt
         );
     }

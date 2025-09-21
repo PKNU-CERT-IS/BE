@@ -39,7 +39,9 @@ public class ProjectUpdateRequestDto {
 
     private String githubUrl;
 
-    private String externalUrl;
+    private ExternalUrlRequestDto externalUrl;
+
+    private String demoUrl;
 
     private String thumbnailUrl;
 

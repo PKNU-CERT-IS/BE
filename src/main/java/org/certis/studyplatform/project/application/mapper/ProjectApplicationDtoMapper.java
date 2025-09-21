@@ -1,11 +1,13 @@
 package org.certis.studyplatform.project.application.mapper;
 
 import org.certis.studyplatform.project.domain.vo.*;
+import org.certis.studyplatform.project.domain.ProjectParticipantStatus;
 import org.certis.studyplatform.project.presentation.dto.response.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Component;
 
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -40,12 +42,23 @@ public class ProjectApplicationDtoMapper {
                 .startDate(vo.startDate())
                 .endDate(vo.endDate())
                 .creatorId(vo.creatorId())
-                .creatorName(vo.creatorName())
+                .projectCreatorName(vo.creatorName())
+                .projectCreatorGrade(vo.creatorGrade())
+                .semester(vo.semester())
+                .status(vo.status() != null ? vo.status().toString() : null)
                 .githubUrl(vo.githubUrl())
-                .attachments(Collections.emptyList()) // 초기값은 빈 리스트, Facade에서 추가됨
+                .externalUrl(vo.externalUrl() != null ? 
+                    ExternalUrlResponseDto.builder()
+                        .title(vo.externalUrl().title())
+                        .url(vo.externalUrl().url())
+                        .build() : null)
+                .demoUrl(vo.demoUrl())
+                .thumbnailUrl(vo.thumbnailUrl())
+                .attachments(vo.attached() != null ? toProjectAttachedResponseDtoList(vo.attached()) : Collections.emptyList()) // VO에서 첨부파일 정보 가져오기
                 .meetingSummaries(Collections.emptyList()) // 초기값은 빈 리스트, Facade에서 추가됨
-                .maxParticipants(vo.maxParticipants())
-                .currentParticipants(vo.currentParticipants())
+                .maxParticipantNumber(vo.maxParticipants())
+                .currentParticipantNumber(vo.currentParticipants())
+                .isParticipantable(vo.isParticipantable())
                 .build();
     }
 
@@ -67,9 +80,15 @@ public class ProjectApplicationDtoMapper {
                 .endDate(vo.endDate())
                 .projectCreatorName(vo.projectCreatorName())
                 .projectCreatorGrade(vo.projectCreatorGrade())
+                .semester(vo.semester())
+                .status(vo.status())
                 .isParticipantable(vo.isParticipantable())
                 .githubUrl(vo.githubUrl())
-                .externalUrl(vo.externalUrl())
+                .externalUrl(vo.externalUrl() != null ? 
+                    new ExternalUrlResponseDto(vo.externalUrl().title(), vo.externalUrl().url()) : null)
+                .demoUrl(vo.demoUrl())
+                .maxParticipantNumber(vo.maxParticipantNumber())
+                .currentParticipantNumber(vo.currentParticipantNumber())
                 .build();
     }
 
@@ -316,6 +335,82 @@ public class ProjectApplicationDtoMapper {
                 .pendingCount(pendingCount)
                 .maxParticipants(maxParticipants)
                 .isFull(isFull)
+                .build();
+    }
+
+    /**
+     * AdminProjectParticipantApprovalResponseDto 생성
+     * 
+     * @param participantVo 참가자 정보 VO
+     * @param projectVo 프로젝트 정보 VO
+     * @param adminId 관리자 ID
+     * @param adminName 관리자 이름
+     * @param reason 승인/거절 사유
+     * @param processedAt 처리 시간
+     * @return AdminProjectParticipantApprovalResponseDto
+     */
+    public AdminProjectParticipantApprovalResponseDto toAdminProjectParticipantApprovalResponseDto(
+            ProjectParticipantVo participantVo,
+            ProjectVo projectVo,
+            Long adminId,
+            String adminName,
+            String reason,
+            OffsetDateTime processedAt) {
+        
+        if (participantVo == null || projectVo == null) {
+            return null;
+        }
+
+        return AdminProjectParticipantApprovalResponseDto.builder()
+                .participantId(participantVo.id())
+                .projectId(participantVo.projectId())
+                .projectTitle(projectVo.title())
+                .memberId(participantVo.memberId())
+                .memberName(participantVo.memberName())
+                .status(participantVo.status())
+                .reason(reason)
+                .adminId(adminId)
+                .adminName(adminName)
+                .processedAt(processedAt)
+                .build();
+    }
+
+    /**
+     * ProjectParticipantVo와 업데이트된 상태를 AdminProjectParticipantApprovalResponseDto로 변환
+     * 
+     * @param participantVo 참가자 정보 VO
+     * @param projectVo 프로젝트 정보 VO
+     * @param updatedStatus 업데이트된 상태
+     * @param adminId 관리자 ID
+     * @param adminName 관리자 이름
+     * @param reason 승인/거절 사유
+     * @param processedAt 처리 시간
+     * @return AdminProjectParticipantApprovalResponseDto
+     */
+    public AdminProjectParticipantApprovalResponseDto toAdminProjectParticipantApprovalResponseDto(
+            ProjectParticipantVo participantVo,
+            ProjectVo projectVo,
+            ProjectParticipantStatus updatedStatus,
+            Long adminId,
+            String adminName,
+            String reason,
+            OffsetDateTime processedAt) {
+        
+        if (participantVo == null || projectVo == null) {
+            return null;
+        }
+
+        return AdminProjectParticipantApprovalResponseDto.builder()
+                .participantId(participantVo.id())
+                .projectId(participantVo.projectId())
+                .projectTitle(projectVo.title())
+                .memberId(participantVo.memberId())
+                .memberName(participantVo.memberName())
+                .status(updatedStatus)
+                .reason(reason)
+                .adminId(adminId)
+                .adminName(adminName)
+                .processedAt(processedAt)
                 .build();
     }
 }

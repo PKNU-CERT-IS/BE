@@ -18,7 +18,8 @@ public record UpdateProjectCommand(
         OffsetDateTime startDate,
         OffsetDateTime endDate,
         String githubUrl,
-        String externalUrl,
+        org.certis.studyplatform.project.domain.vo.ExternalUrlVo externalUrl,
+        String demoUrl,
         String thumbnailUrl,
         List<CreateProjectAttachedCommand> attachedFiles,
         Integer maxParticipants,
@@ -34,7 +35,8 @@ public record UpdateProjectCommand(
             OffsetDateTime startDate,
             OffsetDateTime endDate,
             String githubUrl,
-            String externalUrl,
+            org.certis.studyplatform.project.domain.vo.ExternalUrlVo externalUrl,
+            String demoUrl,
             String thumbnailUrl,
             List<CreateProjectAttachedCommand> attachedFiles,
             Integer maxParticipants,
@@ -42,7 +44,7 @@ public record UpdateProjectCommand(
     ) {
         return new UpdateProjectCommand(
                 id, title, description, content, category, subCategory,
-                startDate, endDate, githubUrl, externalUrl, thumbnailUrl,
+                startDate, endDate, githubUrl, externalUrl, demoUrl, thumbnailUrl,
                 attachedFiles, maxParticipants, requesterId  // 매개변수명도 수정
         );
     }

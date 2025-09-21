@@ -11,6 +11,7 @@ import org.certis.studyplatform.member.domain.vo.MemberVo;
 import org.certis.studyplatform.member.infrastructure.persistence.MemberQueryRepositoryImpl;
 import org.certis.studyplatform.project.application.object.command.CreateProjectCommand;
 import org.certis.studyplatform.project.application.object.command.DeleteProjectCommand;
+import org.certis.studyplatform.project.application.object.command.EndProjectCommand;
 import org.certis.studyplatform.project.application.object.command.UpdateProjectCommand;
 import org.certis.studyplatform.project.application.object.query.GetAllProjectsQuery;
 import org.certis.studyplatform.project.application.object.query.GetCompletedProjectsByMemberQuery;
@@ -23,6 +24,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
@@ -74,8 +76,12 @@ public class ProjectDomainService {
                 command.endDate(),
                 command.creatorId(),
                 null, // creatorName은 저장 후 조회 시 설정
+                null, // creatorGrade는 저장 후 조회 시 설정
+                null, // semester는 아직 구현되지 않음
+                null, // status는 아직 구현되지 않음
                 command.githubUrl(),
                 command.externalUrl(),
+                command.demoUrl(),
                 command.thumbnailUrl(),
                 command.maxParticipants()
         );
@@ -119,6 +125,7 @@ public class ProjectDomainService {
                 command.endDate(),
                 command.githubUrl(),
                 command.externalUrl(),
+                command.demoUrl(),
                 command.thumbnailUrl(),
                 command.maxParticipants()
         );
@@ -342,6 +349,68 @@ public class ProjectDomainService {
                     "이미 존재하는 프로젝트 제목입니다: " + title);
         }
         log.debug("Domain: Project title duplication validation passed - {}", title);
+    }
+
+    /**
+     * 프로젝트 종료
+     */
+    public ProjectVo endProject(EndProjectCommand command) {
+        log.info("Domain: Ending project from command - ID: {}", command.projectId());
+
+        // 기존 프로젝트 조회
+        ProjectVo existingProject = queryRepository.findById(command.projectId())
+                .orElseThrow(() -> new DomainException(ExceptionStatus.PROJECT_DOMAIN_NOT_FOUND,
+                        "프로젝트를 찾을 수 없습니다: " + command.projectId()));
+
+        // 권한 검증: STAFF 이상이거나 프로젝트 생성자인지 확인
+        validateProjectEndPermission(command.requesterId(), existingProject.creatorId());
+
+        // 이미 종료된 프로젝트인지 확인
+        if (existingProject.endDate() != null && existingProject.endDate().isBefore(OffsetDateTime.now())) {
+            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION,
+                    "이미 종료된 프로젝트입니다: " + command.projectId());
+        }
+
+        // ended_at을 현재 시간으로 설정하여 프로젝트 종료
+            ProjectVo endedProjectVo = ProjectVo.updateFrom(
+                    existingProject,
+                    existingProject.title(),
+                    existingProject.description(),
+                    existingProject.content(),
+                    existingProject.category(),
+                    existingProject.subCategory(),
+                    existingProject.startDate(),
+                    OffsetDateTime.now(), // ended_at을 현재 시간으로 설정
+                    existingProject.githubUrl(),
+                    existingProject.externalUrl(),
+                    existingProject.demoUrl(),
+                    existingProject.thumbnailUrl(),
+                    existingProject.maxParticipants()
+            );
+
+        // Command Repository를 통한 저장 (VO 전달)
+        ProjectVo savedProjectVo = commandRepository.save(endedProjectVo);
+
+        log.info("Domain: Project ended successfully - ID: {}", savedProjectVo.id());
+
+        return savedProjectVo;
+    }
+
+    /**
+     * 프로젝트 종료 권한 검증
+     */
+    private void validateProjectEndPermission(Long requesterId, Long creatorId) {
+        // 요청자 정보 조회
+        MemberVo requester = memberDomainService.getMemberVo(new GetMemberByIdQuery(requesterId));
+        
+        // STAFF 이상이거나 프로젝트 생성자인지 확인
+        if (!MemberRole.isStaffOrAbove(requester.role()) && !requesterId.equals(creatorId)) {
+            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION,
+                    "프로젝트 종료 권한이 없습니다. 프로젝트 생성자이거나 STAFF 이상이어야 합니다.");
+        }
+        
+        log.debug("Domain: Project end permission validation passed - requesterId: {}, creatorId: {}", 
+                requesterId, creatorId);
     }
 
     /**

@@ -50,7 +50,7 @@ public class ProjectMeetingDomainService {
                 command.projectId(),
                 command.title(),
                 command.content(),
-                command.participantIds(),
+                command.participantNumber(),
                 command.writerId(),
                 true,
                 null,
@@ -59,15 +59,17 @@ public class ProjectMeetingDomainService {
 
         ProjectMeetingCreatedVo createdVo = projectMeetingCommandRepository.save(meetingVo);
 
-        if (command.attachedUrl() != null && !command.attachedUrl().trim().isEmpty()) {
-            ProjectMeetingLinkVo linkVo = ProjectMeetingLinkVo.forCreation(
-                    createdVo.projectId(),
-                    createdVo.writerId(),
-                    "회의록 첨부 링크",
-                    command.attachedUrl()
-            );
-            projectMeetingLinkCommandRepository.save(linkVo);
-            log.info("MeetingDomain: Project meeting link saved - URL: {}", command.attachedUrl());
+        if (command.links() != null && !command.links().isEmpty()) {
+            for (var link : command.links()) {
+                ProjectMeetingLinkVo linkVo = ProjectMeetingLinkVo.forCreation(
+                        createdVo.projectId(),
+                        createdVo.writerId(),
+                        link.getTitle(),
+                        link.getUrl()
+                );
+                projectMeetingLinkCommandRepository.save(linkVo);
+                log.info("MeetingDomain: Project meeting link saved - Title: {}, URL: {}", link.getTitle(), link.getUrl());
+            }
         }
 
         log.info("MeetingDomain: Project meeting created successfully - ID: {}", createdVo.id());
@@ -92,7 +94,7 @@ public class ProjectMeetingDomainService {
                 existingMeeting.projectId(),
                 command.title(),
                 command.content(),
-                command.participantIds(),
+                command.participantNumber(),
                 existingMeeting.writerId(),
                 true,
                 existingMeeting.createdAt(),
@@ -101,18 +103,20 @@ public class ProjectMeetingDomainService {
 
         ProjectMeetingUpdatedVo updatedVo = projectMeetingCommandRepository.update(updatedMeetingVo);
 
-        if (command.attachedUrl() != null) {
+        if (command.links() != null) {
             projectMeetingLinkCommandRepository.deleteByProjectId(existingMeeting.projectId());
 
-            if (!command.attachedUrl().trim().isEmpty()) {
-                ProjectMeetingLinkVo linkVo = ProjectMeetingLinkVo.forCreation(
-                        existingMeeting.projectId(),
-                        command.requesterId(),
-                        "회의록 첨부 링크",
-                        command.attachedUrl()
-                );
-                projectMeetingLinkCommandRepository.save(linkVo);
-                log.info("MeetingDomain: Project meeting link updated - URL: {}", command.attachedUrl());
+            if (!command.links().isEmpty()) {
+                for (var link : command.links()) {
+                    ProjectMeetingLinkVo linkVo = ProjectMeetingLinkVo.forCreation(
+                            existingMeeting.projectId(),
+                            command.requesterId(),
+                            link.getTitle(),
+                            link.getUrl()
+                    );
+                    projectMeetingLinkCommandRepository.save(linkVo);
+                    log.info("MeetingDomain: Project meeting link updated - Title: {}, URL: {}", link.getTitle(), link.getUrl());
+                }
             }
         }
 

@@ -1,5 +1,7 @@
 package org.certis.studyplatform.project.domain.vo;
 
+import java.time.OffsetDateTime;
+
 /**
  * Project Meeting Summary Value Object
  *
@@ -13,6 +15,7 @@ public record ProjectMeetingSummaryVo(
     Integer participantNumber,
     String creatorName,
     boolean isEditable,
+    OffsetDateTime createdAt,
     String meetingAttachedUrl,
     String meetingAttachedTitle
 ) {
@@ -26,10 +29,11 @@ public record ProjectMeetingSummaryVo(
             Integer participantNumber,
             String creatorName,
             boolean isEditable,
+            OffsetDateTime createdAt,
             String meetingAttachedUrl,
             String meetingAttachedTitle) {
         return new ProjectMeetingSummaryVo(id, title,
                 content, participantNumber, creatorName, isEditable,
-                meetingAttachedUrl, meetingAttachedTitle);
+                createdAt, meetingAttachedUrl, meetingAttachedTitle);
     }
 } 

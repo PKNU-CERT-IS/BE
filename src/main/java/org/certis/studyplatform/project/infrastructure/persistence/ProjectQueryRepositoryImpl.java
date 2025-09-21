@@ -8,12 +8,14 @@ import org.certis.studyplatform.project.domain.vo.ProjectVo;
 import org.certis.studyplatform.project.domain.vo.ProjectSummaryVo;
 import org.certis.studyplatform.project.domain.vo.ProjectSearchCriteriaVo;
 import org.certis.studyplatform.project.domain.vo.ProjectSearchResultVo;
+import org.certis.studyplatform.project.domain.vo.ExternalUrlVo;
 import org.certis.studyplatform.project.infrastructure.mapper.ProjectInfrastructureMapper;
 import org.certis.studyplatform.study.domain.vo.StudySummaryVo;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.OrderField;
+import org.jooq.Record;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -63,6 +65,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.ID,
                         p.MEMBER_ID,
                         m.NAME,
+                        m.GRADE,
                         p.TITLE,
                         p.DESCRIPTION,
                         p.CONTENT,
@@ -71,6 +74,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.THUMBNAIL_URL,
                         p.GITHUB_URL,
                         p.EXTERNAL_URL,
+                        p.DEMO_URL,
                         p.MAX_PARTICIPANTS_NUMBER,
                         p.STARTED_AT,
                         p.ENDED_AT,
@@ -124,6 +128,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.MEMBER_ID,
                         m.NAME,
                         m.GRADE,
+                        m.GRADE,
                         p.TITLE,
                         p.DESCRIPTION,
                         p.CATEGORY,
@@ -131,6 +136,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.THUMBNAIL_URL,
                         p.GITHUB_URL,
                         p.EXTERNAL_URL,
+                        p.DEMO_URL,
                         p.MAX_PARTICIPANTS_NUMBER,
                         p.STARTED_AT,
                         p.ENDED_AT,
@@ -184,6 +190,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.MEMBER_ID,
                         m.NAME,
                         m.GRADE,
+                        m.GRADE,
                         p.TITLE,
                         p.DESCRIPTION,
                         p.CATEGORY,
@@ -191,6 +198,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.THUMBNAIL_URL,
                         p.GITHUB_URL,
                         p.EXTERNAL_URL,
+                        p.DEMO_URL,
                         p.MAX_PARTICIPANTS_NUMBER,
                         p.STARTED_AT,
                         p.ENDED_AT,
@@ -229,6 +237,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.ID,
                         p.MEMBER_ID,
                         m.NAME,
+                        m.GRADE,
                         p.TITLE,
                         p.DESCRIPTION,
                         p.CATEGORY,
@@ -236,6 +245,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.THUMBNAIL_URL,
                         p.GITHUB_URL,
                         p.EXTERNAL_URL,
+                        p.DEMO_URL,
                         p.MAX_PARTICIPANTS_NUMBER,
                         p.STARTED_AT,
                         p.ENDED_AT,
@@ -276,6 +286,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.ID,
                         p.MEMBER_ID,
                         m.NAME,
+                        m.GRADE,
                         p.TITLE,
                         p.DESCRIPTION,
                         p.CATEGORY,
@@ -283,6 +294,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.THUMBNAIL_URL,
                         p.GITHUB_URL,
                         p.EXTERNAL_URL,
+                        p.DEMO_URL,
                         p.MAX_PARTICIPANTS_NUMBER,
                         p.STARTED_AT,
                         p.ENDED_AT,
@@ -325,6 +337,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.ID,
                         p.MEMBER_ID,
                         m.NAME,
+                        m.GRADE,
                         p.TITLE,
                         p.DESCRIPTION,
                         p.CATEGORY,
@@ -332,6 +345,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.THUMBNAIL_URL,
                         p.GITHUB_URL,
                         p.EXTERNAL_URL,
+                        p.DEMO_URL,
                         p.MAX_PARTICIPANTS_NUMBER,
                         p.STARTED_AT,
                         p.ENDED_AT,
@@ -373,6 +387,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.ID,
                         p.MEMBER_ID,
                         m.NAME,
+                        m.GRADE,
                         p.TITLE,
                         p.DESCRIPTION,
                         p.CATEGORY,
@@ -380,6 +395,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.THUMBNAIL_URL,
                         p.GITHUB_URL,
                         p.EXTERNAL_URL,
+                        p.DEMO_URL,
                         p.MAX_PARTICIPANTS_NUMBER,
                         p.STARTED_AT,
                         p.ENDED_AT,
@@ -447,8 +463,10 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
 
         var p = PROJECT.as("p");
         var m = MEMBER.as("m");
+        var pa = PROJECT_ATTACHED.as("pa");
 
-        Optional<ProjectVo> result = dsl.select(
+        Optional<ProjectVo> result = Optional.ofNullable(
+                dsl.select(
                         p.ID,
                         p.TITLE,
                         p.DESCRIPTION,
@@ -459,10 +477,12 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.ENDED_AT,
                         p.MEMBER_ID,
                         m.NAME,
+                        m.GRADE,
                         p.MAX_PARTICIPANTS_NUMBER,
                         p.THUMBNAIL_URL,
                         p.GITHUB_URL,
                         p.EXTERNAL_URL,
+                        p.DEMO_URL,
                         p.CREATED_AT,
                         p.UPDATED_AT,
                         // 현재 참여자 수 서브쿼리
@@ -470,12 +490,24 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                                 .from(PROJECT_PARTICIPANT)
                                 .where(PROJECT_PARTICIPANT.PROJECT_ID.eq(p.ID))
                                 .and(PROJECT_PARTICIPANT.DELETED_AT.isNull())
-                                .asField("current_participants")
+                                .asField("current_participants"),
+                        // ProjectAttached 정보
+                        pa.ID.as("attached_id"),
+                        pa.NAME.as("attached_name"),
+                        pa.TYPE.as("attached_type"),
+                        pa.SIZE.as("attached_size"),
+                        pa.ATTACHED_URL
                 )
                 .from(p)
                 .leftJoin(m).on(p.MEMBER_ID.eq(m.ID))
+                .leftJoin(pa).on(p.ID.eq(pa.PROJECT_ID).and(pa.DELETED_AT.isNull()))
                 .where(p.ID.eq(projectId))
-                .fetchOptional(mapper::toProjectVo);
+                .fetch()
+                .stream()
+                .map(record -> (Record) record)
+                .toList()
+        ).filter(records -> !records.isEmpty())
+                .map(records -> mapper.toProjectVoFromRecordsWithAttachments(records));
 
         log.info("jOOQ: Project VO found - ID: {}", projectId);
         return result;
@@ -486,8 +518,10 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
 
         var p = PROJECT.as("p");
         var m = MEMBER.as("m");
+        var pa = PROJECT_ATTACHED.as("pa");
 
-        Optional<ProjectVo> result = dsl.select(
+        Optional<ProjectVo> result = Optional.ofNullable(
+                dsl.select(
                         p.ID,
                         p.TITLE,
                         p.DESCRIPTION,
@@ -498,9 +532,11 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.ENDED_AT,
                         p.MEMBER_ID,
                         m.NAME,
+                        m.GRADE,
                         p.THUMBNAIL_URL,
                         p.GITHUB_URL,
                         p.EXTERNAL_URL,
+                        p.DEMO_URL,
                         p.MAX_PARTICIPANTS_NUMBER,
                         p.CREATED_AT,
                         p.UPDATED_AT,
@@ -509,13 +545,25 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                                 .from(PROJECT_PARTICIPANT)
                                 .where(PROJECT_PARTICIPANT.PROJECT_ID.eq(p.ID))
                                 .and(PROJECT_PARTICIPANT.DELETED_AT.isNull())
-                                .asField("current_participants")
+                                .asField("current_participants"),
+                        // ProjectAttached 정보
+                        pa.ID.as("attached_id"),
+                        pa.NAME.as("attached_name"),
+                        pa.TYPE.as("attached_type"),
+                        pa.SIZE.as("attached_size"),
+                        pa.ATTACHED_URL
                 )
                 .from(p)
                 .leftJoin(m).on(p.MEMBER_ID.eq(m.ID))
+                .leftJoin(pa).on(p.ID.eq(pa.PROJECT_ID).and(pa.DELETED_AT.isNull()))
                 .where(p.ID.eq(projectId))
                 .and(p.DELETED_AT.isNull())
-                .fetchOptional(mapper::toProjectVo);
+                .fetch()
+                .stream()
+                .map(record -> (Record) record)
+                .toList()
+        ).filter(records -> !records.isEmpty())
+                .map(records -> mapper.toProjectVoFromRecordsWithAttachments(records));
 
         log.info("jOOQ: Project VO found - ID: {}", projectId);
         return result;
@@ -565,7 +613,22 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                 .limit(pageable.getPageSize())
                 .offset((int) pageable.getOffset())
                 .fetch(record -> {
-
+                    // ExternalUrl 문자열을 ExternalUrlVo로 변환
+                    ExternalUrlVo externalUrlVo = null;
+                    String externalUrlStr = record.get(p.EXTERNAL_URL);
+                    if (externalUrlStr != null && !externalUrlStr.trim().isEmpty()) {
+                        try {
+                            if (externalUrlStr.startsWith("{") && externalUrlStr.endsWith("}")) {
+                                String title = extractJsonValue(externalUrlStr, "title");
+                                String url = extractJsonValue(externalUrlStr, "url");
+                                if (title != null && url != null) {
+                                    externalUrlVo = new ExternalUrlVo(title, url);
+                                }
+                            }
+                        } catch (Exception e) {
+                            externalUrlVo = null;
+                        }
+                    }
 
                     return ProjectSummaryVo.of(
                             record.get(p.ID),
@@ -577,9 +640,14 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                             record.get(p.ENDED_AT),
                             record.get("creator_name", String.class),
                             record.get(m.GRADE, MemberGrade.class),
+                            calculateSemester(record.get(p.ENDED_AT)), // semester 계산
+                            "완료", // 완료된 프로젝트는 status = "완료"
                             false, // 완료된 프로젝트는 참가 불가
                             record.get(p.GITHUB_URL),
-                            record.get(p.EXTERNAL_URL)
+                            externalUrlVo,
+                            record.get(p.DEMO_URL), // demoUrl
+                            record.get(p.MAX_PARTICIPANTS_NUMBER), // maxParticipantNumber
+                            record.get("current_participants", Integer.class) // currentParticipantNumber
                     );
                 });
 
@@ -614,6 +682,22 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                 .and(p.ENDED_AT.lessThan(OffsetDateTime.now()))
                 .orderBy(p.ENDED_AT.desc())
                 .fetch(record -> {
+                    // ExternalUrl 문자열을 ExternalUrlVo로 변환
+                    ExternalUrlVo externalUrlVo = null;
+                    String externalUrlStr = record.get(p.EXTERNAL_URL);
+                    if (externalUrlStr != null && !externalUrlStr.trim().isEmpty()) {
+                        try {
+                            if (externalUrlStr.startsWith("{") && externalUrlStr.endsWith("}")) {
+                                String title = extractJsonValue(externalUrlStr, "title");
+                                String url = extractJsonValue(externalUrlStr, "url");
+                                if (title != null && url != null) {
+                                    externalUrlVo = new ExternalUrlVo(title, url);
+                                }
+                            }
+                        } catch (Exception e) {
+                            externalUrlVo = null;
+                        }
+                    }
 
                     return ProjectSummaryVo.of(
                             record.get(p.ID),
@@ -625,9 +709,14 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                             record.get(p.ENDED_AT),
                             record.get("creator_name", String.class),
                             record.get(m.GRADE, MemberGrade.class),
+                            calculateSemester(record.get(p.ENDED_AT)), // semester 계산
+                            "완료", // 완료된 프로젝트는 status = "완료"
                             false, // 완료된 프로젝트는 참가 불가
                             record.get(p.GITHUB_URL),
-                            record.get(p.EXTERNAL_URL)
+                            externalUrlVo,
+                            record.get(p.DEMO_URL), // demoUrl
+                            record.get(p.MAX_PARTICIPANTS_NUMBER), // maxParticipantNumber
+                            record.get("current_participants", Integer.class) // currentParticipantNumber
                     );
                 });
     }
@@ -636,6 +725,18 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
     // ================================================================
     // PRIVATE HELPER METHODS
     // ================================================================
+
+    /**
+     * 학기 계산 (종료일 기준)
+     */
+    private String calculateSemester(OffsetDateTime endedAt) {
+        if (endedAt == null) return null;
+        java.time.LocalDate endDate = endedAt.toLocalDate();
+        int year = endDate.getYear();
+        int month = endDate.getMonthValue();
+        if (month >= 3 && month <= 8) return year + "-1";
+        else return year + "-2";
+    }
 
     /**
      * ✅ jOOQ 생성 테이블로 검색 조건 구성
@@ -800,5 +901,22 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
             return new String[0];
         }
         return skills.toArray(new String[0]);
+    }
+
+    /**
+     * JSON 문자열에서 특정 키의 값을 추출하는 헬퍼 메서드
+     */
+    private String extractJsonValue(String json, String key) {
+        try {
+            String pattern = "\"" + key + "\"\\s*:\\s*\"([^\"]+)\"";
+            java.util.regex.Pattern p = java.util.regex.Pattern.compile(pattern);
+            java.util.regex.Matcher m = p.matcher(json);
+            if (m.find()) {
+                return m.group(1);
+            }
+        } catch (Exception e) {
+            // 파싱 실패 시 null 반환
+        }
+        return null;
     }
 }

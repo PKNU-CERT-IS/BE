@@ -7,6 +7,7 @@ import org.certis.studyplatform.project.application.ProjectFacadeService;
 import org.certis.studyplatform.project.presentation.dto.request.ProjectCreateRequestDto;
 import org.certis.studyplatform.project.presentation.dto.request.ProjectDeleteRequestDto;
 import org.certis.studyplatform.project.presentation.dto.request.ProjectDetailRequestDto;
+import org.certis.studyplatform.project.presentation.dto.request.ProjectEndRequestDto;
 import org.certis.studyplatform.project.presentation.dto.request.ProjectSearchRequestDto;
 import org.certis.studyplatform.project.presentation.dto.request.ProjectUpdateRequestDto;
 import org.certis.studyplatform.project.presentation.dto.request.ProjectAdvancedSearchRequestDto;
@@ -206,5 +207,27 @@ public class ProjectController {
         log.info("REST: Found {} meetings for project - ID: {}", meetings.size(), projectId);
 
         return GlobalResponseHandler.success(ResponseStatus.PROJECT_FIND_SUCCESS, meetings);
+    }
+
+    /**
+     * 프로젝트 종료
+     * POST /api/v1/project/end
+     */
+    @PostMapping("/end")
+    public ResponseEntity<GlobalResponseHandler<ProjectDetailResponseDto>> endProject(
+            @Valid @ModelAttribute ProjectEndRequestDto request,
+            @AuthenticationPrincipal CurrentUser currentUser) {
+        log.info("REST: Ending project - ID: {}, requesterId: {}", request.getProjectId(), currentUser.getId());
+
+        // Facade Service 호출 (VO → DTO 변환 포함)
+        ProjectDetailResponseDto endedProject = projectFacadeService.endProject(
+                request.getProjectId(),
+                currentUser.getId(),
+                request.getFiles()
+        );
+
+        log.info("REST: Project ended successfully - ID: {}", endedProject.getId());
+
+        return GlobalResponseHandler.success(ResponseStatus.PROJECT_END_SUCCESS, endedProject);
     }
 }

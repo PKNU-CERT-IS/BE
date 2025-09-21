@@ -12,18 +12,18 @@ public record ProjectMeetingUpdatedVo(
     Long id,
     String title,
     String content,
-    List<Long> participantIds,
+    Integer participantNumber,
     OffsetDateTime updatedAt
 ) {
     public static ProjectMeetingUpdatedVo of(
         Long id,
         String title,
         String content,
-        List<Long> participantIds,
+        Integer participantNumber,
         OffsetDateTime updatedAt
     ) {
         return new ProjectMeetingUpdatedVo(
-            id, title, content, participantIds, updatedAt
+            id, title, content, participantNumber, updatedAt
         );
     }
 } 

@@ -45,7 +45,7 @@ public class ProjectMeetingCommandRepositoryImpl implements ProjectMeetingComman
             .memberId(projectMeetingVo.writerId())
             .title(projectMeetingVo.title())
             .content(projectMeetingVo.content())
-            .participants(convertParticipantIdsToArray(projectMeetingVo.participantIds())) // List<Long> -> String[] 변환
+            .participants(convertParticipantNumberToArray(projectMeetingVo.participantNumber())) // Integer -> String[] 변환
             .build();
 
         // 데이터베이스에 저장
@@ -56,7 +56,7 @@ public class ProjectMeetingCommandRepositoryImpl implements ProjectMeetingComman
             savedEntity.getProjectId(),
             savedEntity.getTitle(),
             savedEntity.getContent(),
-            projectMeetingVo.participantIds(),
+            projectMeetingVo.participantNumber(),
             savedEntity.getMemberId(),
             savedEntity.getCreatedAt()
         );
@@ -83,7 +83,7 @@ public class ProjectMeetingCommandRepositoryImpl implements ProjectMeetingComman
                 projectMeetingVo.id(),
                 projectMeetingVo.title(),
                 projectMeetingVo.content(),
-                convertParticipantIdsToArray(projectMeetingVo.participantIds()),
+                convertParticipantNumberToArray(projectMeetingVo.participantNumber()),
                 OffsetDateTime.now()
         );
 
@@ -98,7 +98,7 @@ public class ProjectMeetingCommandRepositoryImpl implements ProjectMeetingComman
                 projectMeetingVo.id(),
                 projectMeetingVo.title(),
                 projectMeetingVo.content(),
-                projectMeetingVo.participantIds(),
+                projectMeetingVo.participantNumber(),
                 OffsetDateTime.now()
         );
 
@@ -148,19 +148,20 @@ public class ProjectMeetingCommandRepositoryImpl implements ProjectMeetingComman
 
 
     /**
-     * List<Long> participantIds를 String[] participants로 변환
+     * Integer participantNumber를 String[] participants로 변환
      * 임시로 단순 변환 처리 (실제로는 Member ID를 이름으로 변환하는 로직 필요)
      */
-    private Long[] convertParticipantIdsToArray(java.util.List<Long> participantIds) {
-        if (participantIds == null || participantIds.isEmpty()) {
+    private Long[] convertParticipantNumberToArray(Integer participantNumber) {
+        if (participantNumber == null || participantNumber <= 0) {
             return new Long[0];
         }
         
-        // TODO: 실제로는 Member ID를 이름으로 변환하는 로직 필요
-        // 임시로 ID를 문자열로 변환
-        return participantIds.stream()
-            .map(Long::valueOf)
-            .toArray(Long[]::new);
+        // participantNumber만큼의 더미 ID 배열 생성 (실제 구현에서는 다른 방식 사용 가능)
+        Long[] result = new Long[participantNumber];
+        for (int i = 0; i < participantNumber; i++) {
+            result[i] = (long) (i + 1); // 더미 ID
+        }
+        return result;
     }
 
     /**

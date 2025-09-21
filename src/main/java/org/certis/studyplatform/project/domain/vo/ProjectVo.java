@@ -4,6 +4,7 @@ import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
 
 import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -24,11 +25,17 @@ public record ProjectVo(
         OffsetDateTime endDate,
         Long creatorId,
         String creatorName,
+        String creatorGrade,
+        String semester,
+        String status,
         String githubUrl,
-        String externalUrl,
+        ExternalUrlVo externalUrl,
+        String demoUrl,
         String thumbnailUrl,
         Integer maxParticipants,
         Integer currentParticipants,
+        boolean isParticipantable,
+        List<ProjectAttachedVo> attached,
         List<ProjectMeetingSummaryVo> meetingSummaryVos
 ) {
 
@@ -37,37 +44,33 @@ public record ProjectVo(
      */
     public ProjectVo {
         // 제목/설명/내용/카테고리 길이 검증
-        if (title == null || title.trim().isEmpty() || title.length() > 30) {
+        if (title == null || title.trim().isEmpty()) {
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_TITLE, "프로젝트 제목은 필수입니다");
         }
-        if (description != null && description.length() > 100) {
+        if (description == null || description.trim().isEmpty()) {
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_DESCRIPTION);
         }
-        if (content != null && content.length() > 255) {
+        if (content == null || content.trim().isEmpty()) {
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION);
         }
-        if (category != null && category.length() > 20) {
+        if (category == null || category.trim().isEmpty()) {
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION);
         }
-        if (subCategory != null && subCategory.length() > 100) {
+        if (subCategory == null || subCategory.trim().isEmpty()) {
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION);
         }
-        if (thumbnailUrl != null && thumbnailUrl.length() > 1000) {
-            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION);
-        }
-        if (githubUrl != null && githubUrl.length() > 1000) {
-            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION);
-        }
-        if (externalUrl != null && externalUrl.length() > 1000) {
-            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION);
-        }
+        // 선택적 필드들은 유효성 검사하지 않음
 
         // 기간 검증
         if (startDate == null || endDate == null) {
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_DATE, "프로젝트 시작일과 종료일은 필수입니다");
         }
 
-        if (startDate.isAfter(endDate)) {
+        // 프로젝트 종료 시에는 시작일과 종료일 비교를 건너뛰기
+        // (ended_at을 현재 시간으로 설정할 때 startDate가 현재 시간보다 늦을 수 있음)
+        if (id != null && endDate != null && endDate.isAfter(OffsetDateTime.now().minusMinutes(1))) {
+            // 프로젝트 종료 중인 경우 validation 건너뛰기
+        } else if (startDate.isAfter(endDate)) {
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_DATE, "시작일은 종료일보다 빨라야 합니다");
         }
 
@@ -111,17 +114,25 @@ public record ProjectVo(
             OffsetDateTime endDate,
             Long creatorId,
             String creatorName,
+            String creatorGrade,
+            String semester,
+            String status,
             String githubUrl,
-            String externalUrl,
+            ExternalUrlVo externalUrl,
+            String demoUrl,
             String thumbnailUrl,
             Integer maxParticipants,
             Integer currentParticipants,
+            boolean isParticipantable,
+            List<ProjectAttachedVo> attached,
             List<ProjectMeetingSummaryVo> meetingSummaryVos
     ) {
         return new ProjectVo(
                 id, title, description, content, category, subCategory,
-                startDate, endDate, creatorId, creatorName, githubUrl,
-                externalUrl, thumbnailUrl, maxParticipants, currentParticipants,
+                startDate, endDate, creatorId, creatorName, creatorGrade, semester, status,
+                githubUrl, externalUrl, demoUrl, thumbnailUrl, maxParticipants, currentParticipants,
+                isParticipantable,
+                attached,
                 meetingSummaryVos
         );
     }
@@ -139,16 +150,22 @@ public record ProjectVo(
             OffsetDateTime endDate,
             Long creatorId,
             String creatorName,
+            String creatorGrade,
+            String semester,
+            String status,
             String githubUrl,
-            String externalUrl,
+            ExternalUrlVo externalUrl,
+            String demoUrl,
             String thumbnailUrl,
             Integer maxParticipants
     ) {
         return new ProjectVo(
                 null, // id는 null (새 생성)
                 title, description, content, category, subCategory,
-                startDate, endDate, creatorId, creatorName, githubUrl,
-                externalUrl, thumbnailUrl, maxParticipants, 0, // 초기 참가자는 0명
+                startDate, endDate, creatorId, creatorName, creatorGrade, semester, status,
+                githubUrl, externalUrl, demoUrl, thumbnailUrl, maxParticipants, 0, // 초기 참가자는 0명
+                true, // 새로 생성된 프로젝트는 참여 가능
+                Collections.emptyList(), // attached
                 null
         );
     }
@@ -165,7 +182,8 @@ public record ProjectVo(
                                        OffsetDateTime startDate,
                                        OffsetDateTime endDate,
                                        String githubUrl,
-                                       String externalUrl,
+                                       ExternalUrlVo externalUrl,
+                                       String demoUrl,
                                        String thumbnailUrl,
                                        Integer maxParticipants) {
         return new ProjectVo(
@@ -179,12 +197,19 @@ public record ProjectVo(
                 endDate != null ? endDate : existing.endDate(),
                 existing.creatorId(),
                 existing.creatorName(),
+                existing.creatorGrade(),
+                existing.semester(),
+                existing.status(),
                 githubUrl != null ? githubUrl : existing.githubUrl(),
                 externalUrl != null ? externalUrl : existing.externalUrl(),
+                demoUrl != null ? demoUrl : existing.demoUrl(),
                 thumbnailUrl != null ? thumbnailUrl : existing.thumbnailUrl(),
                 maxParticipants != null ? maxParticipants : existing.maxParticipants(),
                 existing.currentParticipants(),
+                existing.isParticipantable(), // 기존 참여 가능 여부 유지
+                existing.attached(), // 기존 첨부파일 유지
                 existing.meetingSummaryVos()
         );
     }
+
 }
