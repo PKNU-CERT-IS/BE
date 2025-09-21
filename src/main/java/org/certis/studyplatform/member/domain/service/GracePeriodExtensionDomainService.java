@@ -8,6 +8,7 @@ import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.vo.GracePeriodVo;
 import org.certis.studyplatform.member.domain.vo.MemberIdVo;
 import org.certis.studyplatform.member.domain.vo.MemberVo;
+import org.certis.studyplatform.member.domain.vo.MemberSearchForAdminVo;
 import org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository;
 import org.certis.studyplatform.project.domain.vo.ProjectParticipantSummaryVo;
 import org.certis.studyplatform.shared.util.GracePeriodCalculator;
@@ -231,5 +232,127 @@ public class GracePeriodExtensionDomainService {
             return 0;
         }
         return ChronoUnit.WEEKS.between(startDate, endDate);
+    }
+
+    /**
+     * 스터디 조기 종료 시 유예기간 재조정
+     * 
+     * @param studyId 조기 종료된 스터디 ID
+     * @param studyStartDate 스터디 시작일
+     * @param actualEndDate 실제 종료일 (조기 종료일)
+     */
+    public void adjustGracePeriodForEarlyTerminatedStudy(Long studyId, OffsetDateTime studyStartDate, OffsetDateTime actualEndDate) {
+        log.info("Domain: Adjusting grace period for early terminated study - studyId: {}, actualEndDate: {}", studyId, actualEndDate);
+
+        // 1. 스터디 참가자들 조회 (승인된 참가자만)
+        List<StudyParticipantSummaryVo> participants = getAllStudyParticipants(studyId);
+        
+        if (participants.isEmpty()) {
+            log.warn("Domain: No participants found for early terminated study - studyId: {}", studyId);
+            return;
+        }
+
+        // 2. 조기 종료된 활동의 실제 기간으로 유예기간 재계산
+        OffsetDateTime adjustedGracePeriod = GracePeriodCalculator.calculateGracePeriodForActivity(
+            studyStartDate, actualEndDate
+        );
+
+        if (adjustedGracePeriod == null) {
+            log.warn("Domain: Could not calculate adjusted grace period for early terminated study - studyId: {}", studyId);
+            return;
+        }
+
+        // 3. UPSOLVER 참가자들의 유예기간을 재조정된 값으로 업데이트
+        for (StudyParticipantSummaryVo participant : participants) {
+            if (isUpsolver(participant.memberId())) {
+                // 현재 유예기간 조회
+                OffsetDateTime currentGracePeriod = memberQueryRepository.findGracePeriodByMemberId(participant.memberId()).orElse(null);
+                
+                // 조기 종료로 인해 유예기간이 단축되는 경우에만 업데이트
+                if (shouldAdjustGracePeriodForEarlyTermination(currentGracePeriod, adjustedGracePeriod)) {
+                    updateMemberGracePeriod(participant.memberId(), adjustedGracePeriod);
+                    log.info("Domain: Grace period adjusted for early terminated study - memberId: {}, oldGracePeriod: {}, newGracePeriod: {}", 
+                        participant.memberId(), currentGracePeriod, adjustedGracePeriod);
+                } else {
+                    log.debug("Domain: Grace period not adjusted for member - memberId: {}, currentGracePeriod: {}, adjustedGracePeriod: {}", 
+                        participant.memberId(), currentGracePeriod, adjustedGracePeriod);
+                }
+            }
+        }
+
+        log.info("Domain: Grace period adjustment completed for early terminated study - studyId: {}, adjustedGracePeriod: {}", 
+            studyId, adjustedGracePeriod);
+    }
+
+    /**
+     * 프로젝트 조기 종료 시 유예기간 재조정
+     * 
+     * @param projectId 조기 종료된 프로젝트 ID
+     * @param projectStartDate 프로젝트 시작일
+     * @param actualEndDate 실제 종료일 (조기 종료일)
+     */
+    public void adjustGracePeriodForEarlyTerminatedProject(Long projectId, OffsetDateTime projectStartDate, OffsetDateTime actualEndDate) {
+        log.info("Domain: Adjusting grace period for early terminated project - projectId: {}, actualEndDate: {}", projectId, actualEndDate);
+
+        // 1. 프로젝트 참가자들 조회 (승인된 참가자만)
+        List<ProjectParticipantSummaryVo> participants = getAllProjectParticipants(projectId);
+        
+        if (participants.isEmpty()) {
+            log.warn("Domain: No participants found for early terminated project - projectId: {}", projectId);
+            return;
+        }
+
+        // 2. 조기 종료된 활동의 실제 기간으로 유예기간 재계산
+        OffsetDateTime adjustedGracePeriod = GracePeriodCalculator.calculateGracePeriodForActivity(
+            projectStartDate, actualEndDate
+        );
+
+        if (adjustedGracePeriod == null) {
+            log.warn("Domain: Could not calculate adjusted grace period for early terminated project - projectId: {}", projectId);
+            return;
+        }
+
+        // 3. UPSOLVER 참가자들의 유예기간을 재조정된 값으로 업데이트
+        for (ProjectParticipantSummaryVo participant : participants) {
+            if (isUpsolver(participant.memberId())) {
+                // 현재 유예기간 조회
+                OffsetDateTime currentGracePeriod = memberQueryRepository.findGracePeriodByMemberId(participant.memberId()).orElse(null);
+                
+                // 조기 종료로 인해 유예기간이 단축되는 경우에만 업데이트
+                if (shouldAdjustGracePeriodForEarlyTermination(currentGracePeriod, adjustedGracePeriod)) {
+                    updateMemberGracePeriod(participant.memberId(), adjustedGracePeriod);
+                    log.info("Domain: Grace period adjusted for early terminated project - memberId: {}, oldGracePeriod: {}, newGracePeriod: {}", 
+                        participant.memberId(), currentGracePeriod, adjustedGracePeriod);
+                } else {
+                    log.debug("Domain: Grace period not adjusted for member - memberId: {}, currentGracePeriod: {}, adjustedGracePeriod: {}", 
+                        participant.memberId(), currentGracePeriod, adjustedGracePeriod);
+                }
+            }
+        }
+
+        log.info("Domain: Grace period adjustment completed for early terminated project - projectId: {}, adjustedGracePeriod: {}", 
+            projectId, adjustedGracePeriod);
+    }
+
+    /**
+     * 조기 종료 시 유예기간 재조정 여부 확인
+     * 
+     * @param currentGracePeriod 현재 유예기간
+     * @param adjustedGracePeriod 조정된 유예기간
+     * @return 재조정 필요 여부
+     */
+    private boolean shouldAdjustGracePeriodForEarlyTermination(OffsetDateTime currentGracePeriod, OffsetDateTime adjustedGracePeriod) {
+        if (adjustedGracePeriod == null) {
+            return false;
+        }
+
+        // 현재 유예기간이 없으면 조정된 유예기간으로 설정
+        if (currentGracePeriod == null) {
+            return true;
+        }
+
+        // 조기 종료로 인해 유예기간이 단축되는 경우에만 재조정
+        // (더 긴 유예기간으로는 조정하지 않음 - 이는 다른 활동으로 인한 연장일 수 있음)
+        return adjustedGracePeriod.isBefore(currentGracePeriod);
     }
 }

@@ -31,7 +31,7 @@ public enum MemberRole {
         return MemberRole.valueOf(normalizedRole);
     }
 
-    // 권한 등급 비교 : 자신과 같거나 자신보다 낮은 level의 사용자의 role을 변경 가능
+    // 권한 등급 비교 : 자신보다 낮은 등급(높은 level 값)의 사용자의 role을 변경 가능
     public boolean canChangeRole(MemberRole role){
         return role.level > this.level;
     }
@@ -40,6 +40,16 @@ public enum MemberRole {
     // staff 이상의 관리자 권한인가? (admin 페이지 접근 가능 판별)
     public static boolean isStaffOrAbove(MemberRole memberRole) {
         return memberRole.level <= STAFF.level;
+    }
+
+    // Level 4 이상인가? (PLAYER, UPSOLVER 이상)
+    public static boolean isLevel4OrAbove(MemberRole memberRole) {
+        return memberRole.level <= PLAYER.level;
+    }
+
+    // Level 5인가? (NONE - 승인 대기)
+    public static boolean isLevel5(MemberRole memberRole) {
+        return memberRole.level == NONE.level;
     }
 
 }

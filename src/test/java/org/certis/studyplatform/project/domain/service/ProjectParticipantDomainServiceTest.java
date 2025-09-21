@@ -254,6 +254,11 @@ class ProjectParticipantDomainServiceTest {
             when(projectQueryRepository.findByIdAndDeletedAtIsNull(projectId))
                     .thenReturn(Optional.of(createProjectVo(projectId, requesterId)));
 
+            // Mock the updateStatus method to return a valid result
+            ProjectParticipantStatusUpdatedVo mockResult = new ProjectParticipantStatusUpdatedVo(
+                    participantId, projectId, 1L, ProjectParticipantStatus.PENDING, ProjectParticipantStatus.REJECTED, OffsetDateTime.now());
+            when(commandRepository.updateStatus(any())).thenReturn(mockResult);
+
             // When
             ProjectParticipantStatusUpdatedVo result = domainService.rejectParticipant(
                     createUpdateStatusCommand(participantId, requesterId));
@@ -261,8 +266,8 @@ class ProjectParticipantDomainServiceTest {
             // Then
             assertThat(result).isNotNull();
             assertThat(result.currentStatus()).isEqualTo(ProjectParticipantStatus.REJECTED);
-            verify(commandRepository).softDeleteById(participantId);
-            verify(commandRepository, never()).updateStatus(any());
+            verify(commandRepository).updateStatus(any());
+            verify(commandRepository, never()).softDeleteById(any());
         }
 
         @Test
@@ -397,11 +402,17 @@ class ProjectParticipantDomainServiceTest {
                     OffsetDateTime.now().plusDays(30),
                     1L, // creatorId
                     "생성자",
+                    "4", // creatorGrade
+                    "2024-1", // semester
+                    "ACTIVE", // status
                     null, // githubUrl
                     null, // externalUrl
+                    null, // demoUrl
                     null, // thumbnailUrl
                     2, // maxParticipants
                     0, // currentParticipants
+                    true, // isParticipantable
+                    java.util.Collections.emptyList(), // attached
                     java.util.Collections.emptyList() // meetingSummaryVos
             );
 
@@ -450,12 +461,18 @@ class ProjectParticipantDomainServiceTest {
                 OffsetDateTime.now().plusDays(30),
                 creatorId,
                 "생성자",
-                null,
-                null,
-                null,
-                10,
-                0,
-                java.util.Collections.emptyList()
+                "4", // creatorGrade
+                "2024-1", // semester
+                "ACTIVE", // status
+                null, // githubUrl
+                null, // externalUrl
+                null, // demoUrl
+                null, // thumbnailUrl
+                10, // maxParticipants
+                0, // currentParticipants
+                true, // isParticipantable
+                java.util.Collections.emptyList(), // attached
+                java.util.Collections.emptyList() // meetingSummaryVos
         );
     }
 

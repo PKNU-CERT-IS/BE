@@ -28,7 +28,8 @@ public record BlogVo(
         Long creatorId,
         String creatorName,
         Integer viewCount,
-        OffsetDateTime createdAt
+        OffsetDateTime createdAt,
+        Boolean isPublic
 ) {
 
     /**
@@ -91,12 +92,13 @@ public record BlogVo(
             Long creatorId,
             String creatorName,
             Integer viewCount,
-            OffsetDateTime createdAt
+            OffsetDateTime createdAt,
+            Boolean isPublic
     ) {
         return new BlogVo(
                 id, title, description, content, category,
                 referenceType, referenceId, referenceTitle, creatorId, creatorName,
-                viewCount, createdAt
+                viewCount, createdAt, isPublic
         );
     }
 
@@ -114,12 +116,13 @@ public record BlogVo(
             Long creatorId,
             String creatorName,
             Integer viewCount,
-            OffsetDateTime createdAt
+            OffsetDateTime createdAt,
+            Boolean isPublic
     ) {
         return new BlogVo(
                 id, title, description, content, category,
                 referenceType, referenceId, null, // referenceTitle은 null로 설정
-                creatorId, creatorName, viewCount, createdAt
+                creatorId, creatorName, viewCount, createdAt, isPublic
         );
     }
 
@@ -135,14 +138,16 @@ public record BlogVo(
             Long referenceId,
             String referenceTitle,
             Long creatorId,
-            String creatorName
+            String creatorName,
+            Boolean isPublic
     ) {
         return new BlogVo(
                 null, // id는 null (새 생성)
                 title, description, content, category,
                 referenceType, referenceId, referenceTitle, creatorId, creatorName,
                 0, // 초기 조회수는 0
-                null // createdAt은 저장 시 자동 설정
+                null, // createdAt은 저장 시 자동 설정
+                isPublic != null ? isPublic : true // 기본값은 공개
         );
     }
 
@@ -157,7 +162,8 @@ public record BlogVo(
             String category,
             ArticleReferenceType referenceType,
             Long referenceId,
-            String referenceTitle
+            String referenceTitle,
+            Boolean isPublic
     ) {
         return new BlogVo(
                 existing.id(),
@@ -171,7 +177,8 @@ public record BlogVo(
                 existing.creatorId(),
                 existing.creatorName(),
                 existing.viewCount(),
-                existing.createdAt()
+                existing.createdAt(),
+                isPublic != null ? isPublic : existing.isPublic()
         );
     }
 }

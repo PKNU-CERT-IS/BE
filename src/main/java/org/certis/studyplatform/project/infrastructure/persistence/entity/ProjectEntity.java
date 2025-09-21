@@ -31,19 +31,19 @@ public class ProjectEntity {
     @Column(nullable = false, name = "member_id")
     private Long memberId;
 
-    @Column(nullable = false, length = 30)
+    @Column(nullable = false)
     private String title;
 
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false)
     private String description;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false)
     private String content;
 
     @Column(nullable = false, length = 20)
     private String category;
 
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false)
     private String subcategory;
 
     @Column(nullable = false, name = "max_participants_number")
@@ -54,6 +54,9 @@ public class ProjectEntity {
 
     @Column(name = "external_url")
     private String externalUrl;
+
+    @Column(name = "demo_url")
+    private String demoUrl;
 
     @Column(name = "thumbnail_url")
     private String thumbnailUrl;

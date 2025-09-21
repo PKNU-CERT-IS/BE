@@ -29,4 +29,8 @@ public class BlogUpdateRequestDto {
     private ArticleReferenceType referenceType;
 
     private Long referenceId;
+
+    private String referenceTitle;
+
+    private Boolean isPublic;
 }

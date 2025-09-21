@@ -13,7 +13,7 @@ public record ProjectMeetingCreatedVo(
     Long projectId,
     String title,
     String content,
-    List<Long> participantIds,
+    Integer participantNumber,
     Long writerId,
     OffsetDateTime createdAt
 ) {
@@ -22,12 +22,12 @@ public record ProjectMeetingCreatedVo(
         Long projectId,
         String title,
         String content,
-        List<Long> participantIds,
+        Integer participantNumber,
         Long writerId,
         OffsetDateTime createdAt
     ) {
         return new ProjectMeetingCreatedVo(
-            id, projectId, title, content, participantIds,
+            id, projectId, title, content, participantNumber,
             writerId, createdAt
         );
     }

@@ -438,7 +438,7 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
 
     @Override
     public List<MemberWithContactVo> searchMembersWithContact(MemberSearchConditionVo searchConditionVo) {
-        log.info("Infrastructure: Searching members with contact - search: {}, grade: {}, role: {}",
+        log.info("Infrastructure: Searching members with contact - keyword: {}, grade: {}, role: {}",
                 searchConditionVo.keyword(),
                 searchConditionVo.grade() != null ? searchConditionVo.grade().grade() : null,
                 searchConditionVo.role() != null ? searchConditionVo.role().role() : null);
@@ -587,6 +587,34 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
 
         } catch (Exception e) {
             log.error("Error finding contact by member ID {}: {}", memberId, e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    public Optional<OffsetDateTime> findGracePeriodByMemberId(Long memberId) {
+        log.debug("Infrastructure: Finding grace period by member ID: {}", memberId);
+
+        try {
+            Result<Record1<OffsetDateTime>> result = dsl.select(
+                    field("m.grace_period", OffsetDateTime.class).as("grace_period")
+            )
+            .from(table("member").as("m"))
+            .where(field("m.id").eq(memberId))
+            .fetch();
+
+            if (result.isEmpty()) {
+                log.debug("Infrastructure: No member found for ID: {}", memberId);
+                return Optional.empty();
+            }
+
+            OffsetDateTime gracePeriod = result.get(0).get("grace_period", OffsetDateTime.class);
+            log.debug("Infrastructure: Grace period found for member ID: {} - gracePeriod: {}", 
+                memberId, gracePeriod);
+
+            return Optional.ofNullable(gracePeriod);
+        } catch (Exception e) {
+            log.error("Infrastructure: Error finding grace period by member ID: {}, error: {}", memberId, e.getMessage(), e);
             return Optional.empty();
         }
     }

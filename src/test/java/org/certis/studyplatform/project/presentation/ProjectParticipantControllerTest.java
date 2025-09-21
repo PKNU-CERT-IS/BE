@@ -737,7 +737,7 @@ class ProjectParticipantControllerTest {
     }
 
     /**
-     * 참가자 소프트 삭제 검증 (거절)
+     * 참가자 상태 업데이트 검증 (거절)
      */
     private void verifyParticipantSoftDeletedInDatabase(Long participantId) {
         var participant = dsl.selectFrom(PROJECT_PARTICIPANT)
@@ -745,6 +745,6 @@ class ProjectParticipantControllerTest {
                 .fetchOne();
 
         assertThat(participant).isNotNull();
-        assertThat(participant.getDeletedAt()).isNotNull();
+        assertThat(participant.getStatus()).isEqualTo("REJECTED");
     }
 }

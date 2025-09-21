@@ -11,6 +11,7 @@ import org.certis.studyplatform.shared.util.DataConverter;
 import org.jooq.Record;
 import org.springframework.stereotype.Component;
 
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 
@@ -44,7 +45,7 @@ public class ProjectMeetingInfrastructureMapper {
                 entity.getProjectId(),
                 entity.getTitle(),
                 entity.getContent(),
-                List.of(entity.getParticipants()),
+                entity.getParticipants() != null ? entity.getParticipants().length : 0,
                 entity.getMemberId(),
                 isEditable,
                 entity.getCreatedAt(),
@@ -65,7 +66,7 @@ public class ProjectMeetingInfrastructureMapper {
                 record.get(PROJECT_MEETING.PROJECT_ID),
                 record.get(PROJECT_MEETING.TITLE),
                 record.get(PROJECT_MEETING.CONTENT),
-                dataConverter.convertToLongList(record.get(PROJECT_MEETING.PARTICIPANTS)),
+                record.get(PROJECT_MEETING.PARTICIPANTS) != null ? record.get(PROJECT_MEETING.PARTICIPANTS).length : 0,
                 writerId,
                 isEditable,
                 record.get(PROJECT_MEETING.CREATED_AT),
@@ -148,6 +149,7 @@ public class ProjectMeetingInfrastructureMapper {
                 participantNumber,
                 creatorName,
                 isEditable,
+                entity.getCreatedAt(),
                 null,
                 null
         );
@@ -203,6 +205,8 @@ public class ProjectMeetingInfrastructureMapper {
             writerName = "알 수 없음";
         }
 
+        OffsetDateTime createdAt = record.get("created_at", OffsetDateTime.class);
+        
         return ProjectMeetingSummaryVo.of(
                 record.get("id", Long.class),
                 record.get("title", String.class),
@@ -210,6 +214,7 @@ public class ProjectMeetingInfrastructureMapper {
                 participantCount,
                 writerName,
                 true, // TODO: 실제로는 현재 사용자와 작성자 비교하여 편집 가능 여부 결정
+                createdAt,
                 null,
                 null
         );

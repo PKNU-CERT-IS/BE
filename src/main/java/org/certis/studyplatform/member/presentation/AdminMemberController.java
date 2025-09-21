@@ -55,12 +55,12 @@ public class AdminMemberController {
     /**
      * 회원 키워드 검색
      */
-    @GetMapping("/keyword")
+    @GetMapping("/search")
     @Operation(summary = "회원 키워드 검색", description = "이름, 학번, 전공으로 회원을 검색합니다")
     public ResponseEntity<GlobalResponseHandler<List<MemberDataForAdminResponseDto>>> searchMembers(
-            @RequestParam(value = "search", required = false) String search) {
+            @RequestParam(value = "keyword", required = false) String keyword) {
 
-        List<MemberDataForAdminResponseDto> result = memberFacadeService.searchMembersForAdmin(search);
+        List<MemberDataForAdminResponseDto> result = memberFacadeService.searchMembersForAdmin(keyword);
 
         return GlobalResponseHandler.success(ResponseStatus.MEMBER_ADMIN_SEARCH_SUCCESS,result);
     }

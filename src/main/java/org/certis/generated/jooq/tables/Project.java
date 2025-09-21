@@ -138,6 +138,11 @@ public class Project extends TableImpl<ProjectRecord> {
     public final TableField<ProjectRecord, String> EXTERNAL_URL = createField(DSL.name("external_url"), SQLDataType.VARCHAR, this, "");
 
     /**
+     * The column <code>public.project.demo_url</code>.
+     */
+    public final TableField<ProjectRecord, String> DEMO_URL = createField(DSL.name("demo_url"), SQLDataType.VARCHAR, this, "");
+
+    /**
      * The column <code>public.project.thumbnail_url</code>.
      */
     public final TableField<ProjectRecord, String> THUMBNAIL_URL = createField(DSL.name("thumbnail_url"), SQLDataType.VARCHAR, this, "");

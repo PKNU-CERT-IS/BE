@@ -8,6 +8,7 @@ import org.certis.studyplatform.study.application.StudyFacadeService;
 import org.certis.studyplatform.study.presentation.dto.request.StudyCreateRequestDto;
 import org.certis.studyplatform.study.presentation.dto.request.StudyDeleteRequestDto;
 import org.certis.studyplatform.study.presentation.dto.request.StudyDetailRequestDto;
+import org.certis.studyplatform.study.presentation.dto.request.StudyEndRequestDto;
 import org.certis.studyplatform.study.presentation.dto.request.StudyUpdateRequestDto;
 import org.certis.studyplatform.study.presentation.dto.request.StudyAdvancedSearchRequestDto;
 import org.certis.studyplatform.study.presentation.dto.response.StudyDetailResponseDto;
@@ -279,5 +280,27 @@ public class StudyController {
         log.info("REST: Found {} meetings for study - ID: {}", meetings.size(), studyId);
 
         return GlobalResponseHandler.success(ResponseStatus.STUDY_FIND_SUCCESS, meetings);
+    }
+
+    /**
+     * 스터디 종료
+     * POST /api/v1/study/end
+     */
+    @PostMapping("/end")
+    public ResponseEntity<GlobalResponseHandler<StudyDetailResponseDto>> endStudy(
+            @Valid @ModelAttribute StudyEndRequestDto request,
+            @AuthenticationPrincipal CurrentUser currentUser) {
+        log.info("REST: Ending study - ID: {}, requesterId: {}", request.getStudyId(), currentUser.getId());
+
+        // Facade Service 호출 (VO → DTO 변환 포함)
+        StudyDetailResponseDto endedStudy = studyFacadeService.endStudy(
+                request.getStudyId(),
+                currentUser.getId(),
+                request.getFiles()
+        );
+
+        log.info("REST: Study ended successfully - ID: {}", endedStudy.getId());
+
+        return GlobalResponseHandler.success(ResponseStatus.STUDY_END_SUCCESS, endedStudy);
     }
 }

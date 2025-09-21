@@ -4,7 +4,6 @@
 package org.certis.generated.jooq.tables;
 
 
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.Collection;
 
@@ -147,7 +146,7 @@ public class Member extends TableImpl<MemberRecord> {
     /**
      * The column <code>public.member.grace_period</code>.
      */
-    public final TableField<MemberRecord, OffsetDateTime> GRACE_PERIOD = createField(DSL.name("grace_period"), SQLDataType.OFFSETDATETIME, this, "");
+    public final TableField<MemberRecord, OffsetDateTime> GRACE_PERIOD = createField(DSL.name("grace_period"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "");
 
     private Member(Name alias, Table<MemberRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);

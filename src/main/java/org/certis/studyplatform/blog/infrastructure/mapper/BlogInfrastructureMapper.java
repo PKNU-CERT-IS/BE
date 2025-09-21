@@ -3,6 +3,7 @@ package org.certis.studyplatform.blog.infrastructure.mapper;
 import org.certis.studyplatform.blog.domain.vo.*;
 import org.certis.studyplatform.blog.domain.ArticleReferenceType;
 import org.certis.studyplatform.blog.infrastructure.persistence.entity.BlogEntity;
+import org.certis.studyplatform.blog.domain.repository.BlogRedisRepository;
 import org.jooq.Record;
 import org.springframework.stereotype.Component;
 
@@ -26,6 +27,12 @@ import static org.certis.generated.jooq.Tables.*;
  */
 @Component
 public class BlogInfrastructureMapper {
+
+    private final BlogRedisRepository blogRedisRepository;
+
+    public BlogInfrastructureMapper(BlogRedisRepository blogRedisRepository) {
+        this.blogRedisRepository = blogRedisRepository;
+    }
 
     // ================================================================
     // COMMAND REPOSITORY 매핑 (Entity ↔ VO)
@@ -58,7 +65,7 @@ public class BlogInfrastructureMapper {
                 .title(vo.title())
                 .content(vo.content())
                 .category(vo.category()) // String 그대로 사용
-                .isPublic(true) // 기본값
+                .isPublic(vo.isPublic() != null ? vo.isPublic() : true) // VO의 isPublic 사용
                 .description(vo.description())
                 .build();
     }
@@ -96,7 +103,8 @@ public class BlogInfrastructureMapper {
                 entity.getMemberId(), // memberId → creatorId
                 null, // creatorName은 별도 조회 필요
                 null, // viewCount는 별도 조회 필요
-                entity.getCreatedAt()
+                entity.getCreatedAt(),
+                entity.getIsPublic()
         );
     }
 
@@ -116,7 +124,7 @@ public class BlogInfrastructureMapper {
         Long blogId = record.get(BLOG.ID);
         String title = record.get(BLOG.TITLE);
         String description = record.get(BLOG.DESCRIPTION);
-        String content = record.get(BLOG.CONTENT);
+        String content = record.get(BLOG.CONTENT, String.class); // Safe get with type
         String category = record.get(BLOG.CATEGORY); // String 그대로 사용
         Long studyId = record.get(BLOG.STUDY_ID);
         Long projectId = record.get(BLOG.PROJECT_ID);
@@ -125,6 +133,8 @@ public class BlogInfrastructureMapper {
         Long memberId = record.get(BLOG.MEMBER_ID);
         String creatorName = record.get("creator_name", String.class);
         OffsetDateTime createdAt = record.get(BLOG.CREATED_AT);
+        OffsetDateTime updatedAt = record.get(BLOG.UPDATED_AT);
+        Boolean isPublic = record.get(BLOG.IS_PUBLIC);
 
         // 참조 타입 및 정보 결정
         ArticleReferenceType referenceType = null;
@@ -153,13 +163,14 @@ public class BlogInfrastructureMapper {
                 memberId, // memberId → creatorId
                 creatorName, // JOIN된 작성자명
                 null, // viewCount는 별도 조회
-                createdAt
+                createdAt,
+                isPublic
         );
     }
 
     /**
      * jOOQ Record를 BlogSummaryVo로 변환 (목록 조회용)
-     * JOIN된 참조 제목 정보 포함, ViewCount는 포함하지 않음
+     * JOIN된 참조 제목 정보 포함, ViewCount는 데이터베이스에서 조회
      * category는 String으로 직접 사용
      */
     public BlogSummaryVo toBlogSummaryVoFromRecord(Record record) {
@@ -172,7 +183,15 @@ public class BlogInfrastructureMapper {
         String description = record.get(BLOG.DESCRIPTION);
         String category = record.get(BLOG.CATEGORY); // String으로 직접 사용
         OffsetDateTime createdAt = record.get(BLOG.CREATED_AT);
+        OffsetDateTime updatedAt = record.get(BLOG.UPDATED_AT);
         String creatorName = record.get("creator_name", String.class);
+        
+        // 데이터베이스에서 view_count 조회 (JOIN으로 가져온 값)
+        Integer views = record.get("view_count", Integer.class);
+        if (views == null) {
+            // 데이터베이스에 조회수 정보가 없으면 Redis에서 조회 시도
+            views = getViewCountFromRedis(blogId);
+        }
 
         Long studyId = record.get(BLOG.STUDY_ID);
         Long projectId = record.get(BLOG.PROJECT_ID);
@@ -197,9 +216,11 @@ public class BlogInfrastructureMapper {
                 description,
                 category, // String 그대로 사용
                 createdAt,
+                updatedAt,
                 creatorName,
                 referenceType,
-                referenceTitle
+                referenceTitle,
+                views
         );
     }
 
@@ -239,13 +260,28 @@ public class BlogInfrastructureMapper {
                 baseBlogVo.creatorId(),
                 baseBlogVo.creatorName(),
                 viewCount, // ViewCount 설정
-                baseBlogVo.createdAt()
+                baseBlogVo.createdAt(),
+                baseBlogVo.isPublic()
         );
     }
 
     // ================================================================
     // PRIVATE HELPER METHODS
     // ================================================================
+
+    /**
+     * Redis에서 view_count 조회 (fallback 포함)
+     */
+    private Integer getViewCountFromRedis(Long blogId) {
+        try {
+            BlogIdVo blogIdVo = BlogIdVo.of(blogId);
+            Long redisViewCount = blogRedisRepository.getViewCount(blogIdVo);
+            return redisViewCount != null ? redisViewCount.intValue() : 0;
+        } catch (Exception e) {
+            // Redis 조회 실패 시 0 반환
+            return 0;
+        }
+    }
 
     /**
      * BlogEntity의 studyId, projectId를 이용해서 ArticleReferenceType 결정
@@ -324,9 +360,11 @@ public class BlogInfrastructureMapper {
                 entity.getDescription(),
                 entity.getCategory(), // String 그대로 사용
                 entity.getCreatedAt(),
+                entity.getUpdatedAt(),
                 null, // blogCreatorName은 별도 조회 필요
                 referenceType,
-                null // referenceTitle은 별도 조회 필요
+                null, // referenceTitle은 별도 조회 필요
+                null // views는 별도 조회 필요
         );
     }
 
@@ -344,9 +382,11 @@ public class BlogInfrastructureMapper {
                 blogVo.description(),
                 blogVo.category(), // String 그대로 사용
                 blogVo.createdAt(),
+                null, // updatedAt은 BlogVo에 없음
                 blogVo.creatorName(),
                 blogVo.referenceType(),
-                blogVo.referenceTitle()
+                blogVo.referenceTitle(),
+                null // views는 BlogVo에 없음
         );
     }
 

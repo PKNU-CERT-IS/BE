@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.certis.studyplatform.blog.domain.ArticleReferenceType;
 import org.certis.studyplatform.project.domain.ProjectStatus;
 
 import java.time.OffsetDateTime;
@@ -30,4 +31,8 @@ public class ProfileBlogResponseDto {
     
     // Category information (blogs only have category, no subcategory)
     private String category;
+    
+    // Reference information
+    private ArticleReferenceType referenceType;
+    private String referenceTitle;
 }

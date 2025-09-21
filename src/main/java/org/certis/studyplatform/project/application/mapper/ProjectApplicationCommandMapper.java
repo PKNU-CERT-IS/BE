@@ -1,6 +1,7 @@
 package org.certis.studyplatform.project.application.mapper;
 
 import org.certis.studyplatform.project.application.object.command.*;
+import org.certis.studyplatform.project.domain.vo.ExternalUrlVo;
 import org.certis.studyplatform.project.presentation.dto.request.*;
 import org.springframework.stereotype.Component;
 
@@ -36,7 +37,9 @@ public class ProjectApplicationCommandMapper {
                 dto.getStartDate(),
                 dto.getEndDate(),
                 dto.getGithubUrl(),
-                dto.getExternalUrl(),
+                dto.getExternalUrl() != null ? 
+                    new ExternalUrlVo(dto.getExternalUrl().getTitle(), dto.getExternalUrl().getUrl()) : null,
+                dto.getDemoUrl(),
                 dto.getThumbnailUrl(),
                 attachedCommands,
                 dto.getMaxParticipants(),
@@ -77,7 +80,9 @@ public class ProjectApplicationCommandMapper {
             dto.getStartDate(),
             dto.getEndDate(),
             dto.getGithubUrl(),
-            dto.getExternalUrl(),
+            dto.getExternalUrl() != null ? 
+                new ExternalUrlVo(dto.getExternalUrl().getTitle(), dto.getExternalUrl().getUrl()) : null,
+            dto.getDemoUrl(),
             dto.getThumbnailUrl(),
             attachedCommands,
             dto.getMaxParticipants(),
@@ -135,6 +140,60 @@ public class ProjectApplicationCommandMapper {
                 requestDto.getParticipantId(),
                 org.certis.studyplatform.project.domain.ProjectParticipantStatus.REJECTED,
                 requesterId
+        );
+    }
+
+    /**
+     * AdminProjectParticipantApprovalRequestDto → UpdateProjectParticipantStatusCommand 변환 (관리자 승인용)
+     */
+    public UpdateProjectParticipantStatusCommand toApproveProjectParticipantByAdminCommand(
+            AdminProjectParticipantApprovalRequestDto requestDto, Long adminId) {
+        return new UpdateProjectParticipantStatusCommand(
+                requestDto.getParticipantId(),
+                org.certis.studyplatform.project.domain.ProjectParticipantStatus.APPROVED,
+                adminId
+        );
+    }
+
+    /**
+     * AdminProjectParticipantApprovalRequestDto → UpdateProjectParticipantStatusCommand 변환 (관리자 거절용)
+     */
+    public UpdateProjectParticipantStatusCommand toRejectProjectParticipantByAdminCommand(
+            AdminProjectParticipantApprovalRequestDto requestDto, Long adminId) {
+        return new UpdateProjectParticipantStatusCommand(
+                requestDto.getParticipantId(),
+                org.certis.studyplatform.project.domain.ProjectParticipantStatus.REJECTED,
+                adminId
+        );
+    }
+
+    /**
+     * ProjectMeetingCreateRequestDto → CreateProjectMeetingCommand 변환
+     */
+    public CreateProjectMeetingCommand toCreateProjectMeetingCommand(
+            ProjectMeetingCreateRequestDto requestDto, Long writerId) {
+        return CreateProjectMeetingCommand.of(
+                requestDto.getProjectId(),
+                writerId,
+                requestDto.getTitle(),
+                requestDto.getContent(),
+                requestDto.getParticipantNumber(),
+                requestDto.getLinks()
+        );
+    }
+
+    /**
+     * ProjectMeetingUpdateRequestDto → UpdateProjectMeetingCommand 변환
+     */
+    public UpdateProjectMeetingCommand toUpdateProjectMeetingCommand(
+            ProjectMeetingUpdateRequestDto requestDto, Long requesterId) {
+        return UpdateProjectMeetingCommand.of(
+                requestDto.getMeetingId(),
+                requesterId,
+                requestDto.getTitle(),
+                requestDto.getContent(),
+                requestDto.getParticipantNumber(),
+                requestDto.getLinks()
         );
     }
 }

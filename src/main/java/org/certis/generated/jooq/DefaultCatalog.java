@@ -26,7 +26,7 @@ public class DefaultCatalog extends CatalogImpl {
     public static final DefaultCatalog DEFAULT_CATALOG = new DefaultCatalog();
 
     /**
-     * standard public schema
+     * The schema <code>public</code>.
      */
     public final Public PUBLIC = Public.PUBLIC;
 

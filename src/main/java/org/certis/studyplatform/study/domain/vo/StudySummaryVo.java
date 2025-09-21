@@ -20,6 +20,8 @@ public record StudySummaryVo(
     OffsetDateTime endDate,
     String studyCreatorName,
     MemberGrade studyCreatorGrade,
+    String semester,
+    String status,
     boolean isParticipantable,
     List<StudyAttachedVo> attachedVo,
     Integer maxParticipants,
@@ -35,6 +37,8 @@ public record StudySummaryVo(
         OffsetDateTime endDate,
         String studyCreatorName,
         MemberGrade studyCreatorRole,
+        String semester,
+        String status,
         boolean isParticipantable,
         List<StudyAttachedVo> attachedVo,
         Integer maxParticipants,
@@ -43,7 +47,7 @@ public record StudySummaryVo(
         return new StudySummaryVo(
             id, title, description, category, subcategory,
             startDate, endDate, studyCreatorName, studyCreatorRole,
-                isParticipantable, attachedVo, maxParticipants, currentParticipants
+            semester, status, isParticipantable, attachedVo, maxParticipants, currentParticipants
         );
     }
 }

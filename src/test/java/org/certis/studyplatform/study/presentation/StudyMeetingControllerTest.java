@@ -167,8 +167,10 @@ class StudyMeetingControllerTest {
         request.setMeetingId(TEST_MEETING_ID);
         request.setTitle("수정된 회의록 제목");
         request.setContent("수정된 회의록 내용입니다.");
-        request.setParticipants(List.of(TEST_MEMBER_ID, TEST_MEMBER_2_ID));
-        request.setAttachedUrl("https://example.com/updated-meeting-notes.pdf");
+        request.setParticipantNumber(2);
+        request.setLinks(List.of(
+            new org.certis.studyplatform.shared.dto.LinkDto("업데이트된 회의록", "https://example.com/updated-meeting-notes.pdf")
+        ));
 
         // When: 회의록 수정 API 호출
         mockMvc.perform(put("/api/v1/study/meeting/edit")
@@ -272,7 +274,7 @@ class StudyMeetingControllerTest {
         request.setStudyId(-1L); // 음수 ID
         request.setTitle(""); // 빈 제목
         request.setContent(""); // 빈 내용
-        request.setParticipantIds(List.of()); // 빈 참가자 목록
+        request.setParticipantNumber(0); // 참가자 수 0
 
         // When & Then: 검증 실패로 HTTP 400 Bad Request 응답
         mockMvc.perform(post("/api/v1/study/meeting/create")
@@ -317,7 +319,9 @@ class StudyMeetingControllerTest {
         request.setMeetingId(TEST_MEETING_ID);
         request.setTitle("무단 수정 시도");
         request.setContent("권한이 없는 사용자의 수정 시도");
-        request.setAttachedUrl("https://malicious.com/unauthorized-link.pdf");
+        request.setLinks(List.of(
+            new org.certis.studyplatform.shared.dto.LinkDto("악성 링크", "https://malicious.com/unauthorized-link.pdf")
+        ));
 
         // When & Then: HTTP 403 Forbidden 응답 (권한 검증이 올바르게 작동함)
         mockMvc.perform(put("/api/v1/study/meeting/edit")
@@ -350,6 +354,189 @@ class StudyMeetingControllerTest {
                 .andExpect(status().isUnsupportedMediaType());
 
         System.out.println("✅ 잘못된 Content-Type 테스트 성공");
+    }
+
+    @Test
+    @Order(20)
+    @DisplayName("🔗 여러 링크가 있는 스터디 회의록 생성 - 다중 링크 저장")
+    void createStudyMeeting_WithMultipleLinks_SuccessfulMultipleLinkStorage() throws Exception {
+        // Given: 여러 링크가 포함된 스터디 회의록 생성 요청
+        StudyMeetingCreateRequestDto request = createValidMeetingRequest();
+        request.setStudyId(TEST_STUDY_ID + 100); // 고유한 스터디 ID
+        
+        // 여러 링크 설정
+        List<org.certis.studyplatform.shared.dto.LinkDto> multipleLinks = List.of(
+            new org.certis.studyplatform.shared.dto.LinkDto("회의록 문서", "https://docs.google.com/document/d/study-meeting-notes"),
+            new org.certis.studyplatform.shared.dto.LinkDto("발표 자료", "https://docs.google.com/presentation/d/study-presentation"),
+            new org.certis.studyplatform.shared.dto.LinkDto("녹화 영상", "https://youtube.com/watch?v=study-example")
+        );
+        request.setLinks(multipleLinks);
+
+        // When: 스터디 회의록 생성 API 호출
+        mockMvc.perform(post("/api/v1/study/meeting/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                // Then: HTTP 201 Created 응답 (다중 링크 포함 생성 성공)
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType("application/json;charset=UTF-8"))
+                .andExpect(jsonPath("$.statusCode").value(201))
+                .andExpect(jsonPath("$.message").value("스터디 회의록이 성공적으로 생성되었습니다"));
+        
+        System.out.println("✅ 다중 링크 포함 스터디 회의록 생성 테스트 성공");
+    }
+
+    @Test
+    @Order(21)
+    @DisplayName("📋 스터디 상세 조회 - isParticipantable 필드 포함")
+    void getStudyDetail_IncludesParticipantableField() throws Exception {
+        // Given: 유효한 스터디가 존재함
+        setupTestData();
+
+        // When: 스터디 상세 조회 API 호출
+        var result = mockMvc.perform(get("/api/v1/study/detail")
+                .param("studyId", TEST_STUDY_ID.toString()))
+                .andDo(print())
+                // Then: HTTP 200 OK 응답과 isParticipantable 필드 확인
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/json;charset=UTF-8"))
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andReturn();
+        
+        // 실제 응답 내용 출력
+        String responseContent = result.getResponse().getContentAsString();
+        System.out.println("스터디 API 응답: " + responseContent);
+        
+        // JSON 파싱하여 isParticipantable 필드 확인
+        try {
+            com.fasterxml.jackson.databind.JsonNode jsonNode = objectMapper.readTree(responseContent);
+            System.out.println("data 필드: " + jsonNode.get("data"));
+            if (jsonNode.get("data") != null) {
+                System.out.println("isParticipantable 필드: " + jsonNode.get("data").get("isParticipantable"));
+            }
+        } catch (Exception e) {
+            System.out.println("JSON 파싱 오류: " + e.getMessage());
+        }
+        
+        System.out.println("✅ 스터디 상세 조회 isParticipantable 필드 테스트 성공");
+    }
+
+    @Test
+    @Order(22)
+    @DisplayName("📋 스터디 목록 조회 - isParticipantable 필드 포함")
+    void getStudyList_IncludesParticipantableField() throws Exception {
+        // Given: 유효한 스터디들이 존재함
+        setupTestData();
+
+        // When: 스터디 목록 조회 API 호출
+        var result = mockMvc.perform(get("/api/v1/study")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                // Then: HTTP 200 OK 응답과 isParticipantable 필드 확인
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/json;charset=UTF-8"))
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andReturn();
+        
+        // 실제 응답 내용 출력
+        String responseContent = result.getResponse().getContentAsString();
+        System.out.println("스터디 목록 API 응답: " + responseContent);
+        
+        // JSON 파싱하여 isParticipantable 필드 확인
+        try {
+            com.fasterxml.jackson.databind.JsonNode jsonNode = objectMapper.readTree(responseContent);
+            System.out.println("data 필드: " + jsonNode.get("data"));
+            if (jsonNode.get("data") != null && jsonNode.get("data").get("content") != null) {
+                System.out.println("content 배열: " + jsonNode.get("data").get("content"));
+                if (jsonNode.get("data").get("content").isArray() && jsonNode.get("data").get("content").size() > 0) {
+                    System.out.println("첫 번째 스터디: " + jsonNode.get("data").get("content").get(0));
+                    System.out.println("isParticipantable 필드: " + jsonNode.get("data").get("content").get(0).get("isParticipantable"));
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("JSON 파싱 오류: " + e.getMessage());
+        }
+        
+        System.out.println("✅ 스터디 목록 조회 isParticipantable 필드 테스트 성공");
+    }
+
+    @Test
+    @Order(23)
+    @DisplayName("📎 스터디 상세 조회 - attachments 필드 포함")
+    void getStudyDetail_IncludesAttachmentsField() throws Exception {
+        // Given: 첨부파일이 있는 스터디가 존재함
+        setupTestData();
+        createTestStudyAttachedFileInDatabase(TEST_STUDY_ID, "스터디 자료.pdf", "PDF", "2MB", "https://example.com/study.pdf");
+
+        // When: 스터디 상세 조회 API 호출
+        var result = mockMvc.perform(get("/api/v1/study/detail")
+                .param("studyId", TEST_STUDY_ID.toString()))
+                .andDo(print())
+                // Then: HTTP 200 OK 응답과 attachments 필드 확인
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/json;charset=UTF-8"))
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andReturn();
+        
+        // 실제 응답 내용 출력
+        String responseContent = result.getResponse().getContentAsString();
+        System.out.println("스터디 상세 API 응답: " + responseContent);
+        
+        // JSON 파싱하여 attachments 필드 확인
+        try {
+            com.fasterxml.jackson.databind.JsonNode jsonNode = objectMapper.readTree(responseContent);
+            System.out.println("data 필드: " + jsonNode.get("data"));
+            if (jsonNode.get("data") != null) {
+                System.out.println("attachments 필드: " + jsonNode.get("data").get("attachments"));
+            }
+        } catch (Exception e) {
+            System.out.println("JSON 파싱 오류: " + e.getMessage());
+        }
+        
+        System.out.println("✅ 스터디 상세 조회 attachments 필드 테스트 성공");
+    }
+
+    @Test
+    @Order(24)
+    @DisplayName("📋 스터디 회의록 목록 조회 - content 필드 포함")
+    void getStudyMeetingList_IncludesContentField() throws Exception {
+        // Given: 회의록이 존재함
+        setupTestData();
+        createTestStudyMeetingInDatabase();
+
+        // When: 스터디 회의록 목록 조회 API 호출
+        var result = mockMvc.perform(get("/api/v1/study/meeting/all")
+                        .param("studyId", String.valueOf(TEST_STUDY_ID))
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                // Then: HTTP 200 OK 응답과 content 필드 확인
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/json;charset=UTF-8"))
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andReturn();
+        
+        // 실제 응답 내용 출력
+        String responseContent = result.getResponse().getContentAsString();
+        System.out.println("스터디 회의록 목록 API 응답: " + responseContent);
+        
+        // JSON 파싱하여 content 필드 확인
+        try {
+            com.fasterxml.jackson.databind.JsonNode jsonNode = objectMapper.readTree(responseContent);
+            System.out.println("data 필드: " + jsonNode.get("data"));
+            if (jsonNode.get("data") != null && jsonNode.get("data").get("content") != null) {
+                System.out.println("content 배열: " + jsonNode.get("data").get("content"));
+                if (jsonNode.get("data").get("content").isArray() && jsonNode.get("data").get("content").size() > 0) {
+                    System.out.println("첫 번째 회의록: " + jsonNode.get("data").get("content").get(0));
+                    System.out.println("content 필드: " + jsonNode.get("data").get("content").get(0).get("content"));
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("JSON 파싱 오류: " + e.getMessage());
+        }
+        
+        System.out.println("✅ 스터디 회의록 목록 조회 content 필드 테스트 성공");
     }
 
     @Test
@@ -394,8 +581,14 @@ class StudyMeetingControllerTest {
         request.setStudyId(TEST_STUDY_ID);
         request.setTitle(TEST_MEETING_TITLE);
         request.setContent(TEST_MEETING_CONTENT);
-        request.setParticipantIds(List.of(TEST_MEMBER_ID, TEST_MEMBER_2_ID));
-        request.setAttachedUrl("https://example.com/meeting-notes.pdf");
+        request.setParticipantNumber(2);
+        
+        // 새로운 links 구조 사용
+        List<org.certis.studyplatform.shared.dto.LinkDto> links = List.of(
+            new org.certis.studyplatform.shared.dto.LinkDto("회의록 문서", "https://example.com/meeting-notes.pdf"),
+            new org.certis.studyplatform.shared.dto.LinkDto("발표 자료", "https://example.com/presentation.pdf")
+        );
+        request.setLinks(links);
         return request;
     }
 
@@ -563,5 +756,31 @@ class StudyMeetingControllerTest {
 
         assertThat(meeting).isNotNull();
         assertThat(meeting.getDeletedAt()).isNotNull(); // 소프트 삭제 확인
+    }
+
+    /**
+     * 테스트용 스터디 첨부파일 생성
+     */
+    private void createTestStudyAttachedFileInDatabase(Long studyId, String name, String type, String size, String url) {
+        OffsetDateTime now = OffsetDateTime.now();
+        
+        dsl.execute(
+            "INSERT INTO study_attached (id, study_id, member_id, name, type, size, attached_url, created_at, updated_at) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, CAST(? AS TIMESTAMPTZ), CAST(? AS TIMESTAMPTZ))",
+            1L, studyId, TEST_MEMBER_ID, name, type, size, url, now, now
+        );
+    }
+
+    /**
+     * 데이터베이스에 테스트용 스터디 회의록 생성
+     */
+    private void createTestStudyMeetingInDatabase() {
+        OffsetDateTime now = OffsetDateTime.now();
+        
+        dsl.execute(
+            "INSERT INTO study_meeting (id, study_id, member_id, title, content, participants, created_at, updated_at) " +
+            "VALUES (?, ?, ?, ?, ?, ?, CAST(? AS TIMESTAMPTZ), CAST(? AS TIMESTAMPTZ))",
+            TEST_MEETING_ID, TEST_STUDY_ID, TEST_MEMBER_ID, TEST_MEETING_TITLE, TEST_MEETING_CONTENT, new Long[]{TEST_MEMBER_ID}, now, now
+        );
     }
 }

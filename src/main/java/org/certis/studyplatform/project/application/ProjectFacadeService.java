@@ -7,6 +7,7 @@ import org.certis.studyplatform.project.application.mapper.ProjectApplicationCom
 import org.certis.studyplatform.project.application.mapper.ProjectApplicationQueryMapper;
 import org.certis.studyplatform.project.application.object.command.CreateProjectCommand;
 import org.certis.studyplatform.project.application.object.command.DeleteProjectCommand;
+import org.certis.studyplatform.project.application.object.command.EndProjectCommand;
 import org.certis.studyplatform.project.application.object.command.UpdateProjectCommand;
 import org.certis.studyplatform.project.application.object.query.GetAllProjectMeetingsQuery;
 import org.certis.studyplatform.project.application.object.query.GetAllProjectsQuery;
@@ -33,6 +34,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.certis.studyplatform.project.presentation.dto.response.ProjectAttachedResponseDto;
+
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -256,6 +259,25 @@ public class ProjectFacadeService {
 
         log.info("Facade: Found {} meetings for project - ID: {}", meetings.size(), projectId);
         return meetings;
+    }
+
+    /**
+     * 프로젝트 종료 (DTO 반환)
+     */
+    public ProjectDetailResponseDto endProject(Long projectId, Long requesterId, List<MultipartFile> files) {
+        log.info("Facade: Ending project - ID: {}, requesterId: {}", projectId, requesterId);
+
+        // Command 객체 생성
+        EndProjectCommand command = EndProjectCommand.of(projectId, requesterId, files);
+
+        // Command Service 호출 (VO 반환)
+        ProjectVo endedVo = projectCommandService.endProject(command);
+
+        // VO → DTO 변환
+        ProjectDetailResponseDto responseDto = dtoMapper.toProjectDetailResponseDto(endedVo);
+
+        log.info("Facade: Project ended successfully - ID: {}", endedVo.id());
+        return responseDto;
     }
 
 

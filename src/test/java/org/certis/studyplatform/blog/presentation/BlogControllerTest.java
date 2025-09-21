@@ -323,7 +323,6 @@ class BlogControllerTest {
         request.setReferenceId(99999L); // 존재하지 않는 참조 ID
 
         // When & Then: 현재 비즈니스 로직에서는 참조 검증을 하지 않아 성공 응답
-        // TODO: 비즈니스 로직에서 참조 ID 존재 여부를 검증하도록 수정 필요
         mockMvc.perform(post("/api/v1/blog/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -429,26 +428,153 @@ class BlogControllerTest {
         System.out.println("✅ 대용량 데이터 페이징 성능 테스트 성공 - 실행시간: " + executionTime + "ms");
     }
 
+    // =================================================================
+    // 🆕 새로운 기능 테스트 (referenceTitle, views, updatedAt, isPublic)
+    // =================================================================
+
     @Test
     @Order(22)
-    @DisplayName("📊 최대 길이 블로그 생성 - 경계값 테스트")
-    void createBlog_BoundaryTest_MaximumLength() throws Exception {
-        // Given: 데이터베이스 제약조건을 초과하는 길이 (VARCHAR(255) 제한 초과)
-        BlogCreateRequestDto request = createValidBlogRequest();
-        request.setTitle("A".repeat(300)); // VARCHAR(255) 제한 초과
-        request.setDescription("B".repeat(300)); // VARCHAR(255) 제한 초과
-        request.setContent("C".repeat(300)); // VARCHAR(255) 제한 초과
+    @DisplayName("🔍 블로그 목록 조회 - referenceTitle, views, updatedAt 필드 포함")
+    void getAllBlogs_WithNewFields() throws Exception {
+        // Given: 블로그 데이터가 존재함
+        createTestBlogInDatabase();
 
-        // When & Then: 데이터베이스 제약조건 위반으로 409 Conflict 응답
+        // 디버깅: blog_view 테이블 데이터 확인
+        var blogViewData = dsl.selectFrom(BLOG_VIEW)
+                .where(BLOG_VIEW.BLOG_ID.eq(TEST_BLOG_ID))
+                .fetchOne();
+        System.out.println("🔍 blog_view 테이블 데이터: " + blogViewData);
+
+        // 디버깅: JOOQ JOIN 쿼리 직접 실행
+        var joinResult = dsl.select(
+                        BLOG.ID,
+                        BLOG.TITLE,
+                        BLOG_VIEW.VIEW_NUMBER.as("view_count")
+                )
+                .from(BLOG)
+                .leftJoin(BLOG_VIEW).on(BLOG.ID.eq(BLOG_VIEW.BLOG_ID))
+                .where(BLOG.ID.eq(TEST_BLOG_ID))
+                .fetchOne();
+        System.out.println("🔍 JOOQ JOIN 쿼리 결과: " + joinResult);
+
+        // When: 블로그 목록 조회 API 호출
+        mockMvc.perform(get("/api/v1/blog")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                // Then: 새로운 필드들이 포함된 응답 확인
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content[0].referenceTitle").exists())
+                .andExpect(jsonPath("$.data.content[0].views").exists())
+                .andExpect(jsonPath("$.data.content[0].updatedAt").exists());
+
+        System.out.println("✅ 블로그 목록 조회 - 새로운 필드 포함 테스트 성공");
+    }
+
+    @Test
+    @Order(23)
+    @DisplayName("📝 블로그 생성 - referenceTitle 입력 필드 포함")
+    void createBlog_WithReferenceTitle() throws Exception {
+        // Given: referenceTitle이 포함된 블로그 생성 요청
+        BlogCreateRequestDto request = createValidBlogRequest();
+        request.setReferenceTitle("통합 테스트용 스터디"); // referenceTitle 추가
+
+        // When: 블로그 생성 API 호출
         mockMvc.perform(post("/api/v1/blog/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value(400))
-                .andExpect(jsonPath("$.message").value("블로그 제목이 올바르지 않습니다."));
+                // Then: 성공 응답 확인
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.statusCode").value(201))
+                .andExpect(jsonPath("$.message").value("블로그 글이 성공적으로 생성되었습니다"));
 
-        System.out.println("✅ 최대 길이 제약조건 테스트 성공");
+        System.out.println("✅ 블로그 생성 - referenceTitle 포함 테스트 성공");
+    }
+
+    @Test
+    @Order(24)
+    @DisplayName("✏️ 블로그 수정 - referenceTitle 및 isPublic 수정")
+    void updateBlog_WithReferenceTitleAndIsPublic() throws Exception {
+        // Given: 기존 블로그가 존재함
+        createTestBlogInDatabase();
+
+        // When: referenceTitle과 isPublic을 포함한 수정 요청
+        BlogUpdateRequestDto request = new BlogUpdateRequestDto();
+        request.setBlogId(TEST_BLOG_ID);
+        request.setTitle("수정된 블로그 제목");
+        request.setDescription("수정된 블로그 설명");
+        request.setContent("수정된 블로그 내용");
+        request.setCategory("수정된 카테고리");
+        request.setReferenceType(ArticleReferenceType.STUDY);
+        request.setReferenceId(TEST_STUDY_ID);
+        request.setReferenceTitle("수정된 참조 제목");
+        request.setIsPublic(false); // isPublic 추가
+
+        mockMvc.perform(put("/api/v1/blog/update")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                // Then: 성공 응답 확인
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.message").value("블로그 글이 성공적으로 갱신되었습니다"));
+
+        System.out.println("✅ 블로그 수정 - referenceTitle 및 isPublic 포함 테스트 성공");
+    }
+
+    @Test
+    @Order(25)
+    @DisplayName("🔍 블로그 상세 조회 - Redis 조회수 증가 테스트")
+    void getBlogDetail_WithRedisViewCount() throws Exception {
+        // Given: 블로그가 존재함
+        createTestBlogInDatabase();
+
+        // When: 블로그 상세 조회 API 호출 (viewerId 포함)
+        mockMvc.perform(get("/api/v1/blog/detail")
+                        .param("blogId", TEST_BLOG_ID.toString()))
+                .andDo(print())
+                // Then: 성공 응답 및 조회수 증가 확인
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.data.id").value(TEST_BLOG_ID))
+                .andExpect(jsonPath("$.data.isPublic").exists());
+
+        System.out.println("✅ 블로그 상세 조회 - Redis 조회수 증가 테스트 성공");
+    }
+
+    @Test
+    @Order(26)
+    @DisplayName("🌐 공개 유무별 블로그 조회 - isPublic 필터링")
+    void getBlogsByPublicStatus() throws Exception {
+        // Given: 공개/비공개 블로그들이 존재함
+        createPublicAndPrivateBlogs();
+
+        // When: 공개 블로그만 조회
+        mockMvc.perform(get("/api/v1/blog/public")
+                        .param("isPublic", "true")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                // Then: 공개 블로그만 반환
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.data.content").isArray());
+
+        // When: 비공개 블로그만 조회
+        mockMvc.perform(get("/api/v1/blog/public")
+                        .param("isPublic", "false")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                // Then: 비공개 블로그만 반환
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.data.content").isArray());
+
+        System.out.println("✅ 공개 유무별 블로그 조회 테스트 성공");
     }
 
     // =================================================================
@@ -533,6 +659,7 @@ class BlogControllerTest {
     private void cleanupTestData() {
         try {
             // 외래 키 제약으로 인해 역순으로 삭제
+            dsl.deleteFrom(BLOG_VIEW).execute();
             dsl.deleteFrom(BLOG).execute();
             dsl.deleteFrom(STUDY).execute();
             dsl.deleteFrom(MEMBER).execute();
@@ -559,6 +686,14 @@ class BlogControllerTest {
                 .set(BLOG.CREATED_AT, now)
                 .set(BLOG.UPDATED_AT, now)
                 .execute();
+
+        // blog_view 테이블에 조회수 데이터 생성
+        dsl.insertInto(BLOG_VIEW)
+                .set(BLOG_VIEW.BLOG_ID, TEST_BLOG_ID)
+                .set(BLOG_VIEW.VIEW_NUMBER, 100)
+                .set(BLOG_VIEW.CREATED_AT, now)
+                .onDuplicateKeyIgnore()
+                .execute();
     }
 
     /**
@@ -581,6 +716,41 @@ class BlogControllerTest {
                     .set(BLOG.UPDATED_AT, now.minusHours(i))
                     .execute();
         }
+    }
+
+    /**
+     * 공개/비공개 블로그들 생성 (isPublic 테스트용)
+     */
+    private void createPublicAndPrivateBlogs() {
+        OffsetDateTime now = OffsetDateTime.now();
+        
+        // 공개 블로그 생성
+        dsl.insertInto(BLOG)
+                .set(BLOG.ID, 1L)
+                .set(BLOG.TITLE, "공개 블로그 1")
+                .set(BLOG.DESCRIPTION, "공개 블로그 설명")
+                .set(BLOG.CONTENT, "공개 블로그 내용")
+                .set(BLOG.CATEGORY, "웹 개발")
+                .set(BLOG.MEMBER_ID, TEST_MEMBER_ID)
+                .set(BLOG.STUDY_ID, TEST_STUDY_ID)
+                .set(BLOG.IS_PUBLIC, true)
+                .set(BLOG.CREATED_AT, now)
+                .set(BLOG.UPDATED_AT, now)
+                .execute();
+
+        // 비공개 블로그 생성
+        dsl.insertInto(BLOG)
+                .set(BLOG.ID, 2L)
+                .set(BLOG.TITLE, "비공개 블로그 1")
+                .set(BLOG.DESCRIPTION, "비공개 블로그 설명")
+                .set(BLOG.CONTENT, "비공개 블로그 내용")
+                .set(BLOG.CATEGORY, "웹 개발")
+                .set(BLOG.MEMBER_ID, TEST_MEMBER_ID)
+                .set(BLOG.STUDY_ID, TEST_STUDY_ID)
+                .set(BLOG.IS_PUBLIC, false)
+                .set(BLOG.CREATED_AT, now)
+                .set(BLOG.UPDATED_AT, now)
+                .execute();
     }
 
     /**

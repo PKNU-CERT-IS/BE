@@ -21,7 +21,7 @@ public interface StudyParticipantCommandRepository {
     /**
      * 스터디 참가자 상태 업데이트
      */
-    StudyParticipantStatusUpdatedVo updateStatus(StudyParticipantVo participantVo);
+    StudyParticipantStatusUpdatedVo updateStatus(StudyParticipantVo participantVo, Long requesterId);
 
     /**
      * 스터디 참가 신청 취소 (소프트 삭제)

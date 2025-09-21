@@ -118,8 +118,8 @@ class AdminMemberControllerTest {
         // Given: 검색할 회원이 존재함
 
         // When: 관리자용 회원 검색 API 호출
-        mockMvc.perform(get(BASE_URL + "/keyword")
-                        .param("search", "대상"))
+        mockMvc.perform(get(BASE_URL + "/search")
+                        .param("keyword", "대상"))
                 .andDo(print())
                 // Then: HTTP 200 OK 응답과 검색 결과 확인
                 .andExpect(status().isOk())

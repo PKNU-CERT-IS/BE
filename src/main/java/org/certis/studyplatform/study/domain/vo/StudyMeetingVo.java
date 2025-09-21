@@ -14,7 +14,7 @@ public record StudyMeetingVo(
     Long studyId,
     String title,
     String content,
-    List<Long> participantIds,
+    Integer participantNumber,
     Long writerId,
     boolean isEditable,
     OffsetDateTime createdAt,
@@ -29,7 +29,7 @@ public record StudyMeetingVo(
             Long studyId,
             String title,
             String content,
-            List<Long> participantIds,
+            Integer participantNumber,
             Long writerId,
             boolean isEditable,
             OffsetDateTime createdAt,
@@ -41,12 +41,12 @@ public record StudyMeetingVo(
         if (content == null || content.trim().isEmpty()) {
             throw new org.certis.studyplatform.exception.DomainException(org.certis.studyplatform.exception.ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION, "invalid meeting content");
         }
-        if (participantIds == null) {
-            throw new org.certis.studyplatform.exception.DomainException(org.certis.studyplatform.exception.ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION, "participants must not be null");
+        if (participantNumber == null || participantNumber < 0) {
+            throw new org.certis.studyplatform.exception.DomainException(org.certis.studyplatform.exception.ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION, "participant number must be valid");
         }
         return new StudyMeetingVo(
             id, studyId, title, content,
-            participantIds, writerId, isEditable,
+            participantNumber, writerId, isEditable,
             createdAt, updatedAt
         );
     }

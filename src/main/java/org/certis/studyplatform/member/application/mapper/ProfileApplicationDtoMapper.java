@@ -4,10 +4,12 @@ import org.certis.studyplatform.member.domain.vo.ProfileVo;
 import org.certis.studyplatform.member.domain.vo.ProfileStudyVo;
 import org.certis.studyplatform.member.domain.vo.ProfileProjectVo;
 import org.certis.studyplatform.member.domain.vo.ProfileBlogVo;
+import org.certis.studyplatform.member.domain.vo.ScheduleInfoVo;
 import org.certis.studyplatform.member.presentation.dto.response.ProfileInfoResponseDto;
 import org.certis.studyplatform.member.presentation.dto.response.ProfileStudyResponseDto;
 import org.certis.studyplatform.member.presentation.dto.response.ProfileProjectResponseDto;
 import org.certis.studyplatform.member.presentation.dto.response.ProfileBlogResponseDto;
+import org.certis.studyplatform.member.presentation.dto.response.ScheduleInfoResponseDto;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -35,7 +37,10 @@ public class ProfileApplicationDtoMapper {
                 .name(profileVo.name())
                 .description(profileVo.description())
                 .profileImage(profileVo.profileImage())
-                .todaySchedules(profileVo.todaySchedules())
+                .todaySchedules(profileVo.todaySchedules() != null ? 
+                    profileVo.todaySchedules().stream()
+                        .map(this::toScheduleInfoResponseDto)
+                        .collect(java.util.stream.Collectors.toList()) : null)
                 .penaltyCount(profileVo.penaltyCount())
                 .gracePeriod(profileVo.gracePeriod())
                 .memberRole(profileVo.memberRole())
@@ -142,6 +147,21 @@ public class ProfileApplicationDtoMapper {
                 .viewCount(blogVo.viewCount())
                 .likeCount(blogVo.likeCount())
                 .category(blogVo.category())
+                .referenceType(blogVo.referenceType())
+                .referenceTitle(blogVo.referenceTitle())
+                .build();
+    }
+
+    public ScheduleInfoResponseDto toScheduleInfoResponseDto(ScheduleInfoVo scheduleVo) {
+        if (scheduleVo == null) return null;
+
+        return ScheduleInfoResponseDto.builder()
+                .id(scheduleVo.id())
+                .title(scheduleVo.title())
+                .place(scheduleVo.place())
+                .type(scheduleVo.type())
+                .startTime(scheduleVo.startTime())
+                .endTime(scheduleVo.endTime())
                 .build();
     }
 

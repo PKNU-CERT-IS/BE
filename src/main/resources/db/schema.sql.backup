@@ -90,6 +90,7 @@ CREATE TABLE project (
     max_participants_number INTEGER NOT NULL,
     github_url VARCHAR,
     external_url VARCHAR,
+    demo_url VARCHAR,
     thumbnail_url VARCHAR,
     CONSTRAINT fk_project_member FOREIGN KEY (member_id) REFERENCES member(id)
 );

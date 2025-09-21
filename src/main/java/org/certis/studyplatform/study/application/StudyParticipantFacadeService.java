@@ -10,8 +10,10 @@ import org.certis.studyplatform.study.presentation.dto.request.StudyJoinApproveR
 import org.certis.studyplatform.study.presentation.dto.request.StudyJoinCancelRequestDto;
 import org.certis.studyplatform.study.presentation.dto.request.StudyJoinRejectRequestDto;
 import org.certis.studyplatform.study.presentation.dto.request.StudyJoinRequestDto;
+import org.certis.studyplatform.study.presentation.dto.request.AdminStudyParticipantApprovalRequestDto;
 import org.certis.studyplatform.study.presentation.dto.response.StudyJoinResponseDto;
 import org.certis.studyplatform.study.presentation.dto.response.StudyParticipantStatusUpdateResponseDto;
+import org.certis.studyplatform.study.presentation.dto.response.AdminStudyParticipantApprovalResponseDto;
 import org.certis.studyplatform.study.presentation.dto.response.StudyParticipantSummaryResponseDto;
 import org.certis.studyplatform.study.application.command.StudyParticipantCommandService;
 import org.certis.studyplatform.study.application.mapper.StudyApplicationCommandMapper;
@@ -165,6 +167,58 @@ public class StudyParticipantFacadeService {
                 .toStudyParticipantSummaryResponseDtoPage(participationsVo);
 
         log.info("Facade: Found {} member participations", responseDto.getTotalElements());
+        return responseDto;
+    }
+
+    // ================================================================
+    // ADMIN STUDY PARTICIPANT OPERATIONS - 관리자 스터디 참가 관리
+    // ================================================================
+
+    /**
+     * 관리자가 스터디 참가 신청을 승인
+     */
+    public AdminStudyParticipantApprovalResponseDto approveParticipantByAdmin(
+            AdminStudyParticipantApprovalRequestDto request, Long adminId) {
+        log.info("Facade: Admin approving study participant - participantId: {}, adminId: {}", 
+                request.getParticipantId(), adminId);
+
+        // DTO → Command Object 변환
+        UpdateStudyParticipantStatusCommand command = commandMapper
+                .toApproveStudyParticipantByAdminCommand(request, adminId);
+
+        // Command Service 호출
+        StudyParticipantStatusUpdatedVo updatedVo = participantCommandService.approveParticipant(command);
+
+        // VO → Response DTO 변환
+        AdminStudyParticipantApprovalResponseDto responseDto = dtoMapper
+                .toAdminStudyParticipantApprovalResponseDto(updatedVo, StudyParticipantStatus.APPROVED);
+
+        log.info("Facade: Admin study participant approved successfully - participantId: {}", 
+                responseDto.getParticipantId());
+        return responseDto;
+    }
+
+    /**
+     * 관리자가 스터디 참가 신청을 거절
+     */
+    public AdminStudyParticipantApprovalResponseDto rejectParticipantByAdmin(
+            AdminStudyParticipantApprovalRequestDto request, Long adminId) {
+        log.info("Facade: Admin rejecting study participant - participantId: {}, adminId: {}", 
+                request.getParticipantId(), adminId);
+
+        // DTO → Command Object 변환
+        UpdateStudyParticipantStatusCommand command = commandMapper
+                .toRejectStudyParticipantByAdminCommand(request, adminId);
+
+        // Command Service 호출
+        StudyParticipantStatusUpdatedVo updatedVo = participantCommandService.rejectParticipant(command);
+
+        // VO → Response DTO 변환
+        AdminStudyParticipantApprovalResponseDto responseDto = dtoMapper
+                .toAdminStudyParticipantApprovalResponseDto(updatedVo, StudyParticipantStatus.REJECTED);
+
+        log.info("Facade: Admin study participant rejected successfully - participantId: {}", 
+                responseDto.getParticipantId());
         return responseDto;
     }
 }

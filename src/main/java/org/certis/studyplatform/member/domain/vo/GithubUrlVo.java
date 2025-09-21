@@ -6,8 +6,8 @@ import org.certis.studyplatform.exception.ExceptionStatus;
 public record GithubUrlVo(String value) {
 
     public GithubUrlVo {
-        if (value != null && !value.trim().isEmpty() && value.trim().length() > 255) {
-            throw new DomainException(ExceptionStatus.MEMBER_DOMAIN_RULE_VIOLATION, "github url must be <= 255 chars");
+        if (value != null && value.trim().isEmpty()) {
+            throw new DomainException(ExceptionStatus.MEMBER_DOMAIN_RULE_VIOLATION, "github url cannot be empty");
         }
     }
 

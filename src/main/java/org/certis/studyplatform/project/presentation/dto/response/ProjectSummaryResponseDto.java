@@ -42,13 +42,23 @@ public class ProjectSummaryResponseDto {
 
     private MemberGrade projectCreatorGrade;
 
+    private String semester;
+
+    private String status;
+
     private boolean isParticipantable;
 
     private String githubUrl;
 
-    private String externalUrl;
+    private ExternalUrlResponseDto externalUrl;
+
+    private String demoUrl;
 
     private String thumbnailUrl;
+
+    private Integer maxParticipantNumber;
+
+    private Integer currentParticipantNumber;
 
     // toString for logging
     @Override

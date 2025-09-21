@@ -37,7 +37,12 @@ public class BlogSummaryResponseDto {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private OffsetDateTime createdAt;
 
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private OffsetDateTime updatedAt;
+
     private String blogCreatorName;
+
+    private Integer views;
 
     // toString for logging
     @Override

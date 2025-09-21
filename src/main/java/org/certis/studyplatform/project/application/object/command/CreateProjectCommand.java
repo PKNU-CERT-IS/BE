@@ -17,7 +17,8 @@ public record CreateProjectCommand(
     OffsetDateTime startDate,
     OffsetDateTime endDate,
     String githubUrl,
-    String externalUrl,
+    org.certis.studyplatform.project.domain.vo.ExternalUrlVo externalUrl,
+    String demoUrl,
     String thumbnailUrl,
     List<CreateProjectAttachedCommand> attachedFiles,
     Integer maxParticipants,
@@ -32,7 +33,8 @@ public static CreateProjectCommand of(
         OffsetDateTime startDate,
         OffsetDateTime endDate,
         String githubUrl,
-        String externalUrl,
+        org.certis.studyplatform.project.domain.vo.ExternalUrlVo externalUrl,
+        String demoUrl,
         String thumbnailUrl,
         List<CreateProjectAttachedCommand> attachedFiles,
         Integer maxParticipants,
@@ -41,7 +43,7 @@ public static CreateProjectCommand of(
         return new CreateProjectCommand(
             title, description, content, category, subCategory,
             startDate, endDate,
-            githubUrl, externalUrl, thumbnailUrl, attachedFiles,
+            githubUrl, externalUrl, demoUrl, thumbnailUrl, attachedFiles,
             maxParticipants, creatorId
         );
     }

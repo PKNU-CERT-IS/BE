@@ -586,8 +586,17 @@ public class MemberDomainService {
      * 매주 일요일 24:00에 실행되어 유예기간이 만료된 Upsolver들에게 벌점 부여
      */
     public void applyGracePeriodForGrantingPenalties() {
+        applyGracePeriodForGrantingPenalties(OffsetDateTime.now());
+    }
+
+    /**
+     * 유예기간 만료 벌점 처리 (테스트용)
+     * 
+     * @param currentTime 현재 시간 (테스트에서 시간을 제어하기 위해 사용)
+     */
+    public void applyGracePeriodForGrantingPenalties(OffsetDateTime currentTime) {
         log.info("Domain: Starting grace period penalty processing");
-        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime now = currentTime;
         List<MemberWithPenaltyVo> expiredUpsolvers = memberQueryRepository.findExpiredUpsolvers(now);
 
         if (expiredUpsolvers.isEmpty()) {
@@ -668,12 +677,12 @@ public class MemberDomainService {
     }
 
     public List<MemberWithContactVo> searchMembersWithContact(SearchMembersWithContactQuery query) {
-        log.info("Domain: Searching members with contact - search: {}, grade: {}, role: {}",
-                query.search(), query.grade(), query.role());
+        log.info("Domain: Searching members with contact - keyword: {}, grade: {}, role: {}",
+                query.keyword(), query.grade(), query.role());
 
         // Query 객체를 VO로 변환
         MemberSearchConditionVo searchConditionVo = MemberSearchConditionVo.of(
-                query.search(),
+                query.keyword(),
                 query.grade(),
                 query.role()
         );

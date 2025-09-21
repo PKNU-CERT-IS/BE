@@ -37,6 +37,12 @@ public class StudyAdvancedSearchRequestDto {
     private String subcategory;
 
     /**
+     * 학기 필터 (예: "2025-01", "2024-02")
+     */
+    @Pattern(regexp = "^\\d{4}-\\d{2}$", message = "학기는 YYYY-MM 형식이어야 합니다")
+    private String semester;
+
+    /**
      * 상태 필터 (Ready, InProgress, Completed)
      */
     private StudyStatus status;
@@ -48,6 +54,7 @@ public class StudyAdvancedSearchRequestDto {
         return (keyword == null || keyword.trim().isEmpty()) &&
                (category == null || category.trim().isEmpty()) &&
                (subcategory == null || subcategory.trim().isEmpty()) &&
+               (semester == null || semester.trim().isEmpty()) &&
                (status == null);
     }
 
@@ -70,6 +77,13 @@ public class StudyAdvancedSearchRequestDto {
      */
     public boolean hasSubcategory() {
         return subcategory != null && !subcategory.trim().isEmpty();
+    }
+
+    /**
+     * 학기 필터가 설정되어 있는지 확인
+     */
+    public boolean hasSemester() {
+        return semester != null && !semester.trim().isEmpty();
     }
 
     /**

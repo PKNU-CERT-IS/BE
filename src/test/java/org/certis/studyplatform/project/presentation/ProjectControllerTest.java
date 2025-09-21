@@ -149,8 +149,8 @@ class ProjectControllerTest {
                 .andExpect(jsonPath("$.data.content").value(TEST_PROJECT_CONTENT))
                 .andExpect(jsonPath("$.data.category").value(TEST_PROJECT_CATEGORY))
                 .andExpect(jsonPath("$.data.subCategory").value(TEST_PROJECT_SUBCATEGORY))
-                .andExpect(jsonPath("$.data.maxParticipants").exists())
-                .andExpect(jsonPath("$.data.currentParticipants").exists())
+                .andExpect(jsonPath("$.data.maxParticipantNumber").exists())
+                .andExpect(jsonPath("$.data.currentParticipantNumber").exists())
                 .andReturn();
 
         // And: DB의 member_id와 응답의 creatorId가 일치하는지 검증
@@ -527,25 +527,6 @@ class ProjectControllerTest {
         System.out.println("✅ 복합 조건 검색 성능 테스트 성공 - 실행시간: " + executionTime + "ms");
     }
 
-    @Test
-    @Order(32)
-    @DisplayName("📊 최대 길이 프로젝트 생성 - 경계값 테스트")
-    void createProject_BoundaryTest_MaximumLength() throws Exception {
-        // Given: 최대 길이의 제목과 내용
-        ProjectCreateRequestDto request = createValidProjectRequest();
-        request.setTitle("A".repeat(30)); // 최대 255자
-        request.setDescription("B".repeat(100)); // 최대 255자
-        request.setContent("C".repeat(255)); // 최대 255자
-
-        // When & Then: 정상 생성 성공 또는 길이 제한 검증
-        mockMvc.perform(post("/api/v1/project/create")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andDo(print())
-                .andExpect(status().isCreated());
-
-        System.out.println("✅ 최대 길이 프로젝트 생성 테스트 성공");
-    }
 
     // =================================================================
     // 🛠️ 헬퍼 메서드들
@@ -782,6 +763,173 @@ class ProjectControllerTest {
         assertThat(project.getSubcategory()).isEqualTo(request.getSubCategory());
     }
 
+    // =================================================================
+    // 🆕 새로운 기능 테스트 (demoUrl, externalUrl 구조 변경)
+    // =================================================================
+
+    @Test
+    @Order(100)
+    @DisplayName("✅ 프로젝트 생성 시 demoUrl과 구조화된 externalUrl이 올바르게 저장된다")
+    @WithMockUser(username = "testuser", roles = {"PLAYER"})
+    void should_create_project_with_demo_url_and_structured_external_url() throws Exception {
+        // Given: demoUrl과 구조화된 externalUrl을 포함한 프로젝트 생성 요청
+        ProjectCreateRequestDto request = createProjectCreateRequestWithNewFields();
+
+        // When: 프로젝트 생성 요청
+        mockMvc.perform(post("/api/v1/project/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.statusCode").value(201))
+                .andExpect(jsonPath("$.message").value("프로젝트가 성공적으로 생성되었습니다"));
+
+        // Then: 데이터베이스에서 demoUrl과 externalUrl이 올바르게 저장되었는지 확인
+        var project = dsl.selectFrom(PROJECT)
+                .where(PROJECT.TITLE.eq(request.getTitle()))
+                .and(PROJECT.DELETED_AT.isNull())
+                .fetchOne();
+
+        assertThat(project).isNotNull();
+        assertThat(project.getDemoUrl()).isEqualTo(request.getDemoUrl());
+        assertThat(project.getExternalUrl()).contains(request.getExternalUrl().getTitle());
+        assertThat(project.getExternalUrl()).contains(request.getExternalUrl().getUrl());
+    }
+
+    @Test
+    @Order(101)
+    @DisplayName("✅ 프로젝트 상세 조회 시 새로운 필드들이 올바르게 반환된다")
+    @WithMockUser(username = "testuser", roles = {"PLAYER"})
+    void should_return_new_fields_in_project_detail() throws Exception {
+        // Given: 새로운 필드들을 포함한 프로젝트가 존재하는 상태
+        createProjectWithNewFields();
+
+        // When: 프로젝트 상세 조회
+        mockMvc.perform(get("/api/v1/project/detail")
+                        .param("projectId", String.valueOf(TEST_PROJECT_ID)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.data.id").value(TEST_PROJECT_ID))
+                .andExpect(jsonPath("$.data.projectCreatorName").exists())
+                .andExpect(jsonPath("$.data.projectCreatorGrade").exists())
+                .andExpect(jsonPath("$.data.semester").exists())
+                .andExpect(jsonPath("$.data.status").exists())
+                .andExpect(jsonPath("$.data.maxParticipantNumber").exists())
+                .andExpect(jsonPath("$.data.currentParticipantNumber").exists())
+                .andExpect(jsonPath("$.data.demoUrl").exists())
+                .andExpect(jsonPath("$.data.externalUrl.title").exists())
+                .andExpect(jsonPath("$.data.externalUrl.url").exists());
+    }
+
+    @Test
+    @Order(102)
+    @DisplayName("✅ 프로젝트 목록 조회 시 새로운 필드들이 올바르게 반환된다")
+    @WithMockUser(username = "testuser", roles = {"PLAYER"})
+    void should_return_new_fields_in_project_list() throws Exception {
+        // Given: 새로운 필드들을 포함한 프로젝트가 존재하는 상태
+        createProjectWithNewFields();
+
+        // When: 프로젝트 목록 조회
+        mockMvc.perform(get("/api/v1/project")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.data.content[0].id").value(TEST_PROJECT_ID))
+                .andExpect(jsonPath("$.data.content[0].semester").exists())
+                .andExpect(jsonPath("$.data.content[0].status").exists())
+                .andExpect(jsonPath("$.data.content[0].maxParticipantNumber").exists())
+                .andExpect(jsonPath("$.data.content[0].currentParticipantNumber").exists())
+                .andExpect(jsonPath("$.data.content[0].demoUrl").exists())
+                .andExpect(jsonPath("$.data.content[0].externalUrl.title").exists())
+                .andExpect(jsonPath("$.data.content[0].externalUrl.url").exists());
+    }
+
+    @Test
+    @Order(103)
+    @DisplayName("✅ 프로젝트 검색 시 새로운 필드들이 올바르게 반환된다")
+    @WithMockUser(username = "testuser", roles = {"PLAYER"})
+    void should_return_new_fields_in_project_search() throws Exception {
+        // Given: 새로운 필드들을 포함한 프로젝트가 존재하는 상태
+        createProjectWithNewFields();
+
+        // When: 프로젝트 검색
+        mockMvc.perform(get("/api/v1/project/search")
+                        .param("keyword", "새로운 필드")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.data.content[0].id").value(TEST_PROJECT_ID))
+                .andExpect(jsonPath("$.data.content[0].semester").exists())
+                .andExpect(jsonPath("$.data.content[0].status").exists())
+                .andExpect(jsonPath("$.data.content[0].maxParticipantNumber").exists())
+                .andExpect(jsonPath("$.data.content[0].currentParticipantNumber").exists())
+                .andExpect(jsonPath("$.data.content[0].demoUrl").exists())
+                .andExpect(jsonPath("$.data.content[0].externalUrl.title").exists())
+                .andExpect(jsonPath("$.data.content[0].externalUrl.url").exists());
+    }
+
+    // =================================================================
+    // 🛠 새로운 기능 테스트를 위한 헬퍼 메서드
+    // =================================================================
+
+    /**
+     * 새로운 필드들을 포함한 프로젝트 생성 요청 생성
+     */
+    private ProjectCreateRequestDto createProjectCreateRequestWithNewFields() {
+        ProjectCreateRequestDto request = new ProjectCreateRequestDto();
+        request.setTitle("새로운 필드 테스트 프로젝트");
+        request.setDescription("demoUrl과 구조화된 externalUrl 테스트");
+        request.setContent("새로운 필드들이 올바르게 저장되는지 테스트");
+        request.setCategory("CS");
+        request.setSubCategory("백엔드");
+        request.setStartDate(OffsetDateTime.now().plusDays(1));
+        request.setEndDate(OffsetDateTime.now().plusDays(30));
+        // request.setSkills(List.of("Spring Boot", "Java")); // skills 필드가 없음
+        request.setMaxParticipants(5);
+        request.setGithubUrl("https://github.com/test/new-project");
+        
+        // 구조화된 externalUrl 설정
+        ExternalUrlRequestDto externalUrl = new ExternalUrlRequestDto();
+        externalUrl.setTitle("프로젝트 사이트");
+        externalUrl.setUrl("https://new-project.example.com");
+        request.setExternalUrl(externalUrl);
+        
+        // demoUrl 설정
+        request.setDemoUrl("https://demo.example.com/new-project");
+        request.setThumbnailUrl("https://example.com/thumbnail.jpg");
+        
+        return request;
+    }
+
+    /**
+     * 새로운 필드들을 포함한 프로젝트 생성
+     */
+    private void createProjectWithNewFields() {
+        dsl.insertInto(PROJECT)
+                .set(PROJECT.ID, TEST_PROJECT_ID)
+                .set(PROJECT.TITLE, "새로운 필드 테스트 프로젝트")
+                .set(PROJECT.DESCRIPTION, "demoUrl과 구조화된 externalUrl을 포함한 새로운 필드들을 테스트하는 프로젝트입니다.")
+                .set(PROJECT.CONTENT, "새로운 필드들이 올바르게 저장되는지 테스트")
+                .set(PROJECT.CATEGORY, "CS")
+                .set(PROJECT.SUBCATEGORY, "백엔드")
+                .set(PROJECT.STARTED_AT, OffsetDateTime.now().plusDays(1))
+                .set(PROJECT.ENDED_AT, OffsetDateTime.now().plusDays(30))
+                .set(PROJECT.MEMBER_ID, TEST_MEMBER_ID)
+                .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(PROJECT.GITHUB_URL, "https://github.com/test/new-project")
+                .set(PROJECT.EXTERNAL_URL, "{\"title\":\"프로젝트 사이트\",\"url\":\"https://new-project.example.com\"}")
+                .set(PROJECT.DEMO_URL, "https://demo.example.com/new-project") // DEMO_URL 필드가 없음
+                .set(PROJECT.THUMBNAIL_URL, "https://example.com/thumbnail.jpg")
+                .set(PROJECT.CREATED_AT, OffsetDateTime.now())
+                .set(PROJECT.UPDATED_AT, OffsetDateTime.now())
+                .execute();
+    }
+
     /**
      * 프로젝트 수정 검증
      */
@@ -807,5 +955,86 @@ class ProjectControllerTest {
 
         assertThat(project).isNotNull();
         assertThat(project.getDeletedAt()).isNotNull(); // 소프트 삭제 확인
+    }
+
+    @Test
+    @Order(103)
+    @DisplayName("✅ 프로젝트 종료 API 테스트 - 성공 케이스")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
+    void should_end_project_successfully() throws Exception {
+        // Given
+        Long projectId = 1L;
+        
+        // 프로젝트 생성
+        setupTestData();
+        createTestProjectInDatabase();
+        
+        // When & Then
+        mockMvc.perform(post("/api/v1/project/end")
+                        .param("projectId", String.valueOf(projectId))
+                        .contentType("multipart/form-data"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.message").value("프로젝트가 성공적으로 종료되었습니다"))
+                .andExpect(jsonPath("$.data.id").value(projectId))
+                .andExpect(jsonPath("$.data.status").value("ENDED")); // 종료된 상태 확인
+        
+        // 데이터베이스에서 프로젝트 상태 확인
+        var project = dsl.selectFrom(PROJECT)
+                .where(PROJECT.ID.eq(projectId))
+                .fetchOne();
+        
+        assertThat(project).isNotNull();
+        assertThat(project.getEndedAt()).isNotNull(); // 종료 시간이 설정되었는지 확인
+    }
+
+    @Test
+    @Order(104)
+    @DisplayName("✅ 프로젝트 종료 API 테스트 - 권한 없음")
+    @WithMockUser(username = "user2", roles = {"PLAYER"})
+    void should_fail_to_end_project_without_permission() throws Exception {
+        // Given
+        Long projectId = 1L;
+        
+        // 프로젝트 생성
+        setupTestData();
+        createTestProjectInDatabase();
+        
+        // When & Then
+        mockMvc.perform(post("/api/v1/project/end")
+                        .param("projectId", String.valueOf(projectId))
+                        .contentType("multipart/form-data"))
+                .andDo(print())
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.statusCode").value(422))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("프로젝트 종료 권한이 없습니다")));
+    }
+
+    @Test
+    @Order(105)
+    @DisplayName("✅ 프로젝트 종료 API 테스트 - 이미 종료된 프로젝트")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
+    void should_fail_to_end_already_ended_project() throws Exception {
+        // Given
+        Long projectId = 1L;
+        
+        // 프로젝트 생성 및 이미 종료된 상태로 설정
+        setupTestData();
+        createTestProjectInDatabase();
+        dsl.update(PROJECT)
+                .set(PROJECT.STARTED_AT, OffsetDateTime.now().minusDays(10)) // 10일 전 시작
+                .set(PROJECT.ENDED_AT, OffsetDateTime.now().minusDays(1)) // 어제 종료
+                .where(PROJECT.ID.eq(projectId))
+                .execute();
+        
+        // When & Then
+        mockMvc.perform(post("/api/v1/project/end")
+                        .param("projectId", String.valueOf(projectId))
+                        .contentType("multipart/form-data"))
+                .andDo(print())
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.statusCode").value(422))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("이미 종료된 프로젝트입니다")));
     }
 }

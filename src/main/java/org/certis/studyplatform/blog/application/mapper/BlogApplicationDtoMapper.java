@@ -38,6 +38,7 @@ public class BlogApplicationDtoMapper {
                 .viewCount(vo.viewCount())
                 .creatorName(vo.creatorName())
                 .createdAt(vo.createdAt())
+                .isPublic(vo.isPublic())
                 .build();
     }
 
@@ -54,8 +55,12 @@ public class BlogApplicationDtoMapper {
                 .title(vo.title())
                 .description(vo.description())
                 .category(vo.category())
+                .referenceType(vo.referenceType())
+                .referenceTitle(vo.referenceTitle())
                 .createdAt(vo.createdAt())
+                .updatedAt(vo.updatedAt())
                 .blogCreatorName(vo.blogCreatorName())
+                .views(vo.views())
                 .build();
     }
 

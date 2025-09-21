@@ -33,4 +33,8 @@ public class BlogCreateRequestDto {
     @NotNull(message = "작성하고자 하는 종류 ID는 필수입니다")
     private Long referenceId;
 
+    private String referenceTitle;
+
+    private Boolean isPublic = true; // 기본값은 공개
+
 }

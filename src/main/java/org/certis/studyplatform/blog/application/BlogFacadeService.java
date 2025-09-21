@@ -107,7 +107,14 @@ public class BlogFacadeService {
      * 블로그 상세 조회 (DTO 기반)
      */
     public BlogDetailResponseDto getBlogDetail(BlogDetailRequestDto requestDto) {
-        log.info("Facade: Getting blog detail - ID: {}", requestDto.getBlogId());
+        return getBlogDetail(requestDto, null);
+    }
+
+    /**
+     * 블로그 상세 조회 (DTO 기반, viewerId 포함)
+     */
+    public BlogDetailResponseDto getBlogDetail(BlogDetailRequestDto requestDto, Long viewerId) {
+        log.info("Facade: Getting blog detail - ID: {}, viewerId: {}", requestDto.getBlogId(), viewerId);
 
         Long blogId = requestDto.getBlogId();
 
@@ -117,7 +124,7 @@ public class BlogFacadeService {
             // 1. 블로그 기본 정보 조회
             CompletableFuture<BlogVo> blogFuture = CompletableFuture
                     .supplyAsync(() -> {
-                        GetBlogByIdQuery query = queryMapper.toGetBlogByIdQuery(blogId);
+                        GetBlogByIdQuery query = queryMapper.toGetBlogByIdQuery(blogId, viewerId);
                         return blogQueryService.getBlogById(query);
                     }, executor);
 
@@ -216,6 +223,34 @@ public class BlogFacadeService {
             log.info("Facade: Blog reference list retrieved - found {} items", result.size());
             return result;
         }
+    }
+
+    /**
+     * Admin용 블로그 공개 유무 토글
+     */
+    public void toggleBlogPublicStatus(BlogTogglePublicRequestDto requestDto, Long adminId) {
+        log.info("Facade: Toggling blog public status - ID: {} by admin: {}", requestDto.getBlogId(), adminId);
+
+        // Command Service 호출
+        blogCommandService.toggleBlogPublicStatus(requestDto.getBlogId(), requestDto.getIsPublic(), adminId);
+
+        log.info("Facade: Blog public status toggled successfully - ID: {}", requestDto.getBlogId());
+    }
+
+    /**
+     * 공개 유무에 따른 블로그 조회
+     */
+    public Page<BlogSummaryResponseDto> getBlogsByPublicStatus(Boolean isPublic, Pageable pageable, Long memberId) {
+        log.info("Facade: Getting blogs by public status - isPublic: {}", isPublic);
+
+        // Query Service 호출
+        Page<BlogSummaryVo> blogs = blogQueryService.getBlogsByPublicStatus(isPublic, pageable, memberId);
+
+        // VO → DTO 변환
+        Page<BlogSummaryResponseDto> responseDto = dtoMapper.toBlogSummaryResponseDtoPage(blogs);
+
+        log.info("Facade: Blogs retrieved by public status - found {} blogs", responseDto.getTotalElements());
+        return responseDto;
     }
 
 }

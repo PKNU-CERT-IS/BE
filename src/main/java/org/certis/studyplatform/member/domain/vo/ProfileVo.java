@@ -17,7 +17,7 @@ public record ProfileVo(
         String name,
         String description,
         String profileImage,
-        List<OffsetDateTime> todaySchedules,
+        List<ScheduleInfoVo> todaySchedules,
         Integer penaltyCount,
         OffsetDateTime gracePeriod,
         MemberRole memberRole,
@@ -48,7 +48,7 @@ public record ProfileVo(
      * 정적 팩토리 메서드
      */
     public static ProfileVo of(Long memberId, String name, String description,
-                               String profileImage, List<OffsetDateTime> todaySchedules,
+                               String profileImage, List<ScheduleInfoVo> todaySchedules,
                                Integer penaltyCount, OffsetDateTime gracePeriod,
                                MemberRole memberRole,
                                MemberGrade memberGrade,

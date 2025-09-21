@@ -135,7 +135,7 @@ public class ProjectParticipantDomainService {
     }
 
     /**
-     * 프로젝트 참가 거절 (소프트 삭제)
+     * 프로젝트 참가 거절
      */
     public ProjectParticipantStatusUpdatedVo rejectParticipant(UpdateProjectParticipantStatusCommand command) {
         log.info("Domain: Rejecting participant - participantId: {}, requesterId: {}",
@@ -155,17 +155,11 @@ public class ProjectParticipantDomainService {
         // 3. 프로젝트 생성자 권한 확인
         validateProjectLeaderPermission(participant.projectId(), command.requesterId());
 
-        // 4. 거절 처리 (소프트 삭제)
-        commandRepository.softDeleteById(command.participantId());
-        ProjectParticipantStatusUpdatedVo result = ProjectParticipantStatusUpdatedVo.of(
-                command.participantId(),
-                participant.projectId(),
-                participant.memberId(),
-                participant.status(),
-                ProjectParticipantStatus.REJECTED
-        );
+        // 4. 거절 처리 (상태 업데이트)
+        ProjectParticipantVo updatedParticipant = participant.updateStatus(ProjectParticipantStatus.REJECTED);
+        ProjectParticipantStatusUpdatedVo result = commandRepository.updateStatus(updatedParticipant);
 
-        log.info("Domain: Participant rejected (soft deleted) - ID: {}", result.id());
+        log.info("Domain: Participant rejected - ID: {}", result.id());
         return result;
     }
 

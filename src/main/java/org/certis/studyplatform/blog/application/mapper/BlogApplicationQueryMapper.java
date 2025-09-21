@@ -23,6 +23,13 @@ public class BlogApplicationQueryMapper {
     }
 
     /**
+     * ID와 viewerId를 GetBlogByIdQuery로 변환
+     */
+    public GetBlogByIdQuery toGetBlogByIdQuery(Long blogId, Long viewerId) {
+        return GetBlogByIdQuery.of(blogId, viewerId);
+    }
+
+    /**
      * Pageable을 GetAllBlogsQuery로 변환
      */
     public GetAllBlogsQuery toGetAllBlogsQuery(Pageable pageable) {

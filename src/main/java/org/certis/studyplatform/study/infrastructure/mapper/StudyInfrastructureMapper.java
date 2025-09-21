@@ -11,6 +11,7 @@ import org.jooq.Record;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -80,8 +81,13 @@ public class StudyInfrastructureMapper {
                 entity.getMemberId(),
                 null, // creatorName은 별도 조회 필요
                 null, // creatorGrade는 별도 조회 필요
+                calculateSemester(entity.getEndedAt()), // semester 계산
+                calculateStatus(entity.getEndedAt()), // status 계산
                 entity.getMaxParticipantsNumber(),
-                0 // currentParticipants는 별도 계산 필요
+                0, // currentParticipants는 별도 계산 필요
+                determineParticipantable(entity.getStartedAt(), entity.getEndedAt(), 
+                    entity.getMaxParticipantsNumber(), 0),
+                Collections.emptyList() // attached는 별도 조회 필요
         );
     }
 
@@ -130,6 +136,8 @@ public class StudyInfrastructureMapper {
 
 
         // ✅ [MODIFICATION] StudyVo 생성자 인자 순서 변경 (createdAt, updatedAt 추가)
+        OffsetDateTime endedAt = firstRecord.get("ended_at", OffsetDateTime.class);
+        
         return new StudyVo(
                 firstRecord.get("id", Long.class),
                 firstRecord.get("title", String.class),
@@ -138,14 +146,19 @@ public class StudyInfrastructureMapper {
                 firstRecord.get("category", String.class),
                 firstRecord.get("subcategory", String.class),
                 firstRecord.get("started_at", OffsetDateTime.class),
-                firstRecord.get("ended_at", OffsetDateTime.class),
+                endedAt,
                 firstRecord.get("created_at", OffsetDateTime.class),
                 firstRecord.get("updated_at", OffsetDateTime.class),
                 firstRecord.get("member_id", Long.class),
                 firstRecord.get("creator_name", String.class),
                 safeParseMemberGrade(firstRecord.get("creator_grade", String.class)),
+                calculateSemester(endedAt), // semester 계산
+                calculateStatus(endedAt), // status 계산
                 firstRecord.get("max_participants_number", Integer.class),
                 firstRecord.get("current_participants", Integer.class),
+                determineParticipantable(firstRecord.get("started_at", OffsetDateTime.class), endedAt,
+                    firstRecord.get("max_participants_number", Integer.class), 
+                    firstRecord.get("current_participants", Integer.class)),
                 attachedVos,
                 summaryVos,
                 participantVos
@@ -172,6 +185,8 @@ public class StudyInfrastructureMapper {
                 .collect(Collectors.toList());
 
         // ✅ [MODIFICATION] StudyVo 생성자 인자 순서 변경 (createdAt, updatedAt 추가)
+        OffsetDateTime endedAt = firstRecord.get("ended_at", OffsetDateTime.class);
+        
         return new StudyVo(
                 firstRecord.get("id", Long.class),
                 firstRecord.get("title", String.class),
@@ -180,14 +195,19 @@ public class StudyInfrastructureMapper {
                 firstRecord.get("category", String.class),
                 firstRecord.get("subcategory", String.class),
                 firstRecord.get("started_at", OffsetDateTime.class),
-                firstRecord.get("ended_at", OffsetDateTime.class),
+                endedAt,
                 firstRecord.get("created_at", OffsetDateTime.class),
                 firstRecord.get("updated_at", OffsetDateTime.class),
                 firstRecord.get("member_id", Long.class),
                 firstRecord.get("creator_name", String.class),
                 safeParseMemberGrade(firstRecord.get("creator_grade", String.class)),
+                calculateSemester(endedAt), // semester 계산
+                calculateStatus(endedAt), // status 계산
                 firstRecord.get("max_participants_number", Integer.class),
                 firstRecord.get("current_participants", Integer.class),
+                determineParticipantable(firstRecord.get("started_at", OffsetDateTime.class), endedAt,
+                    firstRecord.get("max_participants_number", Integer.class), 
+                    firstRecord.get("current_participants", Integer.class)),
                 attachedVos,               // attached
                 Collections.emptyList(),   // summaryVoList
                 Collections.emptyList()    // participantVoList
@@ -238,6 +258,7 @@ public class StudyInfrastructureMapper {
         );
 
         MemberGrade memberGrade = safeParseMemberGrade(firstRecord.get("creator_grade", String.class));
+        OffsetDateTime endedAt = firstRecord.get("ended_at", OffsetDateTime.class);
 
         return StudySummaryVo.of(
                 studyId,
@@ -246,9 +267,11 @@ public class StudyInfrastructureMapper {
                 firstRecord.get("category", String.class),
                 firstRecord.get("subcategory", String.class),
                 firstRecord.get("started_at", OffsetDateTime.class),
-                firstRecord.get("ended_at", OffsetDateTime.class),
+                endedAt,
                 firstRecord.get("creator_name", String.class),
                 memberGrade,
+                calculateSemester(endedAt), // semester 계산
+                calculateStatus(endedAt), // status 계산
                 isParticipantable,
                 attachedVos,
                 firstRecord.get("max_participants_number", Integer.class),
@@ -274,16 +297,19 @@ public class StudyInfrastructureMapper {
      */
     private boolean determineParticipantable(OffsetDateTime startedAt, OffsetDateTime endedAt,
                                              Integer maxParticipants, Integer currentParticipants) {
-        OffsetDateTime now = OffsetDateTime.now();
-
-        if (endedAt != null && endedAt.isBefore(now)) {
+        if (startedAt == null || endedAt == null || maxParticipants == null || currentParticipants == null) {
             return false;
         }
-
-        if (maxParticipants != null && currentParticipants != null) {
-            return currentParticipants < maxParticipants;
+        
+        OffsetDateTime now = OffsetDateTime.now();
+        
+        // 프로젝트/스터디가 종료되지 않아야 함 (종료일이 현재 시간보다 미래)
+        if (endedAt.isBefore(now) || endedAt.isEqual(now)) {
+            return false;
         }
-        return true;
+        
+        // 현재 참여자 수가 최대 참여자 수보다 작아야 함
+        return currentParticipants < maxParticipants;
     }
 
     // ================================================================
@@ -413,5 +439,43 @@ public class StudyInfrastructureMapper {
             log.warn("Invalid member grade string: {}", grade);
             return null;
         }
+    }
+
+    // ================================================================
+    // 비즈니스 로직 계산 메서드들
+    // ================================================================
+
+    /**
+     * ended_at을 기준으로 semester 계산
+     * 3월~8월: 해당 년도 1학기
+     * 9월~다음해 2월: 해당 년도 2학기
+     */
+    private String calculateSemester(OffsetDateTime endedAt) {
+        if (endedAt == null) {
+            return null;
+        }
+        
+        LocalDate endDate = endedAt.toLocalDate();
+        int year = endDate.getYear();
+        int month = endDate.getMonthValue();
+        
+        if (month >= 3 && month <= 8) {
+            return year + "-1"; // 1학기
+        } else {
+            return year + "-2"; // 2학기
+        }
+    }
+
+    /**
+     * ended_at을 기준으로 status 계산
+     * ended_at이 현재 시간보다 지났으면 "ENDED", 아니면 "ACTIVE"
+     */
+    private String calculateStatus(OffsetDateTime endedAt) {
+        if (endedAt == null) {
+            return "ACTIVE"; // 종료일이 없으면 활성 상태
+        }
+        
+        OffsetDateTime now = OffsetDateTime.now();
+        return endedAt.isBefore(now) ? "ENDED" : "ACTIVE";
     }
 }

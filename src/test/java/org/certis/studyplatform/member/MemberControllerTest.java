@@ -88,8 +88,8 @@ class MemberControllerTest {
         // Given: 검색할 회원이 데이터베이스에 존재함
 
         // When: 이름으로 회원 검색 API 호출
-        mockMvc.perform(get(BASE_URL + "/keyword")
-                        .param("search", "김테스트"))
+        mockMvc.perform(get(BASE_URL + "/search")
+                        .param("keyword", "김테스트"))
                 .andDo(print())
                 // Then: HTTP 200 OK 응답과 검색 결과 확인
                 .andExpect(status().isOk())
@@ -111,8 +111,8 @@ class MemberControllerTest {
         // Given: 같은 전공의 회원들이 존재함
 
         // When: 전공으로 회원 검색 API 호출
-        mockMvc.perform(get(BASE_URL + "/keyword")
-                        .param("search", "소프트웨어"))
+        mockMvc.perform(get(BASE_URL + "/search")
+                        .param("keyword", "소프트웨어"))
                 .andDo(print())
                 // Then: HTTP 200 OK 응답과 전공 매칭 결과 확인
                 .andExpect(status().isOk())
@@ -129,8 +129,8 @@ class MemberControllerTest {
         // Given: 특정 기술스택을 가진 회원이 존재함
 
         // When: 기술스택으로 회원 검색 API 호출
-        mockMvc.perform(get(BASE_URL + "/keyword")
-                        .param("search", "Java"))
+        mockMvc.perform(get(BASE_URL + "/search")
+                        .param("keyword", "Java"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
@@ -147,7 +147,7 @@ class MemberControllerTest {
         // Given: 다양한 학년의 회원들이 존재함
 
         // When: 학년으로 필터링하여 검색 API 호출
-        mockMvc.perform(get(BASE_URL + "/keyword")
+        mockMvc.perform(get(BASE_URL + "/search")
                         .param("grade", MemberGrade.SENIOR.name()))
                 .andDo(print())
                 // Then: HTTP 200 OK 응답과 해당 학년 회원만 반환
@@ -165,7 +165,7 @@ class MemberControllerTest {
         // Given: 다양한 역할의 회원들이 존재함
 
         // When: 역할로 필터링하여 검색 API 호출
-        mockMvc.perform(get(BASE_URL + "/keyword")
+        mockMvc.perform(get(BASE_URL + "/search")
                         .param("role", "PLAYER"))
                 .andDo(print())
                 // Then: HTTP 200 OK 응답과 해당 역할 회원만 반환
@@ -183,8 +183,8 @@ class MemberControllerTest {
         // Given: 복합 조건에 맞는 회원이 존재함
 
         // When: 검색어 + 학년 + 역할로 복합 검색 API 호출
-        mockMvc.perform(get(BASE_URL + "/keyword")
-                        .param("search", "김")
+        mockMvc.perform(get(BASE_URL + "/search")
+                        .param("keyword", "김")
                         .param("grade", MemberGrade.SENIOR.name())
                         .param("role", "PLAYER"))
                 .andDo(print())

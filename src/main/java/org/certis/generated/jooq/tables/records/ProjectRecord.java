@@ -230,17 +230,31 @@ public class ProjectRecord extends UpdatableRecordImpl<ProjectRecord> {
     }
 
     /**
+     * Setter for <code>public.project.demo_url</code>.
+     */
+    public void setDemoUrl(String value) {
+        set(15, value);
+    }
+
+    /**
+     * Getter for <code>public.project.demo_url</code>.
+     */
+    public String getDemoUrl() {
+        return (String) get(15);
+    }
+
+    /**
      * Setter for <code>public.project.thumbnail_url</code>.
      */
     public void setThumbnailUrl(String value) {
-        set(15, value);
+        set(16, value);
     }
 
     /**
      * Getter for <code>public.project.thumbnail_url</code>.
      */
     public String getThumbnailUrl() {
-        return (String) get(15);
+        return (String) get(16);
     }
 
     // -------------------------------------------------------------------------
@@ -266,7 +280,7 @@ public class ProjectRecord extends UpdatableRecordImpl<ProjectRecord> {
     /**
      * Create a detached, initialised ProjectRecord
      */
-    public ProjectRecord(Long id, Long memberId, String title, String content, OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt, String category, String subcategory, String description, OffsetDateTime startedAt, OffsetDateTime endedAt, Integer maxParticipantsNumber, String githubUrl, String externalUrl, String thumbnailUrl) {
+    public ProjectRecord(Long id, Long memberId, String title, String content, OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt, String category, String subcategory, String description, OffsetDateTime startedAt, OffsetDateTime endedAt, Integer maxParticipantsNumber, String githubUrl, String externalUrl, String demoUrl, String thumbnailUrl) {
         super(Project.PROJECT);
 
         setId(id);
@@ -284,6 +298,7 @@ public class ProjectRecord extends UpdatableRecordImpl<ProjectRecord> {
         setMaxParticipantsNumber(maxParticipantsNumber);
         setGithubUrl(githubUrl);
         setExternalUrl(externalUrl);
+        setDemoUrl(demoUrl);
         setThumbnailUrl(thumbnailUrl);
         resetTouchedOnNotNull();
     }
@@ -310,6 +325,7 @@ public class ProjectRecord extends UpdatableRecordImpl<ProjectRecord> {
             setMaxParticipantsNumber(value.getMaxParticipantsNumber());
             setGithubUrl(value.getGithubUrl());
             setExternalUrl(value.getExternalUrl());
+            setDemoUrl(value.getDemoUrl());
             setThumbnailUrl(value.getThumbnailUrl());
             resetTouchedOnNotNull();
         }

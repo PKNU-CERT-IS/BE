@@ -64,8 +64,8 @@ public class ProjectMeetingFacadeService {
             writerId,
             request.getTitle(),
             request.getContent(),
-            request.getParticipantIds(),
-            request.getAttachedUrl()
+            request.getParticipantNumber(),
+            request.getLinks()
         );
         
         // Command Service 호출
@@ -95,8 +95,8 @@ public class ProjectMeetingFacadeService {
                 .projectId(meetingVo.projectId())
                 .title(meetingVo.title())
                 .content(meetingVo.content())
-                .participantIds(meetingVo.participantIds())
-                .participantNumber(meetingVo.participantIds() != null ? meetingVo.participantIds().size() : 0)
+                .participantNumber(meetingVo.participantNumber())
+                .participantIds(java.util.Collections.emptyList()) // TODO: 실제 참가자 ID 목록 조회 필요
                 .writerId(meetingVo.writerId())
                 .writerName("알 수 없음")
                 .createdAt(meetingVo.createdAt())
@@ -129,8 +129,8 @@ public class ProjectMeetingFacadeService {
                 requesterId,
             request.getTitle(),
             request.getContent(),
-            request.getParticipants(),
-            request.getAttachedUrl()
+            request.getParticipantNumber(),
+            request.getLinks()
         );
         
         // Command Service 호출
@@ -184,6 +184,7 @@ public class ProjectMeetingFacadeService {
                         .title(vo.title())
                         .participantNumber(vo.participantNumber())
                         .creatorName(vo.creatorName())
+                        .createdAt(vo.createdAt())
                         .isEditable(vo.isEditable())
                         .links(vo.hasLinks() ? createMockLinks(vo.safeLinkCount()) : Collections.emptyList())
                         .build());

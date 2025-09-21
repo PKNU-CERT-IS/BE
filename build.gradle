@@ -146,6 +146,11 @@ test {
     testLogging {
         events "passed", "skipped", "failed"
     }
+    
+    // Mockito agent configuration to avoid self-attaching warning
+    jvmArgs = [
+        '-javaagent:' + configurations.testRuntimeClasspath.find { it.name.contains('byte-buddy-agent') }.absolutePath
+    ]
 }
 
 // ===================================================================

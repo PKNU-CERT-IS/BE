@@ -166,7 +166,7 @@ public class StudyApprovalDomainService {
         }
 
         // CERT-IS 정책에 따른 유효한 카테고리
-        String[] validCategories = {"CTF", "CS", "RED", "BLUE", "GRC", "MISC"};
+        String[] validCategories = {"CTF", "CS", "RED", "BLUE", "GRC", "MISC", "기타"};
         
         for (String validCategory : validCategories) {
             if (category.toUpperCase().startsWith(validCategory)) {

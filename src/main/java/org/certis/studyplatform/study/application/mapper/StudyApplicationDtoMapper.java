@@ -42,13 +42,16 @@ public class StudyApplicationDtoMapper {
                 .createdAt(vo.createdAt())
                 .updatedAt(vo.updatedAt())
                 .creatorId(vo.creatorId())
-                .creatorName(vo.creatorName())
-                .creatorGrade(vo.creatorGrade())
+                .studyCreatorName(vo.creatorName())
+                .studyCreatorGrade(vo.creatorGrade() != null ? vo.creatorGrade().toString() : null)
+                .semester(vo.semester())
+                .status(vo.status())
                 .attachments(toStudyAttachedResponseDtoList(vo.attached()))
                 .meetingSummaries(toStudyMeetingSummaryResponseDtoList(vo.summaryVoList()))
                 .participantSummaries(toStudyParticipantSummaryResponseDtoListFromVo(vo.participantVoList()))
                 .maxParticipantNumber(vo.maxParticipants())
                 .currentParticipantNumber(vo.currentParticipants())
+                .isParticipantable(vo.isParticipantable())
                 .build();
     }
 
@@ -70,6 +73,8 @@ public class StudyApplicationDtoMapper {
                 .endDate(vo.endDate())
                 .studyCreatorName(vo.studyCreatorName())
                 .studyCreatorGrade(vo.studyCreatorGrade())
+                .semester(vo.semester())
+                .status(vo.status())
                 .isParticipantable(vo.isParticipantable())
                 .currentParticipantNumber(vo.currentParticipants())
                 .maxParticipantNumber(vo.maxParticipants())
@@ -340,6 +345,25 @@ public class StudyApplicationDtoMapper {
                 .pendingCount(pendingCount)
                 .maxParticipants(maxParticipants)
                 .isFull(isFull)
+                .build();
+    }
+
+    /**
+     * StudyParticipantStatusUpdatedVo → AdminStudyParticipantApprovalResponseDto 변환
+     */
+    public AdminStudyParticipantApprovalResponseDto toAdminStudyParticipantApprovalResponseDto(
+            StudyParticipantStatusUpdatedVo vo, org.certis.studyplatform.study.domain.StudyParticipantStatus status) {
+        return AdminStudyParticipantApprovalResponseDto.builder()
+                .participantId(vo.id())
+                .studyId(vo.studyId())
+                .studyTitle("스터디 제목") // TODO: 실제 스터디 제목 조회 필요
+                .memberId(vo.memberId())
+                .memberName("회원 이름") // TODO: 실제 회원 이름 조회 필요
+                .status(status)
+                .reason("관리자 처리") // TODO: 실제 사유 처리 필요
+                .adminId(vo.requesterId())
+                .adminName("관리자") // TODO: 실제 관리자 이름 조회 필요
+                .processedAt(vo.updatedAt())
                 .build();
     }
 }

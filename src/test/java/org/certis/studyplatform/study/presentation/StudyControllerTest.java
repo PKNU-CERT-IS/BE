@@ -12,6 +12,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.certis.studyplatform.shared.security.CurrentUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -65,7 +68,7 @@ class StudyControllerTest {
     private DSLContext dsl; // JOOQ로 직접 데이터베이스 조작
 
     // 테스트 상수
-    private static final Long TEST_STUDY_ID = 1L;
+    private static final Long TEST_STUDY_ID = 2L;
     private static final Long TEST_MEMBER_ID = 1L;
     private static final Long TEST_MEMBER_2_ID = 2L;
     
@@ -557,6 +560,122 @@ class StudyControllerTest {
         assertThat(study.getUpdatedAt()).isAfter(study.getCreatedAt());
     }
 
+    // =================================================================
+    // 🆕 새로운 기능 테스트 (semester, status 필드 추가)
+    // =================================================================
+
+    @Test
+    @Order(100)
+    @DisplayName("✅ 스터디 상세 조회 시 새로운 필드들이 올바르게 반환된다")
+    @WithMockUser(username = "testuser", roles = {"PLAYER"})
+    void should_return_new_fields_in_study_detail() throws Exception {
+        // Given: 새로운 필드들을 포함한 스터디가 존재하는 상태
+        createStudyWithNewFields();
+
+        // When: 스터디 상세 조회
+        mockMvc.perform(get("/api/v1/study/detail")
+                        .param("studyId", String.valueOf(TEST_STUDY_ID)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.data.id").value(TEST_STUDY_ID))
+                .andExpect(jsonPath("$.data.studyCreatorName").exists())
+                .andExpect(jsonPath("$.data.studyCreatorGrade").exists())
+                .andExpect(jsonPath("$.data.semester").exists())
+                .andExpect(jsonPath("$.data.status").exists());
+    }
+
+    @Test
+    @Order(101)
+    @DisplayName("✅ 스터디 목록 조회 시 새로운 필드들이 올바르게 반환된다")
+    @WithMockUser(username = "testuser", roles = {"PLAYER"})
+    void should_return_new_fields_in_study_list() throws Exception {
+        // Given: 새로운 필드들을 포함한 스터디가 존재하는 상태
+        createStudyWithNewFields();
+
+        // When: 스터디 목록 조회
+        mockMvc.perform(get("/api/v1/study")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.data.content[0].id").value(TEST_STUDY_ID))
+                .andExpect(jsonPath("$.data.content[0].semester").exists())
+                .andExpect(jsonPath("$.data.content[0].status").exists());
+    }
+
+    @Test
+    @Order(102)
+    @DisplayName("✅ 스터디 검색 시 새로운 필드들이 올바르게 반환된다")
+    @WithMockUser(username = "testuser", roles = {"PLAYER"})
+    void should_return_new_fields_in_study_search() throws Exception {
+        // Given: 새로운 필드들을 포함한 스터디가 존재하는 상태
+        createStudyWithNewFields();
+
+        // When: 스터디 검색
+        mockMvc.perform(get("/api/v1/study/search")
+                        .param("keyword", "새로운 필드")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.data.content[0].id").value(TEST_STUDY_ID))
+                .andExpect(jsonPath("$.data.content[0].semester").exists())
+                .andExpect(jsonPath("$.data.content[0].status").exists());
+    }
+
+    @Test
+    @Order(103)
+    @DisplayName("✅ 스터디 고급 검색 시 semester 필드로 필터링이 가능하다")
+    @WithMockUser(username = "testuser", roles = {"PLAYER"})
+    void should_filter_by_semester_in_advanced_search() throws Exception {
+        // Given: 특정 학기의 스터디가 존재하는 상태
+        createStudyWithNewFields();
+
+        // When: 학기로 고급 검색
+        mockMvc.perform(get("/api/v1/study/search")
+                        .param("semester", "2025-02")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.data.content[0].id").value(TEST_STUDY_ID))
+                .andExpect(jsonPath("$.data.content[0].semester").value("2025-2"));
+    }
+
+    // =================================================================
+    // 🛠 새로운 기능 테스트를 위한 헬퍼 메서드
+    // =================================================================
+
+    /**
+     * 새로운 필드들을 포함한 스터디 생성
+     */
+    private void createStudyWithNewFields() {
+        // Ensure member exists first
+        setupTestData();
+        
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, TEST_STUDY_ID)
+                .set(STUDY.TITLE, "새로운 필드 테스트 스터디")
+                .set(STUDY.DESCRIPTION, "semester와 status 필드 테스트")
+                .set(STUDY.CONTENT, "새로운 필드들이 올바르게 저장되는지 테스트")
+                .set(STUDY.CATEGORY, "CS")
+                .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.STARTED_AT, OffsetDateTime.now().plusDays(1))
+                .set(STUDY.ENDED_AT, OffsetDateTime.now().plusDays(30))
+                .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                // .set(STUDY.CURRENT_PARTICIPANTS, 0) // CURRENT_PARTICIPANTS 필드가 없음
+                // .set(STUDY.STATUS, "RECRUITING") // STATUS 필드가 없음
+                // .set(STUDY.SEMESTER, "2024-1") // SEMESTER 필드가 없음
+                .set(STUDY.CREATED_AT, OffsetDateTime.now())
+                .set(STUDY.UPDATED_AT, OffsetDateTime.now())
+                .execute();
+    }
+
     /**
      * 스터디 삭제 검증 (소프트 삭제)
      */
@@ -567,5 +686,104 @@ class StudyControllerTest {
 
         assertThat(study).isNotNull();
         assertThat(study.getDeletedAt()).isNotNull(); // 소프트 삭제 확인
+    }
+
+    @Test
+    @Order(103)
+    @DisplayName("✅ 스터디 종료 API 테스트 - 성공 케이스")
+    @WithMockUser(username = "testuser", roles = {"PLAYER"})
+    void should_end_study_successfully() throws Exception {
+        // Given
+        Long studyId = TEST_STUDY_ID;
+        
+        // 스터디 생성
+        createStudyWithNewFields();
+        
+        // When & Then
+        mockMvc.perform(post("/api/v1/study/end")
+                        .param("studyId", String.valueOf(studyId))
+                        .contentType("multipart/form-data"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.message").value("스터디가 성공적으로 종료되었습니다"))
+                .andExpect(jsonPath("$.data.id").value(studyId))
+                .andExpect(jsonPath("$.data.status").value("ENDED")); // 종료된 상태 확인
+        
+        // 데이터베이스에서 스터디 상태 확인
+        var study = dsl.selectFrom(STUDY)
+                .where(STUDY.ID.eq(studyId))
+                .fetchOne();
+        
+        assertThat(study).isNotNull();
+        assertThat(study.getEndedAt()).isNotNull(); // 종료 시간이 설정되었는지 확인
+    }
+
+    @Test
+    @Order(104)
+    @DisplayName("✅ 스터디 종료 API 테스트 - 권한 없음")
+    void should_fail_to_end_study_without_permission() throws Exception {
+        // Given
+        Long studyId = TEST_STUDY_ID;
+        
+        // 스터디 생성 (testuser가 생성자, ID=1)
+        createStudyWithNewFields();
+        
+        // unauthorized 사용자를 위한 멤버 데이터 생성 (ID=999)
+        dsl.insertInto(MEMBER)
+                .set(MEMBER.ID, 999L)
+                .set(MEMBER.NAME, "unauthorized")
+                .set(MEMBER.STUDENT_NUMBER, "unauthorized@certis.org")
+                .set(MEMBER.ROLE, "PLAYER")
+                .set(MEMBER.BIRTHDAY, OffsetDateTime.now().minusYears(25))
+                .set(MEMBER.GENDER, "MALE")
+                .set(MEMBER.GRADE, "SENIOR")
+                .set(MEMBER.MAJOR, "컴퓨터공학과")
+                .set(MEMBER.CREATED_AT, OffsetDateTime.now())
+                .set(MEMBER.UPDATED_AT, OffsetDateTime.now())
+                .onDuplicateKeyIgnore()
+                .execute();
+        
+        // unauthorized 사용자(ID=999)로 직접 인증 설정
+        CurrentUser unauthorizedUser = new CurrentUser(999L, "unauthorized", "unauthorized@certis.org", "권한없음", "PLAYER");
+        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(unauthorizedUser, null, unauthorizedUser.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(auth);
+        
+        // unauthorized 사용자(ID=999)가 다른 사용자가 생성한 스터디를 종료하려고 시도
+        // When & Then
+        mockMvc.perform(post("/api/v1/study/end")
+                        .param("studyId", String.valueOf(studyId))
+                        .contentType("multipart/form-data"))
+                .andDo(print())
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.statusCode").value(422))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("스터디 종료 권한이 없습니다")));
+    }
+
+    @Test
+    @Order(105)
+    @DisplayName("✅ 스터디 종료 API 테스트 - 이미 종료된 스터디")
+    @WithMockUser(username = "testuser", roles = {"PLAYER"})
+    void should_fail_to_end_already_ended_study() throws Exception {
+        // Given
+        Long studyId = TEST_STUDY_ID;
+        
+        // 스터디 생성 및 이미 종료된 상태로 설정 (startedAt과 endedAt을 과거로 설정)
+        createStudyWithNewFields();
+        OffsetDateTime pastTime = OffsetDateTime.now().minusDays(2);
+        dsl.update(STUDY)
+                .set(STUDY.STARTED_AT, pastTime) // startedAt을 2일 전으로 설정
+                .set(STUDY.ENDED_AT, pastTime.plusDays(1)) // endedAt을 1일 전으로 설정
+                .where(STUDY.ID.eq(studyId))
+                .execute();
+        
+        // When & Then
+        mockMvc.perform(post("/api/v1/study/end")
+                        .param("studyId", String.valueOf(studyId))
+                        .contentType("multipart/form-data"))
+                .andDo(print())
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.statusCode").value(422))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("이미 종료된 스터디입니다")));
     }
 }

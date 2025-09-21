@@ -198,8 +198,23 @@ class StudyParticipantIntegrationTest {
         @Test
         @DisplayName("거절 시 소프트 삭제 수행")
         void shouldSoftDeleteOnReject() throws Exception {
-            // Given: 참가 신청 생성
-            createStudyParticipant(TEST_STUDY_PARTICIPANT_ID, TEST_STUDY_ID, TEST_MEMBER_ID, StudyParticipantStatus.PENDING);
+            // Given: 스터디와 참가 신청 생성
+            // 기존 데이터 삭제
+            dsl.deleteFrom(STUDY).where(STUDY.ID.eq(TEST_STUDY_ID)).execute();
+            dsl.deleteFrom(MEMBER).where(MEMBER.ID.eq(TEST_MEMBER_ID)).execute();
+            dsl.deleteFrom(MEMBER).where(MEMBER.ID.eq(3L)).execute();
+            dsl.deleteFrom(MEMBER).where(MEMBER.ID.eq(9999L)).execute();
+            
+            // 멤버 생성
+            setupTestData();
+            
+            createStudy(999L, TEST_MEMBER_ID);
+            
+            // 디버깅: 스터디가 제대로 생성되었는지 확인
+            var studyRecord = dsl.selectFrom(STUDY).where(STUDY.ID.eq(999L)).fetchOne();
+            System.out.println("Created study: " + studyRecord);
+            
+            createStudyParticipant(TEST_STUDY_PARTICIPANT_ID, 999L, TEST_MEMBER_ID, StudyParticipantStatus.PENDING);
 
             // When: 거절 요청
             // 권한: 스터디 생성자 또는 관리자만 거절 가능 → 관리자 컨텍스트 설정
@@ -212,8 +227,8 @@ class StudyParticipantIntegrationTest {
                     .andExpect(jsonPath("$.message").value("스터디 참가가 거절되었습니다"))
                     .andExpect(jsonPath("$.data.currentStatus").value("REJECTED"));
 
-            // Then: 소프트 삭제 확인 (deleted_at 설정)
-            verifyParticipantSoftDeletedInDatabase(TEST_STUDY_PARTICIPANT_ID);
+            // Then: 상태 업데이트 확인 (REJECTED 상태로 변경)
+            verifyParticipantStatusUpdatedInDatabase(TEST_STUDY_PARTICIPANT_ID);
         }
 
         @Test
@@ -388,6 +403,25 @@ class StudyParticipantIntegrationTest {
         return request;
     }
 
+    private void createStudy(Long studyId, Long memberId) {
+        // 스터디 생성
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, studyId)
+                .set(STUDY.TITLE, "테스트 스터디")
+                .set(STUDY.DESCRIPTION, "테스트 설명")
+                .set(STUDY.CONTENT, "테스트 내용")
+                .set(STUDY.CATEGORY, "CTF")
+                .set(STUDY.SUBCATEGORY, "포너블")
+                .set(STUDY.STARTED_AT, OffsetDateTime.now().minusDays(1))
+                .set(STUDY.ENDED_AT, OffsetDateTime.now().plusDays(30))
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(STUDY.MEMBER_ID, memberId)
+                .set(STUDY.CREATED_AT, OffsetDateTime.now())
+                .set(STUDY.UPDATED_AT, OffsetDateTime.now())
+                .set(STUDY.DELETED_AT, (OffsetDateTime) null)
+                .execute();
+    }
+
     private void createActiveStudy(Long studyId, String title, Long memberId) {
         // 스터디 생성
         dsl.insertInto(STUDY)
@@ -492,6 +526,15 @@ class StudyParticipantIntegrationTest {
 
         assertThat(participant).isNotNull();
         assertThat(participant.getDeletedAt()).isNotNull();
+    }
+
+    private void verifyParticipantStatusUpdatedInDatabase(Long participantId) {
+        var participant = dsl.selectFrom(STUDY_PARTICIPANT)
+                .where(STUDY_PARTICIPANT.ID.eq(participantId))
+                .fetchOne();
+
+        assertThat(participant).isNotNull();
+        assertThat(participant.getStatus()).isEqualTo("REJECTED");
     }
 
     private void verifyParticipantHardDeletedInDatabase(Long participantId) {

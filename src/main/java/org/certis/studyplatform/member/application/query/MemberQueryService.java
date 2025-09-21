@@ -66,8 +66,8 @@ public class MemberQueryService {
     }
 
     public List<MemberWithContactVo> searchMembersWithContact(SearchMembersWithContactQuery query) {
-        log.info("Query Service: Searching members with contact - search: {}, grade: {}, role: {}",
-                query.search(), query.grade(), query.role());
+        log.info("Query Service: Searching members with contact - keyword: {}, grade: {}, role: {}",
+                query.keyword(), query.grade(), query.role());
 
         List<MemberWithContactVo> members = memberDomainService.searchMembersWithContact(query);
 

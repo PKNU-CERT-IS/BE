@@ -20,9 +20,14 @@ public record ProjectSummaryVo(
     OffsetDateTime endDate,
     String projectCreatorName,
     MemberGrade projectCreatorGrade,
+    String semester,
+    String status,
     boolean isParticipantable,
     String githubUrl,
-    String externalUrl
+    ExternalUrlVo externalUrl,
+    String demoUrl,
+    Integer maxParticipantNumber,
+    Integer currentParticipantNumber
 ) {
     public static ProjectSummaryVo of(
         Long id,
@@ -34,14 +39,20 @@ public record ProjectSummaryVo(
         OffsetDateTime endDate,
         String projectCreatorName,
         MemberGrade projectCreatorGrade,
+        String semester,
+        String status,
         boolean isParticipantable,
         String githubUrl,
-        String externalUrl
+        ExternalUrlVo externalUrl,
+        String demoUrl,
+        Integer maxParticipantNumber,
+        Integer currentParticipantNumber
     ) {
         return new ProjectSummaryVo(
             id, title, description, category, subcategory,
             startDate, endDate, projectCreatorName, projectCreatorGrade,
-                isParticipantable, githubUrl, externalUrl
+            semester, status, isParticipantable, githubUrl, externalUrl,
+            demoUrl, maxParticipantNumber, currentParticipantNumber
         );
     }
 }

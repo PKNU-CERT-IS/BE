@@ -11,6 +11,7 @@ import org.certis.studyplatform.member.domain.vo.MemberVo;
 import org.certis.studyplatform.member.infrastructure.persistence.MemberQueryRepositoryImpl;
 import org.certis.studyplatform.study.application.object.command.CreateStudyCommand;
 import org.certis.studyplatform.study.application.object.command.DeleteStudyCommand;
+import org.certis.studyplatform.study.application.object.command.EndStudyCommand;
 import org.certis.studyplatform.study.application.object.command.UpdateStudyCommand;
 import org.certis.studyplatform.study.application.object.query.GetAllStudiesQuery;
 import org.certis.studyplatform.study.application.object.query.GetCompletedStudiesByMemberQuery;
@@ -26,6 +27,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
@@ -351,6 +353,64 @@ public class StudyDomainService {
                     "이미 존재하는 스터디 제목입니다: " + title);
         }
         log.debug("Domain: Study title duplication validation passed - {}", title);
+    }
+
+    /**
+     * 스터디 종료
+     */
+    public StudyVo endStudy(EndStudyCommand command) {
+        log.info("Domain: Ending study from command - ID: {}", command.studyId());
+
+        // 기존 스터디 조회
+        StudyVo existingStudy = queryRepository.findById(command.studyId())
+                .orElseThrow(() -> new DomainException(ExceptionStatus.STUDY_DOMAIN_NOT_FOUND,
+                        "스터디를 찾을 수 없습니다: " + command.studyId()));
+
+        // 권한 검증: STAFF 이상이거나 스터디 생성자인지 확인
+        validateStudyEndPermission(command.requesterId(), existingStudy.creatorId());
+
+        // 이미 종료된 스터디인지 확인
+        if (existingStudy.endDate() != null && existingStudy.endDate().isBefore(OffsetDateTime.now())) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION,
+                    "이미 종료된 스터디입니다: " + command.studyId());
+        }
+
+        // ended_at을 현재 시간으로 설정하여 스터디 종료
+            StudyVo endedStudyVo = StudyVo.updateFrom(
+                    existingStudy,
+                    existingStudy.title(),
+                    existingStudy.description(),
+                    existingStudy.content(),
+                    existingStudy.category(),
+                    existingStudy.subCategory(),
+                    existingStudy.startDate(),
+                    OffsetDateTime.now(), // ended_at을 현재 시간으로 설정
+                    existingStudy.maxParticipants()
+            );
+
+        // Command Repository를 통한 저장 (VO 전달)
+        StudyVo savedStudyVo = commandRepository.save(endedStudyVo);
+
+        log.info("Domain: Study ended successfully - ID: {}", savedStudyVo.id());
+
+        return savedStudyVo;
+    }
+
+    /**
+     * 스터디 종료 권한 검증
+     */
+    private void validateStudyEndPermission(Long requesterId, Long creatorId) {
+        // 요청자 정보 조회
+        MemberVo requester = memberDomainService.getMemberVo(new GetMemberByIdQuery(requesterId));
+        
+        // STAFF 이상이거나 스터디 생성자인지 확인
+        if (!MemberRole.isStaffOrAbove(requester.role()) && !requesterId.equals(creatorId)) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION,
+                    "스터디 종료 권한이 없습니다. 스터디 생성자이거나 STAFF 이상이어야 합니다.");
+        }
+        
+        log.debug("Domain: Study end permission validation passed - requesterId: {}, creatorId: {}", 
+                requesterId, creatorId);
     }
 
     /**

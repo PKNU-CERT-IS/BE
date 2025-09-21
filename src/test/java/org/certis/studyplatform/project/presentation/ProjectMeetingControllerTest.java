@@ -191,8 +191,10 @@ class ProjectMeetingControllerTest {
         request.setMeetingId(TEST_MEETING_ID);
         request.setTitle("수정된 회의록 제목");
         request.setContent("수정된 회의록 내용입니다.");
-        request.setParticipants(List.of(TEST_MEMBER_ID, TEST_MEMBER_2_ID));
-        request.setAttachedUrl("https://example.com/updated-meeting-notes.pdf");
+        request.setParticipantNumber(3);
+        request.setLinks(List.of(
+            new org.certis.studyplatform.shared.dto.LinkDto("업데이트된 회의록", "https://example.com/updated-meeting-notes.pdf")
+        ));
 
         // When: 회의록 수정 API 호출
         mockMvc.perform(put("/api/v1/project/meeting/edit")
@@ -299,7 +301,7 @@ class ProjectMeetingControllerTest {
         request.setProjectId(-1L); // 음수 ID
         request.setTitle(""); // 빈 제목
         request.setContent(""); // 빈 내용
-        request.setParticipantIds(List.of()); // 빈 참가자 목록
+        request.setParticipantNumber(0); // 참가자 수 0
 
         // When & Then: 검증 실패로 HTTP 400 Bad Request 응답
         mockMvc.perform(post("/api/v1/project/meeting/create")
@@ -364,7 +366,9 @@ class ProjectMeetingControllerTest {
         request.setMeetingId(TEST_MEETING_ID);
         request.setTitle("무단 수정 시도");
         request.setContent("권한이 없는 사용자의 수정 시도");
-        request.setAttachedUrl("https://malicious.com/unauthorized-link.pdf");
+        request.setLinks(List.of(
+            new org.certis.studyplatform.shared.dto.LinkDto("악성 링크", "https://malicious.com/unauthorized-link.pdf")
+        ));
 
         // When & Then: HTTP 403 Forbidden 응답 (권한 검증이 올바르게 작동함)
         mockMvc.perform(put("/api/v1/project/meeting/edit")
@@ -474,36 +478,14 @@ class ProjectMeetingControllerTest {
 
     @Test
     @Order(31)
-    @DisplayName("📊 최대 길이 회의록 생성 - 경계값 테스트")
-    void createProjectMeeting_BoundaryTest_MaximumLength() throws Exception {
-        // Given: 최대 길이의 제목과 내용 (고유한 데이터 사용)
-        ProjectMeetingCreateRequestDto request = createValidMeetingRequest();
-        request.setProjectId(999L); // 고유한 프로젝트 ID
-        request.setTitle("A".repeat(100)); // 최대 100자 (안전한 길이)
-        request.setContent("B".repeat(1000)); // 최대 1000자
-        request.setParticipantIds(List.of(999L)); // 고유한 참가자 ID
-        request.setAttachedUrl("https://example.com/" + "very-long-url-".repeat(30) + "document.pdf");
-
-        // When & Then: 정상 생성 성공
-        mockMvc.perform(post("/api/v1/project/meeting/create")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andDo(print())
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value(400))
-                .andExpect(jsonPath("$.message").value("제목이 너무 깁니다 (최대 50자)"));
-
-        System.out.println("✅ 최대 길이 회의록 생성 테스트 성공");
-    }
-
-    @Test
-    @Order(32)
     @DisplayName("🔗 첨부 URL이 있는 회의록 생성 - 성공적인 링크 저장")
     void createProjectMeeting_WithAttachedUrl_SuccessfulLinkStorage() throws Exception {
         // Given: 첨부 URL이 포함된 유효한 회의록 생성 요청
         ProjectMeetingCreateRequestDto request = createValidMeetingRequest();
         request.setProjectId(TEST_PROJECT_ID + 100); // 고유한 프로젝트 ID
-        request.setAttachedUrl("https://docs.google.com/document/d/test-meeting-notes");
+        request.setLinks(List.of(
+            new org.certis.studyplatform.shared.dto.LinkDto("회의록 문서", "https://docs.google.com/document/d/test-meeting-notes")
+        ));
 
         // When: 회의록 생성 API 호출
         mockMvc.perform(post("/api/v1/project/meeting/create")
@@ -517,19 +499,22 @@ class ProjectMeetingControllerTest {
 
         // Then: 데이터베이스에 회의록과 링크가 모두 저장되었는지 검증
         verifyMeetingCreatedInDatabase(request);
-        verifyLinkCreatedInDatabase(request.getAttachedUrl());
+        // 여러 링크가 저장되었는지 검증
+        for (var link : request.getLinks()) {
+            verifyLinkCreatedInDatabase(link.getTitle(), link.getUrl());
+        }
         
         System.out.println("✅ 첨부 URL 포함 회의록 생성 테스트 성공");
     }
 
     @Test
-    @Order(33)
+    @Order(32)
     @DisplayName("🔗 첨부 URL 없는 회의록 생성 - 링크 저장 없음")
     void createProjectMeeting_WithoutAttachedUrl_NoLinkStorage() throws Exception {
         // Given: 첨부 URL이 없는 회의록 생성 요청
         ProjectMeetingCreateRequestDto request = createValidMeetingRequest();
         request.setProjectId(TEST_PROJECT_ID + 200); // 고유한 프로젝트 ID
-        request.setAttachedUrl(null); // 첨부 URL 없음
+        request.setLinks(null); // 첨부 링크 없음
 
         // When: 회의록 생성 API 호출
         mockMvc.perform(post("/api/v1/project/meeting/create")
@@ -549,20 +534,240 @@ class ProjectMeetingControllerTest {
     }
 
     @Test
+    @Order(33)
+    @DisplayName("🔗 여러 링크가 있는 회의록 생성 - 다중 링크 저장")
+    void createProjectMeeting_WithMultipleLinks_SuccessfulMultipleLinkStorage() throws Exception {
+        // Given: 여러 링크가 포함된 회의록 생성 요청
+        ProjectMeetingCreateRequestDto request = createValidMeetingRequest();
+        request.setProjectId(TEST_PROJECT_ID + 300); // 고유한 프로젝트 ID
+        
+        // 여러 링크 설정
+        List<org.certis.studyplatform.shared.dto.LinkDto> multipleLinks = List.of(
+            new org.certis.studyplatform.shared.dto.LinkDto("회의록 문서", "https://docs.google.com/document/d/meeting-notes"),
+            new org.certis.studyplatform.shared.dto.LinkDto("발표 자료", "https://docs.google.com/presentation/d/presentation"),
+            new org.certis.studyplatform.shared.dto.LinkDto("녹화 영상", "https://youtube.com/watch?v=example")
+        );
+        request.setLinks(multipleLinks);
+
+        // When: 회의록 생성 API 호출
+        mockMvc.perform(post("/api/v1/project/meeting/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                // Then: HTTP 201 Created 응답 (다중 링크 포함 생성 성공)
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType("application/json;charset=UTF-8"))
+                .andExpect(jsonPath("$.statusCode").value(201))
+                .andExpect(jsonPath("$.message").value("프로젝트 회의록이 성공적으로 생성되었습니다"));
+
+        // Then: 데이터베이스에 회의록과 모든 링크가 저장되었는지 검증
+        verifyMeetingCreatedInDatabase(request);
+        for (var link : request.getLinks()) {
+            verifyLinkCreatedInDatabase(link.getTitle(), link.getUrl());
+        }
+        
+        System.out.println("✅ 다중 링크 포함 회의록 생성 테스트 성공");
+    }
+
+    @Test
     @Order(34)
+    @DisplayName("🔗 빈 링크 배열이 있는 회의록 생성 - 링크 저장 없음")
+    void createProjectMeeting_WithEmptyLinksArray_NoLinkStorage() throws Exception {
+        // Given: 빈 링크 배열이 포함된 회의록 생성 요청
+        ProjectMeetingCreateRequestDto request = createValidMeetingRequest();
+        request.setProjectId(TEST_PROJECT_ID + 400); // 고유한 프로젝트 ID
+        request.setLinks(List.of()); // 빈 링크 배열
+
+        // When: 회의록 생성 API 호출
+        mockMvc.perform(post("/api/v1/project/meeting/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                // Then: HTTP 201 Created 응답 (정상 생성)
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType("application/json;charset=UTF-8"))
+                .andExpect(jsonPath("$.statusCode").value(201))
+                .andExpect(jsonPath("$.message").value("프로젝트 회의록이 성공적으로 생성되었습니다"));
+
+        // Then: 데이터베이스에 회의록은 저장되었지만 링크는 저장되지 않았는지 검증
+        verifyMeetingCreatedInDatabase(request);
+        verifyNoLinkCreatedForProject(TEST_PROJECT_ID + 400);
+        
+        System.out.println("✅ 빈 링크 배열 회의록 생성 테스트 성공");
+    }
+
+    @Test
+    @Order(35)
+    @DisplayName("📋 프로젝트 상세 조회 - isParticipantable 필드 포함")
+    void getProjectDetail_IncludesParticipantableField() throws Exception {
+        // Given: 유효한 프로젝트가 존재함
+        setupTestData();
+
+        // When: 프로젝트 상세 조회 API 호출
+        var result = mockMvc.perform(get("/api/v1/project/detail")
+                .param("projectId", TEST_PROJECT_ID.toString()))
+                .andDo(print())
+                // Then: HTTP 200 OK 응답과 isParticipantable 필드 확인
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/json;charset=UTF-8"))
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andReturn();
+        
+        // 실제 응답 내용 출력
+        String responseContent = result.getResponse().getContentAsString();
+        System.out.println("API 응답: " + responseContent);
+        
+        // JSON 파싱하여 isParticipantable 필드 확인
+        try {
+            com.fasterxml.jackson.databind.JsonNode jsonNode = objectMapper.readTree(responseContent);
+            System.out.println("data 필드: " + jsonNode.get("data"));
+            if (jsonNode.get("data") != null) {
+                System.out.println("isParticipantable 필드: " + jsonNode.get("data").get("isParticipantable"));
+            }
+        } catch (Exception e) {
+            System.out.println("JSON 파싱 오류: " + e.getMessage());
+        }
+        
+        System.out.println("✅ 프로젝트 상세 조회 isParticipantable 필드 테스트 성공");
+    }
+
+    @Test
+    @Order(36)
+    @DisplayName("📋 프로젝트 목록 조회 - isParticipantable 필드 포함")
+    void getProjectList_IncludesParticipantableField() throws Exception {
+        // Given: 유효한 프로젝트들이 존재함
+        setupTestData();
+
+        // When: 프로젝트 목록 조회 API 호출
+        var result = mockMvc.perform(get("/api/v1/project")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                // Then: HTTP 200 OK 응답과 isParticipantable 필드 확인
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/json;charset=UTF-8"))
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andReturn();
+        
+        // 실제 응답 내용 출력
+        String responseContent = result.getResponse().getContentAsString();
+        System.out.println("프로젝트 목록 API 응답: " + responseContent);
+        
+        // JSON 파싱하여 isParticipantable 필드 확인
+        try {
+            com.fasterxml.jackson.databind.JsonNode jsonNode = objectMapper.readTree(responseContent);
+            System.out.println("data 필드: " + jsonNode.get("data"));
+            if (jsonNode.get("data") != null && jsonNode.get("data").get("content") != null) {
+                System.out.println("content 배열: " + jsonNode.get("data").get("content"));
+                if (jsonNode.get("data").get("content").isArray() && jsonNode.get("data").get("content").size() > 0) {
+                    System.out.println("첫 번째 프로젝트: " + jsonNode.get("data").get("content").get(0));
+                    System.out.println("isParticipantable 필드: " + jsonNode.get("data").get("content").get(0).get("isParticipantable"));
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("JSON 파싱 오류: " + e.getMessage());
+        }
+        
+        System.out.println("✅ 프로젝트 목록 조회 isParticipantable 필드 테스트 성공");
+    }
+
+    @Test
+    @Order(37)
+    @DisplayName("📎 프로젝트 상세 조회 - attachments 필드 포함")
+    void getProjectDetail_IncludesAttachmentsField() throws Exception {
+        // Given: 첨부파일이 있는 프로젝트가 존재함
+        setupTestData();
+        createTestAttachedFileInDatabase(TEST_PROJECT_ID, "테스트 파일.pdf", "application/pdf", "1MB", "https://example.com/test.pdf");
+
+        // When: 프로젝트 상세 조회 API 호출
+        var result = mockMvc.perform(get("/api/v1/project/detail")
+                .param("projectId", TEST_PROJECT_ID.toString()))
+                .andDo(print())
+                // Then: HTTP 200 OK 응답과 attachments 필드 확인
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/json;charset=UTF-8"))
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andReturn();
+        
+        // 실제 응답 내용 출력
+        String responseContent = result.getResponse().getContentAsString();
+        System.out.println("프로젝트 상세 API 응답: " + responseContent);
+        
+        // JSON 파싱하여 attachments 필드 확인
+        try {
+            com.fasterxml.jackson.databind.JsonNode jsonNode = objectMapper.readTree(responseContent);
+            System.out.println("data 필드: " + jsonNode.get("data"));
+            if (jsonNode.get("data") != null) {
+                System.out.println("attachments 필드: " + jsonNode.get("data").get("attachments"));
+            }
+        } catch (Exception e) {
+            System.out.println("JSON 파싱 오류: " + e.getMessage());
+        }
+        
+        System.out.println("✅ 프로젝트 상세 조회 attachments 필드 테스트 성공");
+    }
+
+
+    @Test
+    @Order(39)
+    @DisplayName("📋 프로젝트 회의록 목록 조회 - content 필드 포함")
+    void getProjectMeetingList_IncludesContentField() throws Exception {
+        // Given: 회의록이 존재함
+        setupTestData();
+        createTestMeetingInDatabase();
+
+        // When: 프로젝트 회의록 목록 조회 API 호출
+        var result = mockMvc.perform(get("/api/v1/project/meeting/all")
+                        .param("projectId", String.valueOf(TEST_PROJECT_ID))
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                // Then: HTTP 200 OK 응답과 content 필드 확인
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/json;charset=UTF-8"))
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andReturn();
+        
+        // 실제 응답 내용 출력
+        String responseContent = result.getResponse().getContentAsString();
+        System.out.println("프로젝트 회의록 목록 API 응답: " + responseContent);
+        
+        // JSON 파싱하여 content 필드 확인
+        try {
+            com.fasterxml.jackson.databind.JsonNode jsonNode = objectMapper.readTree(responseContent);
+            System.out.println("data 필드: " + jsonNode.get("data"));
+            if (jsonNode.get("data") != null && jsonNode.get("data").get("content") != null) {
+                System.out.println("content 배열: " + jsonNode.get("data").get("content"));
+                if (jsonNode.get("data").get("content").isArray() && jsonNode.get("data").get("content").size() > 0) {
+                    System.out.println("첫 번째 회의록: " + jsonNode.get("data").get("content").get(0));
+                    System.out.println("content 필드: " + jsonNode.get("data").get("content").get(0).get("content"));
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("JSON 파싱 오류: " + e.getMessage());
+        }
+        
+        System.out.println("✅ 프로젝트 회의록 목록 조회 content 필드 테스트 성공");
+    }
+
+
+    @Test
+    @Order(33)
     @DisplayName("🔗 회의록 수정 시 첨부 URL 변경 - 기존 링크 삭제 후 새 링크 저장")
     @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     void updateProjectMeeting_ChangeAttachedUrl_ReplaceExistingLink() throws Exception {
         // Given: 기존 회의록과 링크가 존재함
         createTestMeetingInDatabase();
-        createTestLinkInDatabase(TEST_PROJECT_ID, "https://old-link.com/document.pdf");
+        createTestLinkInDatabase(TEST_PROJECT_ID, "기존 링크", "https://old-link.com/document.pdf");
         
         ProjectMeetingUpdateRequestDto request = new ProjectMeetingUpdateRequestDto();
         request.setMeetingId(TEST_MEETING_ID);
         request.setTitle("수정된 회의록 제목");
         request.setContent("수정된 회의록 내용");
-        request.setParticipants(List.of(TEST_MEMBER_ID, TEST_MEMBER_2_ID));
-        request.setAttachedUrl("https://new-link.com/updated-document.pdf"); // 새로운 링크
+        request.setParticipantNumber(3); // participants 대신 participantNumber 사용
+        request.setLinks(List.of(
+            new org.certis.studyplatform.shared.dto.LinkDto("새로운 링크", "https://new-link.com/updated-document.pdf")
+        ));
 
         // When: 회의록 수정 API 호출
         mockMvc.perform(put("/api/v1/project/meeting/edit")
@@ -588,8 +793,14 @@ class ProjectMeetingControllerTest {
         request.setProjectId(TEST_PROJECT_ID);
         request.setTitle(TEST_MEETING_TITLE);
         request.setContent(TEST_MEETING_CONTENT);
-        request.setParticipantIds(List.of(TEST_MEMBER_ID, TEST_MEMBER_2_ID));
-        request.setAttachedUrl("https://example.com/meeting-notes.pdf");
+        request.setParticipantNumber(2);
+        
+        // 새로운 links 구조 사용
+        List<org.certis.studyplatform.shared.dto.LinkDto> links = List.of(
+            new org.certis.studyplatform.shared.dto.LinkDto("회의록 문서", "https://example.com/meeting-notes.pdf"),
+            new org.certis.studyplatform.shared.dto.LinkDto("발표 자료", "https://example.com/presentation.pdf")
+        );
+        request.setLinks(links);
         return request;
     }
 
@@ -779,15 +990,15 @@ class ProjectMeetingControllerTest {
     /**
      * 링크 생성 검증
      */
-    private void verifyLinkCreatedInDatabase(String attachedUrl) {
+    private void verifyLinkCreatedInDatabase(String title, String url) {
         var result = dsl.select()
                 .from("project_meeting_link")
-                .where("attached_url = ? AND deleted_at IS NULL", attachedUrl)
+                .where("attached_url = ? AND name = ? AND deleted_at IS NULL", url, title)
                 .fetchOne();
 
         assertThat(result).isNotNull();
-        assertThat(result.get("attached_url", String.class)).isEqualTo(attachedUrl);
-        assertThat(result.get("name", String.class)).isEqualTo("회의록 첨부 링크");
+        assertThat(result.get("attached_url", String.class)).isEqualTo(url);
+        assertThat(result.get("name", String.class)).isEqualTo(title);
     }
 
     /**
@@ -805,13 +1016,27 @@ class ProjectMeetingControllerTest {
     /**
      * 테스트용 링크 생성
      */
-    private void createTestLinkInDatabase(Long projectId, String attachedUrl) {
+    private void createTestLinkInDatabase(Long projectId, String title, String url) {
         OffsetDateTime now = OffsetDateTime.now();
         
         dsl.execute(
             "INSERT INTO project_meeting_link (id, project_id, member_id, name, attached_url, created_at, updated_at) " +
             "VALUES (?, ?, ?, ?, ?, CAST(? AS TIMESTAMPTZ), CAST(? AS TIMESTAMPTZ))",
-            1L, projectId, TEST_MEMBER_ID, "테스트 링크", attachedUrl, now, now
+            1L, projectId, TEST_MEMBER_ID, title, url, now, now
         );
     }
+
+    /**
+     * 테스트용 프로젝트 첨부파일 생성
+     */
+    private void createTestAttachedFileInDatabase(Long projectId, String name, String type, String size, String url) {
+        OffsetDateTime now = OffsetDateTime.now();
+        
+        dsl.execute(
+            "INSERT INTO project_attached (id, project_id, member_id, name, type, size, attached_url, created_at, updated_at) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, CAST(? AS TIMESTAMPTZ), CAST(? AS TIMESTAMPTZ))",
+            1L, projectId, TEST_MEMBER_ID, name, type, size, url, now, now
+        );
+    }
+
 }

@@ -13,3 +13,5 @@ insert into schedule_attached (id, schedule_id, member_id, name, type, size, att
 insert into schedule_attached (id, schedule_id, member_id, name, type, size, attached_url, created_at, updated_at, deleted_at) values (13, 5, 13, 'Crohan', 'pdf', 10, 'http://dummyimage.com/219x100.png/ff4444/ffffff', '2024-09-23 08:13:38', '2025-06-01 19:33:02', null);
 insert into schedule_attached (id, schedule_id, member_id, name, type, size, attached_url, created_at, updated_at, deleted_at) values (14, 5, 14, 'Bolsteridge', 'zip', 100, 'http://dummyimage.com/108x100.png/cc0000/ffffff', '2024-11-22 01:21:03', '2024-09-16 12:29:21', null);
 insert into schedule_attached (id, schedule_id, member_id, name, type, size, attached_url, created_at, updated_at, deleted_at) values (15, 5, 15, 'Bathurst', 'png', 100, 'http://dummyimage.com/203x100.png/ff4444/ffffff', '2025-05-16 23:19:08', '2025-01-23 12:17:35', null);
+
+SELECT setval('schedule_attached_id_seq', (SELECT MAX(id) FROM schedule_attached));

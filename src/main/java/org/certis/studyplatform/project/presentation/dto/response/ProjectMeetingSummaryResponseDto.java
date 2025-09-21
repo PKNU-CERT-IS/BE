@@ -1,9 +1,12 @@
 package org.certis.studyplatform.project.presentation.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.time.OffsetDateTime;
 
 /**
  * Project Meeting Summary Response DTO
@@ -21,9 +24,14 @@ public class ProjectMeetingSummaryResponseDto {
 
     private String title;
 
+    private String content;
+
     private Integer participantNumber;
 
     private String creatorName;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private OffsetDateTime createdAt;
 
     private boolean isEditable;
 

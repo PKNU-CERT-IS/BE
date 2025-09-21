@@ -25,7 +25,8 @@ public class BlogApplicationCommandMapper {
                 dto.getCategory(),
                 dto.getReferenceType(),
                 dto.getReferenceId(),
-                creatorId
+                creatorId,
+                dto.getIsPublic()
         );
     }
 
@@ -41,7 +42,8 @@ public class BlogApplicationCommandMapper {
                 dto.getCategory(),
                 dto.getReferenceType(),
                 dto.getReferenceId(),
-                requesterId
+                requesterId,
+                dto.getIsPublic()
         );
     }
 
