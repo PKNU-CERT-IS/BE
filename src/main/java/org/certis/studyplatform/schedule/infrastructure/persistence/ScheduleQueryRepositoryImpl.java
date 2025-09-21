@@ -243,28 +243,40 @@ public class ScheduleQueryRepositoryImpl implements ScheduleQueryRepository {
 
     @Override
     @Transactional(readOnly = true)
-    public List<OffsetDateTime> findTodaySchedulesByMemberId(MemberIdVo memberIdVo) {
+    public List<ScheduleVo> findTodaySchedulesByMemberId(MemberIdVo memberIdVo) {
         log.debug("Infrastructure: Finding today's schedules for member ID: {}", memberIdVo.value());
 
         try {
             OffsetDateTime today = OffsetDateTime.now();
+            OffsetDateTime startOfDay = today.toLocalDate().atStartOfDay().atOffset(today.getOffset());
+            OffsetDateTime endOfDay = startOfDay.plusDays(1).minusNanos(1);
             
-            Result<Record1<OffsetDateTime>> records = dsl
-                    .select(field("s.ended_at", OffsetDateTime.class).as("ended_at"))
+            @NotNull Result<Record10<Object, Object, Object, Object, Object, Object, Object, Object, Object, Object>> records = dsl
+                    .select(
+                            field("s.id").as("id"),
+                            field("s.member_id").as("member_id"),
+                            field("s.title").as("title"),
+                            field("s.description").as("description"),
+                            field("s.type").as("type"),
+                            field("s.place").as("place"),
+                            field("s.started_at").as("started_at"),
+                            field("s.ended_at").as("ended_at"),
+                            field("s.created_at").as("created_at"),
+                            field("ss.status").as("status")
+                    )
                     .from(table("schedule").as("s"))
                     .join(table("schedule_status").as("ss"))
                     .on(field("s.id").eq(field("ss.schedule_id")))
                     .where(field("s.member_id").eq(memberIdVo.value())
                             .and(field("s.deleted_at").isNull())
                             .and(field("ss.status").eq("APPROVED"))
-                            .and(extract(field("s.ended_at"), DatePart.DAY).eq(today.getDayOfMonth()))
-                            .and(extract(field("s.ended_at"), DatePart.MONTH).eq(today.getMonthValue()))
-                            .and(extract(field("s.ended_at"), DatePart.YEAR).eq(today.getYear())))
-                    .orderBy(field("s.ended_at").asc())
+                            .and(field("s.started_at").le(endOfDay))
+                            .and(field("s.ended_at").ge(startOfDay)))
+                    .orderBy(field("s.started_at").asc())
                     .fetch();
 
-            List<OffsetDateTime> todaySchedules = records.stream()
-                    .map(r -> r.get("ended_at", OffsetDateTime.class))
+            List<ScheduleVo> todaySchedules = records.stream()
+                    .map(scheduleInfrastructureMapper::toScheduleVo)
                     .toList();
 
             log.debug("Infrastructure: Found {} today's schedules for member ID: {}", 
