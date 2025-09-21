@@ -56,7 +56,10 @@ public class SecurityConfig {
                                 "/api/v1/blog/detail",       // 블로그 상세 조회
                                 "/api/v1/blog/search",       // 블로그 검색
                                 "/api/v1/blog/search/keyword", // 블로그 고급 검색
+                
+                                
                                 //문서 모니터링
+                                "/api/v1/board",
                                 "/api/v1/board/search/**",
                                 "/api/v1/board/search",
                                 "/api/v1/board/detail",
@@ -71,8 +74,11 @@ public class SecurityConfig {
                                 "/api/v1/project/participant/{projectId}/participants/{participantId}",
                                 "/api/v1/project/participant/members/{memberId}/participants",
                                 "/api/v1/project/participant/{projectId}/participants/all",
+                                "/api/v1/project/participant/{projectId}/participants/pending",
+                                "/api/v1/project/participant/{projectId}/participants/approved",
                 
                                 "/api/v1/schedule/requests",
+                                "/api/v1/schedule/requests/**",
                                 "/api/v1/schedule/me/request",
                 
                                 "/api/v1/study/search",
@@ -84,6 +90,8 @@ public class SecurityConfig {
                                 "/api/v1/study/meeting/all",
                                 "/api/v1/study/participant/{studyId}/participants/{participantId}",
                                 "/api/v1/study/participant/members/{memberId}/participants",
+                                "/api/v1/study/participant/{studyId}/participants/pending",
+                                "/api/v1/study/participant/{studyId}/participants/approved",
                 
                                 "/swagger-ui.html",
                                 "/swagger-ui",
