@@ -134,6 +134,7 @@ public class ProjectParticipantQueryRepositoryImpl implements ProjectParticipant
         // 페이징된 데이터 조회 (프로젝트 정보 포함)
         List<ProjectParticipantSummaryVo> participants = dsl.select(
                         pp.ID,
+                        pp.PROJECT_ID, // projectId 추가
                         pp.MEMBER_ID,
                         p.TITLE.as("member_name"), // 프로젝트 제목을 memberName 필드에 임시 저장
                         pp.STATUS,

@@ -708,7 +708,7 @@ class StudyControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("스터디가 성공적으로 종료되었습니다"))
                 .andExpect(jsonPath("$.data.id").value(studyId))
-                .andExpect(jsonPath("$.data.status").value("ENDED")); // 종료된 상태 확인
+                .andExpect(jsonPath("$.data.status").value("COMPLETED")); // 종료된 상태 확인
         
         // 데이터베이스에서 스터디 상태 확인
         var study = dsl.selectFrom(STUDY)
@@ -785,5 +785,175 @@ class StudyControllerTest {
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.statusCode").value(422))
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("이미 종료된 스터디입니다")));
+    }
+
+    @Test
+    @Order(199)
+    @DisplayName("✅ 스터디 종료 API 테스트 - Status 값 검증")
+    void should_end_study_successfully_with_status_verification() throws Exception {
+        // Given
+        Long studyId = TEST_STUDY_ID;
+        setupTestData();
+        
+        // 스터디를 현재 진행 중인 상태로 생성
+        OffsetDateTime now = OffsetDateTime.now();
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, studyId)
+                .set(STUDY.TITLE, "종료할 스터디")
+                .set(STUDY.DESCRIPTION, "종료할 스터디 설명")
+                .set(STUDY.CONTENT, "종료할 스터디 상세 내용")
+                .set(STUDY.MEMBER_ID, 1L)
+                .set(STUDY.CATEGORY, "CS")
+                .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(STUDY.STARTED_AT, now.minusDays(10)) // 10일 전 시작
+                .set(STUDY.ENDED_AT, now.plusDays(20))    // 20일 후 종료 예정
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .execute();
+        
+        // When & Then - 스터디 종료
+        mockMvc.perform(post("/api/v1/study/end")
+                        .param("studyId", String.valueOf(studyId)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.data.id").value(studyId))
+                .andExpect(jsonPath("$.data.status").value("COMPLETED")); // 종료된 상태 확인
+    }
+
+    @Test
+    @Order(200)
+    @DisplayName("✅ 스터디 상세 조회 - Status 값 검증 (진행 중)")
+    void should_return_correct_study_status_in_detail() throws Exception {
+        // Given
+        Long studyId = TEST_STUDY_ID;
+        
+        // 스터디를 현재 진행 중인 상태로 생성
+        OffsetDateTime now = OffsetDateTime.now();
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, studyId)
+                .set(STUDY.TITLE, "진행 중인 스터디")
+                .set(STUDY.DESCRIPTION, "현재 진행 중인 스터디")
+                .set(STUDY.CONTENT, "진행 중인 스터디 상세 내용")
+                .set(STUDY.MEMBER_ID, 1L)
+                .set(STUDY.CATEGORY, "CS")
+                .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(STUDY.STARTED_AT, now.minusDays(1)) // 1일 전 시작
+                .set(STUDY.ENDED_AT, now.plusDays(30))   // 30일 후 종료
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .execute();
+        
+        // When & Then - 진행 중인 스터디 조회
+        mockMvc.perform(get("/api/v1/study/detail")
+                        .param("studyId", String.valueOf(studyId)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.data.id").value(studyId))
+                .andExpect(jsonPath("$.data.status").value("INPROGRESS")); // 진행 중 상태 확인
+    }
+
+    @Test
+    @Order(201)
+    @DisplayName("✅ 스터디 목록 조회 - Status 값 검증")
+    void should_return_correct_study_status_in_list() throws Exception {
+        // Given
+        
+        // 스터디를 현재 진행 중인 상태로 생성
+        OffsetDateTime now = OffsetDateTime.now();
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, TEST_STUDY_ID)
+                .set(STUDY.TITLE, "진행 중인 스터디")
+                .set(STUDY.DESCRIPTION, "현재 진행 중인 스터디")
+                .set(STUDY.CONTENT, "진행 중인 스터디 상세 내용")
+                .set(STUDY.MEMBER_ID, 1L)
+                .set(STUDY.CATEGORY, "CS")
+                .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(STUDY.STARTED_AT, now.minusDays(1)) // 1일 전 시작
+                .set(STUDY.ENDED_AT, now.plusDays(30))   // 30일 후 종료
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .execute();
+        
+        // When & Then - 스터디 목록 조회
+        mockMvc.perform(get("/api/v1/study")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.data.content[0].status").value("INPROGRESS")); // 진행 중 상태 확인
+    }
+
+    @Test
+    @Order(202)
+    @DisplayName("✅ 완료된 스터디 - Status 값 검증")
+    void should_return_completed_status_for_ended_study() throws Exception {
+        // Given
+        Long studyId = TEST_STUDY_ID;
+        
+        // 스터디를 완료된 상태로 생성
+        OffsetDateTime now = OffsetDateTime.now();
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, studyId)
+                .set(STUDY.TITLE, "완료된 스터디")
+                .set(STUDY.DESCRIPTION, "완료된 스터디 설명")
+                .set(STUDY.CONTENT, "완료된 스터디 상세 내용")
+                .set(STUDY.MEMBER_ID, 1L)
+                .set(STUDY.CATEGORY, "CS")
+                .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(STUDY.STARTED_AT, now.minusDays(10)) // 10일 전 시작
+                .set(STUDY.ENDED_AT, now.minusDays(1))    // 1일 전 종료
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .execute();
+        
+        // When & Then - 완료된 스터디 조회
+        mockMvc.perform(get("/api/v1/study/detail")
+                        .param("studyId", String.valueOf(studyId)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.data.id").value(studyId))
+                .andExpect(jsonPath("$.data.status").value("COMPLETED")); // 완료 상태 확인
+    }
+
+    @Test
+    @Order(203)
+    @DisplayName("✅ 준비 중인 스터디 - Status 값 검증")
+    void should_return_ready_status_for_future_study() throws Exception {
+        // Given
+        Long studyId = TEST_STUDY_ID;
+        
+        // 스터디를 처음부터 미래 날짜로 생성
+        OffsetDateTime now = OffsetDateTime.now();
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, studyId)
+                .set(STUDY.TITLE, "미래 스터디")
+                .set(STUDY.CONTENT, "미래에 시작될 스터디")
+                .set(STUDY.DESCRIPTION, "미래 스터디 설명")
+                .set(STUDY.CATEGORY, "CS")
+                .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.MEMBER_ID, 1L)
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(STUDY.STARTED_AT, now.plusDays(10)) // 10일 후 시작
+                .set(STUDY.ENDED_AT, now.plusDays(40))   // 40일 후 종료
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .execute();
+        
+        // When & Then - 준비 중인 스터디 조회
+        mockMvc.perform(get("/api/v1/study/detail")
+                        .param("studyId", String.valueOf(studyId)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.data.id").value(studyId))
+                .andExpect(jsonPath("$.data.status").value("READY")); // 준비 중 상태 확인
     }
 }

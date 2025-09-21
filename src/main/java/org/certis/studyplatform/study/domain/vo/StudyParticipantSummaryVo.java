@@ -11,6 +11,7 @@ import java.time.OffsetDateTime;
  */
 public record StudyParticipantSummaryVo(
         Long id,
+        Long studyId,
         Long memberId,
         String memberName,
         StudyParticipantStatus status,

@@ -1,6 +1,7 @@
 package org.certis.studyplatform.project.infrastructure.mapper;
 
 import org.certis.studyplatform.project.domain.vo.*;
+import org.certis.studyplatform.project.domain.ProjectStatus;
 import org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectEntity;
 import org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectParticipantEntity;
 import org.jooq.Record;
@@ -102,7 +103,7 @@ public class ProjectInfrastructureMapper {
                 null, // creatorName은 별도 조회 필요
                 null, // creatorGrade는 별도 조회 필요
                 calculateSemester(endedAt), // semester 계산
-                calculateStatus(endedAt), // status 계산
+                calculateStatusString(entity.getStartedAt(), endedAt), // status 계산
                 entity.getGithubUrl(),
                 externalUrlVo,
                 entity.getDemoUrl(),
@@ -178,7 +179,7 @@ public class ProjectInfrastructureMapper {
                 record.get(MEMBER.NAME), // JOIN된 creatorName
                 record.get(MEMBER.GRADE, String.class), // JOIN된 creatorGrade
                 calculateSemester(endedAt), // semester 계산
-                calculateStatus(endedAt), // status 계산
+                calculateStatusString(record.get(PROJECT.STARTED_AT), endedAt), // status 계산
                 record.get(PROJECT.GITHUB_URL), // githubUrl은 별도 관리
                 externalUrlVo,
                 record.get(PROJECT.DEMO_URL),
@@ -318,7 +319,7 @@ public class ProjectInfrastructureMapper {
                 firstRecord.get(MEMBER.NAME), // JOIN된 creatorName
                 firstRecord.get(MEMBER.GRADE, String.class), // JOIN된 creatorGrade
                 calculateSemester(endedAt), // semester 계산
-                calculateStatus(endedAt), // status 계산
+                calculateStatusString(firstRecord.get(PROJECT.STARTED_AT), endedAt), // status 계산
                 firstRecord.get(PROJECT.GITHUB_URL), // githubUrl은 별도 관리
                 externalUrlVo,
                 firstRecord.get(PROJECT.DEMO_URL),
@@ -386,7 +387,7 @@ public class ProjectInfrastructureMapper {
                 record.get(MEMBER.NAME), // JOIN된 creatorName
                 record.get(MEMBER.GRADE, String.class), // JOIN된 creatorGrade
                 calculateSemester(endedAt), // semester 계산
-                calculateStatus(endedAt), // status 계산
+                calculateStatusString(record.get(PROJECT.STARTED_AT), endedAt), // status 계산
                 record.get(PROJECT.GITHUB_URL), // githubUrl은 별도 관리
                 externalUrlVo,
                 record.get(PROJECT.DEMO_URL),
@@ -446,21 +447,22 @@ public class ProjectInfrastructureMapper {
     }
 
     /**
-     * 프로젝트 상태를 문자열로 계산
+     * 프로젝트 상태를 ProjectStatus enum으로 계산
      */
     private String calculateStatusString(OffsetDateTime startDate, OffsetDateTime endDate) {
         if (startDate == null || endDate == null) {
-            return "알 수 없음";
+            return ProjectStatus.READY.name();
         }
 
         OffsetDateTime now = OffsetDateTime.now();
 
-        if (now.isBefore(startDate)) {
-            return "모집중";
-        } else if (now.isAfter(endDate)) {
-            return "완료";
+        // 프로젝트가 종료된 경우 (endDate가 현재 시간보다 과거이거나, startDate가 endDate보다 미래인 경우)
+        if (now.isAfter(endDate) || startDate.isAfter(endDate)) {
+            return ProjectStatus.COMPLETED.name();
+        } else if (now.isBefore(startDate)) {
+            return ProjectStatus.READY.name();
         } else {
-            return "진행중";
+            return ProjectStatus.INPROGRESS.name();
         }
     }
 
@@ -547,6 +549,7 @@ public class ProjectInfrastructureMapper {
     public ProjectParticipantSummaryVo toSummaryVoFromRecord(Record record) {
         return new ProjectParticipantSummaryVo(
                 record.getValue("id", Long.class),
+                record.getValue("project_id", Long.class),
                 record.getValue("member_id", Long.class),
                 record.getValue("member_name", String.class),
                 record.getValue("status", org.certis.studyplatform.project.domain.ProjectParticipantStatus.class),
@@ -564,6 +567,7 @@ public class ProjectInfrastructureMapper {
     public ProjectParticipantSummaryVo toSummaryVo(ProjectParticipantEntity entity) {
         return new ProjectParticipantSummaryVo(
                 entity.getId(),
+                entity.getProjectId(),
                 entity.getMemberId(),
                 null, // memberName은 별도 조회 필요
                 entity.getStatus(),
@@ -596,18 +600,6 @@ public class ProjectInfrastructureMapper {
         }
     }
 
-    /**
-     * ended_at을 기준으로 status 계산
-     * ended_at이 현재 시간보다 지났으면 "ENDED", 아니면 "ACTIVE"
-     */
-    private String calculateStatus(OffsetDateTime endedAt) {
-        if (endedAt == null) {
-            return "ACTIVE"; // 종료일이 없으면 활성 상태
-        }
-        
-        OffsetDateTime now = OffsetDateTime.now();
-        return endedAt.isBefore(now) ? "ENDED" : "ACTIVE";
-    }
 
     /**
      * 참여 가능 여부를 계산합니다.

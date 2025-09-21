@@ -11,6 +11,7 @@ import java.time.OffsetDateTime;
  */
 public record ProjectParticipantSummaryVo(
         Long id,
+        Long projectId,
         Long memberId,
         String memberName,
         ProjectParticipantStatus status,

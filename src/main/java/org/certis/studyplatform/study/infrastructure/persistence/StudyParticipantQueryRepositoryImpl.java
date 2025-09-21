@@ -132,11 +132,12 @@ public class StudyParticipantQueryRepositoryImpl implements StudyParticipantQuer
             return new PageImpl<>(List.of(), pageable, 0);
         }
 
-        // 페이징된 데이터 조회 (프로젝트 정보 포함)
+        // 페이징된 데이터 조회 (스터디 정보 포함)
         List<StudyParticipantSummaryVo> participants = dsl.select(
                         s.ID,
+                        s.STUDY_ID, // studyId 추가
                         s.MEMBER_ID,
-                        p.TITLE.as("member_name"), // 프로젝트 제목을 memberName 필드에 임시 저장
+                        p.TITLE.as("member_name"), // 스터디 제목을 memberName 필드에 임시 저장
                         s.STATUS,
                         s.CREATED_AT
                 )

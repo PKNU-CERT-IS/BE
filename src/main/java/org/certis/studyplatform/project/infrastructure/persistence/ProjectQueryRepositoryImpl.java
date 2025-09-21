@@ -3,6 +3,7 @@ package org.certis.studyplatform.project.infrastructure.persistence;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.member.domain.MemberGrade;
+import org.certis.studyplatform.project.domain.ProjectStatus;
 import org.certis.studyplatform.project.domain.repository.ProjectQueryRepository;
 import org.certis.studyplatform.project.domain.vo.ProjectVo;
 import org.certis.studyplatform.project.domain.vo.ProjectSummaryVo;
@@ -641,7 +642,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                             record.get("creator_name", String.class),
                             record.get(m.GRADE, MemberGrade.class),
                             calculateSemester(record.get(p.ENDED_AT)), // semester 계산
-                            "완료", // 완료된 프로젝트는 status = "완료"
+                            ProjectStatus.COMPLETED.name(), // 완료된 프로젝트는 status = COMPLETED
                             false, // 완료된 프로젝트는 참가 불가
                             record.get(p.GITHUB_URL),
                             externalUrlVo,
@@ -710,7 +711,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                             record.get("creator_name", String.class),
                             record.get(m.GRADE, MemberGrade.class),
                             calculateSemester(record.get(p.ENDED_AT)), // semester 계산
-                            "완료", // 완료된 프로젝트는 status = "완료"
+                            ProjectStatus.COMPLETED.name(), // 완료된 프로젝트는 status = COMPLETED
                             false, // 완료된 프로젝트는 참가 불가
                             record.get(p.GITHUB_URL),
                             externalUrlVo,

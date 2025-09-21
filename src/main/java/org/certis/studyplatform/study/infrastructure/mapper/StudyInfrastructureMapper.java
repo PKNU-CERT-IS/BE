@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.study.domain.vo.*;
+import org.certis.studyplatform.study.domain.StudyStatus;
 import org.certis.studyplatform.study.infrastructure.persistence.entity.StudyEntity;
 import org.certis.studyplatform.study.infrastructure.persistence.entity.StudyParticipantEntity;
 import org.jooq.DSLContext;
@@ -82,7 +83,7 @@ public class StudyInfrastructureMapper {
                 null, // creatorName은 별도 조회 필요
                 null, // creatorGrade는 별도 조회 필요
                 calculateSemester(entity.getEndedAt()), // semester 계산
-                calculateStatus(entity.getEndedAt()), // status 계산
+                calculateStatusString(entity.getStartedAt(), entity.getEndedAt()), // status 계산
                 entity.getMaxParticipantsNumber(),
                 0, // currentParticipants는 별도 계산 필요
                 determineParticipantable(entity.getStartedAt(), entity.getEndedAt(), 
@@ -153,7 +154,7 @@ public class StudyInfrastructureMapper {
                 firstRecord.get("creator_name", String.class),
                 safeParseMemberGrade(firstRecord.get("creator_grade", String.class)),
                 calculateSemester(endedAt), // semester 계산
-                calculateStatus(endedAt), // status 계산
+                calculateStatusString(firstRecord.get("started_at", OffsetDateTime.class), endedAt), // status 계산
                 firstRecord.get("max_participants_number", Integer.class),
                 firstRecord.get("current_participants", Integer.class),
                 determineParticipantable(firstRecord.get("started_at", OffsetDateTime.class), endedAt,
@@ -202,7 +203,7 @@ public class StudyInfrastructureMapper {
                 firstRecord.get("creator_name", String.class),
                 safeParseMemberGrade(firstRecord.get("creator_grade", String.class)),
                 calculateSemester(endedAt), // semester 계산
-                calculateStatus(endedAt), // status 계산
+                calculateStatusString(firstRecord.get("started_at", OffsetDateTime.class), endedAt), // status 계산
                 firstRecord.get("max_participants_number", Integer.class),
                 firstRecord.get("current_participants", Integer.class),
                 determineParticipantable(firstRecord.get("started_at", OffsetDateTime.class), endedAt,
@@ -271,7 +272,7 @@ public class StudyInfrastructureMapper {
                 firstRecord.get("creator_name", String.class),
                 memberGrade,
                 calculateSemester(endedAt), // semester 계산
-                calculateStatus(endedAt), // status 계산
+                calculateStatusString(firstRecord.get("started_at", OffsetDateTime.class), endedAt), // status 계산
                 isParticipantable,
                 attachedVos,
                 firstRecord.get("max_participants_number", Integer.class),
@@ -388,6 +389,7 @@ public class StudyInfrastructureMapper {
 
         return new StudyParticipantSummaryVo(
                 record.get("id", Long.class),
+                record.get("study_id", Long.class),
                 record.get("member_id", Long.class),
                 record.get("member_name", String.class),
                 record.get("status", org.certis.studyplatform.study.domain.StudyParticipantStatus.class),
@@ -467,15 +469,22 @@ public class StudyInfrastructureMapper {
     }
 
     /**
-     * ended_at을 기준으로 status 계산
-     * ended_at이 현재 시간보다 지났으면 "ENDED", 아니면 "ACTIVE"
+     * 스터디 상태를 StudyStatus enum으로 계산
      */
-    private String calculateStatus(OffsetDateTime endedAt) {
-        if (endedAt == null) {
-            return "ACTIVE"; // 종료일이 없으면 활성 상태
+    private String calculateStatusString(OffsetDateTime startDate, OffsetDateTime endDate) {
+        if (startDate == null || endDate == null) {
+            return StudyStatus.READY.name();
         }
-        
+
         OffsetDateTime now = OffsetDateTime.now();
-        return endedAt.isBefore(now) ? "ENDED" : "ACTIVE";
+
+        // 스터디가 종료된 경우 (endDate가 현재 시간보다 과거이거나, startDate가 endDate보다 미래인 경우)
+        if (now.isAfter(endDate) || startDate.isAfter(endDate)) {
+            return StudyStatus.COMPLETED.name();
+        } else if (now.isBefore(startDate)) {
+            return StudyStatus.READY.name();
+        } else {
+            return StudyStatus.INPROGRESS.name();
+        }
     }
 }
