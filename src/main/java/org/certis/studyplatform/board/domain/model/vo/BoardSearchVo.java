@@ -17,8 +17,8 @@ public record BoardSearchVo(
             throw new DomainException(ExceptionStatus.BOARD_DOMAIN_INVALID_PAGE);
         }
 
-        // 카테고리 검증 (null이 아닌 경우에만)
-        if (category != null && !category.trim().isEmpty()) {
+        // 카테고리 검증 (null이 아닌 경우에만, "ALL"은 특별 처리)
+        if (category != null && !category.trim().isEmpty() && !"ALL".equals(category.trim().toUpperCase())) {
             BoardCategoryVo.of(category); // 기존 카테고리 검증 재사용
         }
 

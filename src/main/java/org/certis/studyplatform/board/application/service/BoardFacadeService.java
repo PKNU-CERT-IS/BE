@@ -40,8 +40,8 @@ public class BoardFacadeService {
      * @return 페이징된 게시글 목록
      */
     public Page<BoardListResponseDto> searchBoards(BoardSearchRequestDto request) {
-        log.info("Facade: Searching boards - search: {}, category: {}, page: {}, size: {}",
-                request.getSearch(), request.getCategory(), request.getPage(), request.getSize());
+        log.info("Facade: Searching boards - keyword: {}, category: {}, page: {}, size: {}",
+                request.getKeyword(), request.getCategory(), request.getPage(), request.getSize());
 
         // 1. DTO → Query Object 변환
         SearchBoardsQuery query = boardApplicationMapper.toSearchBoardsQuery(request);

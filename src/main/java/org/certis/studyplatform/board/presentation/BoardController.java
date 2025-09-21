@@ -27,7 +27,7 @@ public class BoardController {
     private final BoardFacadeService boardFacadeService;
 
     // 게시글 키워드 검색 조회
-    @GetMapping("/keyword")
+    @GetMapping("/search")
     public ResponseEntity<GlobalResponseHandler<Page<BoardListResponseDto>>> searchBoards(
             @ModelAttribute BoardSearchRequestDto request) {
         Page<BoardListResponseDto> boardPage = boardFacadeService.searchBoards(request);

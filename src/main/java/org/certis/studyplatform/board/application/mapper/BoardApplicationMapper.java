@@ -26,14 +26,14 @@ public class BoardApplicationMapper {
      * BoardSearchRequestDto → SearchBoardsQuery 변환
      */
     public SearchBoardsQuery toSearchBoardsQuery(BoardSearchRequestDto request) {
-        boolean noFilter = (request.getSearch() == null || request.getSearch().trim().isEmpty())
+        boolean noFilter = (request.getKeyword() == null || request.getKeyword().trim().isEmpty())
                 && (request.getCategory() == null || request.getCategory().trim().isEmpty());
 
         int page = noFilter ? 0 : request.getPage();
         int size = noFilter ? Integer.MAX_VALUE : request.getSize();
 
         return SearchBoardsQuery.of(
-                request.getSearch(),
+                request.getKeyword(),
                 request.getCategory(),
                 page,
                 size

@@ -12,7 +12,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class BoardSearchRequestDto {
 
-    private String search;     // 검색어 (Optional)
+    private String keyword;    // 검색어 (Optional)
     private String category;   // 카테고리 (Optional)
 
     @Min(0)
