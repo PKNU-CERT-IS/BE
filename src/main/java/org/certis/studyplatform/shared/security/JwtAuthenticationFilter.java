@@ -119,6 +119,33 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 "/api/v1/blog/search",       // 블로그 검색
                 "/api/v1/blog/search/keyword", // 블로그 고급 검색
                 //문서 모니터링
+                "/api/v1/board/search/**",
+                "/api/v1/board/search",
+                "/api/v1/board/detail",
+
+                "/api/v1/project/search",
+                "/api/v1/project/detail",
+                "/api/v1/project/search/**",
+                "/api/v1/project",
+                "/api/v1/project/**/meetings",
+                "/api/v1/project/meeting/detail",
+                "/api/v1/project/meeting/all",
+                "/api/v1/project/participant/**/participants/**",
+                "/api/v1/project/participant/members/**/participants",
+
+                "/api/v1/schedule/requests",
+                "/api/v1/schedule/me/request",
+
+                "/api/v1/study/search",
+                "/api/v1/study/detail",
+                "/api/v1/study/search/**",
+                "/api/v1/study",
+                "/api/v1/study/**/meetings",
+                "/api/v1/study/meeting/detail",
+                "/api/v1/study/meeting/all",
+                "/api/v1/study/participant/**/participants/**",
+                "/api/v1/study/participant/members/**/participants",
+
                 "/swagger-ui.html",
                 "/swagger-ui",
                 "/v3/api-docs",

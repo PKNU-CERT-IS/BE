@@ -48,17 +48,46 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auths -> auths
                         // 인증이 필요하지 않은 경로
                         .requestMatchers(
+                                "/api/v1/member/**",
                                 "/api/v1/auth/login",
-                                "/api/v1/auth/register",     // 회원가입
-                                "/api/v1/auth/refresh",      // 토큰 갱신
+                                "/api/v1/auth/register",  // 회원가입 추가
+                                "/api/v1/auth/refresh",   // 토큰 갱신
                                 "/api/v1/blog",              // 블로그 목록 조회
                                 "/api/v1/blog/detail",       // 블로그 상세 조회
                                 "/api/v1/blog/search",       // 블로그 검색
                                 "/api/v1/blog/search/keyword", // 블로그 고급 검색
+                                //문서 모니터링
+                                "/api/v1/board/search/**",
+                                "/api/v1/board/search",
+                                "/api/v1/board/detail",
+                
+                                "/api/v1/project/search",
+                                "/api/v1/project/detail",
+                                "/api/v1/project/search/**",
+                                "/api/v1/project",
+                                "/api/v1/project/**/meetings",
+                                "/api/v1/project/meeting/detail",
+                                "/api/v1/project/meeting/all",
+                                "/api/v1/project/participant/**/participants/**",
+                                "/api/v1/project/participant/members/**/participants",
+                
+                                "/api/v1/schedule/requests",
+                                "/api/v1/schedule/me/request",
+                
+                                "/api/v1/study/search",
+                                "/api/v1/study/detail",
+                                "/api/v1/study/search/**",
+                                "/api/v1/study",
+                                "/api/v1/study/**/meetings",
+                                "/api/v1/study/meeting/detail",
+                                "/api/v1/study/meeting/all",
+                                "/api/v1/study/participant/**/participants/**",
+                                "/api/v1/study/participant/members/**/participants",
+                
                                 "/swagger-ui.html",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**",
-                                "/actuator/health",          // 헬스체크
+                                "/swagger-ui",
+                                "/v3/api-docs",
+                                "/actuator/health",
                                 "/favicon.ico",
                                 "/error"
                         ).permitAll()
