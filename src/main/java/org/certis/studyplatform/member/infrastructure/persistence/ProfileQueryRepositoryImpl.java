@@ -10,7 +10,9 @@ import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberE
 import org.certis.studyplatform.member.infrastructure.persistence.jpa.MemberJpaRepository;
 import org.certis.studyplatform.project.domain.ProjectStatus;
 import org.certis.studyplatform.schedule.domain.repository.ScheduleQueryRepository;
+import org.certis.studyplatform.schedule.domain.model.vo.ScheduleVo;
 import org.certis.studyplatform.study.domain.StudyStatus;
+import org.certis.studyplatform.blog.domain.ArticleReferenceType;
 import org.certis.studyplatform.shared.util.GracePeriodCalculator;
 import org.certis.studyplatform.shared.util.GracePeriodCalculator.ActivityInfo;
 import org.springframework.stereotype.Repository;
@@ -63,8 +65,18 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
             // 목 데이터를 통해 gracePeriod 계산
             OffsetDateTime gracePeriod = calculateGracePeriodFromMockData(memberIdVo.toLong());
 
-            // 오늘의 스케줄 시간 조회
-            List<OffsetDateTime> todaySchedules = scheduleQueryRepository.findTodaySchedulesByMemberId(memberIdVo);
+            // 오늘의 스케줄 조회
+            List<ScheduleVo> todayScheduleVos = scheduleQueryRepository.findTodaySchedulesByMemberId(memberIdVo);
+            List<ScheduleInfoVo> todaySchedules = todayScheduleVos.stream()
+                    .map(scheduleVo -> ScheduleInfoVo.of(
+                            scheduleVo.id(),
+                            scheduleVo.title(),
+                            scheduleVo.place(),
+                            scheduleVo.type(),
+                            scheduleVo.startedAt(),
+                            scheduleVo.endedAt()
+                    ))
+                    .toList();
 
             // 연락처 정보 조회
             Optional<MemberContactVo> contactOpt = memberQueryRepository.findContactByMemberId(memberIdVo.toLong());
@@ -79,7 +91,7 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
                 baseProfile.name(),
                 baseProfile.description(),
                 baseProfile.profileImage(),
-                todaySchedules, // 실제 조회된 오늘의 스케줄 시간들
+                todaySchedules, // 실제 스케줄 데이터
                 baseProfile.penaltyCount(),
                 gracePeriod, // 계산된 gracePeriod
                 baseProfile.memberRole(),
@@ -378,6 +390,32 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
     }
 
     /**
+     * Mock 스케줄 데이터 생성
+     */
+    private List<ScheduleInfoVo> createMockSchedules() {
+        OffsetDateTime now = OffsetDateTime.now();
+        
+        return List.of(
+            ScheduleInfoVo.of(
+                1L,
+                "오전 스터디",
+                "강의실 A",
+                "STUDY",
+                now.withHour(9).withMinute(0),
+                now.withHour(11).withMinute(0)
+            ),
+            ScheduleInfoVo.of(
+                2L,
+                "오후 프로젝트",
+                "강의실 B",
+                "PROJECT",
+                now.withHour(14).withMinute(0),
+                now.withHour(16).withMinute(0)
+            )
+        );
+    }
+
+    /**
      * 블로그 목데이터 생성
      */
     private List<ProfileBlogVo> createMockBlogs(Long memberId) {
@@ -394,7 +432,9 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
                 new String[]{"Spring Boot", "Java", "Tutorial"},
                 150,
                 25,
-                "TECH" // category
+                "TECH", // category
+                ArticleReferenceType.PROJECT,
+                "웹 개발 프로젝트"
             ),
             new ProfileBlogVo(
                 2L,
@@ -406,7 +446,9 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
                 new String[]{"React", "JavaScript", "Hooks"},
                 89,
                 12,
-                "TECH" // category
+                "TECH", // category
+                ArticleReferenceType.STUDY,
+                "프론트엔드 스터디"
             ),
             new ProfileBlogVo(
                 3L,
@@ -418,7 +460,9 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
                 new String[]{"Algorithm", "Problem Solving", "Coding Test"},
                 0,
                 0,
-                "TECH" // category
+                "TECH", // category
+                null, // referenceType
+                null  // referenceTitle
             )
         );
     }

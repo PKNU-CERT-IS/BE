@@ -1,5 +1,6 @@
 package org.certis.studyplatform.member.domain.vo;
 
+import org.certis.studyplatform.blog.domain.ArticleReferenceType;
 import org.certis.studyplatform.project.domain.ProjectStatus;
 
 import java.time.OffsetDateTime;
@@ -23,7 +24,11 @@ public record ProfileBlogVo(
         Integer likeCount,
         
         // Category information (blogs only have category, no subcategory)
-        String category
+        String category,
+        
+        // Reference information
+        ArticleReferenceType referenceType,
+        String referenceTitle
 ) {
 
     /**
@@ -43,7 +48,7 @@ public record ProfileBlogVo(
      */
     public ProfileBlogVo(Long blogId, String title, String description, ProjectStatus projectStatus,
                          OffsetDateTime blogStartDate, OffsetDateTime blogEndDate, String[] tags) {
-        this(blogId, title, description, projectStatus, blogStartDate, blogEndDate, tags, 0, 0, null);
+        this(blogId, title, description, projectStatus, blogStartDate, blogEndDate, tags, 0, 0, null, null, null);
     }
 
     /**

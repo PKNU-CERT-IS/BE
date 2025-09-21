@@ -32,5 +32,5 @@ public class MemberSearchRequestDto {
      * 검색 키워드 (선택적)
      * 이름, 전공, 기술 스택에서 검색
      */
-    private String search;
+    private String keyword;
 }

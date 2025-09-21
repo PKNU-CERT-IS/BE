@@ -13,9 +13,9 @@ public record MemberSearchConditionVo(
         GradeVo grade,
         RoleVo role
 ) {
-    public static MemberSearchConditionVo of(String searchKeyword, MemberGrade grade, MemberRole role) {
+    public static MemberSearchConditionVo of(String keyword, MemberGrade grade, MemberRole role) {
         return new MemberSearchConditionVo(
-                searchKeyword,
+                keyword,
                 grade != null ? GradeVo.of(grade) : null,
                 role != null ? RoleVo.of(role) : null
         );
