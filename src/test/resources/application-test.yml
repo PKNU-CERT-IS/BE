@@ -7,9 +7,13 @@ spring:
     # 테스트에서 트랜잭션 제어를 위한 설정
     hikari:
       auto-commit: false # autoCommit 비활성화하여 트랜잭션 제어 가능하게 함
-      connection-timeout: 20000
-      maximum-pool-size: 5
+      connection-timeout: 60000
+      maximum-pool-size: 2
       minimum-idle: 1
+      validation-timeout: 10000
+      idle-timeout: 300000
+      max-lifetime: 600000
+      leak-detection-threshold: 60000
 
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
@@ -74,13 +78,12 @@ aws:
   s3:
     bucket: ${AWS_S3_BUCKET:test-bucket}
 
-# Embedded PostgreSQL 설정
-spring.datasource.embedded.enabled: true
+# Embedded PostgreSQL 설정은 TestEmbeddedPostgresConfig에서 처리
 
 # 로깅 설정 (트랜잭션 디버깅을 위한 설정)
 logging:
   level:
-    org.certis.studyplatform: WARN
+    org.certis.studyplatform: DEBUG
     org.springframework.transaction: DEBUG
     org.hibernate.engine.transaction: DEBUG
     org.springframework.orm.jpa: DEBUG

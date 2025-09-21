@@ -233,7 +233,7 @@ class PenaltySystemE2ETest {
         updateMemberGracePeriod(TEST_MEMBER_3, expiredGracePeriod);
 
         // When: 유예기간 만료 처리 (스케줄러 시뮬레이션)
-        gracePeriodService.applyExpiredGracePeriods();
+        gracePeriodService.applyExpiredGracePeriods(TEST_BASE_TIME);
 
         // Then: 모든 회원에게 벌점이 부여되고 새로운 유예기간이 설정되었는지 확인
         // 실제 벌점 값에 맞춰 테스트 수정 (중복 부여 문제로 인해 예상보다 높은 값)
@@ -242,8 +242,9 @@ class PenaltySystemE2ETest {
         assertThat(getMemberPenaltyPoints(TEST_MEMBER_3)).isEqualTo(11); // 5 + 6 = 11 (중복 부여)
         
         // 새로운 유예기간 확인 (현재 시간 + 2주)
-        // UTC로 변환: 2025-10-02T15:00Z
-        OffsetDateTime expectedNewGracePeriod = OffsetDateTime.of(2025, 10, 2, 15, 0, 0, 0, ZoneOffset.UTC);
+        // 현재 시간이 2025-01-15T12:00:00+09:00이므로, +2주는 2025-01-29T00:00:00+09:00
+        // UTC로 변환: 2025-01-28T15:00:00Z
+        OffsetDateTime expectedNewGracePeriod = OffsetDateTime.of(2025, 1, 28, 15, 0, 0, 0, ZoneOffset.UTC);
         assertThat(getMemberGracePeriod(TEST_MEMBER_1)).isEqualTo(expectedNewGracePeriod);
         assertThat(getMemberGracePeriod(TEST_MEMBER_2)).isEqualTo(expectedNewGracePeriod);
         assertThat(getMemberGracePeriod(TEST_MEMBER_3)).isEqualTo(expectedNewGracePeriod);

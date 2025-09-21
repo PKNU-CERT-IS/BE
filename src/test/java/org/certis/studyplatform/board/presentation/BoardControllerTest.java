@@ -115,7 +115,7 @@ public class BoardControllerTest {
     @DisplayName("3️⃣ 게시글 검색 - 생성된 게시글이 검색되는지 확인")
     @Transactional(readOnly = true)
     void searchBoards_FindCreatedBoard_Success() throws Exception {
-        mockMvc.perform(get("/api/v1/board/keyword")
+        mockMvc.perform(get("/api/v1/board/search")
                         .param("keyword", "실제 통합")
                         .param("category", "TECH")
                         .param("page", "1")
@@ -134,7 +134,26 @@ public class BoardControllerTest {
     @DisplayName("3️⃣-추가 키워드/카테고리 없이 전체 조회")
     @Transactional(readOnly = true)
     void searchBoards_NoParams_ReturnsAll() throws Exception {
-        mockMvc.perform(get("/api/v1/board/keyword"))
+        mockMvc.perform(get("/api/v1/board/search"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.message").value(ResponseStatus.BOARD_SEARCH_SUCCESS.getMessage()))
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.totalElements").exists());
+    }
+
+    @Test
+    @Order(3)
+    @WithMockUser(username = "user1", roles = "UPSOLVER")
+    @DisplayName("3️⃣-ALL 카테고리로 전체 게시글 조회")
+    @Transactional(readOnly = true)
+    void searchBoards_WithAllCategory_ReturnsAll() throws Exception {
+        mockMvc.perform(get("/api/v1/board/search")
+                        .param("keyword", "테스트")
+                        .param("category", "ALL")
+                        .param("page", "0")
+                        .param("size", "10"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))

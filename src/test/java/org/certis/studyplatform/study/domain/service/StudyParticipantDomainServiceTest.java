@@ -167,7 +167,7 @@ class StudyParticipantDomainServiceTest {
                     .thenReturn(Optional.of(org.certis.studyplatform.member.domain.MemberRole.STAFF));
             when(queryRepository.findById(participantId))
                     .thenReturn(Optional.of(createStudyParticipantVo(participantId, StudyParticipantStatus.PENDING)));
-            when(commandRepository.updateStatus(any())).thenReturn(createStudyParticipantStatusUpdatedVo());
+            when(commandRepository.updateStatus(any(), any())).thenReturn(createStudyParticipantStatusUpdatedVo());
 
             // When
             StudyParticipantStatusUpdatedVo result = domainService.approveParticipant(
@@ -175,7 +175,7 @@ class StudyParticipantDomainServiceTest {
 
             // Then
             assertThat(result).isNotNull();
-            verify(commandRepository).updateStatus(any());
+            verify(commandRepository).updateStatus(any(), any());
         }
 
         @Test
@@ -221,6 +221,7 @@ class StudyParticipantDomainServiceTest {
                     .thenReturn(Optional.of(createStudyVo(studyId, requesterId)));
             when(memberQueryRepository.findRoleByMemberId(new org.certis.studyplatform.member.domain.vo.MemberIdVo(requesterId)))
                     .thenReturn(Optional.of(org.certis.studyplatform.member.domain.MemberRole.PLAYER));
+            when(commandRepository.updateStatus(any(), any())).thenReturn(createStudyParticipantStatusUpdatedVo());
 
             // When
             StudyParticipantStatusUpdatedVo result = domainService.rejectParticipant(
@@ -229,7 +230,7 @@ class StudyParticipantDomainServiceTest {
             // Then
             assertThat(result).isNotNull();
             assertThat(result.currentStatus()).isEqualTo(StudyParticipantStatus.REJECTED);
-            verify(commandRepository).softDeleteById(participantId);
+            verify(commandRepository).updateStatus(any(), any());
         }
 
         @Test
@@ -332,6 +333,7 @@ class StudyParticipantDomainServiceTest {
     }
 
     private StudyVo createStudyVo(Long studyId, Long creatorId) {
+        OffsetDateTime endDate = OffsetDateTime.now().plusDays(30);
         return new StudyVo(
                 studyId,
                 "테스트 스터디",
@@ -340,18 +342,46 @@ class StudyParticipantDomainServiceTest {
                 "CTF",
                 "포너블",
                 OffsetDateTime.now().minusDays(1),
-                OffsetDateTime.now().plusDays(30),
+                endDate,
                 OffsetDateTime.now(),
                 OffsetDateTime.now(),
                 creatorId,
                 "생성자",
                 org.certis.studyplatform.member.domain.MemberGrade.FRESHMAN,
+                calculateSemester(endDate), // semester 계산
+                calculateStatus(endDate), // status 계산
                 10,
                 0,
-                java.util.Collections.emptyList(),
+                true, // isParticipantable
+                java.util.Collections.emptyList(), // attached
                 java.util.Collections.emptyList(),
                 java.util.Collections.emptyList()
         );
+    }
+
+    private String calculateSemester(OffsetDateTime endedAt) {
+        if (endedAt == null) {
+            return null;
+        }
+        
+        java.time.LocalDate endDate = endedAt.toLocalDate();
+        int year = endDate.getYear();
+        int month = endDate.getMonthValue();
+        
+        if (month >= 3 && month <= 8) {
+            return year + "-1"; // 1학기
+        } else {
+            return year + "-2"; // 2학기
+        }
+    }
+
+    private String calculateStatus(OffsetDateTime endedAt) {
+        if (endedAt == null) {
+            return "ACTIVE"; // 종료일이 없으면 활성 상태
+        }
+        
+        OffsetDateTime now = OffsetDateTime.now();
+        return endedAt.isBefore(now) ? "ENDED" : "ACTIVE";
     }
 
     private StudyParticipantVo createStudyParticipantVo(Long participantId, StudyParticipantStatus status) {
@@ -398,8 +428,9 @@ class StudyParticipantDomainServiceTest {
                 1L, // studyId
                 1L, // memberId
                 StudyParticipantStatus.PENDING,
-                StudyParticipantStatus.APPROVED,
-                OffsetDateTime.now()
+                StudyParticipantStatus.REJECTED, // REJECTED로 변경
+                OffsetDateTime.now(),
+                1L // requesterId
         );
     }
 }

@@ -198,8 +198,8 @@ class StudyParticipantControllerTest {
                 .andExpect(jsonPath("$.data.participantId").value(TEST_STUDY_PARTICIPANT_ID))
                 .andExpect(jsonPath("$.data.currentStatus").value("REJECTED"));
 
-        // Then: 데이터베이스에서 소프트 삭제 확인 (deleted_at 설정)
-        verifyParticipantSoftDeletedInDatabase(TEST_STUDY_PARTICIPANT_ID);
+        // Then: 데이터베이스에서 상태 업데이트 확인 (REJECTED 상태)
+        verifyParticipantStatusUpdatedInDatabase(TEST_STUDY_PARTICIPANT_ID);
         
         System.out.println("✅ 스터디 참가 거절 테스트 성공");
     }
@@ -714,14 +714,14 @@ class StudyParticipantControllerTest {
     }
 
     /**
-     * 참가자 소프트 삭제 검증 (거절)
+     * 참가자 상태 업데이트 검증 (REJECTED 상태)
      */
-    private void verifyParticipantSoftDeletedInDatabase(Long participantId) {
+    private void verifyParticipantStatusUpdatedInDatabase(Long participantId) {
         var participant = dsl.selectFrom(STUDY_PARTICIPANT)
                 .where(STUDY_PARTICIPANT.ID.eq(participantId))
                 .fetchOne();
 
         assertThat(participant).isNotNull();
-        assertThat(participant.getDeletedAt()).isNotNull();
+        assertThat(participant.getStatus()).isEqualTo("REJECTED");
     }
 }

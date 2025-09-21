@@ -242,8 +242,8 @@ class ProjectParticipantIntegrationTest {
                     .andExpect(jsonPath("$.message").value("프로젝트 참가가 거절되었습니다"))
                     .andExpect(jsonPath("$.data.currentStatus").value("REJECTED"));
 
-            // Then: 소프트 삭제 확인 (deleted_at 설정)
-            verifyParticipantSoftDeletedInDatabase(TEST_PROJECT_PARTICIPANT_ID);
+            // Then: 상태 업데이트 확인 (REJECTED 상태)
+            verifyParticipantStatusUpdatedInDatabase(TEST_PROJECT_PARTICIPANT_ID);
         }
 
         @Test
@@ -531,13 +531,13 @@ class ProjectParticipantIntegrationTest {
         assertThat(participant.getStatus()).isEqualTo(expectedStatus.name());
     }
 
-    private void verifyParticipantSoftDeletedInDatabase(Long participantId) {
+    private void verifyParticipantStatusUpdatedInDatabase(Long participantId) {
         var participant = dsl.selectFrom(PROJECT_PARTICIPANT)
                 .where(PROJECT_PARTICIPANT.ID.eq(participantId))
                 .fetchOne();
 
         assertThat(participant).isNotNull();
-        assertThat(participant.getDeletedAt()).isNotNull();
+        assertThat(participant.getStatus()).isEqualTo("REJECTED");
     }
 
     private void verifyParticipantHardDeletedInDatabase(Long participantId) {

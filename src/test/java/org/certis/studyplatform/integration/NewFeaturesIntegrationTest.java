@@ -1,15 +1,17 @@
 package org.certis.studyplatform.integration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.certis.studyplatform.config.TestEmbeddedPostgresConfig;
+import org.certis.studyplatform.config.TestWebMvcConfig;
 import org.certis.studyplatform.member.domain.MemberGrade;
-import org.certis.studyplatform.member.domain.MemberRole;
+import org.certis.studyplatform.shared.security.CurrentUser;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -41,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest
 @ActiveProfiles("test")
-@Import(TestEmbeddedPostgresConfig.class)
+@Import({TestEmbeddedPostgresConfig.class, TestWebMvcConfig.class})
 @Transactional
 @DisplayName("새로 구현된 기능들 통합 테스트")
 class NewFeaturesIntegrationTest {
@@ -49,14 +51,21 @@ class NewFeaturesIntegrationTest {
     @Autowired
     private WebApplicationContext webApplicationContext;
 
-    @Autowired
-    private ObjectMapper objectMapper;
 
     private MockMvc mockMvc;
 
     @org.junit.jupiter.api.BeforeEach
     void setup() {
         this.mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+        setupMockAuthentication();
+    }
+
+    private void setupMockAuthentication() {
+        // Mock CurrentUser for testing
+        CurrentUser mockUser = new CurrentUser(1L, "test-user", "test@example.com", "테스트 사용자", "UPSOLVER");
+        UsernamePasswordAuthenticationToken authentication = 
+                new UsernamePasswordAuthenticationToken(mockUser, null, mockUser.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 
     @Test
@@ -108,11 +117,11 @@ class NewFeaturesIntegrationTest {
                 }
                 """.formatted(category);
 
-            mockMvc.perform(post("/api/v1/board")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(boardJson)
-                            .header("Authorization", "Bearer test-token"))
-                    .andDo(print());
+        mockMvc.perform(post("/api/v1/board/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(boardJson)
+                        .header("Authorization", "Bearer test-token"))
+                .andDo(print());
                     // 실제 인증 구현이 없어서 401이 나올 수 있지만, 카테고리 유효성 검증은 통과해야 함
         }
     }
@@ -122,35 +131,13 @@ class NewFeaturesIntegrationTest {
     void testBoardSearchAll() throws Exception {
         // Given & When & Then
         // keyword=ALL로 전체 게시글 조회가 가능한지 확인
-        mockMvc.perform(get("/api/v1/board/keyword/ALL")
+        mockMvc.perform(get("/api/v1/board/search")
+                        .param("keyword", "ALL")
                         .header("Authorization", "Bearer test-token"))
                 .andDo(print());
                 // 실제 데이터가 없어도 요청 처리가 가능한지 확인
     }
 
-//    @Test
-//    @DisplayName("5. 게시글 긴 내용 테스트 (100,000자 제한)")
-//    void testBoardLongContent() {
-//        // Given
-//        String shortContent = "A".repeat(99999); // 제한 내
-//        String longContent = "A".repeat(100001);  // 제한 초과
-//
-//        // When & Then
-//        // BoardContentVo 생성 시 길이 검증이 올바르게 동작하는지 확인
-//        try {
-//            org.certis.studyplatform.board.domain.model.vo.BoardContentVo.of(shortContent);
-//            // 성공해야 함
-//        } catch (Exception e) {
-//            throw new AssertionError("99,999자 내용은 허용되어야 합니다", e);
-//        }
-//
-//        try {
-//            org.certis.studyplatform.board.domain.model.vo.BoardContentVo.of(longContent);
-//            throw new AssertionError("100,001자 내용은 거부되어야 합니다");
-//        } catch (Exception e) {
-//            // 예외가 발생해야 정상
-//        }
-//    }
 
     @Test
     @DisplayName("6. 스케줄 새로운 카테고리 테스트")
@@ -173,12 +160,13 @@ class NewFeaturesIntegrationTest {
     @DisplayName("7. 프로필 조회 API 향상된 필드 테스트")
     void testEnhancedProfileFields() throws Exception {
         // Given & When & Then
-        // 프로필 조회 시 인증이 필요함을 확인 (CurrentUser가 null이면 500 에러)
+        // 프로필 조회 시 인증이 필요함을 확인 (CurrentUser가 설정되어 있으면 정상 동작)
         mockMvc.perform(get("/api/v1/profile/me")
                         .header("Authorization", "Bearer test-token"))
                 .andDo(print())
-                .andExpect(status().isInternalServerError()); // CurrentUser null로 인한 500 에러 확인
-                // 실제 인증이 구현되면 프로필 데이터를 반환할 것임
+                .andExpect(status().isOk()) // 인증이 설정되어 있으면 200 응답
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.message").value("회원을 성공적으로 조회했습니다"));
     }
 
     @Test
@@ -317,10 +305,10 @@ class NewFeaturesIntegrationTest {
     void testSecurityConfiguration() throws Exception {
         // Given & When & Then
         
-        // 1. 인증이 필요한 엔드포인트는 500 반환 (CurrentUser null)
+        // 1. 인증이 필요한 엔드포인트는 정상 동작 (CurrentUser 설정됨)
         mockMvc.perform(get("/api/v1/profile/me"))
                 .andDo(print())
-                .andExpect(status().isInternalServerError()); // CurrentUser가 null이어서 500 에러
+                .andExpect(status().isOk()); // CurrentUser가 설정되어 있어서 200 응답
         
         // 2. 회원가입 엔드포인트는 인증 없이 접근 가능 (400은 validation 에러)
         mockMvc.perform(post("/api/v1/auth/register")
@@ -380,14 +368,15 @@ class NewFeaturesIntegrationTest {
                 OffsetDateTime.now().plusDays(7).plusHours(3).toString()
             );
         
-        mockMvc.perform(post("/api/v1/schedule")
+        mockMvc.perform(post("/api/v1/schedule/request")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(workshopScheduleJson)
                         .header("Authorization", "Bearer student-token"))
                 .andDo(print());
         
         // 4. 전체 게시글 조회 (ALL 키워드 사용)
-        mockMvc.perform(get("/api/v1/board/keyword/ALL")
+        mockMvc.perform(get("/api/v1/board/search")
+                        .param("keyword", "ALL")
                         .header("Authorization", "Bearer student-token"))
                 .andDo(print());
         
@@ -395,5 +384,14 @@ class NewFeaturesIntegrationTest {
         mockMvc.perform(get("/api/v1/profile/me")
                         .header("Authorization", "Bearer student-token"))
                 .andDo(print());
+        
+        // 6. 프로필 조회 테스트 (기본 응답 확인)
+        mockMvc.perform(get("/api/v1/profile/me")
+                        .header("Authorization", "Bearer student-token"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.message").value("회원을 성공적으로 조회했습니다"));
     }
+
 }
