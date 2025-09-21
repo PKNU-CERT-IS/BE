@@ -5,7 +5,6 @@ package org.certis.generated.jooq.tables.pojos;
 
 
 import java.io.Serializable;
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 

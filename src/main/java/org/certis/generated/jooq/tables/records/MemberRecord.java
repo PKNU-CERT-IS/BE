@@ -4,7 +4,6 @@
 package org.certis.generated.jooq.tables.records;
 
 
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 import org.certis.generated.jooq.tables.Member;

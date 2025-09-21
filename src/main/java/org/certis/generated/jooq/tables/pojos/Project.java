@@ -31,6 +31,7 @@ public class Project implements Serializable {
     private Integer maxParticipantsNumber;
     private String githubUrl;
     private String externalUrl;
+    private String demoUrl;
     private String thumbnailUrl;
 
     public Project() {}
@@ -51,6 +52,7 @@ public class Project implements Serializable {
         this.maxParticipantsNumber = value.maxParticipantsNumber;
         this.githubUrl = value.githubUrl;
         this.externalUrl = value.externalUrl;
+        this.demoUrl = value.demoUrl;
         this.thumbnailUrl = value.thumbnailUrl;
     }
 
@@ -70,6 +72,7 @@ public class Project implements Serializable {
         Integer maxParticipantsNumber,
         String githubUrl,
         String externalUrl,
+        String demoUrl,
         String thumbnailUrl
     ) {
         this.id = id;
@@ -87,6 +90,7 @@ public class Project implements Serializable {
         this.maxParticipantsNumber = maxParticipantsNumber;
         this.githubUrl = githubUrl;
         this.externalUrl = externalUrl;
+        this.demoUrl = demoUrl;
         this.thumbnailUrl = thumbnailUrl;
     }
 
@@ -301,6 +305,20 @@ public class Project implements Serializable {
     }
 
     /**
+     * Getter for <code>public.project.demo_url</code>.
+     */
+    public String getDemoUrl() {
+        return this.demoUrl;
+    }
+
+    /**
+     * Setter for <code>public.project.demo_url</code>.
+     */
+    public void setDemoUrl(String demoUrl) {
+        this.demoUrl = demoUrl;
+    }
+
+    /**
      * Getter for <code>public.project.thumbnail_url</code>.
      */
     public String getThumbnailUrl() {
@@ -413,6 +431,12 @@ public class Project implements Serializable {
         }
         else if (!this.externalUrl.equals(other.externalUrl))
             return false;
+        if (this.demoUrl == null) {
+            if (other.demoUrl != null)
+                return false;
+        }
+        else if (!this.demoUrl.equals(other.demoUrl))
+            return false;
         if (this.thumbnailUrl == null) {
             if (other.thumbnailUrl != null)
                 return false;
@@ -441,6 +465,7 @@ public class Project implements Serializable {
         result = prime * result + ((this.maxParticipantsNumber == null) ? 0 : this.maxParticipantsNumber.hashCode());
         result = prime * result + ((this.githubUrl == null) ? 0 : this.githubUrl.hashCode());
         result = prime * result + ((this.externalUrl == null) ? 0 : this.externalUrl.hashCode());
+        result = prime * result + ((this.demoUrl == null) ? 0 : this.demoUrl.hashCode());
         result = prime * result + ((this.thumbnailUrl == null) ? 0 : this.thumbnailUrl.hashCode());
         return result;
     }
@@ -464,6 +489,7 @@ public class Project implements Serializable {
         sb.append(", ").append(maxParticipantsNumber);
         sb.append(", ").append(githubUrl);
         sb.append(", ").append(externalUrl);
+        sb.append(", ").append(demoUrl);
         sb.append(", ").append(thumbnailUrl);
 
         sb.append(")");
