@@ -79,7 +79,6 @@ public class SecurityConfig {
                 
                                 "/api/v1/schedule/requests",
                                 "/api/v1/schedule/requests/**",
-                                "/api/v1/schedule/me/request",
                 
                                 "/api/v1/study/search",
                                 "/api/v1/study/detail",
