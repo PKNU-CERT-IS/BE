@@ -1,0 +1,54 @@
+-- Add demo_url data to existing project records
+-- V29__insert_project_demo_url.sql
+
+-- Update existing project records with demo_url values
+UPDATE project SET demo_url = 'https://demo1.example.com' WHERE id = 1;
+UPDATE project SET demo_url = 'https://demo2.example.com' WHERE id = 2;
+UPDATE project SET demo_url = 'https://demo3.example.com' WHERE id = 3;
+UPDATE project SET demo_url = 'https://demo4.example.com' WHERE id = 4;
+UPDATE project SET demo_url = 'https://demo5.example.com' WHERE id = 5;
+UPDATE project SET demo_url = 'https://demo6.example.com' WHERE id = 6;
+UPDATE project SET demo_url = 'https://demo7.example.com' WHERE id = 7;
+UPDATE project SET demo_url = 'https://demo8.example.com' WHERE id = 8;
+UPDATE project SET demo_url = 'https://demo9.example.com' WHERE id = 9;
+UPDATE project SET demo_url = 'https://demo10.example.com' WHERE id = 10;
+UPDATE project SET demo_url = 'https://demo11.example.com' WHERE id = 11;
+UPDATE project SET demo_url = 'https://demo12.example.com' WHERE id = 12;
+UPDATE project SET demo_url = 'https://demo13.example.com' WHERE id = 13;
+UPDATE project SET demo_url = 'https://demo14.example.com' WHERE id = 14;
+UPDATE project SET demo_url = 'https://demo15.example.com' WHERE id = 15;
+UPDATE project SET demo_url = 'https://demo16.example.com' WHERE id = 16;
+UPDATE project SET demo_url = 'https://demo17.example.com' WHERE id = 17;
+UPDATE project SET demo_url = 'https://demo18.example.com' WHERE id = 18;
+UPDATE project SET demo_url = 'https://demo19.example.com' WHERE id = 19;
+UPDATE project SET demo_url = 'https://demo20.example.com' WHERE id = 20;
+UPDATE project SET demo_url = 'https://demo21.example.com' WHERE id = 21;
+UPDATE project SET demo_url = 'https://demo22.example.com' WHERE id = 22;
+UPDATE project SET demo_url = 'https://demo23.example.com' WHERE id = 23;
+UPDATE project SET demo_url = 'https://demo24.example.com' WHERE id = 24;
+UPDATE project SET demo_url = 'https://demo25.example.com' WHERE id = 25;
+UPDATE project SET demo_url = 'https://demo26.example.com' WHERE id = 26;
+UPDATE project SET demo_url = 'https://demo27.example.com' WHERE id = 27;
+UPDATE project SET demo_url = 'https://demo28.example.com' WHERE id = 28;
+UPDATE project SET demo_url = 'https://demo29.example.com' WHERE id = 29;
+UPDATE project SET demo_url = 'https://demo30.example.com' WHERE id = 30;
+UPDATE project SET demo_url = 'https://demo31.example.com' WHERE id = 31;
+UPDATE project SET demo_url = 'https://demo32.example.com' WHERE id = 32;
+UPDATE project SET demo_url = 'https://demo33.example.com' WHERE id = 33;
+UPDATE project SET demo_url = 'https://demo34.example.com' WHERE id = 34;
+UPDATE project SET demo_url = 'https://demo35.example.com' WHERE id = 35;
+UPDATE project SET demo_url = 'https://demo36.example.com' WHERE id = 36;
+UPDATE project SET demo_url = 'https://demo37.example.com' WHERE id = 37;
+UPDATE project SET demo_url = 'https://demo38.example.com' WHERE id = 38;
+UPDATE project SET demo_url = 'https://demo39.example.com' WHERE id = 39;
+UPDATE project SET demo_url = 'https://demo40.example.com' WHERE id = 40;
+UPDATE project SET demo_url = 'https://demo41.example.com' WHERE id = 41;
+UPDATE project SET demo_url = 'https://demo42.example.com' WHERE id = 42;
+UPDATE project SET demo_url = 'https://demo43.example.com' WHERE id = 43;
+UPDATE project SET demo_url = 'https://demo44.example.com' WHERE id = 44;
+UPDATE project SET demo_url = 'https://demo45.example.com' WHERE id = 45;
+UPDATE project SET demo_url = 'https://demo46.example.com' WHERE id = 46;
+UPDATE project SET demo_url = 'https://demo47.example.com' WHERE id = 47;
+UPDATE project SET demo_url = 'https://demo48.example.com' WHERE id = 48;
+UPDATE project SET demo_url = 'https://demo49.example.com' WHERE id = 49;
+UPDATE project SET demo_url = 'https://demo50.example.com' WHERE id = 50;
