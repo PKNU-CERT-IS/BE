@@ -231,12 +231,16 @@ public class StudyFacadeService {
     public List<StudyMeetingSummaryResponseDto> getStudyMeetings(Long studyId) {
         log.info("Facade: Getting meetings for study - ID: {}", studyId);
 
-        // TODO: StudyMeetingFacadeService로 위임하거나 별도 구현 필요
-        // 임시로 빈 리스트 반환
-        var meetings = List.<StudyMeetingSummaryResponseDto>of();
+        // Query meetings for the given study and map to DTOs
+        Pageable pageable = PageRequest.of(0, Integer.MAX_VALUE);
+        GetAllStudyMeetingsQuery query = new GetAllStudyMeetingsQuery(studyId, pageable);
+        StudyMeetingPageResultVo meetingPageResult = studyMeetingQueryService.getAllStudyMeetings(query);
 
-        log.info("Facade: Found {} meetings for study - ID: {}", meetings.size(), studyId);
-        return meetings;
+        List<StudyMeetingSummaryResponseDto> meetingSummaries =
+                dtoMapper.toStudyMeetingSummaryResponseDtoList(meetingPageResult);
+
+        log.info("Facade: Found {} meetings for study - ID: {}", meetingSummaries.size(), studyId);
+        return meetingSummaries;
     }
 
     /**

@@ -3,6 +3,12 @@ package org.certis.studyplatform.study.application;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.study.domain.StudyParticipantStatus;
+import org.certis.studyplatform.member.application.query.MemberQueryService;
+import org.certis.studyplatform.member.application.object.query.GetMemberByIdQuery;
+import org.certis.studyplatform.member.domain.vo.MemberVo;
+import org.certis.studyplatform.study.application.query.StudyQueryService;
+import org.certis.studyplatform.study.application.object.query.GetStudyByIdQuery;
+import org.certis.studyplatform.study.domain.vo.StudyVo;
 import org.certis.studyplatform.study.domain.vo.StudyParticipantCreatedVo;
 import org.certis.studyplatform.study.domain.vo.StudyParticipantStatusUpdatedVo;
 import org.certis.studyplatform.study.domain.vo.StudyParticipantSummaryVo;
@@ -37,6 +43,8 @@ public class StudyParticipantFacadeService {
     private final StudyParticipantQueryService participantQueryService;
     private final StudyApplicationCommandMapper commandMapper;
     private final StudyApplicationDtoMapper dtoMapper;
+    private final MemberQueryService memberQueryService;
+    private final StudyQueryService studyQueryService;
 
     // ================================================================
     // STUDY PARTICIPANT OPERATIONS - 프로젝트 참가 관리
@@ -189,9 +197,37 @@ public class StudyParticipantFacadeService {
         // Command Service 호출
         StudyParticipantStatusUpdatedVo updatedVo = participantCommandService.approveParticipant(command);
 
-        // VO → Response DTO 변환
+        // 조회: 스터디 제목, 멤버 이름, 관리자 이름
+        String studyTitle = null;
+        String memberName = null;
+        String adminName = null;
+
+        if (updatedVo.studyId() != null) {
+            StudyVo studyVo = studyQueryService.getStudyById(GetStudyByIdQuery.of(updatedVo.studyId()));
+            studyTitle = studyVo != null ? studyVo.title() : null;
+        }
+        if (updatedVo.memberId() != null) {
+            MemberVo memberVo = memberQueryService.getMemberById(new GetMemberByIdQuery(updatedVo.memberId()));
+            memberName = memberVo != null ? memberVo.name() : null;
+        }
+        if (adminId != null) {
+            MemberVo adminVo = memberQueryService.getMemberById(new GetMemberByIdQuery(adminId));
+            adminName = adminVo != null ? adminVo.name() : null;
+        }
+
+        String reason = request.getReason();
+
+        // VO → Response DTO 변환 (실데이터 적용)
         AdminStudyParticipantApprovalResponseDto responseDto = dtoMapper
-                .toAdminStudyParticipantApprovalResponseDto(updatedVo, StudyParticipantStatus.APPROVED);
+                .toAdminStudyParticipantApprovalResponseDto(
+                        updatedVo,
+                        studyTitle,
+                        memberName,
+                        StudyParticipantStatus.APPROVED,
+                        adminId,
+                        adminName,
+                        reason
+                );
 
         log.info("Facade: Admin study participant approved successfully - participantId: {}", 
                 responseDto.getParticipantId());
@@ -213,9 +249,37 @@ public class StudyParticipantFacadeService {
         // Command Service 호출
         StudyParticipantStatusUpdatedVo updatedVo = participantCommandService.rejectParticipant(command);
 
-        // VO → Response DTO 변환
+        // 조회: 스터디 제목, 멤버 이름, 관리자 이름
+        String studyTitle = null;
+        String memberName = null;
+        String adminName = null;
+
+        if (updatedVo.studyId() != null) {
+            StudyVo studyVo = studyQueryService.getStudyById(GetStudyByIdQuery.of(updatedVo.studyId()));
+            studyTitle = studyVo != null ? studyVo.title() : null;
+        }
+        if (updatedVo.memberId() != null) {
+            MemberVo memberVo = memberQueryService.getMemberById(new GetMemberByIdQuery(updatedVo.memberId()));
+            memberName = memberVo != null ? memberVo.name() : null;
+        }
+        if (adminId != null) {
+            MemberVo adminVo = memberQueryService.getMemberById(new GetMemberByIdQuery(adminId));
+            adminName = adminVo != null ? adminVo.name() : null;
+        }
+
+        String reason = request.getReason();
+
+        // VO → Response DTO 변환 (실데이터 적용)
         AdminStudyParticipantApprovalResponseDto responseDto = dtoMapper
-                .toAdminStudyParticipantApprovalResponseDto(updatedVo, StudyParticipantStatus.REJECTED);
+                .toAdminStudyParticipantApprovalResponseDto(
+                        updatedVo,
+                        studyTitle,
+                        memberName,
+                        StudyParticipantStatus.REJECTED,
+                        adminId,
+                        adminName,
+                        reason
+                );
 
         log.info("Facade: Admin study participant rejected successfully - participantId: {}", 
                 responseDto.getParticipantId());
