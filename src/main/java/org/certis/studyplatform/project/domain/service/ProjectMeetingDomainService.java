@@ -14,6 +14,7 @@ import org.certis.studyplatform.project.domain.repository.ProjectMeetingLinkComm
 import org.certis.studyplatform.project.domain.repository.ProjectMeetingLinkQueryRepository;
 import org.certis.studyplatform.project.domain.repository.ProjectMeetingQueryRepository;
 import org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository;
+import org.certis.studyplatform.project.domain.repository.ProjectQueryRepository;
 import org.certis.studyplatform.project.domain.vo.*;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,7 @@ public class ProjectMeetingDomainService {
     private final ProjectMeetingLinkCommandRepository projectMeetingLinkCommandRepository;
     private final ProjectMeetingLinkQueryRepository projectMeetingLinkQueryRepository;
     private final ProjectParticipantQueryRepository projectParticipantQueryRepository;
+    private final ProjectQueryRepository projectQueryRepository;
 
     /**
      * 프로젝트 회의록 생성
@@ -214,6 +216,23 @@ public class ProjectMeetingDomainService {
             log.warn("Invalid project access parameters - projectId: {}, requesterId: {}", projectId, requesterId);
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_PERMISSION_DENINED, 
                     "프로젝트 접근 권한이 없습니다.");
+        }
+
+        // 프로젝트 생성자는 항상 접근 가능
+        try {
+            var projectVoOptional = projectQueryRepository.findById(projectId);
+            if (projectVoOptional.isEmpty()) {
+                log.warn("Project not found - projectId: {}", projectId);
+                throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_NOT_FOUND, "프로젝트를 찾을 수 없습니다");
+            }
+            if (requesterId.equals(projectVoOptional.get().creatorId())) {
+                log.debug("Project access granted - requester is project creator: projectId: {}, requesterId: {}", projectId, requesterId);
+                return;
+            }
+        } catch (DomainException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("Project lookup failed during access validation - projectId: {}. Proceeding to participant check.", projectId);
         }
 
         // 프로젝트의 승인된 멤버인지 확인
