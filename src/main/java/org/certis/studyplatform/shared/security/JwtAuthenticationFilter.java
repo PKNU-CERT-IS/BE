@@ -160,9 +160,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 "/api/v1/study/participant/{studyId}/participants/pending/**",
                 "/api/v1/study/participant/{studyId}/participants/approved/**",
 
+                // Swagger/OpenAPI 관련 경로 (더 포괄적으로 수정)
+                "/swagger-ui/**",           // 모든 swagger-ui 하위 경로
                 "/swagger-ui.html",
-                "/swagger-ui",
-                "/v3/api-docs",
+                "/v3/api-docs/**",          // 모든 api-docs 하위 경로
+                "/swagger-resources/**",    // Swagger 리소스
+                "/webjars/**",             // Swagger UI 웹 자원
+                "/configuration/ui",        // Swagger UI 설정
+                "/configuration/security",  // Swagger 보안 설정
                 "/actuator/health",
                 "/favicon.ico",
                 "/error"
