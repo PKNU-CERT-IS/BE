@@ -34,7 +34,6 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import org.springframework.security.test.context.support.WithMockUser;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -103,7 +102,6 @@ class ProfileControllerTest {
         // 오늘 날짜 범위에 해당하는 스케줄 생성
         OffsetDateTime now = OffsetDateTime.now();
         OffsetDateTime startOfDay = now.toLocalDate().atStartOfDay().atOffset(now.getOffset());
-        OffsetDateTime endOfDay = startOfDay.plusDays(1).minusNanos(1);
 
         // 오늘 오전 스케줄
         ScheduleEntity morningSchedule = ScheduleEntity.builder()
@@ -292,6 +290,125 @@ class ProfileControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value(ResponseStatus.PROFILE_FIND_SUCCESS.getMessage()))
                 .andExpect(jsonPath("$.data.todaySchedules").exists());
+    }
+
+    @Test
+    @DisplayName("프로필 수정 - Contact 정보 업데이트 검증")
+    void updateProfile_ContactInfoUpdate() throws Exception {
+        // Mock CurrentUser 생성
+        CurrentUser mockUser = new CurrentUser(testMemberId, "testuser", "test@certis.org", "테스트사용자", "UPSOLVER");
+        
+        // 업데이트할 연락처 정보
+        String newEmail = "updated@certis.org";
+        String newPhoneNumber = "010-1234-5678";
+        String newGithubUrl = "https://github.com/updateduser";
+        String newLinkedinUrl = "https://www.linkedin.com/in/updateduser";
+        
+        ProfileUpdateRequestDto request = ProfileUpdateRequestDto.builder()
+                .name("업데이트된사용자")
+                .description("연락처 정보가 업데이트된 사용자")
+                .email(newEmail)
+                .phoneNumber(newPhoneNumber)
+                .githubUrl(newGithubUrl)
+                .linkedinUrl(newLinkedinUrl)
+                .build();
+
+        // 프로필 업데이트 요청
+        mockMvc.perform(put("/api/v1/profile/me")
+                        .with(user(mockUser))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.message").value(ResponseStatus.PROFILE_UPDATE_SUCCESS.getMessage()));
+
+        // 데이터베이스에서 실제 저장된 Contact 정보 확인
+        MemberContactEntity savedContact = memberContactJpaRepository.findById(testMemberId).orElse(null);
+        assert savedContact != null : "Contact 정보가 저장되지 않았습니다";
+        assert newEmail.equals(savedContact.getEmail()) : "이메일이 올바르게 업데이트되지 않았습니다";
+        assert newPhoneNumber.equals(savedContact.getPhoneNumber()) : "전화번호가 올바르게 업데이트되지 않았습니다";
+        assert newGithubUrl.equals(savedContact.getGithubUrl()) : "GitHub URL이 올바르게 업데이트되지 않았습니다";
+        assert newLinkedinUrl.equals(savedContact.getLinkedinUrl()) : "LinkedIn URL이 올바르게 업데이트되지 않았습니다";
+    }
+
+    @Test
+    @DisplayName("프로필 수정 - 기존 Contact 정보 부분 업데이트")
+    void updateProfile_PartialContactUpdate() throws Exception {
+        // Mock CurrentUser 생성
+        CurrentUser mockUser = new CurrentUser(testMemberId, "testuser", "test@certis.org", "테스트사용자", "UPSOLVER");
+        
+        // 기존 Contact 정보 확인
+        MemberContactEntity originalContact = memberContactJpaRepository.findById(testMemberId).orElse(null);
+        assert originalContact != null : "기존 Contact 정보가 없습니다";
+        String originalEmail = originalContact.getEmail();
+        String originalPhoneNumber = originalContact.getPhoneNumber();
+        
+        // GitHub URL만 업데이트
+        String newGithubUrl = "https://github.com/partialupdate";
+        
+        ProfileUpdateRequestDto request = ProfileUpdateRequestDto.builder()
+                .name("부분업데이트사용자")
+                .githubUrl(newGithubUrl)
+                .build();
+
+        // 프로필 업데이트 요청
+        mockMvc.perform(put("/api/v1/profile/me")
+                        .with(user(mockUser))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.message").value(ResponseStatus.PROFILE_UPDATE_SUCCESS.getMessage()));
+
+        // 데이터베이스에서 실제 저장된 Contact 정보 확인
+        MemberContactEntity updatedContact = memberContactJpaRepository.findById(testMemberId).orElse(null);
+        assert updatedContact != null : "Contact 정보가 저장되지 않았습니다";
+        assert originalEmail.equals(updatedContact.getEmail()) : "기존 이메일이 변경되었습니다";
+        assert originalPhoneNumber.equals(updatedContact.getPhoneNumber()) : "기존 전화번호가 변경되었습니다";
+        assert newGithubUrl.equals(updatedContact.getGithubUrl()) : "GitHub URL이 올바르게 업데이트되지 않았습니다";
+    }
+
+    @Test
+    @DisplayName("프로필 수정 - Member Entity 기본 정보 업데이트 검증")
+    void updateProfile_MemberEntityUpdate() throws Exception {
+        // Mock CurrentUser 생성
+        CurrentUser mockUser = new CurrentUser(testMemberId, "testuser", "test@certis.org", "테스트사용자", "UPSOLVER");
+        
+        // 업데이트할 기본 정보
+        String newName = "업데이트된이름";
+        String newDescription = "업데이트된 설명";
+        String newMajor = "소프트웨어공학과";
+        String newStudentNumber = "20209999";
+        
+        ProfileUpdateRequestDto request = ProfileUpdateRequestDto.builder()
+                .name(newName)
+                .description(newDescription)
+                .major(newMajor)
+                .studentNumber(newStudentNumber)
+                .build();
+
+        // 프로필 업데이트 요청
+        mockMvc.perform(put("/api/v1/profile/me")
+                        .with(user(mockUser))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.message").value(ResponseStatus.PROFILE_UPDATE_SUCCESS.getMessage()));
+
+        // 데이터베이스에서 실제 저장된 Member 정보 확인
+        MemberEntity savedMember = memberJpaRepository.findById(testMemberId).orElse(null);
+        assert savedMember != null : "Member 정보가 저장되지 않았습니다";
+        assert newName.equals(savedMember.getName()) : "이름이 올바르게 업데이트되지 않았습니다";
+        assert newDescription.equals(savedMember.getDescription()) : "설명이 올바르게 업데이트되지 않았습니다";
+        assert newMajor.equals(savedMember.getMajor()) : "전공이 올바르게 업데이트되지 않았습니다";
+        assert newStudentNumber.equals(savedMember.getStudentNumber()) : "학번이 올바르게 업데이트되지 않았습니다";
     }
 }
 

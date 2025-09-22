@@ -9,7 +9,9 @@ import org.certis.studyplatform.member.domain.vo.MemberIdVo;
 import org.certis.studyplatform.member.domain.vo.ProfileVo;
 import org.certis.studyplatform.member.infrastructure.mapper.MemberInfrastructureMapper;
 import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberEntity;
+import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberContactEntity;
 import org.certis.studyplatform.member.infrastructure.persistence.jpa.MemberJpaRepository;
+import org.certis.studyplatform.member.infrastructure.persistence.jpa.MemberContactJpaRepository;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +39,7 @@ import java.util.Optional;
 public class ProfileCommandRepositoryImpl implements ProfileCommandRepository {
 
     private final MemberJpaRepository memberJpaRepository;
+    private final MemberContactJpaRepository memberContactJpaRepository;
     private final MemberInfrastructureMapper memberInfrastructureMapper;
 
     @Override
@@ -53,16 +56,17 @@ public class ProfileCommandRepositoryImpl implements ProfileCommandRepository {
             MemberEntity existingEntity = memberJpaRepository.findById(profileVo.memberId())
                     .orElseThrow(() -> new InfrastructureException(ExceptionStatus.PROFILE_INFRASTRUCTURE_NOT_FOUND,"Member not found: " + profileVo.memberId()));
 
-            // DomainToEntityMapper를 사용하여 Builder 패턴으로 새 Entity 생성
-            MemberEntity updatedEntity = memberInfrastructureMapper.updateMemberEntityWithProfile(existingEntity, profileVo);
+            // 1. Member Entity 업데이트 (기본 프로필 정보)
+            MemberEntity updatedMemberEntity = memberInfrastructureMapper.updateMemberEntityWithProfileInfo(existingEntity, profileVo);
+            MemberEntity savedMemberEntity = memberJpaRepository.save(updatedMemberEntity);
 
-            // 저장
-            MemberEntity savedEntity = memberJpaRepository.save(updatedEntity);
+            // 2. Contact 정보 저장/업데이트
+            saveOrUpdateContact(profileVo);
 
             log.debug("Command Infrastructure: Profile saved successfully for member ID: {}", profileVo.memberId());
 
             // EntityToDomainMapper를 사용하여 Entity → Profile Domain 변환
-            return memberInfrastructureMapper.toProfile(savedEntity);
+            return memberInfrastructureMapper.toProfile(savedMemberEntity);
 
         } catch (Exception e) {
             log.error("Error saving profile for member ID {}: {}", profileVo.memberId(), e.getMessage());
@@ -108,6 +112,39 @@ public class ProfileCommandRepositoryImpl implements ProfileCommandRepository {
         } catch (Exception e) {
             log.error("Error clearing all profiles: {}", e.getMessage());
             throw new RuntimeException("Failed to clear all profiles", e);
+        }
+    }
+
+    // =================================================================
+    // Private Helper Methods
+    // =================================================================
+
+    /**
+     * Contact 정보 저장/업데이트
+     */
+    private void saveOrUpdateContact(ProfileVo profileVo) {
+        Long memberId = profileVo.memberId();
+        
+        // 연락처 정보가 있는 경우에만 처리
+        if (profileVo.email() == null && profileVo.phoneNumber() == null && 
+            profileVo.githubUrl() == null && profileVo.linkedUrl() == null) {
+            log.debug("Command Infrastructure: No contact information to save for member ID: {}", memberId);
+            return;
+        }
+
+        Optional<MemberContactEntity> existingContactOpt = memberContactJpaRepository.findById(memberId);
+        
+        if (existingContactOpt.isPresent()) {
+            // 기존 Contact 정보 업데이트
+            MemberContactEntity existingContact = existingContactOpt.get();
+            MemberContactEntity updatedContact = memberInfrastructureMapper.updateContactEntity(existingContact, profileVo);
+            memberContactJpaRepository.save(updatedContact);
+            log.debug("Command Infrastructure: Contact updated for member ID: {}", memberId);
+        } else {
+            // 새로운 Contact 정보 생성
+            MemberContactEntity newContact = memberInfrastructureMapper.createOrUpdateContactEntity(memberId, profileVo);
+            memberContactJpaRepository.save(newContact);
+            log.debug("Command Infrastructure: Contact created for member ID: {}", memberId);
         }
     }
 

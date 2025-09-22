@@ -20,7 +20,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -114,19 +116,28 @@ public class BlogController {
 
     /**
      * 블로그 세부 정보 조회 (@ModelAttribute 사용)
+     * 인증된 사용자는 조회수 증가, 익명 사용자는 조회수 증가 없이 조회
      *
      * @param request 블로그 상세 조회 요청 DTO
-     * @param currentUser 현재 사용자 정보
      * @return 블로그 상세 정보
      */
     @GetMapping("/detail")
     public ResponseEntity<GlobalResponseHandler<BlogDetailResponseDto>> getBlogDetail(
-            @Valid @ModelAttribute BlogDetailRequestDto request,
-            @AuthenticationPrincipal CurrentUser currentUser) {
-        log.info("REST: Getting blog detail - ID: {}, viewerId: {}", request.getBlogId(), currentUser.getId());
+            @Valid @ModelAttribute BlogDetailRequestDto request) {
+        
+        // SecurityContext에서 현재 사용자 정보 가져오기 (익명 사용자 허용)
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Long viewerId = null;
+        
+        if (authentication != null && authentication.getPrincipal() instanceof CurrentUser) {
+            CurrentUser currentUser = (CurrentUser) authentication.getPrincipal();
+            viewerId = currentUser.getId();
+        }
+        
+        log.info("REST: Getting blog detail - ID: {}, viewerId: {}", request.getBlogId(), viewerId);
 
         // Facade Service 호출 (viewerId 포함)
-        BlogDetailResponseDto blogDetail = blogFacadeService.getBlogDetail(request, currentUser.getId());
+        BlogDetailResponseDto blogDetail = blogFacadeService.getBlogDetail(request, viewerId);
 
         log.info("REST: Blog detail retrieved successfully - ID: {}", blogDetail.getId());
 
@@ -186,19 +197,18 @@ public class BlogController {
 
     /**
      * 작성 가능한 project/blog 조회
+     * 인증된 사용자의 참여한 study/project 목록을 반환
      *
+     * @param currentUser 현재 사용자 정보
      * @return 작성 가능한 블로그 목록
      */
-    @GetMapping("/blog/reference")
-    public ResponseEntity<GlobalResponseHandler<List<BlogEnableReferenceResponseDto>>> getBlogReference() {
-        log.info("REST: Getting blog reference list");
-
-        //TODO: memberID 하드코딩 수정
-
-        Long memberId = 1L;
+    @GetMapping("/reference")
+    public ResponseEntity<GlobalResponseHandler<List<BlogEnableReferenceResponseDto>>> getBlogReference(
+            @AuthenticationPrincipal CurrentUser currentUser) {
+        log.info("REST: Getting blog reference list for member ID: {}", currentUser.getId());
 
         // Facade Service 호출
-        List<BlogEnableReferenceResponseDto> result = blogFacadeService.getBlogReference(memberId);
+        List<BlogEnableReferenceResponseDto> result = blogFacadeService.getBlogReference(currentUser.getId());
 
         log.info("REST: Blog reference list retrieved - found {} items", result.size());
 

@@ -341,4 +341,62 @@ public class MemberInfrastructureMapper {
                 contact != null ? contact.getLinkedinUrl() : null
         );
     }
+
+    // =================================================================
+    // Profile 업데이트 시 Contact와 Auth 정보 처리
+    // =================================================================
+
+    /**
+     * ProfileVo의 연락처 정보로 MemberContactEntity 생성/업데이트
+     */
+    public MemberContactEntity createOrUpdateContactEntity(Long memberId, ProfileVo profileVo) {
+        if (memberId == null || profileVo == null) {
+            throw new IllegalArgumentException("MemberId and ProfileVo cannot be null");
+        }
+
+        return MemberContactEntity.builder()
+                .memberId(memberId)
+                .email(profileVo.email() != null ? profileVo.email() : "")
+                .phoneNumber(profileVo.phoneNumber() != null ? profileVo.phoneNumber() : "")
+                .githubUrl(profileVo.githubUrl())
+                .linkedinUrl(profileVo.linkedUrl())
+                .build();
+    }
+
+    /**
+     * ProfileVo의 연락처 정보로 기존 MemberContactEntity 업데이트
+     */
+    public MemberContactEntity updateContactEntity(MemberContactEntity existingEntity, ProfileVo profileVo) {
+        if (existingEntity == null || profileVo == null) {
+            throw new IllegalArgumentException("ExistingEntity and ProfileVo cannot be null");
+        }
+
+        return existingEntity.toBuilder()
+                .email(profileVo.email() != null ? profileVo.email() : existingEntity.getEmail())
+                .phoneNumber(profileVo.phoneNumber() != null ? profileVo.phoneNumber() : existingEntity.getPhoneNumber())
+                .githubUrl(profileVo.githubUrl() != null ? profileVo.githubUrl() : existingEntity.getGithubUrl())
+                .linkedinUrl(profileVo.linkedUrl() != null ? profileVo.linkedUrl() : existingEntity.getLinkedinUrl())
+                .build();
+    }
+
+    /**
+     * ProfileVo의 기본 정보로 MemberEntity 업데이트 (Contact 정보 제외)
+     */
+    public MemberEntity updateMemberEntityWithProfileInfo(MemberEntity existingEntity, ProfileVo profileVo) {
+        if (existingEntity == null || profileVo == null) {
+            throw new IllegalArgumentException("ExistingEntity and ProfileVo cannot be null");
+        }
+
+        return existingEntity.toBuilder()
+                .name(profileVo.name())
+                .description(profileVo.description())
+                .profileImage(profileVo.profileImage())
+                .major(profileVo.major() != null ? profileVo.major() : existingEntity.getMajor())
+                .birthday(profileVo.birthday() != null ? profileVo.birthday() : existingEntity.getBirthday())
+                .studentNumber(profileVo.studentNumber() != null ? profileVo.studentNumber() : existingEntity.getStudentNumber())
+                .skills(profileVo.skills() != null ? profileVo.skills().toArray(new String[0]) : existingEntity.getSkills())
+                .grade(profileVo.memberGrade() != null ? profileVo.memberGrade() : existingEntity.getGrade())
+                .updatedAt(OffsetDateTime.now())
+                .build();
+    }
 }
