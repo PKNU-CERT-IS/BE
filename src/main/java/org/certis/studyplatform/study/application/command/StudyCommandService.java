@@ -11,12 +11,13 @@ import org.certis.studyplatform.study.application.object.command.DeleteStudyComm
 import org.certis.studyplatform.study.application.object.command.EndStudyCommand;
 import org.certis.studyplatform.study.application.object.command.UpdateStudyCommand;
 import org.certis.studyplatform.shared.service.S3FileService;
+import org.certis.studyplatform.study.infrastructure.persistence.entity.StudyAttachedEntity;
+import org.certis.studyplatform.study.infrastructure.persistence.jpa.StudyAttachedJpaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 
 /**
  * Study Command Service
@@ -35,6 +36,7 @@ public class StudyCommandService {
     private final StudyParticipantDomainService studyParticipantDomainService;
     private final S3FileService s3FileService;
     private final GracePeriodService gracePeriodService;
+    private final StudyAttachedJpaRepository studyAttachedJpaRepository;
 
     /**
      * 프로젝트 생성
@@ -51,6 +53,21 @@ public class StudyCommandService {
         // Command 객체를 Domain Service로 전달
         StudyVo createdVo = studyDomainService.createStudy(command);
 
+        // 첨부파일 저장 (생성 시 첨부가 포함된 경우)
+        if (command.attachedFiles() != null && !command.attachedFiles().isEmpty()) {
+            for (var file : command.attachedFiles()) {
+                StudyAttachedEntity entity = StudyAttachedEntity.builder()
+                        .studyId(createdVo.id())
+                        .memberId(command.creatorId())
+                        .attachedUrl(file.url())
+                        .name(file.name())
+                        .type(file.type() != null ? file.type().name() : null)
+                        .size(file.size() != null ? String.valueOf(file.size()) : "0")
+                        .build();
+                studyAttachedJpaRepository.save(entity);
+            }
+        }
+
         studyParticipantDomainService.registerStudyCreatorAsParticipant(createdVo.id(), command.creatorId());
 
         log.info("Command: Study created successfully - ID: {}", createdVo.id());
@@ -66,6 +83,21 @@ public class StudyCommandService {
 
         // Command 객체를 Domain Service로 전달
         StudyVo updatedVo = studyDomainService.updateStudy(command);
+
+        // 첨부파일 저장 (요청에 첨부가 포함된 경우 추가)
+        if (command.attachedFiles() != null && !command.attachedFiles().isEmpty()) {
+            for (var file : command.attachedFiles()) {
+                StudyAttachedEntity entity = StudyAttachedEntity.builder()
+                        .studyId(updatedVo.id())
+                        .memberId(command.requesterId())
+                        .attachedUrl(file.url())
+                        .name(file.name())
+                        .type(file.type() != null ? file.type().name() : null)
+                        .size(file.size() != null ? String.valueOf(file.size()) : "0")
+                        .build();
+                studyAttachedJpaRepository.save(entity);
+            }
+        }
 
         log.info("Command: Study updated successfully - ID: {}", updatedVo.id());
         return updatedVo;

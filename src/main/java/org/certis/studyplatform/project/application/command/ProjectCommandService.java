@@ -11,12 +11,13 @@ import org.certis.studyplatform.project.domain.service.ProjectDomainService;
 import org.certis.studyplatform.project.domain.service.ProjectParticipantDomainService;
 import org.certis.studyplatform.project.domain.vo.*;
 import org.certis.studyplatform.shared.service.S3FileService;
+import org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectAttachedEntity;
+import org.certis.studyplatform.project.infrastructure.persistence.jpa.ProjectAttachedJpaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 
 /**
  * Project Command Service
@@ -35,6 +36,7 @@ public class ProjectCommandService {
     private final ProjectParticipantDomainService projectParticipantDomainService;
     private final S3FileService s3FileService;
     private final GracePeriodService gracePeriodService;
+    private final ProjectAttachedJpaRepository projectAttachedJpaRepository;
 
     /**
      * 프로젝트 생성
@@ -51,6 +53,21 @@ public class ProjectCommandService {
         // Command 객체를 Domain Service로 전달
         ProjectVo createdVo = projectDomainService.createProject(command);
 
+        // 첨부파일 저장 (생성 시 첨부가 포함된 경우)
+        if (command.attachedFiles() != null && !command.attachedFiles().isEmpty()) {
+            for (var file : command.attachedFiles()) {
+                ProjectAttachedEntity entity = ProjectAttachedEntity.builder()
+                        .projectId(createdVo.id())
+                        .memberId(command.creatorId())
+                        .attachedUrl(file.url())
+                        .name(file.name())
+                        .type(file.type() != null ? file.type().name() : null)
+                        .size(file.size() != null ? String.valueOf(file.size()) : "0")
+                        .build();
+                projectAttachedJpaRepository.save(entity);
+            }
+        }
+
         projectParticipantDomainService.registerProjectCreatorAsParticipant(createdVo.id(), command.creatorId());
 
         log.info("Command: Project created successfully - ID: {}", createdVo.id());
@@ -66,6 +83,21 @@ public class ProjectCommandService {
 
         // Command 객체를 Domain Service로 전달
         ProjectVo updatedVo = projectDomainService.updateProject(command);
+
+        // 첨부파일 저장 (요청에 첨부가 포함된 경우 추가)
+        if (command.attachedFiles() != null && !command.attachedFiles().isEmpty()) {
+            for (var file : command.attachedFiles()) {
+                ProjectAttachedEntity entity = ProjectAttachedEntity.builder()
+                        .projectId(updatedVo.id())
+                        .memberId(command.requesterId())
+                        .attachedUrl(file.url())
+                        .name(file.name())
+                        .type(file.type() != null ? file.type().name() : null)
+                        .size(file.size() != null ? String.valueOf(file.size()) : "0")
+                        .build();
+                projectAttachedJpaRepository.save(entity);
+            }
+        }
 
         log.info("Command: Project updated successfully - ID: {}", updatedVo.id());
         return updatedVo;

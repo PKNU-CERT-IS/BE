@@ -34,7 +34,12 @@ public class StudyApplicationDtoMapper {
         String thumbnailUrl = null;
         if (vo.attached() != null) {
             thumbnailUrl = vo.attached().stream()
-                    .filter(a -> a.type() != null && a.type().toLowerCase().startsWith("image/"))
+                    .filter(a -> a.type() != null && (
+                            a.type().toLowerCase().startsWith("image/") ||
+                            a.type().equalsIgnoreCase("png") ||
+                            a.type().equalsIgnoreCase("jpg") ||
+                            a.type().equalsIgnoreCase("jpeg")
+                    ))
                     .map(StudyAttachedVo::attachedUrl)
                     .filter(Objects::nonNull)
                     .findFirst()
