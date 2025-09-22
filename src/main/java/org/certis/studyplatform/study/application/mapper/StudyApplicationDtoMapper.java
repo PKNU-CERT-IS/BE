@@ -83,7 +83,12 @@ public class StudyApplicationDtoMapper {
         String thumbnailUrl = null;
         if (vo.attachedVo() != null) {
             thumbnailUrl = vo.attachedVo().stream()
-                    .filter(a -> a.type() != null && a.type().toLowerCase().startsWith("image/"))
+                    .filter(a -> a.type() != null && (
+                            a.type().toLowerCase().startsWith("image/") ||
+                            a.type().equalsIgnoreCase("png") ||
+                            a.type().equalsIgnoreCase("jpg") ||
+                            a.type().equalsIgnoreCase("jpeg")
+                    ))
                     .map(StudyAttachedVo::attachedUrl)
                     .filter(Objects::nonNull)
                     .findFirst()
@@ -378,20 +383,27 @@ public class StudyApplicationDtoMapper {
     }
 
     /**
-     * StudyParticipantStatusUpdatedVo → AdminStudyParticipantApprovalResponseDto 변환
+     * StudyParticipantStatusUpdatedVo → AdminStudyParticipantApprovalResponseDto 변환 (실데이터 버전)
      */
     public AdminStudyParticipantApprovalResponseDto toAdminStudyParticipantApprovalResponseDto(
-            StudyParticipantStatusUpdatedVo vo, org.certis.studyplatform.study.domain.StudyParticipantStatus status) {
+            StudyParticipantStatusUpdatedVo vo,
+            String studyTitle,
+            String memberName,
+            org.certis.studyplatform.study.domain.StudyParticipantStatus status,
+            Long adminId,
+            String adminName,
+            String reason
+    ) {
         return AdminStudyParticipantApprovalResponseDto.builder()
                 .participantId(vo.id())
                 .studyId(vo.studyId())
-                .studyTitle("스터디 제목") // TODO: 실제 스터디 제목 조회 필요
+                .studyTitle(studyTitle)
                 .memberId(vo.memberId())
-                .memberName("회원 이름") // TODO: 실제 회원 이름 조회 필요
+                .memberName(memberName)
                 .status(status)
-                .reason("관리자 처리") // TODO: 실제 사유 처리 필요
-                .adminId(vo.requesterId())
-                .adminName("관리자") // TODO: 실제 관리자 이름 조회 필요
+                .reason(reason)
+                .adminId(adminId)
+                .adminName(adminName)
                 .processedAt(vo.updatedAt())
                 .build();
     }
