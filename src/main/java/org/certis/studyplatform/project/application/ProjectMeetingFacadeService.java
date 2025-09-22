@@ -9,6 +9,7 @@ import org.certis.studyplatform.project.application.object.command.UpdateProject
 import org.certis.studyplatform.project.application.object.query.GetAllProjectMeetingsQuery;
 import org.certis.studyplatform.project.application.object.query.GetProjectMeetingByIdQuery;
 import org.certis.studyplatform.project.application.query.ProjectMeetingQueryService;
+import org.certis.studyplatform.project.application.query.ProjectParticipantQueryService;
 import org.certis.studyplatform.project.domain.vo.*;
 import org.certis.studyplatform.project.presentation.dto.request.ProjectMeetingCreateRequestDto;
 import org.certis.studyplatform.project.presentation.dto.request.ProjectMeetingDetailRequestDto;
@@ -17,11 +18,11 @@ import org.certis.studyplatform.project.presentation.dto.request.ProjectMeetingD
 import org.certis.studyplatform.project.presentation.dto.request.ProjectMeetingAllRequestDto;
 import org.certis.studyplatform.project.presentation.dto.response.ProjectMeetingDetailResponseDto;
 import org.certis.studyplatform.project.presentation.dto.response.ProjectMeetingSummaryResponseDto;
-import org.certis.studyplatform.shared.security.CurrentUser;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
+import org.certis.studyplatform.project.domain.ProjectParticipantStatus;
 
 import java.util.Collections;
 import java.util.List;
@@ -43,6 +44,7 @@ public class ProjectMeetingFacadeService {
 
     private final ProjectMeetingCommandService projectMeetingCommandService;
     private final ProjectMeetingQueryService projectMeetingQueryService;
+    private final ProjectParticipantQueryService projectParticipantQueryService;
 
     // ================================================================
     // PROJECT MEETING OPERATIONS - 회의록 관리
@@ -89,6 +91,21 @@ public class ProjectMeetingFacadeService {
         // Query Service 호출
         ProjectMeetingDetailVo meetingVo = projectMeetingQueryService.getProjectMeetingById(query);
         
+        // 프로젝트 참가자 ID 목록 조회 (APPROVED 상태만)
+        Pageable pageable = PageRequest.of(0, Integer.MAX_VALUE);
+        Page<ProjectParticipantSummaryVo> participants = projectParticipantQueryService.getParticipantsByProject(
+                meetingVo.projectId(), ProjectParticipantStatus.APPROVED, pageable);
+        List<Long> participantIds = participants.getContent().stream()
+                .map(ProjectParticipantSummaryVo::memberId)
+                .toList();
+        
+        // 작성자 이름 조회 (참가자 목록에서 찾기)
+        String writerName = participants.getContent().stream()
+                .filter(p -> p.memberId().equals(meetingVo.writerId()))
+                .findFirst()
+                .map(ProjectParticipantSummaryVo::memberName)
+                .orElse("알 수 없음");
+        
         // VO → DTO 변환
         ProjectMeetingDetailResponseDto responseDto = ProjectMeetingDetailResponseDto.builder()
                 .id(meetingVo.id())
@@ -96,9 +113,9 @@ public class ProjectMeetingFacadeService {
                 .title(meetingVo.title())
                 .content(meetingVo.content())
                 .participantNumber(meetingVo.participantNumber())
-                .participantIds(java.util.Collections.emptyList()) // TODO: 실제 참가자 ID 목록 조회 필요
+                .participantIds(participantIds)
                 .writerId(meetingVo.writerId())
-                .writerName("알 수 없음")
+                .writerName(writerName)
                 .createdAt(meetingVo.createdAt())
                 .updatedAt(meetingVo.updatedAt())
                 .isEditable(meetingVo.isEditable())
@@ -192,6 +209,39 @@ public class ProjectMeetingFacadeService {
         log.info("MeetingFacade: Found {} meetings for project - ID: {}", result.getTotalElements(), request.getProjectId());
         
         return result;
+    }
+
+    /**
+     * 프로젝트 회의록 목록 조회 (List 반환)
+     *
+     * @param projectId 프로젝트 ID
+     * @return 회의록 목록 (List)
+     */
+    public List<ProjectMeetingSummaryResponseDto> getProjectMeetings(Long projectId) {
+        log.info("MeetingFacade: Getting meetings for project - ID: {}", projectId);
+
+        // 전체 조회를 위한 Pageable 생성
+        Pageable pageable = PageRequest.of(0, Integer.MAX_VALUE);
+        GetAllProjectMeetingsQuery query = GetAllProjectMeetingsQuery.of(projectId, pageable);
+        
+        // Query Service 호출
+        ProjectMeetingPageResultVo meetingVos = projectMeetingQueryService.getAllProjectMeetings(query);
+        
+        // VO → DTO 변환 (List로 변환)
+        List<ProjectMeetingSummaryResponseDto> meetings = meetingVos.meetings().getContent().stream()
+            .map(vo -> ProjectMeetingSummaryResponseDto.builder()
+                .id(vo.id())
+                .title(vo.title())
+                .participantNumber(vo.participantNumber())
+                .creatorName(vo.creatorName())
+                .createdAt(vo.createdAt())
+                .isEditable(vo.isEditable())
+                .links(vo.hasLinks() ? createMockLinks(vo.safeLinkCount()) : Collections.emptyList())
+                .build())
+            .toList();
+
+        log.info("MeetingFacade: Found {} meetings for project - ID: {}", meetings.size(), projectId);
+        return meetings;
     }
 
     /**

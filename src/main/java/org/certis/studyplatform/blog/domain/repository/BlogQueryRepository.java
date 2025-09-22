@@ -92,4 +92,21 @@ public interface BlogQueryRepository {
      * @return 블로그 목록
      */
     Page<BlogSummaryVo> findByPublicStatus(Boolean isPublic, Pageable pageable);
+
+    /**
+     * 회원별 작성 블로그 목록 조회
+     *
+     * @param memberId 회원 ID
+     * @param pageable 페이징 정보
+     * @return 블로그 목록
+     */
+    Page<BlogSummaryVo> findByMemberId(Long memberId, Pageable pageable);
+
+    /**
+     * 회원별 작성 블로그 수 조회
+     *
+     * @param memberId 회원 ID
+     * @return 블로그 수
+     */
+    long countByMemberId(Long memberId);
 }

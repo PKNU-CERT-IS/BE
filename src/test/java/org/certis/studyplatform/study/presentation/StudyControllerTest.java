@@ -82,6 +82,7 @@ class StudyControllerTest {
     void setUp() {
         System.out.println("🔧 테스트 데이터 설정 시작");
         // 데이터 충돌 방지: 관련 테이블 초기화
+        dsl.execute("TRUNCATE TABLE study_attached RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE study RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
 
@@ -386,6 +387,153 @@ class StudyControllerTest {
         System.out.println("✅ 대용량 데이터 페이징 성능 테스트 성공 - 실행시간: " + executionTime + "ms");
     }
 
+    @Test
+    @Order(300)
+    @DisplayName("✅ 스터디 상세 조회 - 첨부파일이 존재하면 배열에 채워진다")
+    void should_return_attachments_in_study_detail_when_exist() throws Exception {
+        // Given
+        OffsetDateTime now = OffsetDateTime.now();
+
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, TEST_STUDY_ID)
+                .set(STUDY.TITLE, TEST_STUDY_TITLE)
+                .set(STUDY.DESCRIPTION, TEST_STUDY_DESCRIPTION)
+                .set(STUDY.CONTENT, TEST_STUDY_CONTENT)
+                .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY.CATEGORY, "웹 개발")
+                .set(STUDY.SUBCATEGORY, "풀스택")
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(STUDY.STARTED_AT, now.plusDays(1))
+                .set(STUDY.ENDED_AT, now.plusDays(30))
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .execute();
+
+        createTestAttachedFileInDatabase(TEST_STUDY_ID, "spec.pdf", "pdf", "12345", "https://s3.example.com/spec.pdf");
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/study/detail")
+                        .param("studyId", TEST_STUDY_ID.toString()))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.attachments").isArray())
+                .andExpect(jsonPath("$.data.attachments.length()").value(1))
+                .andExpect(jsonPath("$.data.attachments[0].attachedUrl").value("https://s3.example.com/spec.pdf"));
+    }
+
+    @Test
+    @Order(301)
+    @DisplayName("✅ 스터디 목록 조회 - 첨부파일 배열이 포함된다")
+    void should_return_attachments_in_study_list_when_exist() throws Exception {
+        // Given
+        OffsetDateTime now = OffsetDateTime.now();
+
+        // 최신 정렬 기준에 따라 첫 번째 요소가 되도록 ID=1이 가장 최근
+        for (int i = 1; i <= 3; i++) {
+            dsl.insertInto(STUDY)
+                    .set(STUDY.ID, (long) i)
+                    .set(STUDY.TITLE, "스터디 " + i)
+                    .set(STUDY.DESCRIPTION, "스터디 " + i + " 설명")
+                    .set(STUDY.CONTENT, "스터디 " + i + " 내용")
+                    .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                    .set(STUDY.CATEGORY, "웹 개발")
+                    .set(STUDY.SUBCATEGORY, "풀스택")
+                    .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                    .set(STUDY.STARTED_AT, now.plusDays(i))
+                    .set(STUDY.ENDED_AT, now.plusDays(30 + i))
+                    .set(STUDY.CREATED_AT, now.minusHours(i))
+                    .set(STUDY.UPDATED_AT, now.minusHours(i))
+                    .execute();
+        }
+
+        // ID=1 스터디에 첨부파일 추가 (목록 첫 요소가 됨)
+        createTestAttachedFileInDatabase(1L, "list-spec.pdf", "pdf", "7777", "https://s3.example.com/list-spec.pdf");
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/study")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content[0].attachments").isArray())
+                .andExpect(jsonPath("$.data.content[0].attachments.length()").value(1))
+                .andExpect(jsonPath("$.data.content[0].attachments[0].attachedUrl").value("https://s3.example.com/list-spec.pdf"));
+    }
+
+    @Test
+    @Order(302)
+    @DisplayName("✅ 스터디 상세 조회 - 이미지 첨부가 있으면 thumbnailUrl이 채워진다")
+    void should_return_thumbnailUrl_in_study_detail_when_image_attachment_exists() throws Exception {
+        // Given
+        OffsetDateTime now = OffsetDateTime.now();
+
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, TEST_STUDY_ID)
+                .set(STUDY.TITLE, TEST_STUDY_TITLE)
+                .set(STUDY.DESCRIPTION, TEST_STUDY_DESCRIPTION)
+                .set(STUDY.CONTENT, TEST_STUDY_CONTENT)
+                .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY.CATEGORY, "웹 개발")
+                .set(STUDY.SUBCATEGORY, "풀스택")
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(STUDY.STARTED_AT, now.plusDays(1))
+                .set(STUDY.ENDED_AT, now.plusDays(30))
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .execute();
+
+        // 이미지와 비이미지 첨부를 함께 추가했을 때 첫 이미지의 URL이 썸네일이 됨
+        createTestAttachedFileInDatabase(TEST_STUDY_ID, "문서.pdf", "pdf", "10000", "https://s3.example.com/doc.pdf");
+        createTestAttachedFileInDatabase(TEST_STUDY_ID, "썸네일.png", "png", "2048", "https://s3.example.com/thumb.png");
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/study/detail")
+                        .param("studyId", TEST_STUDY_ID.toString()))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.thumbnailUrl").value("https://s3.example.com/thumb.png"));
+    }
+
+    @Test
+    @Order(303)
+    @DisplayName("✅ 스터디 목록 조회 - 이미지 첨부가 있으면 thumbnailUrl이 채워진다")
+    void should_return_thumbnailUrl_in_study_list_when_image_attachment_exists() throws Exception {
+        // Given
+        OffsetDateTime now = OffsetDateTime.now();
+
+        for (int i = 1; i <= 2; i++) {
+            dsl.insertInto(STUDY)
+                    .set(STUDY.ID, (long) i)
+                    .set(STUDY.TITLE, "스터디 " + i)
+                    .set(STUDY.DESCRIPTION, "스터디 " + i + " 설명")
+                    .set(STUDY.CONTENT, "스터디 " + i + " 내용")
+                    .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                    .set(STUDY.CATEGORY, "웹 개발")
+                    .set(STUDY.SUBCATEGORY, "풀스택")
+                    .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                    .set(STUDY.STARTED_AT, now.plusDays(i))
+                    .set(STUDY.ENDED_AT, now.plusDays(30 + i))
+                    .set(STUDY.CREATED_AT, now.minusHours(i))
+                    .set(STUDY.UPDATED_AT, now.minusHours(i))
+                    .execute();
+        }
+
+        // ID=1은 이미지 첨부 포함, ID=2는 비이미지 첨부만
+        createTestAttachedFileInDatabase(1L, "표지.jpg", "jpg", "4096", "https://s3.example.com/cover.jpg");
+        createTestAttachedFileInDatabase(2L, "문서.pdf", "pdf", "10000", "https://s3.example.com/only-doc.pdf");
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/study")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content[0].thumbnailUrl").value("https://s3.example.com/cover.jpg"))
+                .andExpect(jsonPath("$.data.content[1].thumbnailUrl").doesNotExist());
+    }
+
     // =================================================================
     // 🛠️ 헬퍼 메서드들
     // =================================================================
@@ -528,6 +676,20 @@ class StudyControllerTest {
                     .set(STUDY.UPDATED_AT, now.minusHours(i))
                     .execute();
         }
+    }
+
+    private void createTestAttachedFileInDatabase(Long studyId, String name, String type, String size, String url) {
+        OffsetDateTime now = OffsetDateTime.now();
+        dsl.insertInto(STUDY_ATTACHED)
+                .set(STUDY_ATTACHED.STUDY_ID, studyId)
+                .set(STUDY_ATTACHED.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY_ATTACHED.NAME, name)
+                .set(STUDY_ATTACHED.TYPE, type)
+                .set(STUDY_ATTACHED.SIZE, size)
+                .set(STUDY_ATTACHED.ATTACHED_URL, url)
+                .set(STUDY_ATTACHED.CREATED_AT, now)
+                .set(STUDY_ATTACHED.UPDATED_AT, now)
+                .execute();
     }
 
     /**
@@ -955,5 +1117,97 @@ class StudyControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.data.id").value(studyId))
                 .andExpect(jsonPath("$.data.status").value("READY")); // 준비 중 상태 확인
+    }
+
+    @Test
+    @Order(106)
+    @DisplayName("✅ 스터디 고급 검색 - status 필터로 상태별로 필터링된다")
+    void should_filter_by_status_in_advanced_search() throws Exception {
+        // Given: 서로 다른 상태의 스터디 3개 생성
+        OffsetDateTime now = OffsetDateTime.now();
+
+        // READY: 미래 시작/미래 종료
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, 101L)
+                .set(STUDY.TITLE, "READY 스터디")
+                .set(STUDY.DESCRIPTION, "미래 스터디")
+                .set(STUDY.CONTENT, "내용")
+                .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY.CATEGORY, "CS")
+                .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(STUDY.STARTED_AT, now.plusDays(5))
+                .set(STUDY.ENDED_AT, now.plusDays(35))
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .execute();
+
+        // INPROGRESS: 과거 시작/미래 종료
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, 102L)
+                .set(STUDY.TITLE, "INPROGRESS 스터디")
+                .set(STUDY.DESCRIPTION, "진행중 스터디")
+                .set(STUDY.CONTENT, "내용")
+                .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY.CATEGORY, "CS")
+                .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(STUDY.STARTED_AT, now.minusDays(1))
+                .set(STUDY.ENDED_AT, now.plusDays(20))
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .execute();
+
+        // COMPLETED: 과거 시작/과거 종료
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, 103L)
+                .set(STUDY.TITLE, "COMPLETED 스터디")
+                .set(STUDY.DESCRIPTION, "완료 스터디")
+                .set(STUDY.CONTENT, "내용")
+                .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY.CATEGORY, "CS")
+                .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(STUDY.STARTED_AT, now.minusDays(10))
+                .set(STUDY.ENDED_AT, now.minusDays(1))
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .execute();
+
+        // When & Then: READY 필터
+        mockMvc.perform(get("/api/v1/study/search")
+                        .param("status", "READY")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content.length()").value(1))
+                .andExpect(jsonPath("$.data.content[0].id").value(101L))
+                .andExpect(jsonPath("$.data.content[0].status").value("READY"));
+
+        // When & Then: INPROGRESS 필터
+        mockMvc.perform(get("/api/v1/study/search")
+                        .param("status", "INPROGRESS")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content.length()").value(1))
+                .andExpect(jsonPath("$.data.content[0].id").value(102L))
+                .andExpect(jsonPath("$.data.content[0].status").value("INPROGRESS"));
+
+        // When & Then: COMPLETED 필터
+        mockMvc.perform(get("/api/v1/study/search")
+                        .param("status", "COMPLETED")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content.length()").value(1))
+                .andExpect(jsonPath("$.data.content[0].id").value(103L))
+                .andExpect(jsonPath("$.data.content[0].status").value("COMPLETED"));
     }
 }

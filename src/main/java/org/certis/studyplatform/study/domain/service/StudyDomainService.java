@@ -190,14 +190,15 @@ public class StudyDomainService {
      * 복합 검색 조건으로 스터디 검색 (고급 검색 지원)
      */
     public Page<StudySummaryVo> searchStudiesByCriteria(SearchStudiesQuery query) {
-        log.info("Domain: Searching studies from query - keyword: {}, category: {}, status: {}",
-                query.keyword(), query.category(), query.status());
+        log.info("Domain: Searching studies from query - keyword: {}, category: {}, semester: {}, status: {}",
+                query.keyword(), query.category(), query.semester(), query.status());
 
         // Query를 StudySearchCriteria로 변환 (고급 검색 필드 포함)
         StudySearchCriteriaVo criteria = StudySearchCriteriaVo.ofAdvanced(
                 query.keyword(),
                 query.category(),
                 query.subCategory(),
+                query.semester(),
                 query.status()
         );
 

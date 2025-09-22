@@ -173,6 +173,15 @@ public class BlogInfrastructureMapper {
      * JOIN된 참조 제목 정보 포함, ViewCount는 데이터베이스에서 조회
      * category는 String으로 직접 사용
      */
+    public BlogSummaryVo toSummaryVoFromRecord(Record record) {
+        return toBlogSummaryVoFromRecord(record);
+    }
+
+    /**
+     * jOOQ Record를 BlogSummaryVo로 변환 (목록 조회용)
+     * JOIN된 참조 제목 정보 포함, ViewCount는 데이터베이스에서 조회
+     * category는 String으로 직접 사용
+     */
     public BlogSummaryVo toBlogSummaryVoFromRecord(Record record) {
         if (record == null) {
             return null;
@@ -220,7 +229,11 @@ public class BlogInfrastructureMapper {
                 creatorName,
                 referenceType,
                 referenceTitle,
-                views
+                views,
+                studyId,
+                projectId,
+                studyTitle,
+                projectTitle
         );
     }
 
@@ -364,7 +377,11 @@ public class BlogInfrastructureMapper {
                 null, // blogCreatorName은 별도 조회 필요
                 referenceType,
                 null, // referenceTitle은 별도 조회 필요
-                null // views는 별도 조회 필요
+                null, // views는 별도 조회 필요
+                entity.getStudyId(),
+                entity.getProjectId(),
+                null, // studyTitle은 별도 조회 필요
+                null  // projectTitle은 별도 조회 필요
         );
     }
 
@@ -386,7 +403,11 @@ public class BlogInfrastructureMapper {
                 blogVo.creatorName(),
                 blogVo.referenceType(),
                 blogVo.referenceTitle(),
-                null // views는 BlogVo에 없음
+                null, // views는 BlogVo에 없음
+                null, // studyId
+                null, // projectId
+                null, // studyTitle
+                null  // projectTitle
         );
     }
 

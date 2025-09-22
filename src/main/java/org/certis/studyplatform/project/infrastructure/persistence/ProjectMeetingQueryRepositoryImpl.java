@@ -2,8 +2,6 @@ package org.certis.studyplatform.project.infrastructure.persistence;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.certis.studyplatform.exception.DomainException;
-import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.project.domain.repository.ProjectMeetingQueryRepository;
 import org.certis.studyplatform.project.domain.vo.*;
 import org.certis.studyplatform.project.infrastructure.mapper.ProjectMeetingInfrastructureMapper;
@@ -80,7 +78,7 @@ public class ProjectMeetingQueryRepositoryImpl implements ProjectMeetingQueryRep
                         pm.ID,
                         pm.TITLE,
                         pm.PARTICIPANTS,
-                        pm.MEMBER_ID,
+                        pm.MEMBER_ID.as("writer_id"),
                         pm.CREATED_AT,
                         m.NAME.as("writer_name")
                 )

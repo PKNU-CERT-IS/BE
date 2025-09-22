@@ -249,6 +249,7 @@ public class ProjectInfrastructureMapper {
                 isParticipantable,
                 record.get(PROJECT.GITHUB_URL), // githubUrl
                 externalUrlVo,
+                record.get(PROJECT.THUMBNAIL_URL),
                 record.get(PROJECT.DEMO_URL), // demoUrl
                 record.get(PROJECT.MAX_PARTICIPANTS_NUMBER), // maxParticipantNumber
                 record.get("current_participants", Integer.class) // currentParticipantNumber
@@ -552,6 +553,8 @@ public class ProjectInfrastructureMapper {
                 record.getValue("project_id", Long.class),
                 record.getValue("member_id", Long.class),
                 record.getValue("member_name", String.class),
+                record.getValue("member_grade", org.certis.studyplatform.member.domain.MemberGrade.class),
+                record.getValue("project_title", String.class),
                 record.getValue("status", org.certis.studyplatform.project.domain.ProjectParticipantStatus.class),
                 record.getValue("created_at", java.time.OffsetDateTime.class)
         );
@@ -570,6 +573,8 @@ public class ProjectInfrastructureMapper {
                 entity.getProjectId(),
                 entity.getMemberId(),
                 null, // memberName은 별도 조회 필요
+                null, // memberGrade는 별도 조회 필요
+                null, // projectTitle은 별도 조회 필요
                 entity.getStatus(),
                 entity.getCreatedAt()
         );

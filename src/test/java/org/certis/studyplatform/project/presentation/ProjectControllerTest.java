@@ -1172,4 +1172,46 @@ class ProjectControllerTest {
                 .andExpect(jsonPath("$.data.id").value(projectId))
                 .andExpect(jsonPath("$.data.status").value("READY")); // 준비 중 상태 확인
     }
+
+    @Test
+    @Order(300)
+    @DisplayName("✅ 프로젝트 상세 조회 - 첨부파일이 존재하면 배열에 채워진다")
+    void should_return_attachments_in_project_detail_when_exist() throws Exception {
+        // Given
+        OffsetDateTime now = OffsetDateTime.now();
+        dsl.insertInto(PROJECT)
+                .set(PROJECT.ID, TEST_PROJECT_ID)
+                .set(PROJECT.TITLE, TEST_PROJECT_TITLE)
+                .set(PROJECT.DESCRIPTION, TEST_PROJECT_DESCRIPTION)
+                .set(PROJECT.CONTENT, TEST_PROJECT_CONTENT)
+                .set(PROJECT.MEMBER_ID, TEST_MEMBER_ID)
+                .set(PROJECT.CATEGORY, TEST_PROJECT_CATEGORY)
+                .set(PROJECT.SUBCATEGORY, TEST_PROJECT_SUBCATEGORY)
+                .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(PROJECT.STARTED_AT, now.plusDays(1))
+                .set(PROJECT.ENDED_AT, now.plusDays(30))
+                .set(PROJECT.CREATED_AT, now)
+                .set(PROJECT.UPDATED_AT, now)
+                .execute();
+
+        dsl.insertInto(PROJECT_ATTACHED)
+                .set(PROJECT_ATTACHED.PROJECT_ID, TEST_PROJECT_ID)
+                .set(PROJECT_ATTACHED.MEMBER_ID, TEST_MEMBER_ID)
+                .set(PROJECT_ATTACHED.NAME, "spec.pdf")
+                .set(PROJECT_ATTACHED.TYPE, "application/pdf")
+                .set(PROJECT_ATTACHED.SIZE, "12345")
+                .set(PROJECT_ATTACHED.ATTACHED_URL, "https://s3.example.com/spec.pdf")
+                .set(PROJECT_ATTACHED.CREATED_AT, now)
+                .set(PROJECT_ATTACHED.UPDATED_AT, now)
+                .execute();
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/project/detail")
+                        .param("projectId", TEST_PROJECT_ID.toString()))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.attachments").isArray())
+                .andExpect(jsonPath("$.data.attachments.length()").value(1))
+                .andExpect(jsonPath("$.data.attachments[0].attachedUrl").value("https://s3.example.com/spec.pdf"));
+    }
 }

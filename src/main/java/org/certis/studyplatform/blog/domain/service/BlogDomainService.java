@@ -448,7 +448,11 @@ public class BlogDomainService {
                         blog.blogCreatorName(),
                         referenceType,
                         referenceTitle,
-                        blog.views() // 기존 views 값 유지
+                        blog.views(), // 기존 views 값 유지
+                        null, // studyId
+                        null, // projectId
+                        null, // studyTitle
+                        null  // projectTitle
                 );
             }
 

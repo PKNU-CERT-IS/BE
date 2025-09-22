@@ -52,6 +52,8 @@ public class StudySummaryResponseDto {
 
     private Integer maxParticipantNumber;
 
+    private String thumbnailUrl;
+
     private List<StudyAttachedResponseDto> attachments;
 
     // toString for logging

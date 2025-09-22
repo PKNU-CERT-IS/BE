@@ -3,7 +3,6 @@ package org.certis.studyplatform.project.domain.vo;
 import org.certis.studyplatform.member.domain.MemberGrade;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 
 /**
  * Project Summary Value Object
@@ -25,6 +24,7 @@ public record ProjectSummaryVo(
     boolean isParticipantable,
     String githubUrl,
     ExternalUrlVo externalUrl,
+    String thumbnailUrl,
     String demoUrl,
     Integer maxParticipantNumber,
     Integer currentParticipantNumber
@@ -44,6 +44,7 @@ public record ProjectSummaryVo(
         boolean isParticipantable,
         String githubUrl,
         ExternalUrlVo externalUrl,
+        String thumbnailUrl,
         String demoUrl,
         Integer maxParticipantNumber,
         Integer currentParticipantNumber
@@ -52,7 +53,7 @@ public record ProjectSummaryVo(
             id, title, description, category, subcategory,
             startDate, endDate, projectCreatorName, projectCreatorGrade,
             semester, status, isParticipantable, githubUrl, externalUrl,
-            demoUrl, maxParticipantNumber, currentParticipantNumber
+            thumbnailUrl, demoUrl, maxParticipantNumber, currentParticipantNumber
         );
     }
 }

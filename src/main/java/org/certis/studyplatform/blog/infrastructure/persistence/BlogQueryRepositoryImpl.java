@@ -460,4 +460,103 @@ public class BlogQueryRepositoryImpl implements BlogQueryRepository {
                 })
                 .toArray(OrderField[]::new);
     }
+
+    @Override
+    public Page<BlogSummaryVo> findByMemberId(Long memberId, Pageable pageable) {
+        log.info("jOOQ: Finding blogs by member - memberId: {}", memberId);
+
+        var b = BLOG.as("b");
+        var m = MEMBER.as("m");
+        var s = STUDY.as("s");
+        var p = PROJECT.as("p");
+
+        Condition condition = b.MEMBER_ID.eq(memberId).and(b.DELETED_AT.isNull());
+
+        // 총 개수 조회
+        int total = dsl.selectCount()
+                .from(b)
+                .where(condition)
+                .fetchOne(0, int.class);
+
+        if (total == 0) {
+            return new PageImpl<>(List.of(), pageable, 0);
+        }
+
+        // 페이징된 데이터 조회
+        List<BlogSummaryVo> blogs;
+        
+        if (pageable.isUnpaged()) {
+            // Pageable이 unpaged인 경우 페이징 없이 조회
+            blogs = dsl.select(
+                            b.ID,
+                            b.TITLE,
+                            b.DESCRIPTION,
+                            b.CATEGORY,
+                            b.STUDY_ID,
+                            b.PROJECT_ID,
+                            s.TITLE.as("study_title"),
+                            p.TITLE.as("project_title"),
+                            b.MEMBER_ID,
+                            m.NAME.as("creator_name"),
+                            b.CREATED_AT,
+                            b.UPDATED_AT,
+                            b.IS_PUBLIC,
+                            // view_count는 별도 조회 필요하므로 0으로 설정
+                            inline(0).as("view_count")
+                    )
+                    .from(b)
+                    .leftJoin(m).on(b.MEMBER_ID.eq(m.ID))
+                    .leftJoin(s).on(b.STUDY_ID.eq(s.ID).and(s.DELETED_AT.isNull()))
+                    .leftJoin(p).on(b.PROJECT_ID.eq(p.ID).and(p.DELETED_AT.isNull()))
+                    .where(condition)
+                    .orderBy(b.CREATED_AT.desc())
+                    .fetch(mapper::toSummaryVoFromRecord);
+        } else {
+            // Pageable이 페이징된 경우 limit/offset 적용
+            blogs = dsl.select(
+                            b.ID,
+                            b.TITLE,
+                            b.DESCRIPTION,
+                            b.CATEGORY,
+                            b.STUDY_ID,
+                            b.PROJECT_ID,
+                            s.TITLE.as("study_title"),
+                            p.TITLE.as("project_title"),
+                            b.MEMBER_ID,
+                            m.NAME.as("creator_name"),
+                            b.CREATED_AT,
+                            b.UPDATED_AT,
+                            b.IS_PUBLIC,
+                            // view_count는 별도 조회 필요하므로 0으로 설정
+                            inline(0).as("view_count")
+                    )
+                    .from(b)
+                    .leftJoin(m).on(b.MEMBER_ID.eq(m.ID))
+                    .leftJoin(s).on(b.STUDY_ID.eq(s.ID).and(s.DELETED_AT.isNull()))
+                    .leftJoin(p).on(b.PROJECT_ID.eq(p.ID).and(p.DELETED_AT.isNull()))
+                    .where(condition)
+                    .orderBy(b.CREATED_AT.desc())
+                    .limit(pageable.getPageSize())
+                    .offset((int) pageable.getOffset())
+                    .fetch(mapper::toSummaryVoFromRecord);
+        }
+
+        log.info("jOOQ: Found {} blogs for member {}", total, memberId);
+        return new PageImpl<>(blogs, pageable, total);
+    }
+
+    @Override
+    public long countByMemberId(Long memberId) {
+        log.info("jOOQ: Counting blogs by member - memberId: {}", memberId);
+
+        var b = BLOG.as("b");
+
+        long count = dsl.selectCount()
+                .from(b)
+                .where(b.MEMBER_ID.eq(memberId).and(b.DELETED_AT.isNull()))
+                .fetchOne(0, long.class);
+
+        log.info("jOOQ: Found {} blogs for member {}", count, memberId);
+        return count;
+    }
 }

@@ -7,6 +7,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
+import java.util.Objects;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -30,6 +31,16 @@ public class StudyApplicationDtoMapper {
             return null;
         }
 
+        String thumbnailUrl = null;
+        if (vo.attached() != null) {
+            thumbnailUrl = vo.attached().stream()
+                    .filter(a -> a.type() != null && a.type().toLowerCase().startsWith("image/"))
+                    .map(StudyAttachedVo::attachedUrl)
+                    .filter(Objects::nonNull)
+                    .findFirst()
+                    .orElse(null);
+        }
+
         return StudyDetailResponseDto.builder()
                 .id(vo.id())
                 .title(vo.title())
@@ -46,6 +57,7 @@ public class StudyApplicationDtoMapper {
                 .studyCreatorGrade(vo.creatorGrade() != null ? vo.creatorGrade().toString() : null)
                 .semester(vo.semester())
                 .status(vo.status())
+                .thumbnailUrl(thumbnailUrl)
                 .attachments(toStudyAttachedResponseDtoList(vo.attached()))
                 .meetingSummaries(toStudyMeetingSummaryResponseDtoList(vo.summaryVoList()))
                 .participantSummaries(toStudyParticipantSummaryResponseDtoListFromVo(vo.participantVoList()))
@@ -63,6 +75,16 @@ public class StudyApplicationDtoMapper {
             return null;
         }
 
+        String thumbnailUrl = null;
+        if (vo.attachedVo() != null) {
+            thumbnailUrl = vo.attachedVo().stream()
+                    .filter(a -> a.type() != null && a.type().toLowerCase().startsWith("image/"))
+                    .map(StudyAttachedVo::attachedUrl)
+                    .filter(Objects::nonNull)
+                    .findFirst()
+                    .orElse(null);
+        }
+
         return StudySummaryResponseDto.builder()
                 .id(vo.id())
                 .title(vo.title())
@@ -78,6 +100,7 @@ public class StudyApplicationDtoMapper {
                 .isParticipantable(vo.isParticipantable())
                 .currentParticipantNumber(vo.currentParticipants())
                 .maxParticipantNumber(vo.maxParticipants())
+                .thumbnailUrl(thumbnailUrl)
                 .attachments(toStudyAttachedResponseDtoList(vo.attachedVo()))
                 .build();
     }
@@ -270,6 +293,7 @@ public class StudyApplicationDtoMapper {
                 .id(vo.id())
                 .memberId(vo.memberId())
                 .memberName(vo.memberName())
+                .memberGrade(vo.memberGrade())
                 .status(vo.status())
                 .createdAt(vo.createdAt())
                 .build();

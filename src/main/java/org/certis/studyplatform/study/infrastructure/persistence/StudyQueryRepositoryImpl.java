@@ -800,6 +800,53 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
             log.debug("jOOQ: Added subcategory condition: {}", criteria.subCategory());
         }
 
+        // 학기 필터 (semester 기간 검색)
+        if (criteria.semester() != null && !criteria.semester().trim().isEmpty()) {
+            try {
+                // DateTimeUtils를 사용하여 semester 기간 파싱
+                var semesterPeriod = org.certis.studyplatform.shared.util.DateTimeUtils.parseSemesterPeriod(criteria.semester());
+
+                // 스터디 기간이 학기 기간과 겹치는 경우를 검색
+                conditions = conditions.and(
+                        s.STARTED_AT.lessOrEqual(semesterPeriod.endDate())
+                                .and(s.ENDED_AT.greaterOrEqual(semesterPeriod.startDate()))
+                );
+                log.debug("jOOQ: Added semester condition: {} to {}",
+                        semesterPeriod.startDate(), semesterPeriod.endDate());
+            } catch (IllegalArgumentException e) {
+                log.warn("jOOQ: Invalid semester format: {}", criteria.semester());
+                // 잘못된 형식의 경우 조건 무시
+            }
+        }
+
+        // 상태 필터 (StudyStatus 기반 검색 - started_at, ended_at 기반)
+        if (criteria.status() != null) {
+            OffsetDateTime now = OffsetDateTime.now();
+            switch (criteria.status()) {
+                case READY -> {
+                    // 시작 전: started_at이 현재 시간보다 미래
+                    conditions = conditions.and(s.STARTED_AT.greaterThan(now));
+                    log.debug("jOOQ: Added READY status condition (started_at > now)");
+                }
+                case INPROGRESS -> {
+                    // 진행 중: started_at <= now < ended_at
+                    conditions = conditions.and(s.STARTED_AT.lessOrEqual(now))
+                            .and(s.ENDED_AT.greaterThan(now));
+                    log.debug("jOOQ: Added INPROGRESS status condition (started_at <= now < ended_at)");
+                }
+                case COMPLETED -> {
+                    // 완료: ended_at <= now
+                    conditions = conditions.and(s.ENDED_AT.lessOrEqual(now));
+                    log.debug("jOOQ: Added COMPLETED status condition (ended_at <= now)");
+                }
+                case REJECTED -> {
+                    // 거절됨: deleted_at이 null이 아님 (삭제된 스터디)
+                    conditions = conditions.and(s.DELETED_AT.isNotNull());
+                    log.debug("jOOQ: Added REJECTED status condition (deleted_at is not null)");
+                }
+            }
+        }
+
         log.debug("jOOQ: Final conditions built: {}", conditions);
         return conditions;
     }

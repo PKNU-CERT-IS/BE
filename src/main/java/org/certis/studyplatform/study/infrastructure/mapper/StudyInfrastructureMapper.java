@@ -380,7 +380,7 @@ public class StudyInfrastructureMapper {
 
     /**
      * jOOQ Record -> StudyParticipantSummaryVo 매핑
-     * Repository에서 목록 조회 시 사용 (별칭: member_name)
+     * Repository에서 목록 조회 시 사용
      */
     public StudyParticipantSummaryVo toSummaryVoFromRecord(Record record) {
         if (record == null) {
@@ -392,6 +392,8 @@ public class StudyInfrastructureMapper {
                 record.get("study_id", Long.class),
                 record.get("member_id", Long.class),
                 record.get("member_name", String.class),
+                record.get("member_grade", org.certis.studyplatform.member.domain.MemberGrade.class),
+                record.get("study_title", String.class),
                 record.get("status", org.certis.studyplatform.study.domain.StudyParticipantStatus.class),
                 record.get("created_at", OffsetDateTime.class)
         );

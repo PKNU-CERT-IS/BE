@@ -28,7 +28,7 @@ public record StudyAttachedVo(
         if (name == null || name.trim().isEmpty()) {
             throw new DomainException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION, "invalid attached name");
         }
-        if (type == null || type.trim().isEmpty() || type.length() > 10) {
+        if (type == null || type.trim().isEmpty()) {
             throw new DomainException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION, "invalid attached type");
         }
         if (size == null || size.trim().isEmpty()) {

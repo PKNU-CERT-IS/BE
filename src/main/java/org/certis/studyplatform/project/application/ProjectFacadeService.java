@@ -33,7 +33,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.certis.studyplatform.project.presentation.dto.response.ProjectAttachedResponseDto;
 
 import org.springframework.web.multipart.MultipartFile;
 
@@ -63,6 +62,7 @@ public class ProjectFacadeService {
     @Qualifier("virtualThreadTaskExecutor")
     private final Executor virtualThreadExecutor;
     private final ProjectMeetingQueryService projectMeetingQueryService;
+    private final ProjectMeetingFacadeService projectMeetingFacadeService;
 
     // ================================================================
     // COMMAND OPERATIONS - 상태 변경 작업
@@ -253,9 +253,8 @@ public class ProjectFacadeService {
     public List<ProjectMeetingSummaryResponseDto> getProjectMeetings(Long projectId) {
         log.info("Facade: Getting meetings for project - ID: {}", projectId);
 
-        // TODO: ProjectMeetingFacadeService로 위임하거나 별도 구현 필요
-        // 임시로 빈 리스트 반환
-        var meetings = List.<ProjectMeetingSummaryResponseDto>of();
+        // ProjectMeetingFacadeService로 위임
+        List<ProjectMeetingSummaryResponseDto> meetings = projectMeetingFacadeService.getProjectMeetings(projectId);
 
         log.info("Facade: Found {} meetings for project - ID: {}", meetings.size(), projectId);
         return meetings;
@@ -279,6 +278,5 @@ public class ProjectFacadeService {
         log.info("Facade: Project ended successfully - ID: {}", endedVo.id());
         return responseDto;
     }
-
 
 }
