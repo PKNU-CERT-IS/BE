@@ -12,7 +12,7 @@ import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.mockito.Mock;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
@@ -73,7 +73,7 @@ class BlogControllerTest {
     @Autowired
     private DSLContext dsl;
 
-    @MockBean
+    @Mock
     private BlogRedisRepository blogRedisRepository; // JOOQ로 직접 데이터베이스 조작
 
     // 테스트 상수
@@ -334,6 +334,24 @@ class BlogControllerTest {
     }
 
     @Test
+    @Order(5)
+    @DisplayName("🔍 블로그 고급 검색 - page/size 누락 시 기본값 적용")
+    void searchBlogsAdvanced_DefaultPaging_WhenNoPageSizeParams() throws Exception {
+        // Given
+        createMultipleBlogsInDatabase();
+
+        // When: page/size 미전달
+        mockMvc.perform(get("/api/v1/blog/search")
+                        .param("keyword", "개발")
+                        .param("category", "웹 개발"))
+                .andDo(print())
+                // Then: 기본 페이징(page=0, size=10)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.number").value(0))
+                .andExpect(jsonPath("$.data.size").value(10));
+    }
+
+    @Test
     @Order(6)
     @DisplayName("🔗 작성 가능한 참조 목록 조회 - 블로그 작성 준비")
     void getBlogReference_AvailableReferences() throws Exception {
@@ -454,8 +472,7 @@ class BlogControllerTest {
         request.setDescription("권한이 없는 사용자의 수정 시도");
         request.setContent("무단으로 수정하려는 내용");
 
-        // When & Then: 현재 권한 검증 로직이 작동하지 않아 성공 응답
-        // TODO: 권한 검증 로직을 추가하여 작성자가 아닌 사용자의 수정을 차단하도록 수정 필요
+        // When & Then: 현재 권한 검증 로직이 작동하지 않아 성공 응답 (권한 검증 로직 추가 시 403으로 변경 예정)
         mockMvc.perform(put("/api/v1/blog/update")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))

@@ -17,8 +17,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -102,6 +100,20 @@ class MemberControllerTest {
                 .andExpect(jsonPath("$.data[0].githubUrl").exists());
 
         System.out.println("✅ 이름 검색 테스트 성공");
+    }
+
+    @Test
+    @Order(1)
+    @DisplayName("🔍 회원 검색 - page/size 누락 시 기본값 적용")
+    void searchMembers_DefaultPaging_WhenNoPageSizeParams() throws Exception {
+        // When: page/size 미전달
+        mockMvc.perform(get(BASE_URL + "/search")
+                        .param("keyword", "김"))
+                .andDo(print())
+                // Then: 기본값이 적용되어도 응답은 성공해야 함 (리스트 응답)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isArray());
+        // Member 검색은 Page가 아닌 List 반환 구조라 페이징 메타 검증은 생략
     }
 
     @Test

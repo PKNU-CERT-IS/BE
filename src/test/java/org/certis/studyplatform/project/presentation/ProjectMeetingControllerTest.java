@@ -16,6 +16,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.certis.studyplatform.shared.dto.LinkDto;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -86,7 +87,7 @@ class ProjectMeetingControllerTest {
         System.out.println("🔧 테스트 데이터 설정 시작");
         // 데이터 충돌 방지: 관련 테이블 초기화
         dsl.execute("TRUNCATE TABLE project_meeting_link RESTART IDENTITY CASCADE");
-        dsl.execute("TRUNCATE TABLE project_meETING RESTART IDENTITY CASCADE");
+        dsl.execute("TRUNCATE TABLE project_meeting RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE project_participant RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE project RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
@@ -137,7 +138,7 @@ class ProjectMeetingControllerTest {
     void createProjectMeeting_AllowsVeryLongContent() throws Exception {
         String longContent = "y".repeat(200_000);
         ProjectMeetingCreateRequestDto request = createValidMeetingRequest();
-        request.setProjectId(TEST_PROJECT_ID + 500);
+        request.setProjectId(TEST_PROJECT_ID); // 기존 프로젝트 사용
         request.setContent(longContent);
 
         mockMvc.perform(post("/api/v1/project/meeting/create")
@@ -193,20 +194,22 @@ class ProjectMeetingControllerTest {
         request.setContent("수정된 회의록 내용입니다.");
         request.setParticipantNumber(3);
         request.setLinks(List.of(
-            new org.certis.studyplatform.shared.dto.LinkDto("업데이트된 회의록", "https://example.com/updated-meeting-notes.pdf")
+            new LinkDto("업데이트된 회의록", "https://example.com/updated-meeting-notes.pdf")
         ));
 
         // When: 회의록 수정 API 호출
         mockMvc.perform(put("/api/v1/project/meeting/edit")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
-                // Then: 트랜잭션 격리로 인한 권한 검증 실패 (현실적 대응)
+                // Then: 성공적으로 수정됨
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("프로젝트 회의록이 성공적으로 수정되었습니다"));
 
-        // 참고: 권한 검증 실패로 실제 수정은 일어나지 않음
+        // Then: 데이터베이스에 실제로 수정 반영되었는지 검증
+        verifyMeetingUpdatedInDatabase(request);
         
         System.out.println("✅ 프로젝트 회의록 수정 테스트 성공");
     }
@@ -323,16 +326,16 @@ class ProjectMeetingControllerTest {
         ProjectMeetingCreateRequestDto request = createValidMeetingRequest();
         request.setProjectId(99999L); // 존재하지 않는 프로젝트 ID
 
-        // When & Then: 현재는 프로젝트 존재 검증이 없어서 성공함 (향후 개선 필요)
+        // When & Then: 프로젝트 미존재로 HTTP 404 Not Found 응답
         mockMvc.perform(post("/api/v1/project/meeting/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.statusCode").value(201))
-                .andExpect(jsonPath("$.message").value("프로젝트 회의록이 성공적으로 생성되었습니다"));
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.statusCode").value(404))
+                .andExpect(jsonPath("$.message").value("프로젝트를 찾을 수 없습니다"));
 
-        System.out.println("✅ 존재하지 않는 프로젝트 테스트 성공");
+        System.out.println("✅ 존재하지 않는 프로젝트 테스트 성공 (404 Not Found)");
     }
 
     @Test
@@ -367,7 +370,7 @@ class ProjectMeetingControllerTest {
         request.setTitle("무단 수정 시도");
         request.setContent("권한이 없는 사용자의 수정 시도");
         request.setLinks(List.of(
-            new org.certis.studyplatform.shared.dto.LinkDto("악성 링크", "https://malicious.com/unauthorized-link.pdf")
+            new LinkDto("악성 링크", "https://malicious.com/unauthorized-link.pdf")
         ));
 
         // When & Then: HTTP 403 Forbidden 응답 (권한 검증이 올바르게 작동함)
@@ -482,9 +485,9 @@ class ProjectMeetingControllerTest {
     void createProjectMeeting_WithAttachedUrl_SuccessfulLinkStorage() throws Exception {
         // Given: 첨부 URL이 포함된 유효한 회의록 생성 요청
         ProjectMeetingCreateRequestDto request = createValidMeetingRequest();
-        request.setProjectId(TEST_PROJECT_ID + 100); // 고유한 프로젝트 ID
+        request.setProjectId(TEST_PROJECT_ID); // 기존 프로젝트 사용
         request.setLinks(List.of(
-            new org.certis.studyplatform.shared.dto.LinkDto("회의록 문서", "https://docs.google.com/document/d/test-meeting-notes")
+            new LinkDto("회의록 문서", "https://docs.google.com/document/d/test-meeting-notes")
         ));
 
         // When: 회의록 생성 API 호출
@@ -513,7 +516,7 @@ class ProjectMeetingControllerTest {
     void createProjectMeeting_WithoutAttachedUrl_NoLinkStorage() throws Exception {
         // Given: 첨부 URL이 없는 회의록 생성 요청
         ProjectMeetingCreateRequestDto request = createValidMeetingRequest();
-        request.setProjectId(TEST_PROJECT_ID + 200); // 고유한 프로젝트 ID
+        request.setProjectId(TEST_PROJECT_ID); // 기존 프로젝트 사용
         request.setLinks(null); // 첨부 링크 없음
 
         // When: 회의록 생성 API 호출
@@ -539,13 +542,13 @@ class ProjectMeetingControllerTest {
     void createProjectMeeting_WithMultipleLinks_SuccessfulMultipleLinkStorage() throws Exception {
         // Given: 여러 링크가 포함된 회의록 생성 요청
         ProjectMeetingCreateRequestDto request = createValidMeetingRequest();
-        request.setProjectId(TEST_PROJECT_ID + 300); // 고유한 프로젝트 ID
+        request.setProjectId(TEST_PROJECT_ID); // 기존 프로젝트 사용
         
         // 여러 링크 설정
-        List<org.certis.studyplatform.shared.dto.LinkDto> multipleLinks = List.of(
-            new org.certis.studyplatform.shared.dto.LinkDto("회의록 문서", "https://docs.google.com/document/d/meeting-notes"),
-            new org.certis.studyplatform.shared.dto.LinkDto("발표 자료", "https://docs.google.com/presentation/d/presentation"),
-            new org.certis.studyplatform.shared.dto.LinkDto("녹화 영상", "https://youtube.com/watch?v=example")
+        List<LinkDto> multipleLinks = List.of(
+            new LinkDto("회의록 문서", "https://docs.google.com/document/d/meeting-notes"),
+            new LinkDto("발표 자료", "https://docs.google.com/presentation/d/presentation"),
+            new LinkDto("녹화 영상", "https://youtube.com/watch?v=example")
         );
         request.setLinks(multipleLinks);
 
@@ -575,7 +578,7 @@ class ProjectMeetingControllerTest {
     void createProjectMeeting_WithEmptyLinksArray_NoLinkStorage() throws Exception {
         // Given: 빈 링크 배열이 포함된 회의록 생성 요청
         ProjectMeetingCreateRequestDto request = createValidMeetingRequest();
-        request.setProjectId(TEST_PROJECT_ID + 400); // 고유한 프로젝트 ID
+        request.setProjectId(TEST_PROJECT_ID); // 기존 프로젝트 사용
         request.setLinks(List.of()); // 빈 링크 배열
 
         // When: 회의록 생성 API 호출
@@ -591,7 +594,7 @@ class ProjectMeetingControllerTest {
 
         // Then: 데이터베이스에 회의록은 저장되었지만 링크는 저장되지 않았는지 검증
         verifyMeetingCreatedInDatabase(request);
-        verifyNoLinkCreatedForProject(TEST_PROJECT_ID + 400);
+        verifyNoLinkCreatedForProject(TEST_PROJECT_ID);
         
         System.out.println("✅ 빈 링크 배열 회의록 생성 테스트 성공");
     }
@@ -766,7 +769,7 @@ class ProjectMeetingControllerTest {
         request.setContent("수정된 회의록 내용");
         request.setParticipantNumber(3); // participants 대신 participantNumber 사용
         request.setLinks(List.of(
-            new org.certis.studyplatform.shared.dto.LinkDto("새로운 링크", "https://new-link.com/updated-document.pdf")
+            new LinkDto("새로운 링크", "https://new-link.com/updated-document.pdf")
         ));
 
         // When: 회의록 수정 API 호출
@@ -796,9 +799,9 @@ class ProjectMeetingControllerTest {
         request.setParticipantNumber(2);
         
         // 새로운 links 구조 사용
-        List<org.certis.studyplatform.shared.dto.LinkDto> links = List.of(
-            new org.certis.studyplatform.shared.dto.LinkDto("회의록 문서", "https://example.com/meeting-notes.pdf"),
-            new org.certis.studyplatform.shared.dto.LinkDto("발표 자료", "https://example.com/presentation.pdf")
+        List<LinkDto> links = List.of(
+            new LinkDto("회의록 문서", "https://example.com/meeting-notes.pdf"),
+            new LinkDto("발표 자료", "https://example.com/presentation.pdf")
         );
         request.setLinks(links);
         return request;

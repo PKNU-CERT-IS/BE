@@ -247,6 +247,23 @@ class ProjectControllerTest {
     }
 
     @Test
+    @Order(5)
+    @DisplayName("🔍 프로젝트 고급 검색 - page/size 누락 시 기본값 적용")
+    void searchProjects_DefaultPaging_WhenNoPageSizeParams() throws Exception {
+        // Given
+        createSearchableProjectsInDatabase();
+
+        // When: page/size 미전달
+        mockMvc.perform(get("/api/v1/project/search")
+                        .param("keyword", "플랫폼"))
+                .andDo(print())
+                // Then: 기본 페이징(page=0, size=10)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.number").value(0))
+                .andExpect(jsonPath("$.data.size").value(10));
+    }
+
+    @Test
     @Order(6)
     @DisplayName("🗑️ 프로젝트 삭제 - 권한 있는 사용자의 성공적인 삭제")
     @WithMockUser(username = "user1", roles = {"UPSOLVER"})
@@ -372,7 +389,6 @@ class ProjectControllerTest {
         request.setDescription("권한이 없는 사용자의 수정 시도");
 
         // When & Then: HTTP 400 BadRequest 응답
-        // TODO: 하드코딩 변경에 따라 변경
         mockMvc.perform(put("/api/v1/project/update")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))

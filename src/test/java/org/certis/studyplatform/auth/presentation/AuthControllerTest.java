@@ -8,10 +8,10 @@ import org.certis.studyplatform.config.TestEmbeddedPostgresConfig;
 import org.certis.studyplatform.member.domain.MemberRole;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.*;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,8 +20,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.certis.studyplatform.shared.security.JwtTokenProvider; // ✅ 추가
-import static org.mockito.Mockito.*; // ✅ 추가
+import static org.mockito.Mockito.*;
 
 
 import java.time.OffsetDateTime;
@@ -47,7 +46,7 @@ class AuthControllerTest {
     @Autowired private DSLContext dsl; // JOOQ를 통한 직접 DB 조작
     @Autowired private PasswordEncoder passwordEncoder; // 비밀번호 암호화
 
-    @MockBean
+    @Mock
     private RedisRefreshTokenRepository redisRefreshTokenRepository; // Redis Mock 처리
 
     // 테스트 상수 정의
@@ -118,7 +117,6 @@ class AuthControllerTest {
 
     @Test
     @Order(3)
-        // TODO : 비밀번호 검증 로직 주석처리 제거 현재는 실패가 정상
     void login_Failure_InvalidPassword() throws Exception {
         // 잘못된 비밀번호로 로그인 실패 테스트
         LoginRequestDto request = LoginRequestDto.builder()
@@ -367,7 +365,8 @@ class AuthControllerTest {
     }
 
 
-    private void setupAdminUser() {
+    // Removed unused setupAdminUser helper to avoid linter warnings
+    /* private void setupAdminUser() {
         // 관리자 권한 테스트용 사용자 생성
         Long adminId = 10L;
         String adminAccountNumber = "20200001";
@@ -403,7 +402,7 @@ class AuthControllerTest {
                 .set(AUTH.CREATED_AT, OffsetDateTime.now())
                 .set(AUTH.UPDATED_AT, OffsetDateTime.now())
                 .execute();
-    }
+    } */
 
 
     private void cleanupTestData() {

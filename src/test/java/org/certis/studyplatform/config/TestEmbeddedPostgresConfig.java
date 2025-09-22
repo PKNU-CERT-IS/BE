@@ -6,7 +6,7 @@ import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.mockito.Mock;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
@@ -140,12 +140,12 @@ public class TestEmbeddedPostgresConfig {
     }
 
     // Redis 관련 Bean을 Mock으로 처리
-    @MockBean
+    @Mock
     private RedisConnectionFactory redisConnectionFactory;
 
-    @MockBean 
+    @Mock
     private RedisTemplate<String, Object> redisTemplate;
 
-    @MockBean
+    @Mock
     private ReactiveRedisConnectionFactory reactiveRedisConnectionFactory;
 }

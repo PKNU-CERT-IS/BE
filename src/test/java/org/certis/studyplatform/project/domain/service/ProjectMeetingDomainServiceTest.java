@@ -58,6 +58,9 @@ class ProjectMeetingDomainServiceTest {
     @Mock
     private ProjectParticipantQueryRepository projectParticipantQueryRepository;
 
+    @Mock
+    private org.certis.studyplatform.project.domain.repository.ProjectQueryRepository projectQueryRepository;
+
     private ProjectMeetingDomainService domainService;
 
     @BeforeEach
@@ -67,7 +70,8 @@ class ProjectMeetingDomainServiceTest {
                 projectMeetingQueryRepository,
                 projectMeetingLinkCommandRepository,
                 projectMeetingLinkQueryRepository,
-                projectParticipantQueryRepository
+                projectParticipantQueryRepository,
+                projectQueryRepository
         );
     }
 

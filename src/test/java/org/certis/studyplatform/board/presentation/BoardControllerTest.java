@@ -140,7 +140,26 @@ public class BoardControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value(ResponseStatus.BOARD_SEARCH_SUCCESS.getMessage()))
                 .andExpect(jsonPath("$.data.content").isArray())
-                .andExpect(jsonPath("$.data.totalElements").exists());
+                .andExpect(jsonPath("$.data.totalElements").exists())
+                // 기본 페이징(page=0, size=10) 확인
+                .andExpect(jsonPath("$.data.number").value(0))
+                .andExpect(jsonPath("$.data.size").value(10));
+    }
+
+    @Test
+    @Order(3)
+    @WithMockUser(username = "user1", roles = "UPSOLVER")
+    @DisplayName("3️⃣-기본 페이징 확인 - 명시적 page/size 없이 size=10, page=0")
+    @Transactional(readOnly = true)
+    void searchBoards_DefaultPaging_WhenNoPageSizeParams() throws Exception {
+        mockMvc.perform(get("/api/v1/board/search")
+                        .param("keyword", "테스트"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.message").value(ResponseStatus.BOARD_SEARCH_SUCCESS.getMessage()))
+                .andExpect(jsonPath("$.data.number").value(0))
+                .andExpect(jsonPath("$.data.size").value(10));
     }
 
     @Test

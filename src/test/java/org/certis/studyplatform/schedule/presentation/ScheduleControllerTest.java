@@ -14,7 +14,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -235,7 +234,7 @@ class ScheduleControllerTest {
     @DisplayName("❌ 동아리방 사용 신청 실패 - 과거 시간으로 신청")
     void createClubRoomUsage_DomainFailure_PastTimeSchedule() throws Exception {
         // Given: 과거 시간으로 스케줄 신청
-        ClubRoomUsageRequestDto request = createValidClubRoomRequest().builder()
+        ClubRoomUsageRequestDto request = ClubRoomUsageRequestDto.builder()
                 .startedAt(OffsetDateTime.now().minusDays(1)) // 과거 시간
                 .endedAt(OffsetDateTime.now().minusHours(1))
                 .build();
@@ -258,7 +257,7 @@ class ScheduleControllerTest {
     void createClubRoomUsage_DomainFailure_InvalidTimeOrder() throws Exception {
         // Given: 잘못된 시간 순서의 스케줄 신청
         OffsetDateTime baseTime = OffsetDateTime.now().plusDays(1);
-        ClubRoomUsageRequestDto request = createValidClubRoomRequest().builder()
+        ClubRoomUsageRequestDto request = ClubRoomUsageRequestDto.builder()
                 .startedAt(baseTime.plusHours(2)) // 종료시간보다 늦은 시작시간
                 .endedAt(baseTime.plusHours(1))
                 .build();
@@ -280,7 +279,7 @@ class ScheduleControllerTest {
     @DisplayName("❌ 동아리방 사용 신청 실패 - 빈 제목")
     void createClubRoomUsage_ValidationFailure_EmptyTitle() throws Exception {
         // Given: 빈 제목의 스케줄 신청
-        ClubRoomUsageRequestDto request = createValidClubRoomRequest().builder()
+        ClubRoomUsageRequestDto request = ClubRoomUsageRequestDto.builder()
                 .title("") // 빈 제목
                 .build();
 

@@ -2,7 +2,6 @@ package org.certis.studyplatform.member.domain.service;
 
 import org.certis.studyplatform.member.domain.repository.command.MemberCommandRepository;
 import org.certis.studyplatform.member.domain.repository.query.MemberQueryRepository;
-import org.certis.studyplatform.member.domain.vo.GracePeriodVo;
 import org.certis.studyplatform.member.domain.vo.MemberIdVo;
 import org.certis.studyplatform.member.domain.vo.MemberVo;
 import org.certis.studyplatform.member.domain.MemberRole;
@@ -69,7 +68,7 @@ class GracePeriodAdjustmentTest {
         Long memberId = 1L;
         
         StudyParticipantSummaryVo participant = new StudyParticipantSummaryVo(
-            1L, memberId, "테스트 사용자", StudyParticipantStatus.APPROVED, now
+            1L, studyId, memberId, "테스트 사용자", MemberGrade.FRESHMAN, "Study Title", StudyParticipantStatus.APPROVED, now
         );
         
         when(studyParticipantQueryRepository.findAllApprovedByStudyId(studyId))
@@ -104,7 +103,7 @@ class GracePeriodAdjustmentTest {
         Long memberId = 1L;
         
         ProjectParticipantSummaryVo participant = new ProjectParticipantSummaryVo(
-            1L, memberId, "테스트 사용자", ProjectParticipantStatus.APPROVED, now
+            1L, projectId, memberId, "테스트 사용자", MemberGrade.FRESHMAN, "Project Title", ProjectParticipantStatus.APPROVED, now
         );
         
         when(projectParticipantQueryRepository.findAllApprovedByProjectId(projectId))
@@ -163,7 +162,7 @@ class GracePeriodAdjustmentTest {
         Long memberId = 1L;
         
         StudyParticipantSummaryVo participant = new StudyParticipantSummaryVo(
-            1L, memberId, "테스트 사용자", StudyParticipantStatus.APPROVED, now
+            1L, studyId, memberId, "테스트 사용자", MemberGrade.FRESHMAN, "Study Title", StudyParticipantStatus.APPROVED, now
         );
         
         when(studyParticipantQueryRepository.findAllApprovedByStudyId(studyId))
@@ -195,14 +194,12 @@ class GracePeriodAdjustmentTest {
         Long memberId = 1L;
         
         StudyParticipantSummaryVo participant = new StudyParticipantSummaryVo(
-            1L, memberId, "테스트 사용자", StudyParticipantStatus.APPROVED, now
+            1L, studyId, memberId, "테스트 사용자", MemberGrade.FRESHMAN, "Study Title", StudyParticipantStatus.APPROVED, now
         );
         
         when(studyParticipantQueryRepository.findAllApprovedByStudyId(studyId))
             .thenReturn(List.of(participant));
         
-        // 이미 긴 유예기간을 가진 회원
-        OffsetDateTime currentGracePeriod = now.plusWeeks(3); // 현재 3주 후 유예기간
         MemberVo member = new MemberVo(
             memberId, "테스트 사용자", "20240001", null, MemberGrade.FRESHMAN, 
             MemberRole.UPSOLVER, List.of("Java", "Spring"), "컴퓨터공학", 
@@ -217,7 +214,6 @@ class GracePeriodAdjustmentTest {
         );
 
         // Then - 현재 구현에서는 currentGracePeriod가 null로 설정되어 항상 재조정됨
-        // TODO: MemberQueryRepository에 gracePeriod 포함 조회 메서드 추가 후 이 테스트 수정 필요
         verify(memberCommandRepository).updateGracePeriod(any(), any());
     }
 }

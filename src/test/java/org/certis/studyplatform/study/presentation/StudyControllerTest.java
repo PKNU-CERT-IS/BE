@@ -270,6 +270,24 @@ class StudyControllerTest {
     }
 
     @Test
+    @Order(5)
+    @DisplayName("🔍 스터디 고급 검색 - page/size 누락 시 기본값 적용")
+    void searchStudiesAdvanced_DefaultPaging_WhenNoPageSizeParams() throws Exception {
+        // Given: 다양한 스터디가 존재함
+        createMultipleStudiesInDatabase();
+
+        // When: page/size 미전달
+        mockMvc.perform(get("/api/v1/study/search")
+                        .param("keyword", "개발")
+                        .param("category", "웹 개발"))
+                .andDo(print())
+                // Then: 기본 페이징(page=0, size=10)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.number").value(0))
+                .andExpect(jsonPath("$.data.size").value(10));
+    }
+
+    @Test
     @Order(6)
     @DisplayName("🗑️ 스터디 삭제 - 권한 있는 사용자의 성공적인 삭제")
     @WithMockUser(username = "user1", roles = {"UPSOLVER"})

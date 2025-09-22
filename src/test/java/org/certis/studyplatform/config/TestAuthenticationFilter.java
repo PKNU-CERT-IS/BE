@@ -10,13 +10,11 @@ import org.certis.studyplatform.shared.security.CurrentUser;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -131,6 +129,10 @@ public class TestAuthenticationFilter extends OncePerRequestFilter {
         switch (username) {
             case "unauthorized":
                 return 999L; // 권한이 없는 사용자
+            case "user1":
+                return 1L; // 작성자 시나리오 (memberId=1)
+            case "user2":
+                return 2L; // 다른 사용자 시나리오 (memberId=2)
             case "testuser":
                 return 1L; // 기본 테스트 사용자
             default:
@@ -145,6 +147,10 @@ public class TestAuthenticationFilter extends OncePerRequestFilter {
         switch (username) {
             case "unauthorized":
                 return "unauthorized@certis.org";
+            case "user1":
+                return "user1@certis.org";
+            case "user2":
+                return "user2@certis.org";
             case "testuser":
                 return "test@certis.org";
             default:
@@ -159,6 +165,10 @@ public class TestAuthenticationFilter extends OncePerRequestFilter {
         switch (username) {
             case "unauthorized":
                 return "권한없음";
+            case "user1":
+                return "김개발";
+            case "user2":
+                return "이테스트";
             case "testuser":
                 return "테스트사용자";
             default:
@@ -188,6 +198,10 @@ public class TestAuthenticationFilter extends OncePerRequestFilter {
     private String getRoleByUsername(String username) {
         switch (username) {
             case "unauthorized":
+                return "PLAYER";
+            case "user1":
+                return "UPSOLVER";
+            case "user2":
                 return "PLAYER";
             case "testuser":
                 return "UPSOLVER";
