@@ -173,14 +173,13 @@ public class DatabaseInitializationService {
         try {
             log.info("Verifying PostgreSQL sequences...");
 
-            String sql =
-                """
-                SELECT sequence_name, last_value, is_called 
-                FROM information_schema.sequences s
-                JOIN pg_sequences ps ON s.sequence_name = ps.sequencename
-                WHERE s.sequence_schema = 'public'
-                ORDER BY sequence_name
-                """;
+    String sql = """
+        SELECT sequence_name, last_value, is_called
+        FROM information_schema.sequences s
+        JOIN pg_sequences ps ON s.sequence_name = ps.sequencename
+        WHERE s.sequence_schema = 'public'
+        ORDER BY sequence_name
+        """;
 
             jdbcTemplate.query(sql, (rs, rowNum) -> {
                 String sequenceName = rs.getString("sequence_name");

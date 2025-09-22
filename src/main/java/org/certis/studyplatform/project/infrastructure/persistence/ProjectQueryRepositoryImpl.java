@@ -480,7 +480,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
         var m = MEMBER.as("m");
         var pa = PROJECT_ATTACHED.as("pa");
 
-        Optional<ProjectVo> result = Optional.ofNullable(
+        Optional<ProjectVo> result = Optional.of(
                 dsl.select(
                         p.ID,
                         p.TITLE,
@@ -518,9 +518,6 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                 .leftJoin(pa).on(p.ID.eq(pa.PROJECT_ID).and(pa.DELETED_AT.isNull()))
                 .where(p.ID.eq(projectId))
                 .fetch()
-                .stream()
-                .map(record -> (Record) record)
-                .toList()
         ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.toProjectVoFromRecordsWithAttachments(records));
 
@@ -535,7 +532,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
         var m = MEMBER.as("m");
         var pa = PROJECT_ATTACHED.as("pa");
 
-        Optional<ProjectVo> result = Optional.ofNullable(
+        Optional<ProjectVo> result = Optional.of(
                 dsl.select(
                         p.ID,
                         p.TITLE,
@@ -574,9 +571,6 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                 .where(p.ID.eq(projectId))
                 .and(p.DELETED_AT.isNull())
                 .fetch()
-                .stream()
-                .map(record -> (Record) record)
-                .toList()
         ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.toProjectVoFromRecordsWithAttachments(records));
 
