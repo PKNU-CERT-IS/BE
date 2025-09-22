@@ -6,6 +6,12 @@ import org.certis.studyplatform.config.TestWebMvcConfig;
 import org.certis.studyplatform.shared.service.S3FileService;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.*;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -107,39 +113,6 @@ class StudyAndProjectS3E2ETest {
     }
 
     @Test
-    @DisplayName("Study 종료 API를 통해 파일 업로드 후 상세 조회에서 S3 URL 확인")
-    void e2e_study_upload_and_detail_fetch_from_s3() throws Exception {
-        String accessKeyId = dotenv.get("AWS_ACCESS_KEY_ID");
-        String secretAccessKey = dotenv.get("AWS_SECRET_ACCESS_KEY");
-        String region = dotenv.get("AWS_DEFAULT_REGION");
-        String bucket = dotenv.get("AWS_S3_BUCKET");
-
-        assumeTrue(accessKeyId != null && !accessKeyId.isEmpty(), "AWS_ACCESS_KEY_ID 환경변수가 설정되지 않았습니다.");
-        assumeTrue(secretAccessKey != null && !secretAccessKey.isEmpty(), "AWS_SECRET_ACCESS_KEY 환경변수가 설정되지 않았습니다.");
-        assumeTrue(region != null && !region.isEmpty(), "AWS_DEFAULT_REGION 환경변수가 설정되지 않았습니다.");
-        assumeTrue(bucket != null && !bucket.isEmpty(), "AWS_S3_BUCKET 환경변수가 설정되지 않았습니다.");
-
-        MockMultipartFile file1 = new MockMultipartFile("files", "end-note.txt", "text/plain", "note".getBytes());
-        MockMultipartFile image = new MockMultipartFile("files", "thumb.jpg", "image/jpeg", "img".getBytes());
-
-        mockMvc.perform(multipart("/api/v1/study/end")
-                        .file(file1)
-                        .file(image)
-                        .param("studyId", String.valueOf(TEST_STUDY_ID))
-                        .contentType(MediaType.MULTIPART_FORM_DATA))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.id").value(TEST_STUDY_ID));
-
-        mockMvc.perform(get("/api/v1/study/detail").param("studyId", String.valueOf(TEST_STUDY_ID)))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.attachments").isArray())
-                .andExpect(jsonPath("$.data.attachments.length()") .value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)))
-                .andExpect(jsonPath("$.data.thumbnailUrl").exists());
-    }
-
-    @Test
     @DisplayName("Project 상세 조회에서 S3 URL 형식이 반환되는지 확인")
     void e2e_project_detail_returns_s3_style_urls() throws Exception {
         // 첨부와 썸네일을 S3 URL 형식으로 직접 주입 (업로드 API 미존재)
@@ -161,13 +134,102 @@ class StudyAndProjectS3E2ETest {
                 .andExpect(jsonPath("$.data.attachments").isArray())
                 .andExpect(jsonPath("$.data.attachments[0].attachedUrl").value(org.hamcrest.Matchers.containsString("https://")));
     }
-    // ===== 내부 유틸 =====
-    private static String getenv(String key) {
-        String v = dotenv.get(key);
-        if (v == null || v.isEmpty()) {
-            v = dotenv.get(key);
-        }
-        return v;
+
+    @Test
+    @DisplayName("Study 업데이트로 첨부파일(S3 URL) 추가 후 상세 조회로 검증")
+    void e2e_study_update_add_attachments_and_verify() throws Exception {
+        String accessKeyId = dotenv.get("AWS_ACCESS_KEY_ID");
+        String secretAccessKey = dotenv.get("AWS_SECRET_ACCESS_KEY");
+        String region = dotenv.get("AWS_DEFAULT_REGION");
+        String bucket = dotenv.get("AWS_S3_BUCKET");
+
+        assumeTrue(accessKeyId != null && !accessKeyId.isEmpty(), "AWS_ACCESS_KEY_ID 환경변수가 설정되지 않았습니다.");
+        assumeTrue(secretAccessKey != null && !secretAccessKey.isEmpty(), "AWS_SECRET_ACCESS_KEY 환경변수가 설정되지 않았습니다.");
+        assumeTrue(region != null && !region.isEmpty(), "AWS_DEFAULT_REGION 환경변수가 설정되지 않았습니다.");
+        assumeTrue(bucket != null && !bucket.isEmpty(), "AWS_S3_BUCKET 환경변수가 설정되지 않았습니다.");
+
+        // Given: S3에 샘플 파일 업로드 후 URL 획득
+        String key = "e2e-study-update/" + System.currentTimeMillis() + "/thumb.jpg";
+        String uploadedUrl = uploadToS3(accessKeyId, secretAccessKey, region, bucket, key, "image/jpeg", new byte[]{1,2,3});
+
+        // When: 업데이트 API로 첨부파일 URL 등록 (MIME 타입 대신 enum 값 사용)
+        String updateJson = "{" +
+                "\"studyId\":" + TEST_STUDY_ID + "," +
+                "\"attachments\":[{" +
+                "\"name\":\"thumb.jpg\"," +
+                "\"type\":\"JPEG\"," +  // image/jpeg → JPEG로 변경
+                "\"size\":\"3\"," +
+                "\"attachedUrl\":\"" + uploadedUrl + "\"}]}";
+
+        mockMvc.perform(put("/api/v1/study/update")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateJson))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        // Then: 상세 조회에서 해당 URL과 thumbnailUrl 확인
+        mockMvc.perform(get("/api/v1/study/detail").param("studyId", String.valueOf(TEST_STUDY_ID)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.attachments").isArray())
+                .andExpect(jsonPath("$.data.attachments[0].attachedUrl").value(uploadedUrl))
+                .andExpect(jsonPath("$.data.thumbnailUrl").value(uploadedUrl));
+    }
+
+    @Test
+    @DisplayName("Project 업데이트로 첨부파일(S3 URL) 추가 후 상세 조회로 검증")
+    void e2e_project_update_add_attachments_and_verify() throws Exception {
+        String accessKeyId = dotenv.get("AWS_ACCESS_KEY_ID");
+        String secretAccessKey = dotenv.get("AWS_SECRET_ACCESS_KEY");
+        String region = dotenv.get("AWS_DEFAULT_REGION");
+        String bucket = dotenv.get("AWS_S3_BUCKET");
+
+        assumeTrue(accessKeyId != null && !accessKeyId.isEmpty(), "AWS_ACCESS_KEY_ID 환경변수가 설정되지 않았습니다.");
+        assumeTrue(secretAccessKey != null && !secretAccessKey.isEmpty(), "AWS_SECRET_ACCESS_KEY 환경변수가 설정되지 않았습니다.");
+        assumeTrue(region != null && !region.isEmpty(), "AWS_DEFAULT_REGION 환경변수가 설정되지 않았습니다.");
+        assumeTrue(bucket != null && !bucket.isEmpty(), "AWS_S3_BUCKET 환경변수가 설정되지 않았습니다.");
+
+        // Given: S3에 샘플 파일 업로드 후 URL 획득
+        String key = "e2e-project-update/" + System.currentTimeMillis() + "/spec.pdf";
+        String uploadedUrl = uploadToS3(accessKeyId, secretAccessKey, region, bucket, key, "application/pdf", new byte[]{4,5,6});
+
+        // When: 업데이트 API로 첨부파일 URL 등록 (MIME 타입 대신 enum 값 사용)
+        String updateJson = "{" +
+                "\"projectId\":" + TEST_PROJECT_ID + "," +
+                "\"attachments\":[{" +
+                "\"name\":\"spec.pdf\"," +
+                "\"type\":\"PDF\"," +  // application/pdf → PDF로 변경
+                "\"size\":\"3\"," +
+                "\"attachedUrl\":\"" + uploadedUrl + "\"}]}";
+
+        mockMvc.perform(put("/api/v1/project/update")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateJson))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        // Then: 상세 조회에서 해당 URL 확인
+        mockMvc.perform(get("/api/v1/project/detail").param("projectId", String.valueOf(TEST_PROJECT_ID)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.attachments").isArray())
+                .andExpect(jsonPath("$.data.attachments[0].attachedUrl").value(uploadedUrl));
+    }
+
+    private String uploadToS3(String accessKeyId, String secretAccessKey, String region, String bucket, String key,
+                              String contentType, byte[] data) {
+        S3Client s3 = S3Client.builder()
+                .region(Region.of(region))
+                .credentialsProvider(StaticCredentialsProvider.create(
+                        AwsBasicCredentials.create(accessKeyId, secretAccessKey)))
+                .build();
+        PutObjectRequest put = PutObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .contentType(contentType)
+                .build();
+        s3.putObject(put, RequestBody.fromBytes(data));
+        return "https://" + bucket + ".s3." + region + ".amazonaws.com/" + key;
     }
 }
 
