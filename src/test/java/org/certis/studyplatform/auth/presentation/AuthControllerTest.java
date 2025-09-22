@@ -8,7 +8,9 @@ import org.certis.studyplatform.config.TestEmbeddedPostgresConfig;
 import org.certis.studyplatform.member.domain.MemberRole;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.*;
-import org.mockito.Mock;
+import org.springframework.context.annotation.Bean;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -46,8 +48,17 @@ class AuthControllerTest {
     @Autowired private DSLContext dsl; // JOOQ를 통한 직접 DB 조작
     @Autowired private PasswordEncoder passwordEncoder; // 비밀번호 암호화
 
-    @Mock
+    @Autowired
     private RedisRefreshTokenRepository redisRefreshTokenRepository; // Redis Mock 처리
+
+    @TestConfiguration
+    static class MockOverrides {
+        @Bean
+        @Primary
+        RedisRefreshTokenRepository redisRefreshTokenRepository() {
+            return mock(RedisRefreshTokenRepository.class);
+        }
+    }
 
     // 테스트 상수 정의
     private static final String BASE_URL = "/api/v1/auth";
