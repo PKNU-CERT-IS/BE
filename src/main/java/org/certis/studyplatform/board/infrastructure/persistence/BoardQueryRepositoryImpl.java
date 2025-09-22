@@ -115,7 +115,8 @@ public class BoardQueryRepositoryImpl implements BoardQueryRepository {
             return new PageImpl<>(boards, pageable, totalCount);
 
         } catch (Exception e) {
-            log.error("❌ Infrastructure: Failed to search boards", e);
+            log.error("❌ Infrastructure: Failed to search boards - search: '{}', category: '{}', page: {}, size: {}", 
+                    searchVo.search(), searchVo.category(), searchVo.page(), searchVo.size(), e);
             throw new DomainException(ExceptionStatus.BOARD_INFRASTRUCTURE_QUERY_FAILED);
         }
     }

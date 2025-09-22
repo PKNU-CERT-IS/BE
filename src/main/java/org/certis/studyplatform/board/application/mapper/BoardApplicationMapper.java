@@ -32,7 +32,7 @@ public class BoardApplicationMapper {
 
         // noFilter일 때는 기본 페이징 사용 (전체 조회를 위해 큰 사이즈 사용)
         int page = noFilter ? 0 : request.getPage();
-        int size = noFilter ? 1000 : request.getSize(); // Integer.MAX_VALUE 대신 1000 사용
+        int size = noFilter ? 1000 : request.getSize(); // noFilter일 때 1000으로 설정
 
         return SearchBoardsQuery.of(
                 request.getKeyword(),
@@ -120,7 +120,7 @@ public class BoardApplicationMapper {
                 .title(vo.title())
                 .description(vo.description())
                 .updatedAt(vo.updatedAt())
-                .category(vo.category())
+                .category(vo.category() != null ? vo.category().value() : null)
                 .authorName(vo.authorName())
                 .likeCount(vo.likeCount())
                 .viewCount(vo.viewCount())
