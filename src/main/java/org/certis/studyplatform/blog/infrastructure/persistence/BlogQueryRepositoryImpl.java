@@ -317,7 +317,7 @@ public class BlogQueryRepositoryImpl implements BlogQueryRepository {
     }
 
     @Override
-    public Page<BlogSummaryVo> findByPublicStatus(Boolean isPublic, Pageable pageable) {
+    public Page<BlogSummaryVo> findByPublicStatus(Boolean isPublic, Pageable pageable, BlogSearchCriteriaVo criteria) {
         log.info("jOOQ: Finding blogs by public status - isPublic: {}", isPublic);
 
         var b = BLOG.as("b");
@@ -325,10 +325,16 @@ public class BlogQueryRepositoryImpl implements BlogQueryRepository {
         var s = STUDY.as("s");
         var p = PROJECT.as("p");
 
-        // 조건 구성
+        // 조건 구성: 공개 여부 + 검색 조건
         Condition conditions = b.DELETED_AT.isNull();
         if (isPublic != null) {
             conditions = conditions.and(b.IS_PUBLIC.eq(isPublic));
+        }
+        if (criteria != null) {
+            Condition searchConditions = buildSearchConditions(criteria);
+            if (searchConditions != null) {
+                conditions = conditions.and(searchConditions);
+            }
         }
 
         // 총 개수 조회

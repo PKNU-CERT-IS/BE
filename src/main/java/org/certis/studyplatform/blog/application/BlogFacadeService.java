@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import org.certis.studyplatform.blog.domain.vo.BlogSearchCriteriaVo;
 
 
 /**
@@ -240,11 +241,13 @@ public class BlogFacadeService {
     /**
      * 공개 유무에 따른 블로그 조회
      */
-    public Page<BlogSummaryResponseDto> getBlogsByPublicStatus(Boolean isPublic, Pageable pageable, Long memberId) {
+    public Page<BlogSummaryResponseDto> getBlogsByPublicStatus(Boolean isPublic, Pageable pageable, Long memberId, String keyword, String category) {
         log.info("Facade: Getting blogs by public status - isPublic: {}", isPublic);
 
+        BlogSearchCriteriaVo criteria = BlogSearchCriteriaVo.of(keyword, category);
+
         // Query Service 호출
-        Page<BlogSummaryVo> blogs = blogQueryService.getBlogsByPublicStatus(isPublic, pageable, memberId);
+        Page<BlogSummaryVo> blogs = blogQueryService.getBlogsByPublicStatus(isPublic, pageable, memberId, criteria);
 
         // VO → DTO 변환
         Page<BlogSummaryResponseDto> responseDto = dtoMapper.toBlogSummaryResponseDtoPage(blogs);

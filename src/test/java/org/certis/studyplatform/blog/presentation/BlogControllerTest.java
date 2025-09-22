@@ -160,6 +160,9 @@ class BlogControllerTest {
                 .andExpect(jsonPath("$.data.title").value(TEST_BLOG_TITLE))
                 .andExpect(jsonPath("$.data.description").value(TEST_BLOG_DESCRIPTION))
                 .andExpect(jsonPath("$.data.content").value(TEST_BLOG_CONTENT))
+                .andExpect(jsonPath("$.data.referenceType").value("STUDY"))
+                .andExpect(jsonPath("$.data.referenceId").value(TEST_STUDY_ID))
+                .andExpect(jsonPath("$.data.referenceTitle").exists())
                 .andExpect(jsonPath("$.data.creatorName").value(TEST_MEMBER_NAME))
                 .andExpect(jsonPath("$.data.viewCount").exists())
                 .andExpect(jsonPath("$.data.createdAt").exists());
@@ -190,6 +193,9 @@ class BlogControllerTest {
                 .andExpect(jsonPath("$.data.title").value(TEST_BLOG_TITLE))
                 .andExpect(jsonPath("$.data.description").value(TEST_BLOG_DESCRIPTION))
                 .andExpect(jsonPath("$.data.content").value(TEST_BLOG_CONTENT))
+                .andExpect(jsonPath("$.data.referenceType").value("STUDY"))
+                .andExpect(jsonPath("$.data.referenceId").value(TEST_STUDY_ID))
+                .andExpect(jsonPath("$.data.referenceTitle").exists())
                 .andExpect(jsonPath("$.data.creatorName").value(TEST_MEMBER_NAME))
                 .andExpect(jsonPath("$.data.viewCount").exists())
                 .andExpect(jsonPath("$.data.createdAt").exists());
@@ -236,7 +242,8 @@ class BlogControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("블로그 글을 성공적으로 조회했습니다"))
                 .andExpect(jsonPath("$.data").exists())
-                .andExpect(jsonPath("$.data").isArray());
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data[0].referenceTitle").exists());
 
         System.out.println("✅ 인증된 사용자 블로그 참조 목록 조회 테스트 성공");
     }
@@ -318,7 +325,10 @@ class BlogControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("블로그 글 검색을 성공적으로 완료했습니다"))
-                .andExpect(jsonPath("$.data.content").isArray());
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content[0].referenceType").exists())
+                .andExpect(jsonPath("$.data.content[0].referenceId").exists())
+                .andExpect(jsonPath("$.data.content[0].referenceTitle").exists());
 
         System.out.println("✅ 블로그 고급 검색 테스트 성공");
     }
@@ -634,24 +644,34 @@ class BlogControllerTest {
         // When: 공개 블로그만 조회
         mockMvc.perform(get("/api/v1/blog/public")
                         .param("isPublic", "true")
+                        .param("keyword", "공개")
+                        .param("category", "웹 개발")
                         .param("page", "0")
                         .param("size", "10"))
                 .andDo(print())
                 // Then: 공개 블로그만 반환
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
-                .andExpect(jsonPath("$.data.content").isArray());
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content[0].referenceType").exists())
+                .andExpect(jsonPath("$.data.content[0].referenceId").exists())
+                .andExpect(jsonPath("$.data.content[0].referenceTitle").exists());
 
         // When: 비공개 블로그만 조회
         mockMvc.perform(get("/api/v1/blog/public")
                         .param("isPublic", "false")
+                        .param("keyword", "비공개")
+                        .param("category", "웹 개발")
                         .param("page", "0")
                         .param("size", "10"))
                 .andDo(print())
                 // Then: 비공개 블로그만 반환
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
-                .andExpect(jsonPath("$.data.content").isArray());
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content[0].referenceType").exists())
+                .andExpect(jsonPath("$.data.content[0].referenceId").exists())
+                .andExpect(jsonPath("$.data.content[0].referenceTitle").exists());
 
         System.out.println("✅ 공개 유무별 블로그 조회 테스트 성공");
     }
@@ -720,8 +740,8 @@ class BlogControllerTest {
                     .set(STUDY.CATEGORY, "웹 개발")
                     .set(STUDY.SUBCATEGORY, "풀스택")
                     .set(STUDY.MAX_PARTICIPANTS_NUMBER, 5)
-                    .set(STUDY.STARTED_AT, now.plusDays(1))
-                    .set(STUDY.ENDED_AT, now.plusDays(30))
+                    .set(STUDY.STARTED_AT, now.minusDays(30))
+                    .set(STUDY.ENDED_AT, now.minusDays(1))
                     .set(STUDY.CREATED_AT, now)
                     .set(STUDY.UPDATED_AT, now)
                     .onDuplicateKeyIgnore()

@@ -222,6 +222,8 @@ public class BlogController {
     @GetMapping("/public")
     public ResponseEntity<GlobalResponseHandler<Page<BlogSummaryResponseDto>>> getPublicBlogs(
             @RequestParam(required = false) Boolean isPublic,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String category,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @AuthenticationPrincipal CurrentUser currentUser
     ) {
@@ -229,7 +231,7 @@ public class BlogController {
                 isPublic, pageable.getPageNumber(), pageable.getPageSize());
 
         // Facade Service 호출
-        Page<BlogSummaryResponseDto> result = blogFacadeService.getBlogsByPublicStatus(isPublic, pageable, currentUser.getId());
+        Page<BlogSummaryResponseDto> result = blogFacadeService.getBlogsByPublicStatus(isPublic, pageable, currentUser.getId(), keyword, category);
 
         log.info("REST: Public blogs retrieved - found {} results", result.getTotalElements());
 

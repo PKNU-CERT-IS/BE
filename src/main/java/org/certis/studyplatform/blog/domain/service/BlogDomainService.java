@@ -449,8 +449,8 @@ public class BlogDomainService {
                         referenceType,
                         referenceTitle,
                         blog.views(), // 기존 views 값 유지
-                        null, // studyId
-                        null, // projectId
+                        referenceType == ArticleReferenceType.STUDY ? referenceId : null, // studyId 유지
+                        referenceType == ArticleReferenceType.PROJECT ? referenceId : null, // projectId 유지
                         null, // studyTitle
                         null  // projectTitle
                 );
@@ -567,7 +567,7 @@ public class BlogDomainService {
     /**
      * 공개 유무에 따른 블로그 조회 (MemberRole 기준 분기)
      */
-    public Page<BlogSummaryVo> getBlogsByPublicStatus(Boolean isPublic, Pageable pageable, Long memberId) {
+    public Page<BlogSummaryVo> getBlogsByPublicStatus(Boolean isPublic, Pageable pageable, Long memberId, BlogSearchCriteriaVo criteria) {
         log.info("Domain: Getting blogs by public status - isPublic: {}, memberId: {}", isPublic, memberId);
 
         // MemberRole 조회
@@ -577,13 +577,13 @@ public class BlogDomainService {
         // Level별 분기 처리
         if (MemberRole.isLevel4OrAbove(memberRole)) {
             // Level 4 이상: 공개/비공개 모두 조회 가능
-            return queryRepository.findByPublicStatus(isPublic, pageable);
+            return queryRepository.findByPublicStatus(isPublic, pageable, criteria);
         } else if (MemberRole.isLevel5(memberRole)) {
             // Level 5: 공개 블로그만 조회 가능
-            return queryRepository.findByPublicStatus(true, pageable);
+            return queryRepository.findByPublicStatus(true, pageable, criteria);
         } else {
             // Level 4 미만: 공개 블로그만 조회 가능
-            return queryRepository.findByPublicStatus(true, pageable);
+            return queryRepository.findByPublicStatus(true, pageable, criteria);
         }
     }
 

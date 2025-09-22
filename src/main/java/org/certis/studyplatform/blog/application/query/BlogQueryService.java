@@ -7,6 +7,7 @@ import org.certis.studyplatform.blog.application.object.query.GetBlogByIdQuery;
 import org.certis.studyplatform.blog.application.object.query.SearchBlogsQuery;
 import org.certis.studyplatform.blog.domain.service.BlogDomainService;
 import org.certis.studyplatform.blog.domain.vo.BlogEnableReferenceVo;
+import org.certis.studyplatform.blog.domain.vo.BlogSearchCriteriaVo;
 import org.certis.studyplatform.blog.domain.vo.BlogSummaryVo;
 import org.certis.studyplatform.blog.domain.vo.BlogVo;
 import org.springframework.data.domain.Page;
@@ -92,11 +93,11 @@ public class BlogQueryService {
      * 공개 유무에 따른 블로그 조회
      */
     @Transactional(readOnly = true)
-    public Page<BlogSummaryVo> getBlogsByPublicStatus(Boolean isPublic, Pageable pageable, Long memberId) {
+    public Page<BlogSummaryVo> getBlogsByPublicStatus(Boolean isPublic, Pageable pageable, Long memberId, BlogSearchCriteriaVo criteria) {
         log.info("Query: Getting blogs by public status - isPublic: {}", isPublic);
 
         // Domain Service로 전달
-        Page<BlogSummaryVo> blogs = blogDomainService.getBlogsByPublicStatus(isPublic, pageable, memberId);
+        Page<BlogSummaryVo> blogs = blogDomainService.getBlogsByPublicStatus(isPublic, pageable, memberId, criteria);
 
         log.info("Query: Blogs retrieved by public status - found {} blogs", blogs.getTotalElements());
         return blogs;

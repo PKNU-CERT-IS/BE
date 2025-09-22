@@ -34,6 +34,8 @@ public class BlogSummaryResponseDto {
 
     private String referenceTitle;
 
+    private Long referenceId;
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private OffsetDateTime createdAt;
 
