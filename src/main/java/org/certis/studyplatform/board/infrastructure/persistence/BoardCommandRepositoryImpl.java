@@ -15,6 +15,7 @@ import org.certis.studyplatform.board.infrastructure.persistence.jpa.BoardLikeJp
 import org.certis.studyplatform.board.infrastructure.persistence.jpa.BoardViewJpaRepository;
 import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
+import org.certis.studyplatform.shared.service.S3FileService;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,8 @@ public class BoardCommandRepositoryImpl implements BoardCommandRepository {
     private final BoardInfrastructureMapper boardInfrastructureMapper;
     private final BoardLikeJpaRepository boardLikeJpaRepository;
     private final BoardViewJpaRepository boardViewJpaRepository;
+
+    private final S3FileService s3FileService;
 
     @Override
     @Transactional
@@ -190,15 +193,24 @@ public class BoardCommandRepositoryImpl implements BoardCommandRepository {
         }
     }
 
+
+
     private void updateAttachments(Long boardId, List<AttachmentVo> newAttachments,
                                    Long memberId, List<AttachmentVo> existingAttachments) {
         log.debug("📎 Starting attachment processing for board: {}", boardId);
 
         try {
-            // 기존 첨부파일 전체 삭제 (소프트 딜리트)
+            // 기존 첨부파일 전체 삭제 (소프트 딜리트) + S3 원본 삭제
             List<BoardAttachedEntity> existingEntities = boardAttachedJpaRepository.findByBoardIdAndDeletedAtIsNull(boardId);
 
             if (!existingEntities.isEmpty()) {
+                for (BoardAttachedEntity entity : existingEntities) {
+                    try {
+                        s3FileService.deleteFile(entity.getAttachedUrl());
+                    } catch (Exception ex) {
+                        log.warn("S3 delete failed for attachment url={} (boardId={})", entity.getAttachedUrl(), boardId, ex);
+                    }
+                }
                 boardAttachedJpaRepository.deleteAll(existingEntities);
                 boardAttachedJpaRepository.flush();
                 log.debug("🗑️ Deleted {} existing attachments", existingEntities.size());

@@ -203,4 +203,36 @@ public class BoardRedisRepositoryImpl implements BoardRedisRepository {
                     "조회수 증가에 실패했습니다: " + e.getMessage());
         }
     }
+
+    @Override
+    public void setLikeCount(BoardIdVo boardId, Long count) {
+        try {
+            String boardIdStr = boardId.value().toString();
+            RAtomicLong likeCount = redissonClient.getAtomicLong(LIKE_COUNT_PREFIX + boardIdStr);
+            
+            likeCount.set(count);
+            
+            log.debug("✅ Redis: Set like count for board {} to {}", boardId.value(), count);
+        } catch (Exception e) {
+            log.error("❌ Redis: Failed to set like count for board: {}", boardId.value(), e);
+            throw new DomainException(ExceptionStatus.BOARD_INFRASTRUCTURE_REDIS_ERROR,
+                    "좋아요 수 설정에 실패했습니다: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void setViewCount(BoardIdVo boardId, Long count) {
+        try {
+            String boardIdStr = boardId.value().toString();
+            RAtomicLong viewCount = redissonClient.getAtomicLong(VIEW_COUNT_PREFIX + boardIdStr);
+            
+            viewCount.set(count);
+            
+            log.debug("✅ Redis: Set view count for board {} to {}", boardId.value(), count);
+        } catch (Exception e) {
+            log.error("❌ Redis: Failed to set view count for board: {}", boardId.value(), e);
+            throw new DomainException(ExceptionStatus.BOARD_INFRASTRUCTURE_REDIS_ERROR,
+                    "조회수 설정에 실패했습니다: " + e.getMessage());
+        }
+    }
 }
