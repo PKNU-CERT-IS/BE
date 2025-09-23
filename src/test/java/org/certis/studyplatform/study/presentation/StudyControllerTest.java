@@ -80,21 +80,17 @@ class StudyControllerTest {
 
     @BeforeEach
     void setUp() {
-        System.out.println("🔧 테스트 데이터 설정 시작");
         // 데이터 충돌 방지: 관련 테이블 초기화
         dsl.execute("TRUNCATE TABLE study_attached RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE study RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
 
         setupTestData();
-        System.out.println("✅ 테스트 데이터 설정 완료");
     }
 
     @AfterEach
     void tearDown() {
-        System.out.println("🧹 테스트 데이터 정리 시작");
         cleanupTestData();
-        System.out.println("✅ 테스트 데이터 정리 완료");
     }
 
     // =================================================================
@@ -123,7 +119,6 @@ class StudyControllerTest {
         // Then: 데이터베이스에 스터디가 정상적으로 저장되었는지 검증
         verifyStudyCreatedInDatabase(request);
         
-        System.out.println("✅ 스터디 생성 테스트 성공");
     }
 
     @Test
@@ -164,7 +159,6 @@ class StudyControllerTest {
                 .fetchOne(STUDY.MEMBER_ID);
         assertThat(responseCreatorId).isEqualTo(dbCreatorId);
 
-        System.out.println("✅ 스터디 상세 조회 테스트 성공");
     }
 
     @Test
@@ -196,7 +190,44 @@ class StudyControllerTest {
         // Then: 데이터베이스에서 수정 확인
         verifyStudyUpdatedInDatabase(request);
         
-        System.out.println("✅ 스터디 수정 테스트 성공");
+    }
+
+    @Test
+    @Order(3)
+    @DisplayName("✏️ 스터디 수정 - attachments=null 이면 기존 첨부 삭제")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
+    void updateStudy_NullAttachments_ShouldDeleteExisting() throws Exception {
+        // Given: 스터디와 기존 첨부 존재
+        createTestStudyInDatabase();
+        OffsetDateTime now = OffsetDateTime.now();
+        dsl.insertInto(STUDY_ATTACHED)
+                .set(STUDY_ATTACHED.STUDY_ID, TEST_STUDY_ID)
+                .set(STUDY_ATTACHED.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY_ATTACHED.NAME, "old.txt")
+                .set(STUDY_ATTACHED.TYPE, "text/plain")
+                .set(STUDY_ATTACHED.SIZE, "10")
+                .set(STUDY_ATTACHED.ATTACHED_URL, "https://s3.example.com/old.txt")
+                .set(STUDY_ATTACHED.CREATED_AT, now)
+                .set(STUDY_ATTACHED.UPDATED_AT, now)
+                .execute();
+
+        StudyUpdateRequestDto request = new StudyUpdateRequestDto();
+        request.setStudyId(TEST_STUDY_ID);
+        request.setTitle("제목유지");
+        request.setDescription("설명유지");
+        request.setAttachments(null); // 핵심: null 전달
+
+        // When
+        mockMvc.perform(put("/api/v1/study/update")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200));
+
+        // Then: 첨부 테이블이 비어있어야 함
+        Integer count = dsl.fetchCount(STUDY_ATTACHED, STUDY_ATTACHED.STUDY_ID.eq(TEST_STUDY_ID));
+        assertThat(count).isZero();
     }
 
     @Test
@@ -223,7 +254,6 @@ class StudyControllerTest {
                 .andExpect(jsonPath("$.data.first").value(true))
                 .andExpect(jsonPath("$.data.last").value(true));
 
-        System.out.println("✅ 스터디 목록 조회 테스트 성공");
     }
 
     @Test
@@ -266,7 +296,6 @@ class StudyControllerTest {
                 .andExpect(jsonPath("$.message").value("스터디 검색을 성공적으로 완료했습니다"))
                 .andExpect(jsonPath("$.data.content").isArray());
 
-        System.out.println("✅ 스터디 고급 검색 테스트 성공");
     }
 
     @Test
@@ -311,7 +340,6 @@ class StudyControllerTest {
         // Then: 데이터베이스에서 소프트 삭제 확인 (deletedAt 필드 설정)
         verifyStudyDeletedInDatabase(TEST_STUDY_ID);
         
-        System.out.println("✅ 스터디 삭제 테스트 성공");
     }
 
     // =================================================================
@@ -334,7 +362,6 @@ class StudyControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400));
 
-        System.out.println("✅ 필수 필드 누락 검증 테스트 성공");
     }
 
     @Test
@@ -352,7 +379,6 @@ class StudyControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(404))
                 .andExpect(jsonPath("$.message").value("스터디를 찾을 수 없습니다: " + nonExistentStudyId));
 
-        System.out.println("✅ 존재하지 않는 스터디 조회 테스트 성공");
     }
 
     // =================================================================
@@ -373,7 +399,6 @@ class StudyControllerTest {
                 .andDo(print())
                 .andExpect(status().isUnsupportedMediaType());
 
-        System.out.println("✅ 잘못된 Content-Type 테스트 성공");
     }
 
     @Test
@@ -402,7 +427,6 @@ class StudyControllerTest {
         // 성능 검증: 1초 이내 응답
         assertThat(executionTime).isLessThan(1000);
         
-        System.out.println("✅ 대용량 데이터 페이징 성능 테스트 성공 - 실행시간: " + executionTime + "ms");
     }
 
     @Test
@@ -609,7 +633,6 @@ class StudyControllerTest {
                     .execute();
 
         } catch (Exception e) {
-            System.out.println("테스트 데이터 설정 중 오류 발생 (이미 존재할 수 있음): " + e.getMessage());
         }
     }
 
@@ -622,7 +645,6 @@ class StudyControllerTest {
             dsl.deleteFrom(STUDY).execute();
             dsl.deleteFrom(MEMBER).execute();
         } catch (Exception e) {
-            System.out.println("테스트 데이터 정리 중 오류 발생: " + e.getMessage());
         }
     }
 

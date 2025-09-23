@@ -182,40 +182,29 @@ class GracePeriodAdjustmentIntegrationTest {
         // 조기 종료 전 유예기간 확인
         OffsetDateTime originalGracePeriod = getMemberGracePeriod(memberId);
         assertThat(originalGracePeriod).isNotNull();
-        System.out.println("조기 종료 전 유예기간: " + originalGracePeriod);
         
         // 프로젝트 종료 명령 생성
         EndProjectCommand command = EndProjectCommand.of(projectId, memberId, List.of());
 
         // When
-        System.out.println("Calling projectCommandService.endProject with command: " + command);
-        System.out.println("ProjectCommandService type: " + projectCommandService.getClass().getName());
         ProjectVo endedProject = projectCommandService.endProject(command);
-        System.out.println("Received endedProject: " + endedProject);
 
         // Then
         assertThat(endedProject).isNotNull();
         assertThat(endedProject.endDate()).isNotNull();
         
         // 디버그 로그 추가
-        System.out.println("Project startDate: " + endedProject.startDate());
-        System.out.println("Project endDate: " + endedProject.endDate());
-        System.out.println("Original end date (start + 4 weeks): " + endedProject.startDate().plusWeeks(4));
-        System.out.println("Is early termination: " + endedProject.endDate().isBefore(endedProject.startDate().plusWeeks(4)));
         
         // 조기 종료로 인한 유예기간 재조정 확인
         OffsetDateTime updatedGracePeriod = getMemberGracePeriod(memberId);
-        System.out.println("조기 종료 후 유예기간: " + updatedGracePeriod);
         
         // 유예기간이 조정되었는지 확인 (조기 종료로 인해 단축되어야 함)
         if (updatedGracePeriod != null && originalGracePeriod != null) {
             // 조기 종료로 인해 유예기간이 단축되었는지 확인
             // 조기 종료로 인해 유예기간이 단축되어야 함 (더 짧은 유예기간으로)
             assertThat(updatedGracePeriod).isBefore(originalGracePeriod);
-            System.out.println("유예기간이 조기 종료로 인해 단축됨: " + originalGracePeriod + " -> " + updatedGracePeriod);
         } else {
             // 유예기간 재조정이 발생하지 않은 경우도 테스트 통과로 처리
-            System.out.println("유예기간 재조정이 발생하지 않음 (정상적인 경우일 수 있음)");
         }
     }
 
@@ -234,7 +223,6 @@ class GracePeriodAdjustmentIntegrationTest {
         // 조기 종료 전 유예기간 확인
         OffsetDateTime originalGracePeriod = getMemberGracePeriod(memberId);
         assertThat(originalGracePeriod).isNotNull();
-        System.out.println("조기 종료 전 유예기간: " + originalGracePeriod);
         
         // 스터디 종료 명령 생성
         EndStudyCommand command = EndStudyCommand.of(studyId, memberId, List.of());
@@ -248,17 +236,14 @@ class GracePeriodAdjustmentIntegrationTest {
         
         // 조기 종료로 인한 유예기간 재조정 확인
         OffsetDateTime updatedGracePeriod = getMemberGracePeriod(memberId);
-        System.out.println("조기 종료 후 유예기간: " + updatedGracePeriod);
         
         // 유예기간이 조정되었는지 확인 (조기 종료로 인해 단축되어야 함)
         if (updatedGracePeriod != null && originalGracePeriod != null) {
             // 조기 종료로 인해 유예기간이 단축되었는지 확인
             // 조기 종료로 인해 유예기간이 단축되어야 함 (더 짧은 유예기간으로)
             assertThat(updatedGracePeriod).isBefore(originalGracePeriod);
-            System.out.println("유예기간이 조기 종료로 인해 단축됨: " + originalGracePeriod + " -> " + updatedGracePeriod);
         } else {
             // 유예기간 재조정이 발생하지 않은 경우도 테스트 통과로 처리
-            System.out.println("유예기간 재조정이 발생하지 않음 (정상적인 경우일 수 있음)");
         }
     }
 
@@ -321,7 +306,6 @@ class GracePeriodAdjustmentIntegrationTest {
         // 정상 종료 전 유예기간 확인
         OffsetDateTime originalGracePeriod = getMemberGracePeriod(memberId);
         assertThat(originalGracePeriod).isNotNull();
-        System.out.println("정상 종료 전 유예기간: " + originalGracePeriod);
         
         // 프로젝트 종료 명령 생성
         EndProjectCommand command = EndProjectCommand.of(projectId, memberId, List.of());
@@ -335,11 +319,9 @@ class GracePeriodAdjustmentIntegrationTest {
         
         // 정상 종료 후 유예기간 확인
         OffsetDateTime updatedGracePeriod = getMemberGracePeriod(memberId);
-        System.out.println("정상 종료 후 유예기간: " + updatedGracePeriod);
         
         // 정상 종료이므로 유예기간이 변경되지 않았는지 확인
         assertThat(updatedGracePeriod).isEqualTo(originalGracePeriod);
-        System.out.println("정상 종료로 인해 유예기간이 변경되지 않음 (예상대로)");
     }
 
     @Test
@@ -357,7 +339,6 @@ class GracePeriodAdjustmentIntegrationTest {
         // 서비스 호출 전 유예기간 확인
         OffsetDateTime originalGracePeriod = getMemberGracePeriod(memberId);
         assertThat(originalGracePeriod).isNotNull();
-        System.out.println("서비스 호출 전 유예기간: " + originalGracePeriod);
 
         // When - 유예기간 재조정 서비스 직접 호출
         gracePeriodService.adjustGracePeriodForEarlyTerminatedStudy(studyId, startDate, earlyEndDate);
@@ -365,17 +346,14 @@ class GracePeriodAdjustmentIntegrationTest {
         
         // Then - 유예기간이 조정되었는지 확인
         OffsetDateTime updatedGracePeriod = getMemberGracePeriod(memberId);
-        System.out.println("서비스 호출 후 유예기간: " + updatedGracePeriod);
         
         // 유예기간이 조정되었는지 확인
         if (updatedGracePeriod != null && originalGracePeriod != null) {
             // 조기 종료로 인해 유예기간이 단축되었는지 확인
             // 조기 종료로 인해 유예기간이 단축되어야 함 (더 짧은 유예기간으로)
             assertThat(updatedGracePeriod).isBefore(originalGracePeriod);
-            System.out.println("유예기간이 조기 종료로 인해 단축됨: " + originalGracePeriod + " -> " + updatedGracePeriod);
         } else {
             // 유예기간 재조정이 발생하지 않은 경우도 테스트 통과로 처리
-            System.out.println("유예기간 재조정이 발생하지 않음 (정상적인 경우일 수 있음)");
         }
         
         // 성공적으로 실행되면 테스트 통과

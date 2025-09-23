@@ -54,6 +54,7 @@ spring:
       host: ${SPRING_DATA_REDIS_HOST:redis}
       port: ${SPRING_DATA_REDIS_PORT:6379}
       password: ${SPRING_DATA_REDIS_PASSWORD:}
+      ssl: ${SPRING_DATA_REDIS_SSL:false}
       timeout: 5000ms
       database: 0
       lettuce:

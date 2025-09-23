@@ -19,7 +19,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import org.certis.studyplatform.project.domain.vo.ProjectVo;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -86,6 +90,35 @@ class ProjectMeetingDomainServiceTest {
             Long projectId = 1L;
             Long memberId = 100L;
             
+            when(projectQueryRepository.findById(projectId)).thenReturn(
+                    Optional.of(
+                            ProjectVo.of(
+                                    projectId,
+                                    "title",
+                                    "desc",
+                                    "content",
+                                    "cat",
+                                    "sub",
+                                    OffsetDateTime.now().minusDays(10),
+                                    OffsetDateTime.now().plusDays(10),
+                                    999L,
+                                    null,
+                                    null,
+                                    null,
+                                    "ACTIVE",
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    10,
+                                    1,
+                                    true,
+                                    Collections.emptyList(),
+                                    Collections.emptyList()
+                            )
+                    )
+            );
+
             CreateProjectMeetingCommand command = new CreateProjectMeetingCommand(
                     projectId,
                     memberId,
@@ -123,6 +156,35 @@ class ProjectMeetingDomainServiceTest {
             Long projectId = 1L;
             Long memberId = 100L;
             
+            when(projectQueryRepository.findById(projectId)).thenReturn(
+                    Optional.of(
+                            ProjectVo.of(
+                                    projectId,
+                                    "title",
+                                    "desc",
+                                    "content",
+                                    "cat",
+                                    "sub",
+                                    OffsetDateTime.now().minusDays(10),
+                                    OffsetDateTime.now().plusDays(10),
+                                    999L,
+                                    null,
+                                    null,
+                                    null,
+                                    "ACTIVE",
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    10,
+                                    1,
+                                    true,
+                                    Collections.emptyList(),
+                                    Collections.emptyList()
+                            )
+                    )
+            );
+
             CreateProjectMeetingCommand command = new CreateProjectMeetingCommand(
                     projectId,
                     memberId,
@@ -198,6 +260,35 @@ class ProjectMeetingDomainServiceTest {
             Long projectId = 1L;
             Long memberId = 100L;
             
+            when(projectQueryRepository.findById(projectId)).thenReturn(
+                    Optional.of(
+                            ProjectVo.of(
+                                    projectId,
+                                    "title",
+                                    "desc",
+                                    "content",
+                                    "cat",
+                                    "sub",
+                                    OffsetDateTime.now().minusDays(10),
+                                    OffsetDateTime.now().plusDays(10),
+                                    999L,
+                                    null,
+                                    null,
+                                    null,
+                                    "ACTIVE",
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    10,
+                                    1,
+                                    true,
+                                    Collections.emptyList(),
+                                    Collections.emptyList()
+                            )
+                    )
+            );
+
             List<LinkDto> links = List.of(
                     new LinkDto("GitHub", "https://github.com/test"),
                     new LinkDto("Notion", "https://notion.so/test")
@@ -246,6 +337,35 @@ class ProjectMeetingDomainServiceTest {
             Long projectId = 1L;
             Long memberId = 100L;
             
+            when(projectQueryRepository.findById(projectId)).thenReturn(
+                    Optional.of(
+                            ProjectVo.of(
+                                    projectId,
+                                    "title",
+                                    "desc",
+                                    "content",
+                                    "cat",
+                                    "sub",
+                                    OffsetDateTime.now().minusDays(10),
+                                    OffsetDateTime.now().plusDays(10),
+                                    999L,
+                                    null,
+                                    null,
+                                    null,
+                                    "ACTIVE",
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    10,
+                                    1,
+                                    true,
+                                    Collections.emptyList(),
+                                    Collections.emptyList()
+                            )
+                    )
+            );
+
             CreateProjectMeetingCommand command = new CreateProjectMeetingCommand(
                     projectId,
                     memberId,
@@ -275,6 +395,35 @@ class ProjectMeetingDomainServiceTest {
             Long projectId = 1L;
             Long memberId = 100L;
             
+            when(projectQueryRepository.findById(projectId)).thenReturn(
+                    Optional.of(
+                            ProjectVo.of(
+                                    projectId,
+                                    "title",
+                                    "desc",
+                                    "content",
+                                    "cat",
+                                    "sub",
+                                    OffsetDateTime.now().minusDays(10),
+                                    OffsetDateTime.now().plusDays(10),
+                                    999L,
+                                    null,
+                                    null,
+                                    null,
+                                    "ACTIVE",
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    10,
+                                    1,
+                                    true,
+                                    Collections.emptyList(),
+                                    Collections.emptyList()
+                            )
+                    )
+            );
+
             CreateProjectMeetingCommand command = new CreateProjectMeetingCommand(
                     projectId,
                     memberId,

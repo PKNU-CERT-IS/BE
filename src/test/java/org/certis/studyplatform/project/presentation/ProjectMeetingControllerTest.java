@@ -84,7 +84,6 @@ class ProjectMeetingControllerTest {
 
     @BeforeEach
     void setUp() {
-        System.out.println("🔧 테스트 데이터 설정 시작");
         // 데이터 충돌 방지: 관련 테이블 초기화
         dsl.execute("TRUNCATE TABLE project_meeting_link RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE project_meeting RESTART IDENTITY CASCADE");
@@ -93,14 +92,11 @@ class ProjectMeetingControllerTest {
         dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
 
         setupTestData();
-        System.out.println("✅ 테스트 데이터 설정 완료");
     }
 
     @AfterEach
     void tearDown() {
-        System.out.println("🧹 테스트 데이터 정리 시작");
         cleanupTestData();
-        System.out.println("✅ 테스트 데이터 정리 완료");
     }
 
     // =================================================================
@@ -128,7 +124,6 @@ class ProjectMeetingControllerTest {
         // Then: 데이터베이스에 회의록이 정상적으로 저장되었는지 검증
         verifyMeetingCreatedInDatabase(request);
         
-        System.out.println("✅ 프로젝트 회의록 생성 테스트 성공");
     }
 
     @Test
@@ -177,7 +172,6 @@ class ProjectMeetingControllerTest {
                 .andExpect(jsonPath("$.data.updatedAt").exists())
                 .andExpect(jsonPath("$.data.editable").isBoolean());
 
-        System.out.println("✅ 프로젝트 회의록 상세 조회 테스트 성공");
     }
 
     @Test
@@ -211,7 +205,6 @@ class ProjectMeetingControllerTest {
         // Then: 데이터베이스에 실제로 수정 반영되었는지 검증
         verifyMeetingUpdatedInDatabase(request);
         
-        System.out.println("✅ 프로젝트 회의록 수정 테스트 성공");
     }
 
     @Test
@@ -240,7 +233,6 @@ class ProjectMeetingControllerTest {
                 .andExpect(jsonPath("$.data.first").value(true))
                 .andExpect(jsonPath("$.data.last").value(true));
 
-        System.out.println("✅ 프로젝트 회의록 목록 조회 테스트 성공");
     }
 
     @Test
@@ -267,7 +259,6 @@ class ProjectMeetingControllerTest {
         // Then: 데이터베이스에서 소프트 삭제 확인 (deletedAt 필드 설정)
         verifyMeetingDeletedInDatabase(TEST_MEETING_ID);
         
-        System.out.println("✅ 프로젝트 회의록 삭제 테스트 성공");
     }
 
     // =================================================================
@@ -291,7 +282,6 @@ class ProjectMeetingControllerTest {
 
                 .andExpect(jsonPath("$.statusCode").value(400));
 
-        System.out.println("✅ 필수 필드 누락 검증 테스트 성공");
     }
 
     @Test
@@ -315,7 +305,6 @@ class ProjectMeetingControllerTest {
 
                 .andExpect(jsonPath("$.statusCode").value(400));
 
-        System.out.println("✅ 잘못된 데이터 형식 검증 테스트 성공");
     }
 
     @Test
@@ -335,7 +324,6 @@ class ProjectMeetingControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(404))
                 .andExpect(jsonPath("$.message").value("프로젝트를 찾을 수 없습니다"));
 
-        System.out.println("✅ 존재하지 않는 프로젝트 테스트 성공 (404 Not Found)");
     }
 
     @Test
@@ -354,7 +342,6 @@ class ProjectMeetingControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(404))
                 .andExpect(jsonPath("$.message").value("회의록을 찾을 수 없습니다"));
 
-        System.out.println("✅ 존재하지 않는 회의록 조회 테스트 성공");
     }
 
     @Test
@@ -382,7 +369,6 @@ class ProjectMeetingControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(403))
                 .andExpect(jsonPath("$.message").value("회의록을 수정할 권한이 없습니다"));
 
-        System.out.println("✅ 권한 없는 사용자 수정 시도 테스트 성공");
     }
 
     // =================================================================
@@ -403,7 +389,6 @@ class ProjectMeetingControllerTest {
                 .andDo(print())
                 .andExpect(status().isUnsupportedMediaType());
 
-        System.out.println("✅ 잘못된 Content-Type 테스트 성공");
     }
 
     @Test
@@ -417,7 +402,6 @@ class ProjectMeetingControllerTest {
                 .andDo(print())
                 .andExpect(status().isBadRequest());
 
-        System.out.println("✅ 잘못된 JSON 형식 테스트 성공");
     }
 
     @Test
@@ -430,7 +414,6 @@ class ProjectMeetingControllerTest {
                 .andDo(print())
                 .andExpect(status().isMethodNotAllowed());
 
-        System.out.println("✅ 잘못된 HTTP 메서드 테스트 성공");
     }
 
     @Test
@@ -442,7 +425,6 @@ class ProjectMeetingControllerTest {
                 .andDo(print())
                 .andExpect(status().isNotFound());
 
-        System.out.println("✅ 존재하지 않는 엔드포인트 테스트 성공");
     }
 
     // =================================================================
@@ -476,7 +458,6 @@ class ProjectMeetingControllerTest {
         // 성능 검증: 1초 이내 응답
         assertThat(executionTime).isLessThan(1000);
         
-        System.out.println("✅ 대용량 데이터 페이징 성능 테스트 성공 - 실행시간: " + executionTime + "ms");
     }
 
     @Test
@@ -507,7 +488,6 @@ class ProjectMeetingControllerTest {
             verifyLinkCreatedInDatabase(link.getTitle(), link.getUrl());
         }
         
-        System.out.println("✅ 첨부 URL 포함 회의록 생성 테스트 성공");
     }
 
     @Test
@@ -533,7 +513,6 @@ class ProjectMeetingControllerTest {
         verifyMeetingCreatedInDatabase(request);
         verifyNoLinkCreatedForProject(request.getProjectId());
         
-        System.out.println("✅ 첨부 URL 없는 회의록 생성 테스트 성공");
     }
 
     @Test
@@ -569,7 +548,6 @@ class ProjectMeetingControllerTest {
             verifyLinkCreatedInDatabase(link.getTitle(), link.getUrl());
         }
         
-        System.out.println("✅ 다중 링크 포함 회의록 생성 테스트 성공");
     }
 
     @Test
@@ -596,7 +574,6 @@ class ProjectMeetingControllerTest {
         verifyMeetingCreatedInDatabase(request);
         verifyNoLinkCreatedForProject(TEST_PROJECT_ID);
         
-        System.out.println("✅ 빈 링크 배열 회의록 생성 테스트 성공");
     }
 
     @Test
@@ -618,20 +595,15 @@ class ProjectMeetingControllerTest {
         
         // 실제 응답 내용 출력
         String responseContent = result.getResponse().getContentAsString();
-        System.out.println("API 응답: " + responseContent);
         
         // JSON 파싱하여 isParticipantable 필드 확인
         try {
             com.fasterxml.jackson.databind.JsonNode jsonNode = objectMapper.readTree(responseContent);
-            System.out.println("data 필드: " + jsonNode.get("data"));
             if (jsonNode.get("data") != null) {
-                System.out.println("isParticipantable 필드: " + jsonNode.get("data").get("isParticipantable"));
             }
         } catch (Exception e) {
-            System.out.println("JSON 파싱 오류: " + e.getMessage());
         }
         
-        System.out.println("✅ 프로젝트 상세 조회 isParticipantable 필드 테스트 성공");
     }
 
     @Test
@@ -654,24 +626,17 @@ class ProjectMeetingControllerTest {
         
         // 실제 응답 내용 출력
         String responseContent = result.getResponse().getContentAsString();
-        System.out.println("프로젝트 목록 API 응답: " + responseContent);
         
         // JSON 파싱하여 isParticipantable 필드 확인
         try {
             com.fasterxml.jackson.databind.JsonNode jsonNode = objectMapper.readTree(responseContent);
-            System.out.println("data 필드: " + jsonNode.get("data"));
             if (jsonNode.get("data") != null && jsonNode.get("data").get("content") != null) {
-                System.out.println("content 배열: " + jsonNode.get("data").get("content"));
                 if (jsonNode.get("data").get("content").isArray() && jsonNode.get("data").get("content").size() > 0) {
-                    System.out.println("첫 번째 프로젝트: " + jsonNode.get("data").get("content").get(0));
-                    System.out.println("isParticipantable 필드: " + jsonNode.get("data").get("content").get(0).get("isParticipantable"));
                 }
             }
         } catch (Exception e) {
-            System.out.println("JSON 파싱 오류: " + e.getMessage());
         }
         
-        System.out.println("✅ 프로젝트 목록 조회 isParticipantable 필드 테스트 성공");
     }
 
     @Test
@@ -694,20 +659,15 @@ class ProjectMeetingControllerTest {
         
         // 실제 응답 내용 출력
         String responseContent = result.getResponse().getContentAsString();
-        System.out.println("프로젝트 상세 API 응답: " + responseContent);
         
         // JSON 파싱하여 attachments 필드 확인
         try {
             com.fasterxml.jackson.databind.JsonNode jsonNode = objectMapper.readTree(responseContent);
-            System.out.println("data 필드: " + jsonNode.get("data"));
             if (jsonNode.get("data") != null) {
-                System.out.println("attachments 필드: " + jsonNode.get("data").get("attachments"));
             }
         } catch (Exception e) {
-            System.out.println("JSON 파싱 오류: " + e.getMessage());
         }
         
-        System.out.println("✅ 프로젝트 상세 조회 attachments 필드 테스트 성공");
     }
 
 
@@ -733,24 +693,17 @@ class ProjectMeetingControllerTest {
         
         // 실제 응답 내용 출력
         String responseContent = result.getResponse().getContentAsString();
-        System.out.println("프로젝트 회의록 목록 API 응답: " + responseContent);
         
         // JSON 파싱하여 content 필드 확인
         try {
             com.fasterxml.jackson.databind.JsonNode jsonNode = objectMapper.readTree(responseContent);
-            System.out.println("data 필드: " + jsonNode.get("data"));
             if (jsonNode.get("data") != null && jsonNode.get("data").get("content") != null) {
-                System.out.println("content 배열: " + jsonNode.get("data").get("content"));
                 if (jsonNode.get("data").get("content").isArray() && jsonNode.get("data").get("content").size() > 0) {
-                    System.out.println("첫 번째 회의록: " + jsonNode.get("data").get("content").get(0));
-                    System.out.println("content 필드: " + jsonNode.get("data").get("content").get(0).get("content"));
                 }
             }
         } catch (Exception e) {
-            System.out.println("JSON 파싱 오류: " + e.getMessage());
         }
         
-        System.out.println("✅ 프로젝트 회의록 목록 조회 content 필드 테스트 성공");
     }
 
 
@@ -781,7 +734,6 @@ class ProjectMeetingControllerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.statusCode").value(409));
 
-        System.out.println("✅ 첨부 URL 변경 테스트 성공 (권한 검증으로 인한 예상된 실패)");
     }
 
     // =================================================================
@@ -861,7 +813,6 @@ class ProjectMeetingControllerTest {
                     .execute();
 
         } catch (Exception e) {
-            System.out.println("테스트 데이터 설정 중 오류 발생 (이미 존재할 수 있음): " + e.getMessage());
         }
     }
 
@@ -876,7 +827,6 @@ class ProjectMeetingControllerTest {
             dsl.deleteFrom(PROJECT).execute();
             dsl.deleteFrom(MEMBER).execute();
         } catch (Exception e) {
-            System.out.println("테스트 데이터 정리 중 오류 발생: " + e.getMessage());
         }
     }
 

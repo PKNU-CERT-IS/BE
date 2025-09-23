@@ -85,7 +85,6 @@ class ScheduleControllerTest {
 
     @BeforeEach
     void setUp() {
-        System.out.println("🔧 테스트 데이터 설정 시작");
         // 데이터 충돌 방지: 관련 테이블 초기화
         dsl.execute("TRUNCATE TABLE schedule_status RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE schedule RESTART IDENTITY CASCADE");
@@ -97,14 +96,11 @@ class ScheduleControllerTest {
         );
 
         setupTestData();
-        System.out.println("✅ 테스트 데이터 설정 완료");
     }
 
     @AfterEach
     void tearDown() {
-        System.out.println("🧹 테스트 데이터 정리 시작");
         cleanupTestData();
-        System.out.println("✅ 테스트 데이터 정리 완료");
     }
 
     // =================================================================
@@ -132,7 +128,6 @@ class ScheduleControllerTest {
         // Then: 데이터베이스에 스케줄이 정상적으로 저장되었는지 검증
         verifyScheduleCreatedInDatabase(request.getTitle(), request.getDescription());
 
-        System.out.println("✅ 동아리방 사용 신청 테스트 성공");
     }
 
     @Test
@@ -155,7 +150,6 @@ class ScheduleControllerTest {
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data[0].status").value("APPROVED"));
 
-        System.out.println("✅ 승인된 스케줄 조회 테스트 성공");
     }
 
     @Test
@@ -175,7 +169,6 @@ class ScheduleControllerTest {
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data.length()").value(3)); // PENDING, APPROVED, REJECTED
 
-        System.out.println("✅ 내 신청 조회 테스트 성공");
     }
 
     @Test
@@ -202,7 +195,6 @@ class ScheduleControllerTest {
         // Then: 데이터베이스에서 스케줄이 삭제되었는지 검증
         verifyScheduleDeletedInDatabase(TEST_SCHEDULE_ID);
 
-        System.out.println("✅ 동아리방 사용 삭제 테스트 성공");
     }
 
     // =================================================================
@@ -226,7 +218,6 @@ class ScheduleControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400));
 
-        System.out.println("✅ 필수 필드 누락 검증 테스트 성공");
     }
 
     @Test
@@ -248,7 +239,6 @@ class ScheduleControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(400))
                 .andExpect(jsonPath("$.message").value("입력 데이터 검증에 실패했습니다"));
 
-        System.out.println("✅ 과거 시간 스케줄 생성 방지 테스트 성공");
     }
 
     @Test
@@ -271,7 +261,6 @@ class ScheduleControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(400))
                 .andExpect(jsonPath("$.message").value("입력 데이터 검증에 실패했습니다"));
 
-        System.out.println("✅ 잘못된 시간 순서 검증 테스트 성공");
     }
 
     @Test
@@ -292,7 +281,6 @@ class ScheduleControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(400))
                 .andExpect(jsonPath("$.message").value("입력 데이터 검증에 실패했습니다"));
 
-        System.out.println("✅ 빈 제목 검증 테스트 성공");
     }
 
     @Test
@@ -310,7 +298,6 @@ class ScheduleControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400));
 
-        System.out.println("✅ 잘못된 데이터 형식 검증 테스트 성공");
     }
 
     @Test
@@ -327,7 +314,6 @@ class ScheduleControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400));
 
-        System.out.println("✅ 잘못된 날짜 파라미터 검증 테스트 성공");
     }
 
     @Test
@@ -348,7 +334,6 @@ class ScheduleControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(404))
                 .andExpect(jsonPath("$.message").value("스케줄 상태를 찾을 수 없습니다"));
 
-        System.out.println("✅ 존재하지 않는 스케줄 삭제 테스트 성공");
     }
 
     @Test
@@ -371,7 +356,6 @@ class ScheduleControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(403))
                 .andExpect(jsonPath("$.message").value("스케줄 관리에 적절하지 않은 사용자입니다."));
 
-        System.out.println("✅ 권한 없는 사용자 삭제 시도 테스트 성공");
     }
 
     // =================================================================

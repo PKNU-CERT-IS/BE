@@ -40,8 +40,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.test.annotation.Rollback;
 
 import java.time.OffsetDateTime;
 
@@ -50,6 +48,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import org.certis.generated.jooq.Tables;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -71,6 +70,7 @@ class ProfileControllerTest {
     @Autowired private ProjectJpaRepository projectJpaRepository;
     @Autowired private ProjectParticipantJpaRepository projectParticipantJpaRepository;
     @Autowired private BlogJpaRepository blogJpaRepository;
+    @Autowired private org.jooq.DSLContext dsl;
 
     private Long testMemberId;
 
@@ -299,6 +299,37 @@ class ProfileControllerTest {
     }
 
     @Test
+    @DisplayName("프로필 이미지 null 전달 시 기존 이미지 삭제")
+    void updateProfile_ProfileImageNull_ShouldDeleteExisting() throws Exception {
+        // Given: 기존 프로필 이미지가 있는 상태로 세팅
+        var member = memberJpaRepository.findById(testMemberId).orElseThrow();
+        member = member.toBuilder().profileImage("https://s3.example.com/profile/old.png").build();
+        memberJpaRepository.saveAndFlush(member);
+
+        CurrentUser mockUser = new CurrentUser(testMemberId, "testuser", "test@certis.org", "테스트사용자", "UPSOLVER");
+
+        // When: profileImage를 명시적으로 null로 보냄 (기타 필드는 유지)
+        ProfileUpdateRequestDto request = ProfileUpdateRequestDto.builder()
+                .name(member.getName())
+                .description(member.getDescription())
+                .profileImage(null)
+                .build();
+
+        mockMvc.perform(put("/api/v1/profile/me")
+                        .with(user(mockUser))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200));
+
+        // Then: DB에서 프로필 이미지가 null로 변경되었음을 확인 (S3 삭제는 로그로만 검증)
+        var updated = memberJpaRepository.findById(testMemberId).orElseThrow();
+        org.assertj.core.api.Assertions.assertThat(updated.getProfileImage()).isNull();
+    }
+
+    @Test
     @DisplayName("프로필 조회 - todaySchedules 필드 확인")
     void getProfile_WithScheduleFields() throws Exception {
         // Mock CurrentUser 생성
@@ -458,19 +489,14 @@ class ProfileControllerTest {
                 .memberId(testMemberId)
                 .status(StudyParticipantStatus.APPROVED)
                 .build();
-        StudyParticipantEntity savedParticipant = studyParticipantJpaRepository.saveAndFlush(participant);
+        studyParticipantJpaRepository.saveAndFlush(participant);
         
         // 데이터 저장 확인
-        System.out.println("✅ 스터디 저장됨 - ID: " + study.getId() + ", 제목: " + study.getTitle());
-        System.out.println("✅ 스터디 참가자 저장됨 - ID: " + savedParticipant.getId() + ", 스터디 ID: " + savedParticipant.getStudyId() + ", 멤버 ID: " + savedParticipant.getMemberId());
 
         mockMvc.perform(get("/api/v1/profile/me/study")
                 .with(user(mockUser)))
                 .andDo(print())
-                .andDo(result -> {
-                    String response = result.getResponse().getContentAsString();
-                    System.out.println("🔍 API 응답: " + response);
-                })
+                
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.data").isArray())
@@ -478,6 +504,151 @@ class ProfileControllerTest {
                 .andExpect(jsonPath("$.data[0].description").value("실제 데이터로 생성된 스터디입니다"))
                 .andExpect(jsonPath("$.data[0].category").value("TECH"))
                 .andExpect(jsonPath("$.data[0].subcategory").value("BACKEND"));
+    }
+
+    @Test
+    @DisplayName("프로필 스터디 조회 - mock row 패턴(Span/WEB_SECURITY)도 정상 응답")
+    void getStudies_MockRowStyle_ShouldBeReturned() throws Exception {
+        // Given: CurrentUser 설정
+        CurrentUser mockUser = new CurrentUser(testMemberId, "testuser", "test@certis.org", "테스트사용자", "UPSOLVER");
+
+        // When: mock 케이스와 유사한 스터디 행을 직접 삽입
+        java.time.OffsetDateTime startedAt = java.time.OffsetDateTime.parse("2024-10-01T08:34:50+00:00");
+        java.time.OffsetDateTime endedAt = java.time.OffsetDateTime.parse("2025-08-07T18:59:22+00:00");
+        java.time.OffsetDateTime createdAt = java.time.OffsetDateTime.parse("2025-07-24T07:35:19+00:00");
+        java.time.OffsetDateTime updatedAt = java.time.OffsetDateTime.parse("2025-07-06T17:57:13+00:00");
+
+        dsl.insertInto(Tables.STUDY)
+                .set(Tables.STUDY.ID, 2L)
+                .set(Tables.STUDY.MEMBER_ID, testMemberId)
+                .set(Tables.STUDY.TITLE, "Span")
+                .set(Tables.STUDY.DESCRIPTION, "Clarisse")
+                .set(Tables.STUDY.CONTENT, "Stanners")
+                .set(Tables.STUDY.CATEGORY, "WEB_SECURITY")
+                .set(Tables.STUDY.SUBCATEGORY, "WEB_SECURITY")
+                .set(Tables.STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(Tables.STUDY.STARTED_AT, startedAt)
+                .set(Tables.STUDY.ENDED_AT, endedAt)
+                .set(Tables.STUDY.CREATED_AT, createdAt)
+                .set(Tables.STUDY.UPDATED_AT, updatedAt)
+                .execute();
+
+        // 참가자(현재 사용자) 승인 상태로 추가해야 /profile/me/study 조회에 포함됨
+        dsl.insertInto(Tables.STUDY_PARTICIPANT)
+                .set(Tables.STUDY_PARTICIPANT.STUDY_ID, 2L)
+                .set(Tables.STUDY_PARTICIPANT.MEMBER_ID, testMemberId)
+                .set(Tables.STUDY_PARTICIPANT.STATUS, org.certis.studyplatform.study.domain.StudyParticipantStatus.APPROVED.name())
+                .set(Tables.STUDY_PARTICIPANT.CREATED_AT, createdAt)
+                .set(Tables.STUDY_PARTICIPANT.UPDATED_AT, updatedAt)
+                .execute();
+
+        // Then: /profile/me/study 응답에 위 항목이 포함되고 상태/필드가 적절히 매핑됨
+        var result = mockMvc.perform(get("/api/v1/profile/me/study")
+                        .with(user(mockUser)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.data").isArray())
+                .andReturn();
+
+        String responseBody = result.getResponse().getContentAsString();
+        com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(responseBody);
+        com.fasterxml.jackson.databind.JsonNode data = root.get("data");
+        boolean found = false;
+        if (data != null && data.isArray()) {
+            for (com.fasterxml.jackson.databind.JsonNode node : data) {
+                if ("Span".equals(node.path("title").asText()) &&
+                        "WEB_SECURITY".equals(node.path("category").asText())) {
+                    found = true;
+                    break;
+                }
+            }
+        }
+        org.assertj.core.api.Assertions.assertThat(found).isTrue();
+
+        // 상태 계산 검증: ended_at이 현재보다 과거이므로 COMPLETED
+        var statusResult = mockMvc.perform(get("/api/v1/profile/me/study")
+                        .with(user(mockUser)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
+        String statusBody = statusResult.getResponse().getContentAsString();
+        com.fasterxml.jackson.databind.JsonNode statusRoot = objectMapper.readTree(statusBody);
+        com.fasterxml.jackson.databind.JsonNode statusData = statusRoot.get("data");
+        String statusValue = null;
+        if (statusData != null && statusData.isArray()) {
+            for (com.fasterxml.jackson.databind.JsonNode node : statusData) {
+                if ("Span".equals(node.path("title").asText())) {
+                    // 프로필 스터디 응답 필드명: studyStatus
+                    String v = node.path("studyStatus").asText();
+                    statusValue = (v == null || v.isEmpty()) ? node.path("status").asText() : v;
+                    break;
+                }
+            }
+        }
+        org.assertj.core.api.Assertions.assertThat(statusValue).isEqualTo("COMPLETED");
+    }
+
+    @Test
+    @DisplayName("프로필 프로젝트 조회 - 참여 프로젝트가 응답에 포함 및 상태 계산")
+    void getProjects_MockRowStyle_ShouldBeReturned_WithStatus() throws Exception {
+        // Given: CurrentUser 설정
+        CurrentUser mockUser = new CurrentUser(testMemberId, "testuser", "test@certis.org", "테스트사용자", "UPSOLVER");
+
+        java.time.OffsetDateTime startedAt = java.time.OffsetDateTime.now().minusDays(30);
+        java.time.OffsetDateTime endedAt = java.time.OffsetDateTime.now().minusDays(1); // 과거 → COMPLETED
+        java.time.OffsetDateTime nowTs = java.time.OffsetDateTime.now();
+
+        // 프로젝트 삽입
+        dsl.insertInto(Tables.PROJECT)
+                .set(Tables.PROJECT.ID, 9876L)
+                .set(Tables.PROJECT.MEMBER_ID, testMemberId)
+                .set(Tables.PROJECT.TITLE, "프로필 프로젝트 테스트")
+                .set(Tables.PROJECT.DESCRIPTION, "테스트 프로젝트 설명")
+                .set(Tables.PROJECT.CONTENT, "내용")
+                .set(Tables.PROJECT.CATEGORY, "SECURITY")
+                .set(Tables.PROJECT.SUBCATEGORY, "WEB_PLATFORM")
+                .set(Tables.PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(Tables.PROJECT.STARTED_AT, startedAt)
+                .set(Tables.PROJECT.ENDED_AT, endedAt)
+                .set(Tables.PROJECT.CREATED_AT, nowTs)
+                .set(Tables.PROJECT.UPDATED_AT, nowTs)
+                .execute();
+
+        // 참가자(현재 사용자) 승인 추가
+        dsl.insertInto(Tables.PROJECT_PARTICIPANT)
+                .set(Tables.PROJECT_PARTICIPANT.PROJECT_ID, 9876L)
+                .set(Tables.PROJECT_PARTICIPANT.MEMBER_ID, testMemberId)
+                .set(Tables.PROJECT_PARTICIPANT.STATUS, org.certis.studyplatform.project.domain.ProjectParticipantStatus.APPROVED.name())
+                .set(Tables.PROJECT_PARTICIPANT.CREATED_AT, nowTs)
+                .set(Tables.PROJECT_PARTICIPANT.UPDATED_AT, nowTs)
+                .execute();
+
+        // Then: 응답 포함 및 상태 COMPLETED
+        var projResult = mockMvc.perform(get("/api/v1/profile/me/project")
+                        .with(user(mockUser)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String projBody = projResult.getResponse().getContentAsString();
+        com.fasterxml.jackson.databind.JsonNode projRoot = objectMapper.readTree(projBody);
+        com.fasterxml.jackson.databind.JsonNode projData = projRoot.get("data");
+        boolean projFound = false;
+        String projStatus = null;
+        if (projData != null && projData.isArray()) {
+            for (com.fasterxml.jackson.databind.JsonNode node : projData) {
+                if ("프로필 프로젝트 테스트".equals(node.path("title").asText())) {
+                    projFound = true;
+                    // 프로필 프로젝트 응답 필드명: projectStatus
+                    String v = node.path("projectStatus").asText();
+                    projStatus = (v == null || v.isEmpty()) ? node.path("status").asText() : v;
+                    break;
+                }
+            }
+        }
+        org.assertj.core.api.Assertions.assertThat(projFound).isTrue();
+        org.assertj.core.api.Assertions.assertThat(projStatus).isEqualTo("COMPLETED");
     }
 
     @Test

@@ -212,7 +212,6 @@ class StudyParticipantIntegrationTest {
             
             // 디버깅: 스터디가 제대로 생성되었는지 확인
             var studyRecord = dsl.selectFrom(STUDY).where(STUDY.ID.eq(999L)).fetchOne();
-            System.out.println("Created study: " + studyRecord);
             
             createStudyParticipant(TEST_STUDY_PARTICIPANT_ID, 999L, TEST_MEMBER_ID, StudyParticipantStatus.PENDING);
 

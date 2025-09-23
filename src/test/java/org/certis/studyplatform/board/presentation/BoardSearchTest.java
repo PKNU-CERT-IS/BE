@@ -42,7 +42,7 @@ class BoardSearchTest {
         assertThat(query.search()).isNull();
         assertThat(query.category()).isNull();
         assertThat(query.page()).isEqualTo(0);
-        assertThat(query.size()).isEqualTo(1000); // noFilter일 때 1000으로 설정
+        assertThat(query.size()).isEqualTo(10); // noFilter일 때 10으로 설정
     }
 
     @Test
@@ -62,7 +62,7 @@ class BoardSearchTest {
         assertThat(query.search()).isEqualTo("");
         assertThat(query.category()).isNull();
         assertThat(query.page()).isEqualTo(0);
-        assertThat(query.size()).isEqualTo(1000); // noFilter일 때 1000으로 설정
+        assertThat(query.size()).isEqualTo(10); // noFilter일 때 10으로 설정
     }
 
     @Test

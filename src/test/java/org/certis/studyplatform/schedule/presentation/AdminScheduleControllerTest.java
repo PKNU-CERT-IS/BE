@@ -83,16 +83,12 @@ class AdminScheduleControllerTest {
 
     @BeforeEach
     void setUp() {
-        System.out.println("🔧 관리자 테스트 데이터 설정 시작");
         setupTestData();
-        System.out.println("✅ 관리자 테스트 데이터 설정 완료");
     }
 
     @AfterEach
     void tearDown() {
-        System.out.println("🧹 관리자 테스트 데이터 정리 시작");
         cleanupTestData();
-        System.out.println("✅ 관리자 테스트 데이터 정리 완료");
     }
 
     // =================================================================
@@ -120,7 +116,6 @@ class AdminScheduleControllerTest {
         // Then: 데이터베이스에 스케줄이 APPROVED 상태로 저장되었는지 검증
         verifyAdminScheduleCreatedInDatabase(request.getTitle(), request.getDescription(), request.getType(), request.getPlace());
 
-        System.out.println("✅ 관리자 스케줄 생성 테스트 성공");
     }
 
     @Test
@@ -141,7 +136,6 @@ class AdminScheduleControllerTest {
                 .andExpect(jsonPath("$.data.length()").value(2)) // 2개의 대기중인 신청
                 .andExpect(jsonPath("$.data[0].status").value("PENDING"));
 
-        System.out.println("✅ 대기중인 신청 조회 테스트 성공");
     }
 
     @Test
@@ -169,7 +163,6 @@ class AdminScheduleControllerTest {
         // Then: 데이터베이스에서 상태가 APPROVED로 변경되었는지 검증
         verifyScheduleStatusUpdated(TEST_SCHEDULE_ID, "APPROVED");
 
-        System.out.println("✅ 스케줄 승인 테스트 성공");
     }
 
     @Test
@@ -197,7 +190,6 @@ class AdminScheduleControllerTest {
         // Then: 데이터베이스에서 상태가 REJECTED로 변경되었는지 검증
         verifyScheduleStatusUpdated(TEST_SCHEDULE_ID, "REJECTED");
 
-        System.out.println("✅ 스케줄 거절 테스트 성공");
     }
 
     @Test
@@ -223,7 +215,6 @@ class AdminScheduleControllerTest {
         // Then: 데이터베이스에서 스케줄이 삭제되었는지 검증
         verifyScheduleDeletedInDatabase(TEST_SCHEDULE_ID);
 
-        System.out.println("✅ 관리자 스케줄 삭제 테스트 성공");
     }
 
     // =================================================================
@@ -246,7 +237,6 @@ class AdminScheduleControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(403))
                 .andExpect(jsonPath("$.message").value("접근 권한이 없습니다"));
 
-        System.out.println("✅ 관리자 권한 체크 테스트 (미래 개선 필요)");
     }
 
     @Test
@@ -266,7 +256,6 @@ class AdminScheduleControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400));
 
-        System.out.println("✅ 관리자 스케줄 필수 필드 누락 검증 테스트 성공");
     }
 
     @Test
@@ -283,7 +272,6 @@ class AdminScheduleControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(403))
                 .andExpect(jsonPath("$.message").value("접근 권한이 없습니다"));
 
-        System.out.println("✅ 대기중인 신청 조회 권한 체크 테스트 성공");
     }
 
     @Test
@@ -305,7 +293,6 @@ class AdminScheduleControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(404))
                 .andExpect(jsonPath("$.message").value("스케줄 상태를 찾을 수 없습니다"));
 
-        System.out.println("✅ 존재하지 않는 스케줄 승인 시도 테스트 성공");
     }
 
     @Test
@@ -329,7 +316,6 @@ class AdminScheduleControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(422))
                 .andExpect(jsonPath("$.message").value("대기 상태가 아닌 스케줄은 처리할 수 없습니다"));
 
-        System.out.println("✅ 이미 처리된 스케줄 재처리 시도 테스트 성공");
     }
 
     @Test
@@ -354,7 +340,6 @@ class AdminScheduleControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(403))
                 .andExpect(jsonPath("$.message").value("접근 권한이 없습니다"));
 
-        System.out.println("✅ 스케줄 처리 권한 체크 테스트 성공");
     }
 
     @Test
@@ -375,7 +360,6 @@ class AdminScheduleControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(404))
                 .andExpect(jsonPath("$.message").value("스케줄 상태를 찾을 수 없습니다"));
 
-        System.out.println("✅ 존재하지 않는 스케줄 삭제 시도 테스트 성공");
     }
 
     @Test
@@ -399,7 +383,6 @@ class AdminScheduleControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(403))
                 .andExpect(jsonPath("$.message").value("접근 권한이 없습니다"));
 
-        System.out.println("✅ 스케줄 삭제 권한 체크 테스트 성공");
     }
 
     // =================================================================

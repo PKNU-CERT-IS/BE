@@ -42,8 +42,9 @@ spring:
   # Redis 설정 (EmbeddedRedis 사용)
   data:
     redis:
-      host: localhost
-      port: 6379
+      client-type: lettuce
+      host: ${embedded.redis.host:localhost}
+      port: ${embedded.redis.actual.port:6379}
       timeout: 2000ms
       database: 0
       lettuce:

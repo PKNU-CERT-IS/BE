@@ -81,7 +81,6 @@ class ProjectControllerTest {
 
     @BeforeEach
     void setUp() {
-        System.out.println("🔧 테스트 데이터 설정 시작");
         // 데이터 충돌 방지를 위해 매 테스트 시작 시 테이블 정리
         dsl.execute("TRUNCATE TABLE project_meeting_link RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE project_meeting RESTART IDENTITY CASCADE");
@@ -90,14 +89,11 @@ class ProjectControllerTest {
         dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
 
         setupTestData();
-        System.out.println("✅ 테스트 데이터 설정 완료");
     }
 
     @AfterEach
     void tearDown() {
-        System.out.println("🧹 테스트 데이터 정리 시작");
         cleanupTestData();
-        System.out.println("✅ 테스트 데이터 정리 완료");
     }
 
     // =================================================================
@@ -124,7 +120,6 @@ class ProjectControllerTest {
         // Then: 데이터베이스에 프로젝트가 정상적으로 저장되었는지 검증
         verifyProjectCreatedInDatabase(request);
 
-        System.out.println("✅ 프로젝트 생성 테스트 성공");
     }
 
     @Test
@@ -163,7 +158,6 @@ class ProjectControllerTest {
                 .fetchOne(PROJECT.MEMBER_ID);
         assertThat(responseCreatorId).isEqualTo(dbCreatorId);
 
-        System.out.println("✅ 프로젝트 상세 조회 테스트 성공");
     }
 
     @Test
@@ -196,7 +190,44 @@ class ProjectControllerTest {
         // Then: 데이터베이스에서 프로젝트 수정 확인
         verifyProjectUpdatedInDatabase(request);
 
-        System.out.println("✅ 프로젝트 수정 테스트 성공");
+    }
+
+    @Test
+    @Order(3)
+    @DisplayName("✏️ 프로젝트 수정 - attachments=null 이면 기존 첨부 삭제")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
+    void updateProject_NullAttachments_ShouldDeleteExisting() throws Exception {
+        // Given: 프로젝트와 기존 첨부 존재
+        createTestProjectInDatabase();
+        OffsetDateTime now = OffsetDateTime.now();
+        dsl.insertInto(PROJECT_ATTACHED)
+                .set(PROJECT_ATTACHED.PROJECT_ID, TEST_PROJECT_ID)
+                .set(PROJECT_ATTACHED.MEMBER_ID, TEST_MEMBER_ID)
+                .set(PROJECT_ATTACHED.NAME, "old.txt")
+                .set(PROJECT_ATTACHED.TYPE, "text/plain")
+                .set(PROJECT_ATTACHED.SIZE, "10")
+                .set(PROJECT_ATTACHED.ATTACHED_URL, "https://s3.example.com/old.txt")
+                .set(PROJECT_ATTACHED.CREATED_AT, now)
+                .set(PROJECT_ATTACHED.UPDATED_AT, now)
+                .execute();
+
+        ProjectUpdateRequestDto request = new ProjectUpdateRequestDto();
+        request.setProjectId(TEST_PROJECT_ID);
+        request.setTitle("제목유지");
+        request.setDescription("설명유지");
+        request.setAttachments(null); // 핵심: null 전달
+
+        // When
+        mockMvc.perform(put("/api/v1/project/update")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(ResponseStatus.PROJECT_UPDATE_SUCCESS.getStatusCode()));
+
+        // Then: 첨부 테이블이 비어있어야 함
+        Integer count = dsl.fetchCount(PROJECT_ATTACHED, PROJECT_ATTACHED.PROJECT_ID.eq(TEST_PROJECT_ID));
+        assertThat(count).isZero();
     }
 
     @Test
@@ -217,7 +248,6 @@ class ProjectControllerTest {
                 .andExpect(jsonPath("$.data.first").value(true))
                 .andExpect(jsonPath("$.data.last").value(true));
 
-        System.out.println("✅ 전체 프로젝트 목록 조회 테스트 성공");
     }
 
     @Test
@@ -243,7 +273,6 @@ class ProjectControllerTest {
                 .andExpect(jsonPath("$.data.size").value(10))
                 .andExpect(jsonPath("$.data.number").value(0));
 
-        System.out.println("✅ 프로젝트 키워드 검색 테스트 성공");
     }
 
     @Test
@@ -287,7 +316,6 @@ class ProjectControllerTest {
         // Then: 데이터베이스에서 소프트 삭제 확인 (deletedAt 필드 설정)
         verifyProjectDeletedInDatabase(TEST_PROJECT_ID);
 
-        System.out.println("✅ 프로젝트 삭제 테스트 성공");
     }
 
     @Test
@@ -307,7 +335,6 @@ class ProjectControllerTest {
                 .andExpect(jsonPath("$.message").value(ResponseStatus.PROJECT_FIND_SUCCESS.getMessage()))
                 .andExpect(jsonPath("$.data").isArray());
 
-        System.out.println("✅ 프로젝트 회의록 목록 조회 테스트 성공");
     }
 
     // =================================================================
@@ -330,7 +357,6 @@ class ProjectControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400));
 
-        System.out.println("✅ 필수 필드 누락 검증 테스트 성공");
     }
 
     @Test
@@ -355,7 +381,6 @@ class ProjectControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400));
 
-        System.out.println("✅ 잘못된 데이터 형식 검증 테스트 성공");
     }
 
     @Test
@@ -372,7 +397,6 @@ class ProjectControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.statusCode").value(404));
 
-        System.out.println("✅ 존재하지 않는 프로젝트 조회 테스트 성공");
     }
 
     @Test
@@ -396,7 +420,6 @@ class ProjectControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400));
 
-        System.out.println("✅ 권한 없는 사용자 수정 시도 테스트 성공");
     }
 
     @Test
@@ -418,7 +441,6 @@ class ProjectControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400));
 
-        System.out.println("✅ 권한 없는 사용자 삭제 시도 테스트 성공");
     }
 
     // =================================================================
@@ -439,7 +461,6 @@ class ProjectControllerTest {
                 .andDo(print())
                 .andExpect(status().isUnsupportedMediaType());
 
-        System.out.println("✅ 잘못된 Content-Type 테스트 성공");
     }
 
     @Test
@@ -453,7 +474,6 @@ class ProjectControllerTest {
                 .andDo(print())
                 .andExpect(status().isBadRequest());
 
-        System.out.println("✅ 잘못된 JSON 형식 테스트 성공");
     }
 
     @Test
@@ -466,7 +486,6 @@ class ProjectControllerTest {
                 .andDo(print())
                 .andExpect(status().isMethodNotAllowed());
 
-        System.out.println("✅ 잘못된 HTTP 메서드 테스트 성공");
     }
 
     @Test
@@ -478,7 +497,6 @@ class ProjectControllerTest {
                 .andDo(print())
                 .andExpect(status().isNotFound());
 
-        System.out.println("✅ 존재하지 않는 엔드포인트 테스트 성공");
     }
 
     // =================================================================
@@ -511,7 +529,6 @@ class ProjectControllerTest {
         // 성능 검증: 2초 이내 응답
         assertThat(executionTime).isLessThan(2000);
 
-        System.out.println("✅ 대용량 데이터 성능 테스트 성공 - 실행시간: " + executionTime + "ms");
     }
 
     @Test
@@ -541,7 +558,6 @@ class ProjectControllerTest {
         // 성능 검증: 1초 이내 응답
         assertThat(executionTime).isLessThan(1000);
 
-        System.out.println("✅ 복합 조건 검색 성능 테스트 성공 - 실행시간: " + executionTime + "ms");
     }
 
 
@@ -602,7 +618,6 @@ class ProjectControllerTest {
                     .execute();
 
         } catch (Exception e) {
-            System.out.println("테스트 데이터 설정 중 오류 발생 (이미 존재할 수 있음): " + e.getMessage());
         }
     }
 
@@ -616,7 +631,6 @@ class ProjectControllerTest {
             dsl.deleteFrom(PROJECT).execute();
             dsl.deleteFrom(MEMBER).execute();
         } catch (Exception e) {
-            System.out.println("테스트 데이터 정리 중 오류 발생: " + e.getMessage());
         }
     }
 
