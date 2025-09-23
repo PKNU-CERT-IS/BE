@@ -21,6 +21,7 @@ import org.certis.studyplatform.member.presentation.dto.response.ProfileProjectR
 import org.certis.studyplatform.member.presentation.dto.response.ProfileBlogResponseDto;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -98,6 +99,23 @@ public class ProfileFacadeService {
         profileCommandService.updateMyProfile(command);
 
         log.info("My profile updated via facade - member ID: {}", memberId);
+    }
+
+    /**
+     * 프로필 이미지 업로드
+     *
+     * @param memberId 현재 로그인한 회원 ID
+     * @param file 업로드할 이미지 파일
+     * @return 업로드된 이미지 URL
+     */
+    public String uploadProfileImage(Long memberId, MultipartFile file) {
+        log.info("Uploading profile image via facade - member ID: {}", memberId);
+
+        // S3에 이미지 업로드
+        String imageUrl = profileCommandService.uploadProfileImage(memberId, file);
+
+        log.info("Profile image uploaded via facade - member ID: {}, URL: {}", memberId, imageUrl);
+        return imageUrl;
     }
 
     /**

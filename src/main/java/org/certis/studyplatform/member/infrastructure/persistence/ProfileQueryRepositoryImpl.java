@@ -506,8 +506,16 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
      * StudyVo → ProfileStudyVo 변환
      */
     private ProfileStudyVo toProfileStudyVo(StudyVo study) {
-        // StudyVo에는 status 필드가 없으므로 기본값 사용
-        StudyStatus status = StudyStatus.INPROGRESS; // 기본값
+        // Study 상태를 날짜 기준으로 계산
+        OffsetDateTime now = OffsetDateTime.now();
+        StudyStatus status;
+        if (study.endDate() != null && study.endDate().isBefore(now)) {
+            status = StudyStatus.COMPLETED;
+        } else if (study.startDate() != null && study.startDate().isAfter(now)) {
+            status = StudyStatus.READY;
+        } else {
+            status = StudyStatus.INPROGRESS;
+        }
         
         return new ProfileStudyVo(
                 study.id(),
@@ -526,8 +534,16 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
      * ProjectVo → ProfileProjectVo 변환
      */
     private ProfileProjectVo toProfileProjectVo(ProjectVo project) {
-        // ProjectVo에는 status 필드가 없으므로 기본값 사용
-        ProjectStatus status = ProjectStatus.INPROGRESS; // 기본값
+        // Project 상태를 날짜 기준으로 계산
+        OffsetDateTime now = OffsetDateTime.now();
+        ProjectStatus status;
+        if (project.endDate() != null && project.endDate().isBefore(now)) {
+            status = ProjectStatus.COMPLETED;
+        } else if (project.startDate() != null && project.startDate().isAfter(now)) {
+            status = ProjectStatus.READY;
+        } else {
+            status = ProjectStatus.INPROGRESS;
+        }
         
         return new ProfileProjectVo(
                 project.id(),

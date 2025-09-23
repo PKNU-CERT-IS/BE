@@ -2,6 +2,7 @@ package org.certis.studyplatform.member.domain.repository.command;
 
 import org.certis.studyplatform.member.domain.vo.MemberIdVo;
 import org.certis.studyplatform.member.domain.vo.ProfileVo;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Optional;
 
@@ -39,4 +40,13 @@ public interface ProfileCommandRepository {
      * 모든 프로필 삭제 (테스트용)
      */
     void deleteAll();
+
+    /**
+     * 프로필 이미지 업로드
+     *
+     * @param memberIdVo 회원 ID
+     * @param file 업로드할 이미지 파일
+     * @return 업로드된 이미지 URL
+     */
+    String uploadProfileImage(MemberIdVo memberIdVo, MultipartFile file);
 }
