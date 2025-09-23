@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.certis.studyplatform.blog.domain.ArticleReferenceType;
 
 import java.time.OffsetDateTime;
 
@@ -29,6 +30,12 @@ public class BlogDetailResponseDto {
     private String description;
 
     private String category;
+
+    private ArticleReferenceType referenceType;
+
+    private Long referenceId;
+
+    private String referenceTitle;
 
     private Integer viewCount;
 

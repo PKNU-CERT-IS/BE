@@ -89,7 +89,25 @@ public interface BlogQueryRepository {
      *
      * @param isPublic 공개 유무 (null이면 모든 블로그)
      * @param pageable 페이징 정보
+     * @param criteria 검색 조건 (keyword, category)
      * @return 블로그 목록
      */
-    Page<BlogSummaryVo> findByPublicStatus(Boolean isPublic, Pageable pageable);
+    Page<BlogSummaryVo> findByPublicStatus(Boolean isPublic, Pageable pageable, BlogSearchCriteriaVo criteria);
+
+    /**
+     * 회원별 작성 블로그 목록 조회
+     *
+     * @param memberId 회원 ID
+     * @param pageable 페이징 정보
+     * @return 블로그 목록
+     */
+    Page<BlogSummaryVo> findByMemberId(Long memberId, Pageable pageable);
+
+    /**
+     * 회원별 작성 블로그 수 조회
+     *
+     * @param memberId 회원 ID
+     * @return 블로그 수
+     */
+    long countByMemberId(Long memberId);
 }

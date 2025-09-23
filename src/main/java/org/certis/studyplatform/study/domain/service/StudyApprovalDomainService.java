@@ -2,6 +2,11 @@ package org.certis.studyplatform.study.domain.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.certis.studyplatform.exception.DomainException;
+import org.certis.studyplatform.exception.ExceptionStatus;
+import org.certis.studyplatform.member.application.object.query.GetMemberByIdQuery;
+import org.certis.studyplatform.member.domain.MemberRole;
+import org.certis.studyplatform.member.domain.service.MemberDomainService;
 import org.certis.studyplatform.member.domain.service.GracePeriodExtensionDomainService;
 import org.certis.studyplatform.study.domain.repository.StudyQueryRepository;
 import org.certis.studyplatform.study.domain.vo.StudyVo;
@@ -25,6 +30,7 @@ public class StudyApprovalDomainService {
 
     private final StudyQueryRepository studyQueryRepository;
     private final GracePeriodExtensionDomainService gracePeriodExtensionDomainService;
+    private final MemberDomainService memberDomainService;
 
     /**
      * 스터디 승인 처리
@@ -102,12 +108,18 @@ public class StudyApprovalDomainService {
      * 관리자 승인 권한 검증
      */
     private void validateApprovalPermission(Long approverId) {
-        // 실제 구현에서는 Member 도메인에서 권한 확인
-        // MemberVo approver = memberQueryRepository.findById(approverId);
-        // if (!approver.hasApprovalPermission()) {
-        //     throw new IllegalArgumentException("No approval permission");
-        // }
-        log.debug("Domain: Approval permission validated for approverId: {}", approverId);
+        try {
+            var approver = memberDomainService.getMemberVo(new GetMemberByIdQuery(approverId));
+            MemberRole role = approver.role();
+            if (!MemberRole.isStaffOrAbove(role)) {
+                throw new DomainException(ExceptionStatus.STUDY_DOMAIN_ACCESS_DENIED, "승인 권한이 없습니다");
+            }
+            log.debug("Domain: Approval permission granted - approverId: {}, role: {}", approverId, role);
+        } catch (DomainException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_ACCESS_DENIED, "승인 권한 검증 중 오류가 발생했습니다");
+        }
     }
 
     /**

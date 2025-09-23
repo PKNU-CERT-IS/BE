@@ -13,6 +13,8 @@ import org.certis.studyplatform.project.domain.repository.ProjectMeetingCommandR
 import org.certis.studyplatform.project.domain.repository.ProjectMeetingLinkCommandRepository;
 import org.certis.studyplatform.project.domain.repository.ProjectMeetingLinkQueryRepository;
 import org.certis.studyplatform.project.domain.repository.ProjectMeetingQueryRepository;
+import org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository;
+import org.certis.studyplatform.project.domain.repository.ProjectQueryRepository;
 import org.certis.studyplatform.project.domain.vo.*;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
@@ -34,6 +36,8 @@ public class ProjectMeetingDomainService {
     private final ProjectMeetingQueryRepository projectMeetingQueryRepository;
     private final ProjectMeetingLinkCommandRepository projectMeetingLinkCommandRepository;
     private final ProjectMeetingLinkQueryRepository projectMeetingLinkQueryRepository;
+    private final ProjectParticipantQueryRepository projectParticipantQueryRepository;
+    private final ProjectQueryRepository projectQueryRepository;
 
     /**
      * 프로젝트 회의록 생성
@@ -205,15 +209,42 @@ public class ProjectMeetingDomainService {
 
     /**
      * 프로젝트 접근 권한 검증
-     * TODO: 실제 프로젝트 멤버십 체크 로직 구현 필요
+     * 프로젝트의 승인된 멤버만 접근 가능
      */
     private void validateProjectAccess(Long projectId, Long requesterId) {
-        // 현재는 기본 구현만 제공
-        // 실제로는 프로젝트 멤버십이나 권한을 체크하는 로직이 필요
         if (projectId == null || requesterId == null) {
-            log.warn("Invalid project access parameters - projectId: {}", projectId);
-            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_PERMISSION_DENINED);
+            log.warn("Invalid project access parameters - projectId: {}, requesterId: {}", projectId, requesterId);
+            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_PERMISSION_DENINED, 
+                    "프로젝트 접근 권한이 없습니다.");
         }
-        log.debug("Project access validated - projectId: {}", projectId);
+
+        // 프로젝트 생성자는 항상 접근 가능
+        try {
+            var projectVoOptional = projectQueryRepository.findById(projectId);
+            if (projectVoOptional.isEmpty()) {
+                log.warn("Project not found - projectId: {}", projectId);
+                throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_NOT_FOUND, "프로젝트를 찾을 수 없습니다");
+            }
+            if (requesterId.equals(projectVoOptional.get().creatorId())) {
+                log.debug("Project access granted - requester is project creator: projectId: {}, requesterId: {}", projectId, requesterId);
+                return;
+            }
+        } catch (DomainException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("Project lookup failed during access validation - projectId: {}. Proceeding to participant check.", projectId);
+        }
+
+        // 프로젝트의 승인된 멤버인지 확인
+        boolean isApprovedMember = projectParticipantQueryRepository.isApprovedMember(projectId, requesterId);
+        
+        if (!isApprovedMember) {
+            log.warn("Project access denied - projectId: {}, requesterId: {} (not an approved member)", 
+                    projectId, requesterId);
+            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_PERMISSION_DENINED, 
+                    "프로젝트의 승인된 멤버만 접근할 수 있습니다.");
+        }
+
+        log.debug("Project access validated - projectId: {}, requesterId: {}", projectId, requesterId);
     }
 }

@@ -227,7 +227,7 @@ public class MemberInfrastructureMapper {
                 entity.getDescription(),
                 entity.getProfileImage(),
                 List.of(), // todaySchedules (ProfileQueryRepositoryImpl에서 별도 조회하여 설정)
-                0,         // penaltyCount (TODO: 실제 벌점 데이터 조회)
+                0,         // penaltyCount (실제 벌점 데이터 조회)
                 null,      // gracePeriod (도메인 서비스에서 계산됨)
                 memberRole,
                 memberGrade,

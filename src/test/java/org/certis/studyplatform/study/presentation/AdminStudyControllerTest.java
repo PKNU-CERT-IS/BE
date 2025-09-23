@@ -76,21 +76,17 @@ class AdminStudyControllerTest {
 
     @BeforeEach
     void setUp() {
-        System.out.println("🔧 관리자 스터디 테스트 데이터 설정 시작");
         // 데이터 충돌 방지: 관련 테이블 초기화
         dsl.execute("TRUNCATE TABLE study_participant RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE study RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
 
         setupTestData();
-        System.out.println("✅ 관리자 스터디 테스트 데이터 설정 완료");
     }
 
     @AfterEach
     void tearDown() {
-        System.out.println("🧹 관리자 스터디 테스트 데이터 정리 시작");
         cleanupTestData();
-        System.out.println("✅ 관리자 스터디 테스트 데이터 정리 완료");
     }
 
     // =================================================================
@@ -117,11 +113,11 @@ class AdminStudyControllerTest {
                 .andExpect(jsonPath("$.message").value("스터디 참가 신청이 관리자에 의해 성공적으로 승인되었습니다"))
                 .andExpect(jsonPath("$.data.participantId").value(TEST_PARTICIPANT_ID))
                 .andExpect(jsonPath("$.data.studyId").value(TEST_STUDY_ID))
-                .andExpect(jsonPath("$.data.studyTitle").value("스터디 제목"))
+                .andExpect(jsonPath("$.data.studyTitle").value("Spring Boot 스터디"))
                 .andExpect(jsonPath("$.data.memberId").value(TEST_MEMBER_ID))
-                .andExpect(jsonPath("$.data.memberName").value("회원 이름"))
+                .andExpect(jsonPath("$.data.memberName").value("테스트회원"))
                 .andExpect(jsonPath("$.data.status").value("APPROVED"))
-                .andExpect(jsonPath("$.data.reason").value("관리자 처리"))
+                .andExpect(jsonPath("$.data.reason").value("자격 요건 충족"))
                 .andExpect(jsonPath("$.data.adminId").value(TEST_ADMIN_ID))
                 .andExpect(jsonPath("$.data.processedAt").exists());
 
@@ -154,11 +150,11 @@ class AdminStudyControllerTest {
                 .andExpect(jsonPath("$.message").value("스터디 참가 신청이 관리자에 의해 성공적으로 거절되었습니다"))
                 .andExpect(jsonPath("$.data.participantId").value(TEST_PARTICIPANT_ID))
                 .andExpect(jsonPath("$.data.studyId").value(TEST_STUDY_ID))
-                .andExpect(jsonPath("$.data.studyTitle").value("스터디 제목"))
+                .andExpect(jsonPath("$.data.studyTitle").value("Spring Boot 스터디"))
                 .andExpect(jsonPath("$.data.memberId").value(TEST_MEMBER_ID))
-                .andExpect(jsonPath("$.data.memberName").value("회원 이름"))
+                .andExpect(jsonPath("$.data.memberName").value("테스트회원"))
                 .andExpect(jsonPath("$.data.status").value("REJECTED"))
-                .andExpect(jsonPath("$.data.reason").value("관리자 처리"))
+                .andExpect(jsonPath("$.data.reason").value("자격 요건 미충족"))
                 .andExpect(jsonPath("$.data.adminId").value(TEST_ADMIN_ID))
                 .andExpect(jsonPath("$.data.processedAt").exists());
 

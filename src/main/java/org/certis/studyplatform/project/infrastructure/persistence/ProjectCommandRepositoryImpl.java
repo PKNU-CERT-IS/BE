@@ -6,10 +6,14 @@ import org.certis.studyplatform.project.domain.repository.ProjectCommandReposito
 import org.certis.studyplatform.project.domain.vo.ProjectUpdateVo;
 import org.certis.studyplatform.project.domain.vo.ProjectVo;
 import org.certis.studyplatform.project.infrastructure.persistence.jpa.ProjectJpaRepository;
+import org.certis.studyplatform.project.infrastructure.persistence.jpa.ProjectAttachedJpaRepository;
 import org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectEntity;
+import org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectAttachedEntity;
 import org.certis.studyplatform.project.infrastructure.mapper.ProjectInfrastructureMapper;
+import org.certis.studyplatform.shared.service.S3FileService;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.OffsetDateTime;
 import java.util.Optional;
@@ -29,7 +33,9 @@ import java.util.Optional;
 public class ProjectCommandRepositoryImpl implements ProjectCommandRepository {
 
     private final ProjectJpaRepository jpaRepository;
+    private final ProjectAttachedJpaRepository projectAttachedJpaRepository;
     private final ProjectInfrastructureMapper mapper;
+    private final S3FileService s3FileService;
 
     /**
      * 새로운 프로젝트 생성
@@ -66,6 +72,40 @@ public class ProjectCommandRepositoryImpl implements ProjectCommandRepository {
         } else {
             log.warn("Command: Project not found for deletion - ID: {}", id);
             throw new IllegalArgumentException("Project not found with ID: " + id);
+        }
+    }
+
+    /**
+     * 프로젝트 첨부파일 업로드
+     */
+    @Override
+    @Transactional
+    public String uploadProjectAttachment(Long projectId, Long memberId, MultipartFile file) {
+        log.debug("Command Infrastructure: Uploading project attachment for project ID: {}, member ID: {}", projectId, memberId);
+
+        try {
+            // S3에 첨부파일 업로드
+            String attachmentUrl = s3FileService.uploadFile(file, "project");
+
+            // 첨부파일 정보를 DB에 저장
+            ProjectAttachedEntity entity = ProjectAttachedEntity.builder()
+                    .projectId(projectId)
+                    .memberId(memberId)
+                    .attachedUrl(attachmentUrl)
+                    .name(file.getOriginalFilename())
+                    .type(file.getContentType())
+                    .size(String.valueOf(file.getSize()))
+                    .createdAt(OffsetDateTime.now())
+                    .build();
+
+            projectAttachedJpaRepository.save(entity);
+
+            log.debug("Command Infrastructure: Project attachment uploaded successfully for project ID: {}, member ID: {}", projectId, memberId);
+            return attachmentUrl;
+
+        } catch (Exception e) {
+            log.error("Error uploading project attachment for project ID {}, member ID {}: {}", projectId, memberId, e.getMessage());
+            throw new RuntimeException("Failed to upload project attachment", e);
         }
     }
 }

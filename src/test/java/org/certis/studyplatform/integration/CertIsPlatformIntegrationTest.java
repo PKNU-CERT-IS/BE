@@ -227,7 +227,6 @@ class CertIsPlatformIntegrationTest {
                 scheduleUrls.forEach(scheduleAttachmentDomainService::deleteAttachment);
             });
         } else {
-            System.out.println("S3 bucket not accessible - skipping S3 upload tests");
         }
     }
 

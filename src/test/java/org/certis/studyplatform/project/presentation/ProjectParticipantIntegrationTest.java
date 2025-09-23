@@ -124,24 +124,28 @@ class ProjectParticipantIntegrationTest {
         }
 
         @Test
-        @DisplayName("프로젝트 생성자는 제한 규칙 적용 안됨")
-        void shouldAllowCreatorToJoinWithoutLimit() throws Exception {
-            // Given: 진행 중인 프로젝트 1개 생성 (다른 사용자)
-            createActiveProject(2L, "다른 프로젝트", 999L);
-            
+        @DisplayName("프로젝트 생성자도 제한 규칙 적용")
+        void shouldApplyLimitToCreatorAsWell() throws Exception {
+            // Given: 생성자가 진행 중인 프로젝트 1개 보유, 타인의 진행 중인 프로젝트 존재
+            createActiveProject(200L, "생성자의 다른 프로젝트", 1L); // 생성자 본인의 진행 중 프로젝트
+            createActiveProject(201L, "타인의 진행 중 프로젝트", 999L); // 지원 대상 프로젝트
+
             // 프로젝트 생성자로 컨텍스트 설정
             setupCreatorSecurityContext();
-            
-            ProjectJoinRequestDto request = createProjectJoinRequest();
-            request.setProjectId(TEST_PROJECT_ID);
 
-            // When & Then: 생성자가 자신의 프로젝트에 참가 신청 시도 (실제로는 자가 신청이므로 거부되어야 함)
+            ProjectJoinRequestDto request = createProjectJoinRequest();
+            request.setProjectId(201L); // 타인의 프로젝트에 신청 시도
+
+            // When & Then: 생성자도 진행 중 1개 보유 시 추가 신청 거부
             mockMvc.perform(post("/api/v1/project/participant/join/register")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andDo(print())
-                    .andExpect(status().isUnprocessableEntity())
-                    .andExpect(jsonPath("$.message").value("프로젝트 생성자는 자신의 프로젝트에 참가 신청할 수 없습니다."));
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message").value("진행 중인 프로젝트가 1개 있으면 추가 신청이 불가합니다."));
+
+            // 데이터베이스에서 신청이 생성되지 않았는지 확인
+            verifyNoParticipantCreated(201L, 1L);
         }
     }
 

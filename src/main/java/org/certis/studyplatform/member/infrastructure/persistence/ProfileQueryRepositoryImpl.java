@@ -7,7 +7,21 @@ import org.certis.studyplatform.member.domain.repository.query.MemberQueryReposi
 import org.certis.studyplatform.member.domain.vo.*;
 import org.certis.studyplatform.member.infrastructure.mapper.MemberInfrastructureMapper;
 import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberEntity;
+import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberPenaltyEntity;
 import org.certis.studyplatform.member.infrastructure.persistence.jpa.MemberJpaRepository;
+import org.certis.studyplatform.member.infrastructure.persistence.jpa.MemberPenaltyJpaRepository;
+import org.certis.studyplatform.study.domain.repository.StudyParticipantQueryRepository;
+import org.certis.studyplatform.study.domain.repository.StudyQueryRepository;
+import org.certis.studyplatform.study.domain.vo.StudyVo;
+import org.certis.studyplatform.study.domain.vo.StudyParticipantSummaryVo;
+import org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository;
+import org.certis.studyplatform.project.domain.repository.ProjectQueryRepository;
+import org.certis.studyplatform.project.domain.vo.ProjectVo;
+import org.certis.studyplatform.project.domain.vo.ProjectParticipantSummaryVo;
+import org.certis.studyplatform.blog.domain.repository.BlogQueryRepository;
+import org.certis.studyplatform.blog.domain.vo.BlogSummaryVo;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.certis.studyplatform.project.domain.ProjectStatus;
 import org.certis.studyplatform.schedule.domain.repository.ScheduleQueryRepository;
 import org.certis.studyplatform.schedule.domain.model.vo.ScheduleVo;
@@ -40,9 +54,15 @@ import java.util.Optional;
 public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
 
     private final MemberJpaRepository memberJpaRepository;
+    private final MemberPenaltyJpaRepository memberPenaltyJpaRepository;
     private final MemberQueryRepository memberQueryRepository;
     private final MemberInfrastructureMapper memberInfrastructureMapper;
     private final ScheduleQueryRepository scheduleQueryRepository;
+    private final StudyParticipantQueryRepository studyParticipantQueryRepository;
+    private final StudyQueryRepository studyQueryRepository;
+    private final ProjectParticipantQueryRepository projectParticipantQueryRepository;
+    private final ProjectQueryRepository projectQueryRepository;
+    private final BlogQueryRepository blogQueryRepository;
 
     @Override
     public Optional<ProfileVo> findByMemberId(MemberIdVo memberIdVo) {
@@ -85,14 +105,19 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
             String githubUrl = contactOpt.map(MemberContactVo::githubUrl).map(GithubUrlVo::value).orElse(null);
             String linkedUrl = contactOpt.map(MemberContactVo::linkedinUrl).map(LinkedinUrlVo::value).orElse(null);
 
-            // gracePeriod, todaySchedules, contact 정보가 포함된 새로운 ProfileVo 생성
+            // 벌점 정보 조회
+            Optional<MemberPenaltyEntity> penaltyOpt = memberPenaltyJpaRepository.findByMemberId(memberIdVo.toLong());
+            Integer penaltyCount = penaltyOpt.map(MemberPenaltyEntity::getPenaltyPoint).orElse(0);
+            log.debug("Penalty count for member {}: {}", memberIdVo.toLong(), penaltyCount);
+
+            // gracePeriod, todaySchedules, contact 정보, 벌점 정보가 포함된 새로운 ProfileVo 생성
             ProfileVo profileWithEnhancements = new ProfileVo(
                 baseProfile.memberId(),
                 baseProfile.name(),
                 baseProfile.description(),
                 baseProfile.profileImage(),
                 todaySchedules, // 실제 스케줄 데이터
-                baseProfile.penaltyCount(),
+                penaltyCount, // 실제 벌점 데이터
                 gracePeriod, // 계산된 gracePeriod
                 baseProfile.memberRole(),
                 baseProfile.memberGrade(),
@@ -119,44 +144,107 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
 
     @Override
     public List<ProfileStudyVo> findStudiesByMemberId(MemberIdVo memberIdVo) {
-
         log.debug("Query Infrastructure: Finding studies by member ID: {}", memberIdVo.toLong());
 
-        // TODO: 실제 Study Entity와 연관관계 설정 후 구현
-        // StudyParticipant 테이블과 조인하여 해당 회원이 참여한 스터디 목록 조회
-        // 새로운 VO 구조: ProfileStudyVo(studyId, title, description, ProjectStatus projectStatus,
-        //                                studyStartDate, studyEndDate, List<String> tags)
+        try {
+            // StudyParticipantQueryRepository를 통해 해당 회원이 참여한 스터디 참가자 정보 조회
+            Page<StudyParticipantSummaryVo> participants = studyParticipantQueryRepository.findByMemberId(
+                    memberIdVo.toLong(), 
+                    Pageable.unpaged()
+            );
 
-        // 목데이터 반환
-        return createMockStudies(memberIdVo.toLong());
+            if (participants.isEmpty()) {
+                log.debug("No studies found for member ID: {}", memberIdVo.toLong());
+                return List.of();
+            }
+
+            // 스터디 ID 목록 추출
+            List<Long> studyIds = participants.getContent().stream()
+                    .map(StudyParticipantSummaryVo::studyId)
+                    .toList();
+
+            // 개별 스터디 조회
+            List<StudyVo> studies = studyIds.stream()
+                    .map(studyId -> studyQueryRepository.findById(studyId))
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .toList();
+
+            // ProfileStudyVo로 변환
+            return studies.stream()
+                    .map(this::toProfileStudyVo)
+                    .toList();
+
+        } catch (Exception e) {
+            log.error("Error finding studies for member ID {}: {}", memberIdVo.toLong(), e.getMessage(), e);
+            return List.of();
+        }
     }
 
     @Override
     public List<ProfileProjectVo> findProjectsByMemberId(MemberIdVo memberIdVo) {
-
         log.debug("Query Infrastructure: Finding projects by member ID: {}", memberIdVo.toLong());
 
-        // TODO: 실제 Project Entity와 연관관계 설정 후 구현
-        // ProjectParticipant 테이블과 조인하여 해당 회원이 참여한 프로젝트 목록 조회
-        // 새로운 VO 구조: ProfileProjectVo(projectId, title, description, ProjectStatus projectStatus,
-        //                                  studyStartDate, studyEndDate, List<String> tags)
+        try {
+            // ProjectParticipantQueryRepository를 통해 해당 회원이 참여한 프로젝트 참가자 정보 조회
+            Page<ProjectParticipantSummaryVo> participants = projectParticipantQueryRepository.findByMemberId(
+                    memberIdVo.toLong(), 
+                    Pageable.unpaged()
+            );
 
-        // 목데이터 반환
-        return createMockProjects(memberIdVo.toLong());
+            if (participants.isEmpty()) {
+                log.debug("No projects found for member ID: {}", memberIdVo.toLong());
+                return List.of();
+            }
+
+            // 프로젝트 ID 목록 추출
+            List<Long> projectIds = participants.getContent().stream()
+                    .map(ProjectParticipantSummaryVo::projectId)
+                    .toList();
+
+            // 개별 프로젝트 조회
+            List<ProjectVo> projects = projectIds.stream()
+                    .map(projectId -> projectQueryRepository.findById(projectId))
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .toList();
+
+            // ProfileProjectVo로 변환
+            return projects.stream()
+                    .map(this::toProfileProjectVo)
+                    .toList();
+
+        } catch (Exception e) {
+            log.error("Error finding projects for member ID {}: {}", memberIdVo.toLong(), e.getMessage(), e);
+            return List.of();
+        }
     }
 
     @Override
     public List<ProfileBlogVo> findBlogsByMemberId(MemberIdVo memberIdVo) {
-
         log.debug("Query Infrastructure: Finding blogs by member ID: {}", memberIdVo.toLong());
 
-        // TODO: 실제 Blog Entity와 연관관계 설정 후 구현
-        // Blog 테이블에서 작성자 ID로 해당 회원이 작성한 블로그 목록 조회
-        // 새로운 VO 구조: ProfileBlogVo(blogId, title, description, ProjectStatus projectStatus,
-        //                               studyStartDate, studyEndDate, String[] tags, viewCount, likeCount)
+        try {
+            // BlogQueryRepository를 통해 해당 회원이 작성한 블로그 목록 조회
+            Page<BlogSummaryVo> blogs = blogQueryRepository.findByMemberId(
+                    memberIdVo.toLong(), 
+                    Pageable.unpaged()
+            );
 
-        // 목데이터 반환
-        return createMockBlogs(memberIdVo.toLong());
+            if (blogs.isEmpty()) {
+                log.debug("No blogs found for member ID: {}", memberIdVo.toLong());
+                return List.of();
+            }
+
+            // ProfileBlogVo로 변환
+            return blogs.getContent().stream()
+                    .map(this::toProfileBlogVo)
+                    .toList();
+
+        } catch (Exception e) {
+            log.error("Error finding blogs for member ID {}: {}", memberIdVo.toLong(), e.getMessage(), e);
+            return List.of();
+        }
     }
 
     @Override
@@ -174,46 +262,66 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
 
     @Override
     public long countStudiesByMemberId(MemberIdVo memberIdVo) {
-
         log.debug("Query Infrastructure: Counting studies for member ID: {}", memberIdVo.toLong());
 
-        // TODO: 실제 Study Entity와 연관관계 설정 후 구현
-        // 목데이터 기준으로 카운트 반환
-        return createMockStudies(memberIdVo.toLong()).size();
+        try {
+            Page<StudyParticipantSummaryVo> participants = studyParticipantQueryRepository.findByMemberId(
+                    memberIdVo.toLong(), 
+                    Pageable.unpaged()
+            );
+            return participants.getTotalElements();
+        } catch (Exception e) {
+            log.error("Error counting studies for member ID {}: {}", memberIdVo.toLong(), e.getMessage(), e);
+            return 0;
+        }
     }
 
     @Override
     public long countProjectsByMemberId(MemberIdVo memberIdVo) {
-
         log.debug("Query Infrastructure: Counting projects for member ID: {}", memberIdVo.toLong());
 
-        // TODO: 실제 Project Entity와 연관관계 설정 후 구현
-        // 목데이터 기준으로 카운트 반환
-        return createMockProjects(memberIdVo.toLong()).size();
+        try {
+            Page<ProjectParticipantSummaryVo> participants = projectParticipantQueryRepository.findByMemberId(
+                    memberIdVo.toLong(), 
+                    Pageable.unpaged()
+            );
+            return participants.getTotalElements();
+        } catch (Exception e) {
+            log.error("Error counting projects for member ID {}: {}", memberIdVo.toLong(), e.getMessage(), e);
+            return 0;
+        }
     }
 
     @Override
     public long countBlogsByMemberId(MemberIdVo memberIdVo) {
-
         log.debug("Query Infrastructure: Counting blogs for member ID: {}", memberIdVo.toLong());
 
-        // TODO: 실제 Blog Entity와 연관관계 설정 후 구현
-        // 목데이터 기준으로 카운트 반환
-        return createMockBlogs(memberIdVo.toLong()).size();
+        try {
+            return blogQueryRepository.countByMemberId(memberIdVo.toLong());
+        } catch (Exception e) {
+            log.error("Error counting blogs for member ID {}: {}", memberIdVo.toLong(), e.getMessage(), e);
+            return 0;
+        }
     }
 
     @Override
     public ActivitySummaryVo getRecentActivitySummary(MemberIdVo memberIdVo) {
-
         log.debug("Query Infrastructure: Getting activity summary for member ID: {}", memberIdVo.toLong());
 
-        // TODO: 실제 Study, Project, Blog Entity와 연관관계 설정 후 구현
-        // 목데이터 기준으로 활동 요약 반환
-        long studyCount = countStudiesByMemberId(memberIdVo);
-        long projectCount = countProjectsByMemberId(memberIdVo);
-        long blogCount = countBlogsByMemberId(memberIdVo);
+        try {
+            // 실제 데이터 기반으로 활동 요약 반환
+            long studyCount = countStudiesByMemberId(memberIdVo);
+            long projectCount = countProjectsByMemberId(memberIdVo);
+            long blogCount = countBlogsByMemberId(memberIdVo);
 
-        return new ActivitySummaryVo(studyCount, projectCount, blogCount);
+            log.debug("Activity summary for member {}: {} studies, {} projects, {} blogs", 
+                    memberIdVo.toLong(), studyCount, projectCount, blogCount);
+
+            return new ActivitySummaryVo(studyCount, projectCount, blogCount);
+        } catch (Exception e) {
+            log.error("Error getting activity summary for member ID {}: {}", memberIdVo.toLong(), e.getMessage(), e);
+            return new ActivitySummaryVo(0, 0, 0);
+        }
     }
 
     /**
@@ -389,81 +497,96 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
         );
     }
 
+
+    // =================================================================
+    // Entity to Profile VO 변환 메서드들
+    // =================================================================
+
     /**
-     * Mock 스케줄 데이터 생성
+     * StudyVo → ProfileStudyVo 변환
      */
-    private List<ScheduleInfoVo> createMockSchedules() {
+    private ProfileStudyVo toProfileStudyVo(StudyVo study) {
+        // Study 상태를 날짜 기준으로 계산
         OffsetDateTime now = OffsetDateTime.now();
+        StudyStatus status;
+        if (study.endDate() != null && study.endDate().isBefore(now)) {
+            status = StudyStatus.COMPLETED;
+        } else if (study.startDate() != null && study.startDate().isAfter(now)) {
+            status = StudyStatus.READY;
+        } else {
+            status = StudyStatus.INPROGRESS;
+        }
         
-        return List.of(
-            ScheduleInfoVo.of(
-                1L,
-                "오전 스터디",
-                "강의실 A",
-                "STUDY",
-                now.withHour(9).withMinute(0),
-                now.withHour(11).withMinute(0)
-            ),
-            ScheduleInfoVo.of(
-                2L,
-                "오후 프로젝트",
-                "강의실 B",
-                "PROJECT",
-                now.withHour(14).withMinute(0),
-                now.withHour(16).withMinute(0)
-            )
+        return new ProfileStudyVo(
+                study.id(),
+                study.title(),
+                study.description(),
+                status,
+                study.startDate(),
+                study.endDate(),
+                new String[0], // tags는 별도 테이블에서 조회 필요
+                study.category(),
+                study.subCategory()
         );
     }
 
     /**
-     * 블로그 목데이터 생성
+     * ProjectVo → ProfileProjectVo 변환
      */
-    private List<ProfileBlogVo> createMockBlogs(Long memberId) {
+    private ProfileProjectVo toProfileProjectVo(ProjectVo project) {
+        // Project 상태를 날짜 기준으로 계산
         OffsetDateTime now = OffsetDateTime.now();
+        ProjectStatus status;
+        if (project.endDate() != null && project.endDate().isBefore(now)) {
+            status = ProjectStatus.COMPLETED;
+        } else if (project.startDate() != null && project.startDate().isAfter(now)) {
+            status = ProjectStatus.READY;
+        } else {
+            status = ProjectStatus.INPROGRESS;
+        }
+        
+        return new ProfileProjectVo(
+                project.id(),
+                project.title(),
+                project.description(),
+                status,
+                project.startDate(),
+                project.endDate(),
+                new String[0], // tags는 별도 테이블에서 조회 필요
+                project.category(),
+                project.subCategory()
+        );
+    }
 
-        return List.of(
-            new ProfileBlogVo(
-                1L,
-                "Spring Boot 시작하기",
-                "Spring Boot 프레임워크의 기본 개념과 설정 방법을 소개합니다.",
-                ProjectStatus.COMPLETED, // 발행됨
-                now.minusWeeks(4), // 4주 전 시작 (2주 작성 기간)
-                now.minusWeeks(2), // 2주 전 완료
-                new String[]{"Spring Boot", "Java", "Tutorial"},
-                150,
-                25,
-                "TECH", // category
-                ArticleReferenceType.PROJECT,
-                "웹 개발 프로젝트"
-            ),
-            new ProfileBlogVo(
-                2L,
-                "React Hooks 완전 정복",
-                "React Hooks의 모든 것을 다루는 포괄적인 가이드입니다.",
-                ProjectStatus.INPROGRESS, // 작성 중
-                now.minusWeeks(3), // 3주 전 시작
-                now.plusWeeks(1),  // 1주 후 완료 예정 (4주 작성 기간)
-                new String[]{"React", "JavaScript", "Hooks"},
-                89,
-                12,
-                "TECH", // category
-                ArticleReferenceType.STUDY,
-                "프론트엔드 스터디"
-            ),
-            new ProfileBlogVo(
-                3L,
-                "알고리즘 문제 해결 전략",
-                "효율적인 알고리즘 문제 해결 방법론을 제시합니다.",
-                ProjectStatus.READY, // 준비 중
-                now.plusWeeks(1),   // 1주 후 시작 예정
-                now.plusWeeks(3),   // 3주 후 완료 예정 (2주 작성 기간)
-                new String[]{"Algorithm", "Problem Solving", "Coding Test"},
-                0,
-                0,
-                "TECH", // category
-                null, // referenceType
-                null  // referenceTitle
-            )
+    /**
+     * BlogSummaryVo → ProfileBlogVo 변환
+     */
+    private ProfileBlogVo toProfileBlogVo(BlogSummaryVo blog) {
+        // ArticleReferenceType 결정
+        ArticleReferenceType referenceType = null;
+        String referenceTitle = null;
+        
+        if (blog.studyId() != null) {
+            referenceType = ArticleReferenceType.STUDY;
+            referenceTitle = blog.studyTitle();
+        } else if (blog.projectId() != null) {
+            referenceType = ArticleReferenceType.PROJECT;
+            referenceTitle = blog.projectTitle();
+        }
+
+        return new ProfileBlogVo(
+                blog.id().value(), // BlogIdVo를 Long으로 변환
+                blog.title(),
+                blog.description(),
+                ProjectStatus.COMPLETED, // 블로그는 발행된 상태로 간주
+                blog.createdAt(),
+                blog.updatedAt(),
+                new String[0], // 태그는 별도 테이블에서 조회 필요
+                blog.views() != null ? blog.views() : 0, // 조회수
+                0, // 좋아요수는 별도 테이블에서 조회 필요
+                blog.category(),
+                referenceType,
+                referenceTitle
         );
     }
 }

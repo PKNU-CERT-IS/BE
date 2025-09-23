@@ -5,7 +5,6 @@ import org.certis.studyplatform.project.domain.vo.ExternalUrlVo;
 import org.certis.studyplatform.project.presentation.dto.request.*;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,9 +22,9 @@ public class ProjectApplicationCommandMapper {
     public CreateProjectCommand toCreateProjectCommand(ProjectCreateRequestDto dto, Long creatorId) {
         // attachments 리스트를 변환합니다. (null-safe 처리 포함)
         List<CreateProjectAttachedCommand> attachedCommands =
-                (dto.getAttachments() == null) ? Collections.emptyList() :
+                (dto.getAttachments() == null) ? null :
                         dto.getAttachments().stream()
-                                .map(this::toCreateProjectAttachedCommand) // 람다식(메서드 참조)을 사용한 변환
+                                .map(this::toCreateProjectAttachedCommand)
                                 .collect(Collectors.toList());
 
         return CreateProjectCommand.of(
@@ -65,7 +64,7 @@ public class ProjectApplicationCommandMapper {
     public UpdateProjectCommand toUpdateProjectCommand(ProjectUpdateRequestDto dto, Long requesterId) {
         // attachments 리스트를 변환합니다. (null-safe 처리 포함)
         List<CreateProjectAttachedCommand> attachedCommands =
-                (dto.getAttachments() == null) ? Collections.emptyList() :
+                (dto.getAttachments() == null) ? null :
                         dto.getAttachments().stream()
                                 .map(this::toCreateProjectAttachedCommand) // 람다식(메서드 참조)을 사용한 변환
                                 .collect(Collectors.toList());

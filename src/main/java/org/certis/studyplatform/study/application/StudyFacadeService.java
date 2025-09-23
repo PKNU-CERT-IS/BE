@@ -93,6 +93,19 @@ public class StudyFacadeService {
     }
 
     /**
+     * 스터디 첨부파일 업로드
+     */
+    public String uploadStudyAttachment(Long studyId, Long memberId, MultipartFile file) {
+        log.info("Facade: Uploading study attachment for study ID: {}, member ID: {}", studyId, memberId);
+
+        // S3에 첨부파일 업로드
+        String attachmentUrl = studyCommandService.uploadStudyAttachment(studyId, memberId, file);
+
+        log.info("Facade: Study attachment uploaded successfully for study ID: {}, member ID: {}, URL: {}", studyId, memberId, attachmentUrl);
+        return attachmentUrl;
+    }
+
+    /**
      * 프로젝트 삭제 (임시 - Spring Security 미구축 상태)
      */
     public void deleteStudy(StudyDeleteRequestDto requestDto, Long requesterId) {
@@ -194,9 +207,9 @@ public class StudyFacadeService {
      */
     public Page<StudySummaryResponseDto> searchStudiesAdvanced(
             StudyAdvancedSearchRequestDto requestDto, Pageable pageable) {
-        log.info("Facade: Advanced searching studies - keyword: {}, category: {}, subcategory: {}, status: {}",
+        log.info("Facade: Advanced searching studies - keyword: {}, category: {}, subcategory: {}, semester: {}, status: {}",
                 requestDto.getKeyword(),requestDto.getCategory(),
-                requestDto.getSubcategory(), requestDto.getStatus());
+                requestDto.getSubcategory(), requestDto.getSemester(), requestDto.getStatus());
 
         // DTO → Query Object 변환 (CPU-bound 작업이므로 비동기 처리 불필요)
         SearchStudiesQuery query = queryMapper.toSearchStudiesQuery(requestDto, pageable);
@@ -231,12 +244,16 @@ public class StudyFacadeService {
     public List<StudyMeetingSummaryResponseDto> getStudyMeetings(Long studyId) {
         log.info("Facade: Getting meetings for study - ID: {}", studyId);
 
-        // TODO: StudyMeetingFacadeService로 위임하거나 별도 구현 필요
-        // 임시로 빈 리스트 반환
-        var meetings = List.<StudyMeetingSummaryResponseDto>of();
+        // Query meetings for the given study and map to DTOs
+        Pageable pageable = PageRequest.of(0, Integer.MAX_VALUE);
+        GetAllStudyMeetingsQuery query = new GetAllStudyMeetingsQuery(studyId, pageable);
+        StudyMeetingPageResultVo meetingPageResult = studyMeetingQueryService.getAllStudyMeetings(query);
 
-        log.info("Facade: Found {} meetings for study - ID: {}", meetings.size(), studyId);
-        return meetings;
+        List<StudyMeetingSummaryResponseDto> meetingSummaries =
+                dtoMapper.toStudyMeetingSummaryResponseDtoList(meetingPageResult);
+
+        log.info("Facade: Found {} meetings for study - ID: {}", meetingSummaries.size(), studyId);
+        return meetingSummaries;
     }
 
     /**

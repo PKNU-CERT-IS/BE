@@ -87,6 +87,7 @@ public class ProjectApplicationDtoMapper {
                 .externalUrl(vo.externalUrl() != null ? 
                     new ExternalUrlResponseDto(vo.externalUrl().title(), vo.externalUrl().url()) : null)
                 .demoUrl(vo.demoUrl())
+                .thumbnailUrl(vo.thumbnailUrl())
                 .maxParticipantNumber(vo.maxParticipantNumber())
                 .currentParticipantNumber(vo.currentParticipantNumber())
                 .build();
@@ -280,6 +281,7 @@ public class ProjectApplicationDtoMapper {
                 .id(vo.id())
                 .memberId(vo.memberId())
                 .memberName(vo.memberName())
+                .memberGrade(vo.memberGrade())
                 .status(vo.status())
                 .createdAt(vo.createdAt())
                 .build();

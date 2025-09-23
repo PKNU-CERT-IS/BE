@@ -94,15 +94,6 @@ public interface MemberCommandRepository {
      */
     MemberVo activateMember(MemberIdVo memberId);
 
-    /**
-     * 특정 조건으로 회원 수 조회 (Command 검증용)
-     *
-     * @param grade 학년 (선택)
-     * @param role 역할 (선택)
-     * @return 조건에 맞는 회원 수
-     */
-    long countByConditions(GradeVo grade, RoleVo role);
-
     void updatePenalty(MemberIdVo memberIdVo, PenaltyPointsVo penaltyPointsVo);
 
     void updateGracePeriod(MemberIdVo memberIdVo, GracePeriodVo gracePeriodVo);

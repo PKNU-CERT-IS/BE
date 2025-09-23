@@ -23,6 +23,7 @@ import org.certis.studyplatform.project.domain.vo.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -156,6 +157,19 @@ public class ProjectDomainService {
         commandRepository.deleteById(existingProject.id());
 
         log.info("Domain: Project deleted successfully - ID: {}", existingProject.id());
+    }
+
+    /**
+     * 프로젝트 첨부파일 업로드
+     */
+    public String uploadProjectAttachment(Long projectId, Long memberId, MultipartFile file) {
+        log.info("Domain: Uploading project attachment for project ID: {}, member ID: {}", projectId, memberId);
+
+        // S3에 첨부파일 업로드
+        String attachmentUrl = commandRepository.uploadProjectAttachment(projectId, memberId, file);
+
+        log.info("Domain: Project attachment uploaded successfully for project ID: {}, member ID: {}, URL: {}", projectId, memberId, attachmentUrl);
+        return attachmentUrl;
     }
 
     // ================================================================
@@ -365,35 +379,9 @@ public class ProjectDomainService {
         // 권한 검증: STAFF 이상이거나 프로젝트 생성자인지 확인
         validateProjectEndPermission(command.requesterId(), existingProject.creatorId());
 
-        // 이미 종료된 프로젝트인지 확인
-        if (existingProject.endDate() != null && existingProject.endDate().isBefore(OffsetDateTime.now())) {
-            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION,
-                    "이미 종료된 프로젝트입니다: " + command.projectId());
-        }
-
-        // ended_at을 현재 시간으로 설정하여 프로젝트 종료
-            ProjectVo endedProjectVo = ProjectVo.updateFrom(
-                    existingProject,
-                    existingProject.title(),
-                    existingProject.description(),
-                    existingProject.content(),
-                    existingProject.category(),
-                    existingProject.subCategory(),
-                    existingProject.startDate(),
-                    OffsetDateTime.now(), // ended_at을 현재 시간으로 설정
-                    existingProject.githubUrl(),
-                    existingProject.externalUrl(),
-                    existingProject.demoUrl(),
-                    existingProject.thumbnailUrl(),
-                    existingProject.maxParticipants()
-            );
-
-        // Command Repository를 통한 저장 (VO 전달)
-        ProjectVo savedProjectVo = commandRepository.save(endedProjectVo);
-
-        log.info("Domain: Project ended successfully - ID: {}", savedProjectVo.id());
-
-        return savedProjectVo;
+        // 제출 단계: 종료는 승인 시 처리. 여기서는 변경 없이 반환.
+        log.info("Domain: Project end submission initiated - ID: {}", existingProject.id());
+        return existingProject;
     }
 
     /**

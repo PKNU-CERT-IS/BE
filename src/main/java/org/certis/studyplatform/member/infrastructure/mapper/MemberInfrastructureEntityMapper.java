@@ -59,9 +59,13 @@ public class MemberInfrastructureEntityMapper {
 
                 .profileImage(extractProfileImageValue(creationVo.profileImage()))
 
-                // 기본값 필드 (현재 DB 스키마 호환성)
-                .birthday(OffsetDateTime.now().minusYears(20)) // 기본 나이 20세로 설정
-                .gender("UNKNOWN") // 기본 성별
+                // 생년월일/성별: 제공되지 않으면 안전한 기본값 사용
+                .birthday(creationVo.birthday() != null
+                        ? creationVo.birthday().value()
+                        : OffsetDateTime.now(ZoneOffset.of("+09:00")).minusYears(20))
+                .gender(creationVo.gender() != null
+                        ? creationVo.gender().value()
+                        : "UNKNOWN")
 
                 // 자동 관리 필드 (JPA에서 자동 설정)
                 .createdAt(OffsetDateTime.now())
@@ -140,8 +144,8 @@ public class MemberInfrastructureEntityMapper {
                 .skills(convertSkillsToArray(skills))
                 .major(major.value())
                 .description(description)
-                .birthday(OffsetDateTime.now().minusYears(20)) // 기본값
-                .gender("UNKNOWN") // 기본값
+                .birthday(OffsetDateTime.now(ZoneOffset.of("+09:00")).minusYears(20))
+                .gender("UNKNOWN")
                 .createdAt(createdAt)
                 .updatedAt(updatedAt)
                 .build();

@@ -619,6 +619,25 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
         }
     }
 
+    @Override
+    public int findPenaltyPointsByMemberId(Long memberId) {
+        log.debug("Infrastructure: Finding penalty points by member ID: {}", memberId);
+
+        try {
+            Integer points = dsl.select(field("mp.penalty_point", Integer.class).as("penalty_point"))
+                    .from(table("member_penalty").as("mp"))
+                    .where(field("mp.member_id").eq(memberId))
+                    .fetchOneInto(Integer.class);
+
+            int result = points != null ? points : 0;
+            log.debug("Infrastructure: Penalty points for member {}: {}", memberId, result);
+            return result;
+        } catch (Exception e) {
+            log.error("Infrastructure: Error finding penalty points by member ID: {}, error: {}", memberId, e.getMessage(), e);
+            return 0;
+        }
+    }
+
     /**
      * Member + MemberContact 복합 Entity
      * Infrastructure Layer에서 조인 결과를 담는 임시 객체

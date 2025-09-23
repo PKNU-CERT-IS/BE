@@ -3,6 +3,7 @@ package org.certis.studyplatform.project.infrastructure.persistence;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.member.domain.MemberGrade;
+import org.certis.studyplatform.project.domain.ProjectStatus;
 import org.certis.studyplatform.project.domain.repository.ProjectQueryRepository;
 import org.certis.studyplatform.project.domain.vo.ProjectVo;
 import org.certis.studyplatform.project.domain.vo.ProjectSummaryVo;
@@ -10,7 +11,6 @@ import org.certis.studyplatform.project.domain.vo.ProjectSearchCriteriaVo;
 import org.certis.studyplatform.project.domain.vo.ProjectSearchResultVo;
 import org.certis.studyplatform.project.domain.vo.ExternalUrlVo;
 import org.certis.studyplatform.project.infrastructure.mapper.ProjectInfrastructureMapper;
-import org.certis.studyplatform.study.domain.vo.StudySummaryVo;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
@@ -60,36 +60,50 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
 
         var p = PROJECT.as("p");
         var m = MEMBER.as("m");
+        var pa = PROJECT_ATTACHED.as("pa");
 
-        Optional<ProjectVo> result = dsl.select(
-                        p.ID,
-                        p.MEMBER_ID,
-                        m.NAME,
-                        m.GRADE,
-                        p.TITLE,
-                        p.DESCRIPTION,
-                        p.CONTENT,
-                        p.CATEGORY,
-                        p.SUBCATEGORY,
-                        p.THUMBNAIL_URL,
-                        p.GITHUB_URL,
-                        p.EXTERNAL_URL,
-                        p.DEMO_URL,
-                        p.MAX_PARTICIPANTS_NUMBER,
-                        p.STARTED_AT,
-                        p.ENDED_AT,
-                        // 현재 참여자 수 서브쿼리
-                        select(count())
-                                .from(PROJECT_PARTICIPANT)
-                                .where(PROJECT_PARTICIPANT.PROJECT_ID.eq(p.ID))
-                                .and(PROJECT_PARTICIPANT.DELETED_AT.isNull())
-                                .asField("current_participants")
-                )
-                .from(p)
-                .leftJoin(m).on(p.MEMBER_ID.eq(m.ID))
-                .where(p.ID.eq(projectId))
-                .and(p.DELETED_AT.isNull())
-                .fetchOptional(mapper::toProjectVoFromRecord);
+        Optional<ProjectVo> result = Optional.of(
+                        dsl.select(
+                                        p.ID,
+                                        p.MEMBER_ID,
+                                        m.NAME,
+                                        m.GRADE,
+                                        p.TITLE,
+                                        p.DESCRIPTION,
+                                        p.CONTENT,
+                                        p.CATEGORY,
+                                        p.SUBCATEGORY,
+                                        p.THUMBNAIL_URL,
+                                        p.GITHUB_URL,
+                                        p.EXTERNAL_URL,
+                                        p.DEMO_URL,
+                                        p.MAX_PARTICIPANTS_NUMBER,
+                                        p.STARTED_AT,
+                                        p.ENDED_AT,
+                                        // 현재 참여자 수 서브쿼리
+                                        select(count())
+                                                .from(PROJECT_PARTICIPANT)
+                                                .where(PROJECT_PARTICIPANT.PROJECT_ID.eq(p.ID))
+                                                .and(PROJECT_PARTICIPANT.DELETED_AT.isNull())
+                                                .asField("current_participants"),
+                                        // ProjectAttached 정보
+                                        pa.ID.as("attached_id"),
+                                        pa.NAME.as("attached_name"),
+                                        pa.TYPE.as("attached_type"),
+                                        pa.SIZE.as("attached_size"),
+                                        pa.ATTACHED_URL
+                                )
+                                .from(p)
+                                .leftJoin(m).on(p.MEMBER_ID.eq(m.ID))
+                                .leftJoin(pa).on(p.ID.eq(pa.PROJECT_ID).and(pa.DELETED_AT.isNull()))
+                                .where(p.ID.eq(projectId))
+                                .and(p.DELETED_AT.isNull())
+                                .fetch()
+                                .stream()
+                                .map(record -> (Record) record)
+                                .toList()
+                ).filter(records -> !records.isEmpty())
+                .map(records -> mapper.toProjectVoFromRecordsWithAttachments(records));
 
         log.info("jOOQ: Project detail found - ID: {}", projectId);
         return result;
@@ -465,7 +479,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
         var m = MEMBER.as("m");
         var pa = PROJECT_ATTACHED.as("pa");
 
-        Optional<ProjectVo> result = Optional.ofNullable(
+        Optional<ProjectVo> result = Optional.of(
                 dsl.select(
                         p.ID,
                         p.TITLE,
@@ -503,9 +517,6 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                 .leftJoin(pa).on(p.ID.eq(pa.PROJECT_ID).and(pa.DELETED_AT.isNull()))
                 .where(p.ID.eq(projectId))
                 .fetch()
-                .stream()
-                .map(record -> (Record) record)
-                .toList()
         ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.toProjectVoFromRecordsWithAttachments(records));
 
@@ -520,7 +531,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
         var m = MEMBER.as("m");
         var pa = PROJECT_ATTACHED.as("pa");
 
-        Optional<ProjectVo> result = Optional.ofNullable(
+        Optional<ProjectVo> result = Optional.of(
                 dsl.select(
                         p.ID,
                         p.TITLE,
@@ -559,9 +570,6 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                 .where(p.ID.eq(projectId))
                 .and(p.DELETED_AT.isNull())
                 .fetch()
-                .stream()
-                .map(record -> (Record) record)
-                .toList()
         ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.toProjectVoFromRecordsWithAttachments(records));
 
@@ -641,12 +649,13 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                             record.get("creator_name", String.class),
                             record.get(m.GRADE, MemberGrade.class),
                             calculateSemester(record.get(p.ENDED_AT)), // semester 계산
-                            "완료", // 완료된 프로젝트는 status = "완료"
+                            ProjectStatus.COMPLETED.name(), // 완료된 프로젝트는 status = COMPLETED
                             false, // 완료된 프로젝트는 참가 불가
                             record.get(p.GITHUB_URL),
                             externalUrlVo,
+                            record.get(p.THUMBNAIL_URL),
                             record.get(p.DEMO_URL), // demoUrl
-                            record.get(p.MAX_PARTICIPANTS_NUMBER), // maxParticipantNumber
+                            record.get(p.MAX_PARTICIPANTS_NUMBER, Integer.class), // maxParticipantNumber
                             record.get("current_participants", Integer.class) // currentParticipantNumber
                     );
                 });
@@ -673,7 +682,15 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         m.GRADE,
                         p.MAX_PARTICIPANTS_NUMBER,
                         p.GITHUB_URL,
-                        p.EXTERNAL_URL
+                        p.EXTERNAL_URL,
+                        p.THUMBNAIL_URL,
+                        p.DEMO_URL,
+                        // 현재 참여자 수 서브쿼리 (다른 메서드들과 일관성 유지)
+                        select(count())
+                                .from(PROJECT_PARTICIPANT)
+                                .where(PROJECT_PARTICIPANT.PROJECT_ID.eq(p.ID))
+                                .and(PROJECT_PARTICIPANT.DELETED_AT.isNull())
+                                .asField("current_participants")
                 )
                 .from(p)
                 .leftJoin(m).on(p.MEMBER_ID.eq(m.ID))
@@ -710,12 +727,13 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                             record.get("creator_name", String.class),
                             record.get(m.GRADE, MemberGrade.class),
                             calculateSemester(record.get(p.ENDED_AT)), // semester 계산
-                            "완료", // 완료된 프로젝트는 status = "완료"
+                            ProjectStatus.COMPLETED.name(), // 완료된 프로젝트는 status = COMPLETED
                             false, // 완료된 프로젝트는 참가 불가
                             record.get(p.GITHUB_URL),
                             externalUrlVo,
+                            record.get(p.THUMBNAIL_URL),
                             record.get(p.DEMO_URL), // demoUrl
-                            record.get(p.MAX_PARTICIPANTS_NUMBER), // maxParticipantNumber
+                            record.get(p.MAX_PARTICIPANTS_NUMBER, Integer.class), // maxParticipantNumber
                             record.get("current_participants", Integer.class) // currentParticipantNumber
                     );
                 });

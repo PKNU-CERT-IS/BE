@@ -100,4 +100,12 @@ public interface MemberQueryRepository {
      * @return 유예기간 (Optional)
      */
     Optional<OffsetDateTime> findGracePeriodByMemberId(Long memberId);
+
+    /**
+     * 회원 벌점 조회
+     *
+     * @param memberId 회원 ID
+     * @return 현재 벌점 (없으면 0)
+     */
+    int findPenaltyPointsByMemberId(Long memberId);
 }

@@ -14,7 +14,10 @@ import org.certis.studyplatform.member.infrastructure.persistence.jpa.MemberJpaR
 import org.certis.studyplatform.member.infrastructure.persistence.jpa.MemberContactJpaRepository;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import org.certis.studyplatform.shared.service.S3FileService;
+import java.time.OffsetDateTime;
 import java.util.Optional;
 
 /**
@@ -41,6 +44,7 @@ public class ProfileCommandRepositoryImpl implements ProfileCommandRepository {
     private final MemberJpaRepository memberJpaRepository;
     private final MemberContactJpaRepository memberContactJpaRepository;
     private final MemberInfrastructureMapper memberInfrastructureMapper;
+    private final S3FileService s3FileService;
 
     @Override
     @Transactional
@@ -55,6 +59,15 @@ public class ProfileCommandRepositoryImpl implements ProfileCommandRepository {
             // Member Entity 조회
             MemberEntity existingEntity = memberJpaRepository.findById(profileVo.memberId())
                     .orElseThrow(() -> new InfrastructureException(ExceptionStatus.PROFILE_INFRASTRUCTURE_NOT_FOUND,"Member not found: " + profileVo.memberId()));
+
+            // 프로필 이미지 null 업데이트 시 기존 S3 파일 삭제
+            if (existingEntity.getProfileImage() != null && profileVo.profileImage() == null) {
+                try {
+                    s3FileService.deleteFile(existingEntity.getProfileImage());
+                } catch (Exception ex) {
+                    log.warn("Failed to delete old profile image from S3 url={} memberId={}", existingEntity.getProfileImage(), profileVo.memberId(), ex);
+                }
+            }
 
             // 1. Member Entity 업데이트 (기본 프로필 정보)
             MemberEntity updatedMemberEntity = memberInfrastructureMapper.updateMemberEntityWithProfileInfo(existingEntity, profileVo);
@@ -196,6 +209,14 @@ public class ProfileCommandRepositoryImpl implements ProfileCommandRepository {
         try {
             return memberJpaRepository.findById(memberIdVo.toLong())
                     .map(existingEntity -> {
+                        // 프로필 이미지 제거(null) 시 기존 S3 파일 삭제
+                        if (profileImageUrl == null && existingEntity.getProfileImage() != null) {
+                            try {
+                                s3FileService.deleteFile(existingEntity.getProfileImage());
+                            } catch (Exception ex) {
+                                log.warn("Failed to delete old profile image from S3 url={} memberId={}", existingEntity.getProfileImage(), memberIdVo.toLong(), ex);
+                            }
+                        }
                         MemberEntity updatedEntity = memberInfrastructureMapper.updateProfileFields(
                                 existingEntity,
                                 existingEntity.getDescription(),
@@ -236,6 +257,40 @@ public class ProfileCommandRepositoryImpl implements ProfileCommandRepository {
         } catch (Exception e) {
             log.error("Error updating profile visibility for member ID {}: {}", memberIdVo.toLong(), e.getMessage());
             throw new RuntimeException("Failed to update profile visibility", e);
+        }
+    }
+
+    /**
+     * 프로필 이미지 업로드
+     *
+     * @param memberIdVo 회원 ID
+     * @param file 업로드할 이미지 파일
+     * @return 업로드된 이미지 URL
+     */
+    @Transactional
+    public String uploadProfileImage(MemberIdVo memberIdVo, MultipartFile file) {
+        log.debug("Command Infrastructure: Uploading profile image for member ID: {}", memberIdVo.toLong());
+
+        try {
+            // S3에 이미지 업로드
+            String imageUrl = s3FileService.uploadFile(file, "profile");
+
+            // 프로필에 이미지 URL 업데이트
+            memberJpaRepository.findById(memberIdVo.toLong())
+                    .ifPresent(existingEntity -> {
+                        MemberEntity updatedEntity = existingEntity.toBuilder()
+                                .profileImage(imageUrl)
+                                .updatedAt(OffsetDateTime.now())
+                                .build();
+                        memberJpaRepository.save(updatedEntity);
+                    });
+
+            log.debug("Command Infrastructure: Profile image uploaded successfully for member ID: {}", memberIdVo.toLong());
+            return imageUrl;
+
+        } catch (Exception e) {
+            log.error("Error uploading profile image for member ID {}: {}", memberIdVo.toLong(), e.getMessage());
+            throw new RuntimeException("Failed to upload profile image", e);
         }
     }
 }

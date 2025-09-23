@@ -7,9 +7,12 @@ import org.certis.studyplatform.exception.InfrastructureException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.core.sync.RequestBody;
 
@@ -30,22 +33,37 @@ import java.util.UUID;
 @Slf4j
 public class S3AttachmentService {
 
-    @Value("${aws.s3.bucket-name:test-bucket}")
+    @Value("${aws.s3.bucket:${AWS_S3_BUCKET:test-bucket}}")
     private String bucketName;
 
-    @Value("${aws.s3.region:ap-northeast-2}")
+    @Value("${aws.region:${AWS_DEFAULT_REGION:ap-northeast-2}}")
     private String region;
+
+    @Value("${aws.access-key-id:${AWS_ACCESS_KEY_ID:}}")
+    private String accessKeyId;
+
+    @Value("${aws.secret-access-key:${AWS_SECRET_ACCESS_KEY:}}")
+    private String secretAccessKey;
 
     private S3Client s3Client;
 
     @PostConstruct
     public void initializeS3Client() {
         try {
-            this.s3Client = S3Client.builder()
-                    .region(Region.of(region))
-                    .credentialsProvider(EnvironmentVariableCredentialsProvider.create())
-                    .build();
-            log.info("S3Client 초기화 완료: region={}, bucket={}", region, bucketName);
+            S3ClientBuilder builder = S3Client.builder()
+                    .region(Region.of(region));
+            
+            // Use configured credentials if available, otherwise fall back to environment variables
+            if (accessKeyId != null && !accessKeyId.isEmpty() && secretAccessKey != null && !secretAccessKey.isEmpty()) {
+                builder.credentialsProvider(StaticCredentialsProvider.create(
+                        AwsBasicCredentials.create(accessKeyId, secretAccessKey)));
+                log.info("S3Client 초기화 완료 (설정된 자격증명 사용): region={}, bucket={}", region, bucketName);
+            } else {
+                builder.credentialsProvider(EnvironmentVariableCredentialsProvider.create());
+                log.info("S3Client 초기화 완료 (환경변수 자격증명 사용): region={}, bucket={}", region, bucketName);
+            }
+            
+            this.s3Client = builder.build();
         } catch (Exception e) {
             log.error("S3Client 초기화 실패: {}", e.getMessage());
             throw new InfrastructureException(ExceptionStatus.S3_INFRASTRUCTURE_CONNECTION_FAILED);
@@ -248,9 +266,14 @@ public class S3AttachmentService {
     private String extractS3KeyFromUrl(String s3Url) {
         try {
             // https://bucket-name.s3.region.amazonaws.com/key 형식에서 key 추출
-            String pattern = String.format("https://%s.s3.%s.amazonaws.com/", bucketName, region);
-            if (s3Url.startsWith(pattern)) {
-                return s3Url.substring(pattern.length());
+            // 다양한 AWS 리전과 버킷명을 지원하도록 패턴을 더 유연하게 처리
+            if (s3Url.startsWith("https://") && s3Url.contains(".s3.") && s3Url.contains(".amazonaws.com/")) {
+                // .amazonaws.com/ 이후의 부분이 키
+                String amazonawsPart = ".amazonaws.com/";
+                int amazonawsIndex = s3Url.indexOf(amazonawsPart);
+                if (amazonawsIndex != -1) {
+                    return s3Url.substring(amazonawsIndex + amazonawsPart.length());
+                }
             }
             return null;
         } catch (Exception e) {

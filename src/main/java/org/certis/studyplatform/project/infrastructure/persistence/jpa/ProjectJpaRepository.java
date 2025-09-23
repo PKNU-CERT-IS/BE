@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
-import java.util.Optional;
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 
 /**
  * Project JPA Repository
@@ -29,4 +29,32 @@ public interface ProjectJpaRepository extends JpaRepository<ProjectEntity, Long>
     @Query("UPDATE ProjectEntity p SET p.deletedAt = :deletedAt, p.updatedAt = :deletedAt " +
             "WHERE p.id = :id AND p.deletedAt IS NULL")
     int bulkSoftDeleteById(@Param("id") Long id, @Param("deletedAt") OffsetDateTime deletedAt);
+
+    /**
+     * Update result submission info when user submits end report
+     */
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE ProjectEntity p SET p.resultSubmittedAt = :submittedAt, p.resultSubmitStatus = :status, p.resultAttachmentUrl = :attachmentUrl, p.updatedAt = :submittedAt WHERE p.id = :id AND p.deletedAt IS NULL")
+    int updateResultSubmission(@Param("id") Long id,
+                               @Param("submittedAt") OffsetDateTime submittedAt,
+                               @Param("status") ResultSubmitStatus status,
+                               @Param("attachmentUrl") String attachmentUrl);
+
+    /**
+     * Approve end submission: set status and endedAt
+     */
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE ProjectEntity p SET p.resultSubmitStatus = :status, p.endedAt = :endedAt, p.updatedAt = :endedAt WHERE p.id = :id AND p.deletedAt IS NULL")
+    int approveEnd(@Param("id") Long id,
+                   @Param("endedAt") OffsetDateTime endedAt,
+                   @Param("status") ResultSubmitStatus status);
+
+    /**
+     * Reject end submission: set status and clear attachments/submittedAt
+     */
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE ProjectEntity p SET p.resultSubmitStatus = :status, p.resultAttachmentUrl = NULL, p.resultSubmittedAt = NULL, p.updatedAt = :now WHERE p.id = :id AND p.deletedAt IS NULL")
+    int rejectEnd(@Param("id") Long id,
+                  @Param("status") ResultSubmitStatus status,
+                  @Param("now") OffsetDateTime now);
 }

@@ -49,6 +49,7 @@ public class StudyApplicationQueryMapper {
             dto.getKeyword(),
             dto.getCategory(),
             dto.getSubcategory(),
+            dto.getSemester(),
             dto.getStatus(),
             pageable
         );
@@ -63,6 +64,7 @@ public class StudyApplicationQueryMapper {
             dto.getKeyword(),
             dto.getCategory(),
             dto.getSubcategory(),
+            dto.getSemester(),
             dto.getStatus(),
             defaultPageable
         );

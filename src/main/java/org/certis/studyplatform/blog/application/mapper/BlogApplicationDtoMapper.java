@@ -35,6 +35,9 @@ public class BlogApplicationDtoMapper {
                 .content(vo.content())
                 .description(vo.description())
                 .category(vo.category())
+                .referenceType(vo.referenceType())
+                .referenceId(vo.referenceId())
+                .referenceTitle(vo.referenceTitle())
                 .viewCount(vo.viewCount())
                 .creatorName(vo.creatorName())
                 .createdAt(vo.createdAt())
@@ -57,6 +60,7 @@ public class BlogApplicationDtoMapper {
                 .category(vo.category())
                 .referenceType(vo.referenceType())
                 .referenceTitle(vo.referenceTitle())
+                .referenceId(vo.studyId() != null ? vo.studyId() : vo.projectId())
                 .createdAt(vo.createdAt())
                 .updatedAt(vo.updatedAt())
                 .blogCreatorName(vo.blogCreatorName())
@@ -75,6 +79,7 @@ public class BlogApplicationDtoMapper {
         return BlogEnableReferenceResponseDto.builder()
                 .referenceType(vo.referenceType())
                 .referenceId(vo.referenceId())
+                .referenceTitle(vo.title())
                 .build();
     }
 

@@ -6,9 +6,7 @@ import org.certis.studyplatform.exception.ExceptionStatus;
 public record BoardCategoryVo(String value) {
 
     public static BoardCategoryVo of(String value) {
-        if (value == null || value.trim().isEmpty()) {
-            throw new DomainException(ExceptionStatus.BOARD_DOMAIN_INVALID_CATEGORY);
-        }
+
         String upper = value.trim().toUpperCase();
         // 허용된 카테고리만 통과
         switch (upper) {
@@ -21,7 +19,8 @@ public record BoardCategoryVo(String value) {
             case "ALL":  // Special case for fetching all posts
                 return new BoardCategoryVo(upper);
             default:
-                throw new DomainException(ExceptionStatus.BOARD_DOMAIN_INVALID_CATEGORY);
+                // 유효하지 않은 카테고리는 null로 처리 (예외 대신)
+                return BoardCategoryVo.of("ALL");
         }
     }
 }

@@ -1,5 +1,6 @@
 package org.certis.studyplatform.project.domain.vo;
 
+import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.project.domain.ProjectParticipantStatus;
 
 import java.time.OffsetDateTime;
@@ -11,8 +12,11 @@ import java.time.OffsetDateTime;
  */
 public record ProjectParticipantSummaryVo(
         Long id,
+        Long projectId,
         Long memberId,
         String memberName,
+        MemberGrade memberGrade,
+        String projectTitle,
         ProjectParticipantStatus status,
         OffsetDateTime createdAt
 ) {}

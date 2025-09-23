@@ -8,6 +8,11 @@ import org.certis.studyplatform.response.GlobalResponseHandler;
 import org.certis.studyplatform.response.ResponseStatus;
 import org.certis.studyplatform.shared.security.CurrentUser;
 import org.certis.studyplatform.project.application.ProjectParticipantFacadeService;
+import org.certis.studyplatform.project.application.command.ProjectCommandService;
+import org.certis.studyplatform.project.infrastructure.persistence.jpa.ProjectJpaRepository;
+import org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectEntity;
+import java.util.Map;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.certis.studyplatform.project.presentation.dto.request.AdminProjectParticipantApprovalRequestDto;
 import org.certis.studyplatform.project.presentation.dto.response.AdminProjectParticipantApprovalResponseDto;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +34,8 @@ import org.springframework.web.bind.annotation.*;
 public class AdminProjectController {
 
     private final ProjectParticipantFacadeService projectParticipantFacadeService;
+    private final ProjectCommandService projectCommandService;
+    private final ProjectJpaRepository projectJpaRepository;
 
     /**
      * 프로젝트 참가 신청 승인
@@ -78,5 +85,37 @@ public class AdminProjectController {
                 response.getParticipantId());
 
         return GlobalResponseHandler.success(ResponseStatus.PROJECT_PARTICIPANT_REJECT_SUCCESS, response);
+    }
+
+    @PostMapping("/end/approve")
+    @Operation(summary = "프로젝트 종료 제출 승인", description = "프로젝트 종료 제출을 승인하고 endedAt을 설정합니다")
+    public ResponseEntity<GlobalResponseHandler<Void>> approveProjectEnd(
+            @RequestParam Long projectId,
+            @AuthenticationPrincipal CurrentUser currentUser) {
+        projectCommandService.approveProjectEnd(projectId, currentUser.getId());
+        return GlobalResponseHandler.success(ResponseStatus.PROJECT_END_SUCCESS);
+    }
+
+    @PostMapping("/end/reject")
+    @Operation(summary = "프로젝트 종료 제출 거절", description = "프로젝트 종료 제출을 거절하고 첨부를 삭제합니다")
+    public ResponseEntity<GlobalResponseHandler<Void>> rejectProjectEnd(
+            @RequestParam Long projectId,
+            @AuthenticationPrincipal CurrentUser currentUser) {
+        projectCommandService.rejectProjectEnd(projectId, currentUser.getId());
+        return GlobalResponseHandler.success(ResponseStatus.PROJECT_END_REJECT_SUCCESS);
+    }
+
+    @GetMapping("/end/{projectId}")
+    @Operation(summary = "프로젝트 종료 제출 조회", description = "제출 상태/시간/첨부를 조회합니다")
+    public ResponseEntity<GlobalResponseHandler<Map<String, Object>>> getProjectEndSubmission(
+            @PathVariable Long projectId) {
+        ProjectEntity e = projectJpaRepository.findById(projectId).orElse(null);
+        Map<String, Object> body = Map.of(
+                "projectId", projectId,
+                "status", e != null ? String.valueOf(e.getResultSubmitStatus()) : null,
+                "submittedAt", e != null ? e.getResultSubmittedAt() : null,
+                "attachments", e != null ? e.getResultAttachmentUrl() : null
+        );
+        return GlobalResponseHandler.success(ResponseStatus.PROJECT_FIND_SUCCESS, body);
     }
 }

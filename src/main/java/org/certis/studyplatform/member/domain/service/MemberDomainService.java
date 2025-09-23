@@ -13,11 +13,9 @@ import org.certis.studyplatform.member.domain.vo.*;
 import org.certis.studyplatform.member.domain.repository.command.MemberCommandRepository;
 import org.certis.studyplatform.member.domain.repository.query.MemberQueryRepository;
 import org.certis.studyplatform.member.domain.mapper.MemberDomainMapper;
-import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 
 /**
@@ -85,7 +83,7 @@ public class MemberDomainService {
         GradeVo gradeVo = memberDomainMapper.toGradeVo(command.grade());
         log.debug("✅ GradeVo created: {}", gradeVo.grade());
 
-        SkillsVo skillsVo = null; // 회원가입에서는 항상 null
+        // 회원가입에서는 skills는 항상 null (도메인 규칙에 따라 추후 확장 가능)
 
         // 역할 VO 변환 (길이, 형식 검증 자동 수행)
         RoleVo roleVo = memberDomainMapper.toRoleVo(command.role());
@@ -654,9 +652,13 @@ public class MemberDomainService {
      */
     public boolean isWithdrawalCandidate(MemberIdVo memberId) {
         try {
-            // 회원의 벌점 정보 조회 (실제 구현에서는 별도 메서드 필요)
-            // 현재는 간단한 로직으로 구현
-            return false; // 실제 구현 필요
+            if (memberId == null || memberId.value() == null) {
+                return false;
+            }
+
+            int points = getCurrentPenaltyPoints(memberId);
+            // 정책: 벌점 6점 이상이면 탈퇴 대상
+            return points >= 6;
         } catch (Exception e) {
             log.error("Domain: Failed to check withdrawal status - memberId: {}", memberId.value(), e);
             return false;
@@ -668,8 +670,10 @@ public class MemberDomainService {
      */
     public int getCurrentPenaltyPoints(MemberIdVo memberId) {
         try {
-            // 실제 구현에서는 memberQueryRepository.findPenaltyByMemberId() 등의 메서드 필요
-            return 0; // 실제 구현 필요
+            if (memberId == null || memberId.value() == null) {
+                return 0;
+            }
+            return memberQueryRepository.findPenaltyPointsByMemberId(memberId.value());
         } catch (Exception e) {
             log.error("Domain: Failed to get penalty points - memberId: {}", memberId.value(), e);
             return 0;

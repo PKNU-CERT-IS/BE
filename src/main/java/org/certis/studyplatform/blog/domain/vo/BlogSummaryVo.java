@@ -20,7 +20,11 @@ public record BlogSummaryVo(
         String blogCreatorName,
         ArticleReferenceType referenceType,
         String referenceTitle,
-        Integer views
+        Integer views,
+        Long studyId,
+        Long projectId,
+        String studyTitle,
+        String projectTitle
 ) {
     public static BlogSummaryVo of(
             BlogIdVo id,
@@ -32,12 +36,17 @@ public record BlogSummaryVo(
             String blogCreatorName,
             ArticleReferenceType referenceType,
             String referenceTitle,
-            Integer views
+            Integer views,
+            Long studyId,
+            Long projectId,
+            String studyTitle,
+            String projectTitle
     ) {
         return new BlogSummaryVo(
                 id, title, description, category,
                 createdAt, updatedAt, blogCreatorName,
-                referenceType, referenceTitle, views
+                referenceType, referenceTitle, views,
+                studyId, projectId, studyTitle, projectTitle
         );
     }
 }

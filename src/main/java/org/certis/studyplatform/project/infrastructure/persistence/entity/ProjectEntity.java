@@ -5,8 +5,10 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 
 import java.time.OffsetDateTime;
+import jakarta.persistence.Column;
 
 /**
  * Project JPA Entity
@@ -77,4 +79,16 @@ public class ProjectEntity {
 
     @Column(name = "deleted_at")
     private OffsetDateTime deletedAt;
+
+    // ===== Result submission fields =====
+    @Column(name = "result_submitted_at")
+    private OffsetDateTime resultSubmittedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "result_submit_status")
+    private ResultSubmitStatus resultSubmitStatus;
+
+    // Single URL for result attachment
+    @Column(name = "result_attached_url")
+    private String resultAttachmentUrl;
 }

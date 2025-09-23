@@ -29,7 +29,11 @@ public class ProfileUpdateRequestDto {
 
     private String description;
 
-    private String profileImage; // profileImageUrl에서 profileImage로 변경
+    // 프론트엔드에서 FileReader로 변형된 이미지 데이터 (Base64 또는 바이너리)
+    private String profileImageData;
+    
+    // 기존 이미지 URL (수정 시 기존 이미지 유지용)
+    private String profileImage;
 
     // 추가 필드들 (선택적 갱신)
     private String major;

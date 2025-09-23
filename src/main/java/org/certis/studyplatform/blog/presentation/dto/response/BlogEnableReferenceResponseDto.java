@@ -22,12 +22,15 @@ public class BlogEnableReferenceResponseDto {
 
     private Long referenceId;
 
+    private String referenceTitle;
+
     // toString for logging
     @Override
     public String toString() {
         return "BlogEnableReferenceResponseDto{" +
                 "referenceType=" + referenceType + '\'' +
                 ", referenceId='" + referenceId +
+                ", referenceTitle='" + referenceTitle + '\'' +
                 '}';
     }
 }

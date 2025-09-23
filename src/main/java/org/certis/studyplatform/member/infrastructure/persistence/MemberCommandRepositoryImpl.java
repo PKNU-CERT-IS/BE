@@ -305,33 +305,6 @@ public class MemberCommandRepositoryImpl implements MemberCommandRepository {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public long countByConditions(GradeVo grade, RoleVo role) {
-        log.debug("Command Infrastructure: Counting members by conditions - grade: {}, role: {}",
-                grade != null ? grade.grade() : null,
-                role != null ? role.role() : null);
-
-        try {
-            if (grade != null && role != null) {
-                // TODO: JPA Repository에 countByGradeAndRole 메서드 추가 필요
-                return 0L; // 임시 구현
-            } else if (grade != null) {
-                // TODO: JPA Repository에 countByGrade 메서드 추가 필요
-                return 0L; // 임시 구현
-            } else if (role != null) {
-                // TODO: JPA Repository에 countByRole 메서드 추가 필요
-                return 0L; // 임시 구현
-            } else {
-                return memberJpaRepository.count();
-            }
-
-        } catch (Exception e) {
-            log.error("Error counting members by conditions: {}", e.getMessage());
-            return 0L;
-        }
-    }
-
-    @Override
     @Transactional
     public void updatePenalty(MemberIdVo memberIdVo, PenaltyPointsVo penaltyPointsVo) {
         log.info("Infrastructure: Updating penalty for memberId={}, points={}",

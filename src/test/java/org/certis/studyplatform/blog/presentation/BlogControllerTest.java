@@ -12,7 +12,9 @@ import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
@@ -73,8 +75,17 @@ class BlogControllerTest {
     @Autowired
     private DSLContext dsl;
 
-    @MockBean
-    private BlogRedisRepository blogRedisRepository; // JOOQ로 직접 데이터베이스 조작
+    @Autowired
+    private BlogRedisRepository blogRedisRepository; // Redis 의존성 Mock 주입
+
+    @TestConfiguration
+    static class MockRedisConfig {
+        @Bean
+        @Primary
+        BlogRedisRepository blogRedisRepository() {
+            return org.mockito.Mockito.mock(BlogRedisRepository.class);
+        }
+    }
 
     // 테스트 상수
     private static final Long TEST_BLOG_ID = 1L;
@@ -90,7 +101,6 @@ class BlogControllerTest {
 
     @BeforeEach
     void setUp() {
-        System.out.println("🔧 테스트 데이터 설정 시작");
         // 데이터 충돌 방지: 관련 테이블 초기화
         dsl.execute("TRUNCATE TABLE blog RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE study RESTART IDENTITY CASCADE");
@@ -99,14 +109,11 @@ class BlogControllerTest {
 
         setupTestData();
         setupMockRedisRepository();
-        System.out.println("✅ 테스트 데이터 설정 완료");
     }
 
     @AfterEach
     void tearDown() {
-        System.out.println("🧹 테스트 데이터 정리 시작");
         cleanupTestData();
-        System.out.println("✅ 테스트 데이터 정리 완료");
     }
 
     // =================================================================
@@ -134,7 +141,6 @@ class BlogControllerTest {
         // Then: 데이터베이스에 블로그가 정상적으로 저장되었는지 검증
         verifyBlogCreatedInDatabase(request);
         
-        System.out.println("✅ 블로그 생성 테스트 성공");
     }
 
     @Test
@@ -160,11 +166,13 @@ class BlogControllerTest {
                 .andExpect(jsonPath("$.data.title").value(TEST_BLOG_TITLE))
                 .andExpect(jsonPath("$.data.description").value(TEST_BLOG_DESCRIPTION))
                 .andExpect(jsonPath("$.data.content").value(TEST_BLOG_CONTENT))
+                .andExpect(jsonPath("$.data.referenceType").value("STUDY"))
+                .andExpect(jsonPath("$.data.referenceId").value(TEST_STUDY_ID))
+                .andExpect(jsonPath("$.data.referenceTitle").exists())
                 .andExpect(jsonPath("$.data.creatorName").value(TEST_MEMBER_NAME))
                 .andExpect(jsonPath("$.data.viewCount").exists())
                 .andExpect(jsonPath("$.data.createdAt").exists());
 
-        System.out.println("✅ 익명 사용자 블로그 상세 조회 테스트 성공");
     }
 
     @Test
@@ -190,11 +198,13 @@ class BlogControllerTest {
                 .andExpect(jsonPath("$.data.title").value(TEST_BLOG_TITLE))
                 .andExpect(jsonPath("$.data.description").value(TEST_BLOG_DESCRIPTION))
                 .andExpect(jsonPath("$.data.content").value(TEST_BLOG_CONTENT))
+                .andExpect(jsonPath("$.data.referenceType").value("STUDY"))
+                .andExpect(jsonPath("$.data.referenceId").value(TEST_STUDY_ID))
+                .andExpect(jsonPath("$.data.referenceTitle").exists())
                 .andExpect(jsonPath("$.data.creatorName").value(TEST_MEMBER_NAME))
                 .andExpect(jsonPath("$.data.viewCount").exists())
                 .andExpect(jsonPath("$.data.createdAt").exists());
 
-        System.out.println("✅ 인증된 사용자 블로그 상세 조회 테스트 성공");
     }
 
     @Test
@@ -218,7 +228,6 @@ class BlogControllerTest {
         // (실제로는 BlogViewDomainService에서 호출되지만, 
         //  테스트에서는 Mock Redis Repository를 통해 간접적으로 검증)
         
-        System.out.println("✅ 조회수 증가 로직 검증 테스트 성공");
     }
 
     @Test
@@ -236,9 +245,9 @@ class BlogControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("블로그 글을 성공적으로 조회했습니다"))
                 .andExpect(jsonPath("$.data").exists())
-                .andExpect(jsonPath("$.data").isArray());
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data[0].referenceTitle").exists());
 
-        System.out.println("✅ 인증된 사용자 블로그 참조 목록 조회 테스트 성공");
     }
 
     @Test
@@ -270,7 +279,6 @@ class BlogControllerTest {
         // Then: 데이터베이스에서 수정 확인
         verifyBlogUpdatedInDatabase(request);
         
-        System.out.println("✅ 블로그 수정 테스트 성공");
     }
 
     @Test
@@ -297,7 +305,6 @@ class BlogControllerTest {
                 .andExpect(jsonPath("$.data.first").value(true))
                 .andExpect(jsonPath("$.data.last").value(true));
 
-        System.out.println("✅ 블로그 목록 조회 테스트 성공");
     }
 
     @Test
@@ -318,9 +325,29 @@ class BlogControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("블로그 글 검색을 성공적으로 완료했습니다"))
-                .andExpect(jsonPath("$.data.content").isArray());
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content[0].referenceType").exists())
+                .andExpect(jsonPath("$.data.content[0].referenceId").exists())
+                .andExpect(jsonPath("$.data.content[0].referenceTitle").exists());
 
-        System.out.println("✅ 블로그 고급 검색 테스트 성공");
+    }
+
+    @Test
+    @Order(5)
+    @DisplayName("🔍 블로그 고급 검색 - page/size 누락 시 기본값 적용")
+    void searchBlogsAdvanced_DefaultPaging_WhenNoPageSizeParams() throws Exception {
+        // Given
+        createMultipleBlogsInDatabase();
+
+        // When: page/size 미전달
+        mockMvc.perform(get("/api/v1/blog/search")
+                        .param("keyword", "개발")
+                        .param("category", "웹 개발"))
+                .andDo(print())
+                // Then: 기본 페이징(page=0, size=10)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.number").value(0))
+                .andExpect(jsonPath("$.data.size").value(10));
     }
 
     @Test
@@ -340,7 +367,6 @@ class BlogControllerTest {
                 .andExpect(jsonPath("$.message").value("블로그 글을 성공적으로 조회했습니다"))
                 .andExpect(jsonPath("$.data").isArray());
 
-        System.out.println("✅ 작성 가능한 참조 목록 조회 테스트 성공");
     }
 
     @Test
@@ -367,7 +393,6 @@ class BlogControllerTest {
         // Then: 데이터베이스에서 소프트 삭제 확인 (deletedAt 필드 설정)
         verifyBlogDeletedInDatabase(TEST_BLOG_ID);
         
-        System.out.println("✅ 블로그 삭제 테스트 성공");
     }
 
     // =================================================================
@@ -390,7 +415,6 @@ class BlogControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400));
 
-        System.out.println("✅ 필수 필드 누락 검증 테스트 성공");
     }
 
     @Test
@@ -410,7 +434,6 @@ class BlogControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(201))
                 .andExpect(jsonPath("$.message").value("블로그 글이 성공적으로 생성되었습니다"));
 
-        System.out.println("✅ 참조 타입 검증 테스트 완료 (현재 검증 로직 없음)");
     }
 
     @Test
@@ -428,7 +451,6 @@ class BlogControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(404))
                 .andExpect(jsonPath("$.message").value("블로그를 찾을 수 없습니다: 99999"));
 
-        System.out.println("✅ 존재하지 않는 블로그 조회 테스트 성공");
     }
 
     @Test
@@ -444,8 +466,7 @@ class BlogControllerTest {
         request.setDescription("권한이 없는 사용자의 수정 시도");
         request.setContent("무단으로 수정하려는 내용");
 
-        // When & Then: 현재 권한 검증 로직이 작동하지 않아 성공 응답
-        // TODO: 권한 검증 로직을 추가하여 작성자가 아닌 사용자의 수정을 차단하도록 수정 필요
+        // When & Then: 현재 권한 검증 로직이 작동하지 않아 성공 응답 (권한 검증 로직 추가 시 403으로 변경 예정)
         mockMvc.perform(put("/api/v1/blog/update")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -454,7 +475,6 @@ class BlogControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("블로그 글이 성공적으로 갱신되었습니다"));
 
-        System.out.println("✅ 권한 검증 테스트 완료 (현재 권한 검증 로직 없음)");
     }
 
     // =================================================================
@@ -475,7 +495,6 @@ class BlogControllerTest {
                 .andDo(print())
                 .andExpect(status().isUnsupportedMediaType());
 
-        System.out.println("✅ 잘못된 Content-Type 테스트 성공");
     }
 
     @Test
@@ -504,7 +523,6 @@ class BlogControllerTest {
         // 성능 검증: 1초 이내 응답
         assertThat(executionTime).isLessThan(1000);
         
-        System.out.println("✅ 대용량 데이터 페이징 성능 테스트 성공 - 실행시간: " + executionTime + "ms");
     }
 
     // =================================================================
@@ -522,7 +540,6 @@ class BlogControllerTest {
         var blogViewData = dsl.selectFrom(BLOG_VIEW)
                 .where(BLOG_VIEW.BLOG_ID.eq(TEST_BLOG_ID))
                 .fetchOne();
-        System.out.println("🔍 blog_view 테이블 데이터: " + blogViewData);
 
         // 디버깅: JOOQ JOIN 쿼리 직접 실행
         var joinResult = dsl.select(
@@ -534,7 +551,6 @@ class BlogControllerTest {
                 .leftJoin(BLOG_VIEW).on(BLOG.ID.eq(BLOG_VIEW.BLOG_ID))
                 .where(BLOG.ID.eq(TEST_BLOG_ID))
                 .fetchOne();
-        System.out.println("🔍 JOOQ JOIN 쿼리 결과: " + joinResult);
 
         // When: 블로그 목록 조회 API 호출
         mockMvc.perform(get("/api/v1/blog")
@@ -549,7 +565,6 @@ class BlogControllerTest {
                 .andExpect(jsonPath("$.data.content[0].views").exists())
                 .andExpect(jsonPath("$.data.content[0].updatedAt").exists());
 
-        System.out.println("✅ 블로그 목록 조회 - 새로운 필드 포함 테스트 성공");
     }
 
     @Test
@@ -570,7 +585,6 @@ class BlogControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(201))
                 .andExpect(jsonPath("$.message").value("블로그 글이 성공적으로 생성되었습니다"));
 
-        System.out.println("✅ 블로그 생성 - referenceTitle 포함 테스트 성공");
     }
 
     @Test
@@ -601,7 +615,6 @@ class BlogControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("블로그 글이 성공적으로 갱신되었습니다"));
 
-        System.out.println("✅ 블로그 수정 - referenceTitle 및 isPublic 포함 테스트 성공");
     }
 
     @Test
@@ -621,7 +634,6 @@ class BlogControllerTest {
                 .andExpect(jsonPath("$.data.id").value(TEST_BLOG_ID))
                 .andExpect(jsonPath("$.data.isPublic").exists());
 
-        System.out.println("✅ 블로그 상세 조회 - Redis 조회수 증가 테스트 성공");
     }
 
     @Test
@@ -634,26 +646,160 @@ class BlogControllerTest {
         // When: 공개 블로그만 조회
         mockMvc.perform(get("/api/v1/blog/public")
                         .param("isPublic", "true")
+                        .param("keyword", "공개")
+                        .param("category", "웹 개발")
                         .param("page", "0")
                         .param("size", "10"))
                 .andDo(print())
                 // Then: 공개 블로그만 반환
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
-                .andExpect(jsonPath("$.data.content").isArray());
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content[0].referenceType").exists())
+                .andExpect(jsonPath("$.data.content[0].referenceId").exists())
+                .andExpect(jsonPath("$.data.content[0].referenceTitle").exists());
 
         // When: 비공개 블로그만 조회
         mockMvc.perform(get("/api/v1/blog/public")
                         .param("isPublic", "false")
+                        .param("keyword", "비공개")
+                        .param("category", "웹 개발")
                         .param("page", "0")
                         .param("size", "10"))
                 .andDo(print())
                 // Then: 비공개 블로그만 반환
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
-                .andExpect(jsonPath("$.data.content").isArray());
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content[0].referenceType").exists())
+                .andExpect(jsonPath("$.data.content[0].referenceId").exists())
+                .andExpect(jsonPath("$.data.content[0].referenceTitle").exists());
 
-        System.out.println("✅ 공개 유무별 블로그 조회 테스트 성공");
+    }
+
+    @Test
+    @Order(27)
+    @DisplayName("🔗 E2E: 스터디 종료 후 블로그 참조 목록에서 referenceId/referenceTitle 조회")
+    void e2e_studyEnd_then_blogReference_containsStudyWithReferenceFields() throws Exception {
+        // Given: 인증 설정 및 진행 중 스터디 생성 (현재 사용자 소유)
+        setupAuthentication(TEST_MEMBER_ID, TEST_MEMBER_NAME);
+
+        Long e2eStudyId = 777L;
+        String e2eStudyTitle = "E2E 스터디";
+        OffsetDateTime now = OffsetDateTime.now();
+
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, e2eStudyId)
+                .set(STUDY.TITLE, e2eStudyTitle)
+                .set(STUDY.DESCRIPTION, "E2E 블로그 참조 테스트용 스터디")
+                .set(STUDY.CONTENT, "내용")
+                .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY.CATEGORY, "웹 개발")
+                .set(STUDY.SUBCATEGORY, "풀스택")
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(STUDY.STARTED_AT, now.minusDays(3))
+                .set(STUDY.ENDED_AT, now.plusDays(7))
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .execute();
+
+        // When: 스터디 종료 API 호출 → COMPLETED 상태로 전환
+        mockMvc.perform(post("/api/v1/study/end")
+                        .param("studyId", e2eStudyId.toString())
+                        .contentType("multipart/form-data"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(e2eStudyId))
+                .andExpect(jsonPath("$.data.status").value("COMPLETED"));
+
+        // Then: 블로그 참조 목록에서 해당 스터디가 포함되고 참조 필드가 노출됨
+        var mvcResult = mockMvc.perform(get("/api/v1/blog/reference"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String body = mvcResult.getResponse().getContentAsString();
+        var dataArray = objectMapper.readTree(body).get("data");
+        boolean found = false;
+        if (dataArray != null && dataArray.isArray()) {
+            for (var node : dataArray) {
+                if (node.hasNonNull("referenceId") && node.hasNonNull("referenceTitle")) {
+                    long id = node.get("referenceId").asLong();
+                    String title = node.get("referenceTitle").asText("");
+                    if (id == e2eStudyId && e2eStudyTitle.equals(title)) {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+        }
+        assertThat(found).isTrue();
+    }
+
+    @Test
+    @Order(28)
+    @DisplayName("🔗 E2E: 프로젝트 종료 후 블로그 참조 목록에서 referenceId/referenceTitle 조회")
+    void e2e_projectEnd_then_blogReference_containsProjectWithReferenceFields() throws Exception {
+        // Given: 인증 설정 및 진행 중 프로젝트 생성 (현재 사용자 소유)
+        setupAuthentication(TEST_MEMBER_ID, TEST_MEMBER_NAME);
+
+        Long e2eProjectId = 778L;
+        String e2eProjectTitle = "E2E 프로젝트";
+        OffsetDateTime now = OffsetDateTime.now();
+
+        // 프로젝트 생성 전에 멤버 데이터가 존재하도록 보장 (setupTestData에서 생성됨)
+        dsl.insertInto(PROJECT)
+                .set(PROJECT.ID, e2eProjectId)
+                .set(PROJECT.TITLE, e2eProjectTitle)
+                .set(PROJECT.DESCRIPTION, "E2E 블로그 참조 테스트용 프로젝트")
+                .set(PROJECT.CONTENT, "내용")
+                .set(PROJECT.MEMBER_ID, TEST_MEMBER_ID)
+                .set(PROJECT.CATEGORY, "웹 개발")
+                .set(PROJECT.SUBCATEGORY, "풀스택")
+                .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(PROJECT.STARTED_AT, now.minusDays(5))
+                .set(PROJECT.ENDED_AT, now.plusDays(10))
+                .set(PROJECT.CREATED_AT, now)
+                .set(PROJECT.UPDATED_AT, now)
+                .execute();
+
+        // When: 프로젝트 종료 API 호출 → COMPLETED 상태로 전환
+        mockMvc.perform(post("/api/v1/project/end")
+                        .param("projectId", e2eProjectId.toString())
+                        .contentType("multipart/form-data"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(e2eProjectId))
+                .andExpect(jsonPath("$.data.status").value("COMPLETED"));
+
+        // 완료 판정 로직은 ended_at < now 이므로, 참조 조회 직전 ended_at을 과거로 강제 보정
+        dsl.update(PROJECT)
+                .set(PROJECT.ENDED_AT, OffsetDateTime.now().minusSeconds(2))
+                .where(PROJECT.ID.eq(e2eProjectId))
+                .execute();
+
+        // Then: 블로그 참조 목록에서 해당 프로젝트가 포함되고 참조 필드가 노출됨
+        var mvcResult = mockMvc.perform(get("/api/v1/blog/reference"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String body = mvcResult.getResponse().getContentAsString();
+        var dataArray = objectMapper.readTree(body).get("data");
+        boolean found = false;
+        if (dataArray != null && dataArray.isArray()) {
+            for (var node : dataArray) {
+                if (node.hasNonNull("referenceId") && node.hasNonNull("referenceTitle")) {
+                    long id = node.get("referenceId").asLong();
+                    String title = node.get("referenceTitle").asText("");
+                    if (id == e2eProjectId && e2eProjectTitle.equals(title)) {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+        }
+        assertThat(found).isTrue();
     }
 
     // =================================================================
@@ -720,15 +866,14 @@ class BlogControllerTest {
                     .set(STUDY.CATEGORY, "웹 개발")
                     .set(STUDY.SUBCATEGORY, "풀스택")
                     .set(STUDY.MAX_PARTICIPANTS_NUMBER, 5)
-                    .set(STUDY.STARTED_AT, now.plusDays(1))
-                    .set(STUDY.ENDED_AT, now.plusDays(30))
+                    .set(STUDY.STARTED_AT, now.minusDays(30))
+                    .set(STUDY.ENDED_AT, now.minusDays(1))
                     .set(STUDY.CREATED_AT, now)
                     .set(STUDY.UPDATED_AT, now)
                     .onDuplicateKeyIgnore()
                     .execute();
 
         } catch (Exception e) {
-            System.out.println("테스트 데이터 설정 중 오류 발생 (이미 존재할 수 있음): " + e.getMessage());
         }
     }
 
@@ -743,7 +888,6 @@ class BlogControllerTest {
             dsl.deleteFrom(STUDY).execute();
             dsl.deleteFrom(MEMBER).execute();
         } catch (Exception e) {
-            System.out.println("테스트 데이터 정리 중 오류 발생: " + e.getMessage());
         }
     }
 

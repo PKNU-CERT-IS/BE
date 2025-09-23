@@ -410,7 +410,7 @@ public class BoardDomainService {
                 board.id(),
                 board.title(),
                 board.description(),
-                board.category(),
+                board.category() != null ? board.category().value() : null,
                 board.authorId(),
                 board.authorName(),
                 board.updatedAt(),

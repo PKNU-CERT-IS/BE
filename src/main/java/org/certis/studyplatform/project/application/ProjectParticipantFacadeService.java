@@ -11,6 +11,9 @@ import org.certis.studyplatform.project.application.object.command.UpdateProject
 import org.certis.studyplatform.project.application.object.query.GetProjectByIdQuery;
 import org.certis.studyplatform.project.application.query.ProjectParticipantQueryService;
 import org.certis.studyplatform.project.application.query.ProjectQueryService;
+import org.certis.studyplatform.member.application.query.MemberQueryService;
+import org.certis.studyplatform.member.application.object.query.GetMemberByIdQuery;
+import org.certis.studyplatform.member.domain.vo.MemberVo;
 import org.certis.studyplatform.project.domain.ProjectParticipantStatus;
 import org.certis.studyplatform.project.domain.vo.ProjectParticipantCreatedVo;
 import org.certis.studyplatform.project.domain.vo.ProjectParticipantStatusUpdatedVo;
@@ -23,7 +26,6 @@ import org.certis.studyplatform.project.presentation.dto.request.ProjectJoinReje
 import org.certis.studyplatform.project.presentation.dto.request.ProjectJoinRequestDto;
 import org.certis.studyplatform.project.presentation.dto.request.AdminProjectParticipantApprovalRequestDto;
 import org.certis.studyplatform.project.presentation.dto.response.ProjectJoinResponseDto;
-import org.certis.studyplatform.project.presentation.dto.response.ProjectParticipantStatsResponseDto;
 import org.certis.studyplatform.project.presentation.dto.response.ProjectParticipantStatusUpdateResponseDto;
 import org.certis.studyplatform.project.presentation.dto.response.AdminProjectParticipantApprovalResponseDto;
 import org.certis.studyplatform.project.presentation.dto.response.ProjectParticipantSummaryResponseDto;
@@ -31,8 +33,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
 
 @Service
 @RequiredArgsConstructor
@@ -44,6 +44,7 @@ public class ProjectParticipantFacadeService {
     private final ProjectParticipantCommandService participantCommandService;
     private final ProjectParticipantQueryService participantQueryService;
     private final ProjectQueryService projectQueryService;
+    private final MemberQueryService memberQueryService;
     private final ProjectApplicationCommandMapper commandMapper;
     private final ProjectApplicationDtoMapper dtoMapper;
 
@@ -197,8 +198,9 @@ public class ProjectParticipantFacadeService {
         // 2. 프로젝트 정보 조회
         ProjectVo projectVo = projectQueryService.getProjectById(GetProjectByIdQuery.of(participantVo.projectId()));
 
-        // 3. 관리자 정보 조회 (간단히 ID만 사용, 실제로는 MemberQueryService에서 조회해야 함)
-        String adminName = "관리자"; // TODO: 실제 관리자 이름 조회
+        // 3. 관리자 정보 조회
+        MemberVo adminMember = memberQueryService.getMemberById(new GetMemberByIdQuery(adminId));
+        String adminName = adminMember.name();
 
         // 4. DTO → Command Object 변환
         UpdateProjectParticipantStatusCommand command = commandMapper
@@ -233,8 +235,9 @@ public class ProjectParticipantFacadeService {
         // 2. 프로젝트 정보 조회
         ProjectVo projectVo = projectQueryService.getProjectById(GetProjectByIdQuery.of(participantVo.projectId()));
 
-        // 3. 관리자 정보 조회 (간단히 ID만 사용, 실제로는 MemberQueryService에서 조회해야 함)
-        String adminName = "관리자"; // TODO: 실제 관리자 이름 조회
+        // 3. 관리자 정보 조회
+        MemberVo adminMember = memberQueryService.getMemberById(new GetMemberByIdQuery(adminId));
+        String adminName = adminMember.name();
 
         // 4. DTO → Command Object 변환
         UpdateProjectParticipantStatusCommand command = commandMapper

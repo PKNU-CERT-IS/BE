@@ -26,11 +26,9 @@ public class BoardApplicationMapper {
      * BoardSearchRequestDto → SearchBoardsQuery 변환
      */
     public SearchBoardsQuery toSearchBoardsQuery(BoardSearchRequestDto request) {
-        boolean noFilter = (request.getKeyword() == null || request.getKeyword().trim().isEmpty())
-                && (request.getCategory() == null || request.getCategory().trim().isEmpty());
-
-        int page = noFilter ? 0 : request.getPage();
-        int size = noFilter ? Integer.MAX_VALUE : request.getSize();
+        // 전달된 page/size를 그대로 사용 (검증은 Domain Vo에서 수행)
+        int page = request.getPage();
+        int size = request.getSize();
 
         return SearchBoardsQuery.of(
                 request.getKeyword(),
@@ -118,7 +116,7 @@ public class BoardApplicationMapper {
                 .title(vo.title())
                 .description(vo.description())
                 .updatedAt(vo.updatedAt())
-                .category(vo.category())
+                .category(vo.category() != null ? vo.category().value() : null)
                 .authorName(vo.authorName())
                 .likeCount(vo.likeCount())
                 .viewCount(vo.viewCount())

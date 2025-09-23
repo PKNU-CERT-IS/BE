@@ -29,9 +29,6 @@ public record AttachmentVo(
         if (attachedUrl == null || attachedUrl.trim().isEmpty()) {
             throw new DomainException(ExceptionStatus.BOARD_DOMAIN_INVALID_ATTACHMENT_URL);
         }
-        if (!attachedUrl.startsWith("http://") && !attachedUrl.startsWith("https://")) {
-            throw new DomainException(ExceptionStatus.BOARD_DOMAIN_INVALID_ATTACHMENT_URL);
-        }
 
         return new AttachmentVo(id, name.trim(), type.trim(), size.trim(), attachedUrl.trim());
     }

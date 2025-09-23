@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 /**
  * Blog JPA Repository
@@ -28,5 +29,6 @@ public interface BlogJpaRepository extends JpaRepository<BlogEntity, Long> {
     @Query("UPDATE BlogEntity b SET b.deletedAt = :deletedAt, b.updatedAt = :deletedAt " +
             "WHERE b.id = :id AND b.deletedAt IS NULL")
     int bulkSoftDeleteById(@Param("id") Long id, @Param("deletedAt") OffsetDateTime deletedAt);
+
 
 }

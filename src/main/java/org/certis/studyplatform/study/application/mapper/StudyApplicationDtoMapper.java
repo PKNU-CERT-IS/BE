@@ -7,6 +7,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
+import java.util.Objects;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -30,6 +31,21 @@ public class StudyApplicationDtoMapper {
             return null;
         }
 
+        String thumbnailUrl = null;
+        if (vo.attached() != null) {
+            thumbnailUrl = vo.attached().stream()
+                    .filter(a -> a.type() != null && (
+                            a.type().toLowerCase().startsWith("image/") ||
+                            a.type().equalsIgnoreCase("png") ||
+                            a.type().equalsIgnoreCase("jpg") ||
+                            a.type().equalsIgnoreCase("jpeg")
+                    ))
+                    .map(StudyAttachedVo::attachedUrl)
+                    .filter(Objects::nonNull)
+                    .findFirst()
+                    .orElse(null);
+        }
+
         return StudyDetailResponseDto.builder()
                 .id(vo.id())
                 .title(vo.title())
@@ -46,6 +62,7 @@ public class StudyApplicationDtoMapper {
                 .studyCreatorGrade(vo.creatorGrade() != null ? vo.creatorGrade().toString() : null)
                 .semester(vo.semester())
                 .status(vo.status())
+                .thumbnailUrl(thumbnailUrl)
                 .attachments(toStudyAttachedResponseDtoList(vo.attached()))
                 .meetingSummaries(toStudyMeetingSummaryResponseDtoList(vo.summaryVoList()))
                 .participantSummaries(toStudyParticipantSummaryResponseDtoListFromVo(vo.participantVoList()))
@@ -63,6 +80,21 @@ public class StudyApplicationDtoMapper {
             return null;
         }
 
+        String thumbnailUrl = null;
+        if (vo.attachedVo() != null) {
+            thumbnailUrl = vo.attachedVo().stream()
+                    .filter(a -> a.type() != null && (
+                            a.type().toLowerCase().startsWith("image/") ||
+                            a.type().equalsIgnoreCase("png") ||
+                            a.type().equalsIgnoreCase("jpg") ||
+                            a.type().equalsIgnoreCase("jpeg")
+                    ))
+                    .map(StudyAttachedVo::attachedUrl)
+                    .filter(Objects::nonNull)
+                    .findFirst()
+                    .orElse(null);
+        }
+
         return StudySummaryResponseDto.builder()
                 .id(vo.id())
                 .title(vo.title())
@@ -78,6 +110,7 @@ public class StudyApplicationDtoMapper {
                 .isParticipantable(vo.isParticipantable())
                 .currentParticipantNumber(vo.currentParticipants())
                 .maxParticipantNumber(vo.maxParticipants())
+                .thumbnailUrl(thumbnailUrl)
                 .attachments(toStudyAttachedResponseDtoList(vo.attachedVo()))
                 .build();
     }
@@ -270,6 +303,7 @@ public class StudyApplicationDtoMapper {
                 .id(vo.id())
                 .memberId(vo.memberId())
                 .memberName(vo.memberName())
+                .memberGrade(vo.memberGrade())
                 .status(vo.status())
                 .createdAt(vo.createdAt())
                 .build();
@@ -349,20 +383,27 @@ public class StudyApplicationDtoMapper {
     }
 
     /**
-     * StudyParticipantStatusUpdatedVo → AdminStudyParticipantApprovalResponseDto 변환
+     * StudyParticipantStatusUpdatedVo → AdminStudyParticipantApprovalResponseDto 변환 (실데이터 버전)
      */
     public AdminStudyParticipantApprovalResponseDto toAdminStudyParticipantApprovalResponseDto(
-            StudyParticipantStatusUpdatedVo vo, org.certis.studyplatform.study.domain.StudyParticipantStatus status) {
+            StudyParticipantStatusUpdatedVo vo,
+            String studyTitle,
+            String memberName,
+            org.certis.studyplatform.study.domain.StudyParticipantStatus status,
+            Long adminId,
+            String adminName,
+            String reason
+    ) {
         return AdminStudyParticipantApprovalResponseDto.builder()
                 .participantId(vo.id())
                 .studyId(vo.studyId())
-                .studyTitle("스터디 제목") // TODO: 실제 스터디 제목 조회 필요
+                .studyTitle(studyTitle)
                 .memberId(vo.memberId())
-                .memberName("회원 이름") // TODO: 실제 회원 이름 조회 필요
+                .memberName(memberName)
                 .status(status)
-                .reason("관리자 처리") // TODO: 실제 사유 처리 필요
-                .adminId(vo.requesterId())
-                .adminName("관리자") // TODO: 실제 관리자 이름 조회 필요
+                .reason(reason)
+                .adminId(adminId)
+                .adminName(adminName)
                 .processedAt(vo.updatedAt())
                 .build();
     }

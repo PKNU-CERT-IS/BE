@@ -10,7 +10,7 @@ import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.mockito.Mock;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
@@ -59,7 +59,7 @@ class AdminBlogControllerTest {
     @Autowired
     private DSLContext dsl;
 
-    @MockBean
+    @Mock
     private BlogRedisRepository blogRedisRepository;
 
     // 테스트 상수
@@ -74,7 +74,6 @@ class AdminBlogControllerTest {
 
     @BeforeEach
     void setUp() {
-        System.out.println("🔧 Admin 테스트 데이터 설정 시작");
         // 데이터 충돌 방지: 관련 테이블 초기화
         dsl.execute("TRUNCATE TABLE blog RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE study RESTART IDENTITY CASCADE");
@@ -83,14 +82,11 @@ class AdminBlogControllerTest {
         setupTestData();
         setupMockRedisRepository();
         setupAdminAuthentication();
-        System.out.println("✅ Admin 테스트 데이터 설정 완료");
     }
 
     @AfterEach
     void tearDown() {
-        System.out.println("🧹 Admin 테스트 데이터 정리 시작");
         cleanupTestData();
-        System.out.println("✅ Admin 테스트 데이터 정리 완료");
     }
 
     // =================================================================
@@ -121,7 +117,6 @@ class AdminBlogControllerTest {
         // Then: 데이터베이스에서 블로그가 공개로 변경되었는지 확인
         verifyBlogPublicStatusInDatabase(TEST_BLOG_ID, true);
 
-        System.out.println("✅ Admin 블로그 공개 토글 테스트 성공");
     }
 
     @Test
@@ -148,7 +143,6 @@ class AdminBlogControllerTest {
         // Then: 데이터베이스에서 블로그가 비공개로 변경되었는지 확인
         verifyBlogPublicStatusInDatabase(TEST_BLOG_ID, false);
 
-        System.out.println("✅ Admin 블로그 비공개 토글 테스트 성공");
     }
 
     @Test
@@ -170,7 +164,6 @@ class AdminBlogControllerTest {
                 // Then: 404 에러 응답
                 .andExpect(status().isNotFound());
 
-        System.out.println("✅ Admin 블로그 토글 - 존재하지 않는 블로그 테스트 성공");
     }
 
     @Test
@@ -189,7 +182,6 @@ class AdminBlogControllerTest {
                 // Then: 400 에러 응답
                 .andExpect(status().isBadRequest());
 
-        System.out.println("✅ Admin 블로그 토글 - 잘못된 요청 데이터 테스트 성공");
     }
 
     // =================================================================
@@ -251,7 +243,6 @@ class AdminBlogControllerTest {
                     .execute();
 
         } catch (Exception e) {
-            System.out.println("Admin 테스트 데이터 설정 중 오류 발생: " + e.getMessage());
         }
     }
 
@@ -341,7 +332,6 @@ class AdminBlogControllerTest {
             dsl.deleteFrom(STUDY).execute();
             dsl.deleteFrom(MEMBER).execute();
         } catch (Exception e) {
-            System.out.println("Admin 테스트 데이터 정리 중 오류 발생: " + e.getMessage());
         }
     }
 }

@@ -16,6 +16,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.certis.studyplatform.shared.dto.LinkDto;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -83,23 +84,19 @@ class ProjectMeetingControllerTest {
 
     @BeforeEach
     void setUp() {
-        System.out.println("🔧 테스트 데이터 설정 시작");
         // 데이터 충돌 방지: 관련 테이블 초기화
         dsl.execute("TRUNCATE TABLE project_meeting_link RESTART IDENTITY CASCADE");
-        dsl.execute("TRUNCATE TABLE project_meETING RESTART IDENTITY CASCADE");
+        dsl.execute("TRUNCATE TABLE project_meeting RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE project_participant RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE project RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
 
         setupTestData();
-        System.out.println("✅ 테스트 데이터 설정 완료");
     }
 
     @AfterEach
     void tearDown() {
-        System.out.println("🧹 테스트 데이터 정리 시작");
         cleanupTestData();
-        System.out.println("✅ 테스트 데이터 정리 완료");
     }
 
     // =================================================================
@@ -127,7 +124,6 @@ class ProjectMeetingControllerTest {
         // Then: 데이터베이스에 회의록이 정상적으로 저장되었는지 검증
         verifyMeetingCreatedInDatabase(request);
         
-        System.out.println("✅ 프로젝트 회의록 생성 테스트 성공");
     }
 
     @Test
@@ -137,7 +133,7 @@ class ProjectMeetingControllerTest {
     void createProjectMeeting_AllowsVeryLongContent() throws Exception {
         String longContent = "y".repeat(200_000);
         ProjectMeetingCreateRequestDto request = createValidMeetingRequest();
-        request.setProjectId(TEST_PROJECT_ID + 500);
+        request.setProjectId(TEST_PROJECT_ID); // 기존 프로젝트 사용
         request.setContent(longContent);
 
         mockMvc.perform(post("/api/v1/project/meeting/create")
@@ -176,7 +172,6 @@ class ProjectMeetingControllerTest {
                 .andExpect(jsonPath("$.data.updatedAt").exists())
                 .andExpect(jsonPath("$.data.editable").isBoolean());
 
-        System.out.println("✅ 프로젝트 회의록 상세 조회 테스트 성공");
     }
 
     @Test
@@ -193,22 +188,23 @@ class ProjectMeetingControllerTest {
         request.setContent("수정된 회의록 내용입니다.");
         request.setParticipantNumber(3);
         request.setLinks(List.of(
-            new org.certis.studyplatform.shared.dto.LinkDto("업데이트된 회의록", "https://example.com/updated-meeting-notes.pdf")
+            new LinkDto("업데이트된 회의록", "https://example.com/updated-meeting-notes.pdf")
         ));
 
         // When: 회의록 수정 API 호출
         mockMvc.perform(put("/api/v1/project/meeting/edit")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
-                // Then: 트랜잭션 격리로 인한 권한 검증 실패 (현실적 대응)
+                // Then: 성공적으로 수정됨
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("프로젝트 회의록이 성공적으로 수정되었습니다"));
 
-        // 참고: 권한 검증 실패로 실제 수정은 일어나지 않음
+        // Then: 데이터베이스에 실제로 수정 반영되었는지 검증
+        verifyMeetingUpdatedInDatabase(request);
         
-        System.out.println("✅ 프로젝트 회의록 수정 테스트 성공");
     }
 
     @Test
@@ -237,7 +233,6 @@ class ProjectMeetingControllerTest {
                 .andExpect(jsonPath("$.data.first").value(true))
                 .andExpect(jsonPath("$.data.last").value(true));
 
-        System.out.println("✅ 프로젝트 회의록 목록 조회 테스트 성공");
     }
 
     @Test
@@ -264,7 +259,6 @@ class ProjectMeetingControllerTest {
         // Then: 데이터베이스에서 소프트 삭제 확인 (deletedAt 필드 설정)
         verifyMeetingDeletedInDatabase(TEST_MEETING_ID);
         
-        System.out.println("✅ 프로젝트 회의록 삭제 테스트 성공");
     }
 
     // =================================================================
@@ -288,7 +282,6 @@ class ProjectMeetingControllerTest {
 
                 .andExpect(jsonPath("$.statusCode").value(400));
 
-        System.out.println("✅ 필수 필드 누락 검증 테스트 성공");
     }
 
     @Test
@@ -312,7 +305,6 @@ class ProjectMeetingControllerTest {
 
                 .andExpect(jsonPath("$.statusCode").value(400));
 
-        System.out.println("✅ 잘못된 데이터 형식 검증 테스트 성공");
     }
 
     @Test
@@ -323,16 +315,15 @@ class ProjectMeetingControllerTest {
         ProjectMeetingCreateRequestDto request = createValidMeetingRequest();
         request.setProjectId(99999L); // 존재하지 않는 프로젝트 ID
 
-        // When & Then: 현재는 프로젝트 존재 검증이 없어서 성공함 (향후 개선 필요)
+        // When & Then: 프로젝트 미존재로 HTTP 404 Not Found 응답
         mockMvc.perform(post("/api/v1/project/meeting/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.statusCode").value(201))
-                .andExpect(jsonPath("$.message").value("프로젝트 회의록이 성공적으로 생성되었습니다"));
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.statusCode").value(404))
+                .andExpect(jsonPath("$.message").value("프로젝트를 찾을 수 없습니다"));
 
-        System.out.println("✅ 존재하지 않는 프로젝트 테스트 성공");
     }
 
     @Test
@@ -351,7 +342,6 @@ class ProjectMeetingControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(404))
                 .andExpect(jsonPath("$.message").value("회의록을 찾을 수 없습니다"));
 
-        System.out.println("✅ 존재하지 않는 회의록 조회 테스트 성공");
     }
 
     @Test
@@ -367,7 +357,7 @@ class ProjectMeetingControllerTest {
         request.setTitle("무단 수정 시도");
         request.setContent("권한이 없는 사용자의 수정 시도");
         request.setLinks(List.of(
-            new org.certis.studyplatform.shared.dto.LinkDto("악성 링크", "https://malicious.com/unauthorized-link.pdf")
+            new LinkDto("악성 링크", "https://malicious.com/unauthorized-link.pdf")
         ));
 
         // When & Then: HTTP 403 Forbidden 응답 (권한 검증이 올바르게 작동함)
@@ -379,7 +369,6 @@ class ProjectMeetingControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(403))
                 .andExpect(jsonPath("$.message").value("회의록을 수정할 권한이 없습니다"));
 
-        System.out.println("✅ 권한 없는 사용자 수정 시도 테스트 성공");
     }
 
     // =================================================================
@@ -400,7 +389,6 @@ class ProjectMeetingControllerTest {
                 .andDo(print())
                 .andExpect(status().isUnsupportedMediaType());
 
-        System.out.println("✅ 잘못된 Content-Type 테스트 성공");
     }
 
     @Test
@@ -414,7 +402,6 @@ class ProjectMeetingControllerTest {
                 .andDo(print())
                 .andExpect(status().isBadRequest());
 
-        System.out.println("✅ 잘못된 JSON 형식 테스트 성공");
     }
 
     @Test
@@ -427,7 +414,6 @@ class ProjectMeetingControllerTest {
                 .andDo(print())
                 .andExpect(status().isMethodNotAllowed());
 
-        System.out.println("✅ 잘못된 HTTP 메서드 테스트 성공");
     }
 
     @Test
@@ -439,7 +425,6 @@ class ProjectMeetingControllerTest {
                 .andDo(print())
                 .andExpect(status().isNotFound());
 
-        System.out.println("✅ 존재하지 않는 엔드포인트 테스트 성공");
     }
 
     // =================================================================
@@ -473,7 +458,6 @@ class ProjectMeetingControllerTest {
         // 성능 검증: 1초 이내 응답
         assertThat(executionTime).isLessThan(1000);
         
-        System.out.println("✅ 대용량 데이터 페이징 성능 테스트 성공 - 실행시간: " + executionTime + "ms");
     }
 
     @Test
@@ -482,9 +466,9 @@ class ProjectMeetingControllerTest {
     void createProjectMeeting_WithAttachedUrl_SuccessfulLinkStorage() throws Exception {
         // Given: 첨부 URL이 포함된 유효한 회의록 생성 요청
         ProjectMeetingCreateRequestDto request = createValidMeetingRequest();
-        request.setProjectId(TEST_PROJECT_ID + 100); // 고유한 프로젝트 ID
+        request.setProjectId(TEST_PROJECT_ID); // 기존 프로젝트 사용
         request.setLinks(List.of(
-            new org.certis.studyplatform.shared.dto.LinkDto("회의록 문서", "https://docs.google.com/document/d/test-meeting-notes")
+            new LinkDto("회의록 문서", "https://docs.google.com/document/d/test-meeting-notes")
         ));
 
         // When: 회의록 생성 API 호출
@@ -504,7 +488,6 @@ class ProjectMeetingControllerTest {
             verifyLinkCreatedInDatabase(link.getTitle(), link.getUrl());
         }
         
-        System.out.println("✅ 첨부 URL 포함 회의록 생성 테스트 성공");
     }
 
     @Test
@@ -513,7 +496,7 @@ class ProjectMeetingControllerTest {
     void createProjectMeeting_WithoutAttachedUrl_NoLinkStorage() throws Exception {
         // Given: 첨부 URL이 없는 회의록 생성 요청
         ProjectMeetingCreateRequestDto request = createValidMeetingRequest();
-        request.setProjectId(TEST_PROJECT_ID + 200); // 고유한 프로젝트 ID
+        request.setProjectId(TEST_PROJECT_ID); // 기존 프로젝트 사용
         request.setLinks(null); // 첨부 링크 없음
 
         // When: 회의록 생성 API 호출
@@ -530,7 +513,6 @@ class ProjectMeetingControllerTest {
         verifyMeetingCreatedInDatabase(request);
         verifyNoLinkCreatedForProject(request.getProjectId());
         
-        System.out.println("✅ 첨부 URL 없는 회의록 생성 테스트 성공");
     }
 
     @Test
@@ -539,13 +521,13 @@ class ProjectMeetingControllerTest {
     void createProjectMeeting_WithMultipleLinks_SuccessfulMultipleLinkStorage() throws Exception {
         // Given: 여러 링크가 포함된 회의록 생성 요청
         ProjectMeetingCreateRequestDto request = createValidMeetingRequest();
-        request.setProjectId(TEST_PROJECT_ID + 300); // 고유한 프로젝트 ID
+        request.setProjectId(TEST_PROJECT_ID); // 기존 프로젝트 사용
         
         // 여러 링크 설정
-        List<org.certis.studyplatform.shared.dto.LinkDto> multipleLinks = List.of(
-            new org.certis.studyplatform.shared.dto.LinkDto("회의록 문서", "https://docs.google.com/document/d/meeting-notes"),
-            new org.certis.studyplatform.shared.dto.LinkDto("발표 자료", "https://docs.google.com/presentation/d/presentation"),
-            new org.certis.studyplatform.shared.dto.LinkDto("녹화 영상", "https://youtube.com/watch?v=example")
+        List<LinkDto> multipleLinks = List.of(
+            new LinkDto("회의록 문서", "https://docs.google.com/document/d/meeting-notes"),
+            new LinkDto("발표 자료", "https://docs.google.com/presentation/d/presentation"),
+            new LinkDto("녹화 영상", "https://youtube.com/watch?v=example")
         );
         request.setLinks(multipleLinks);
 
@@ -566,7 +548,6 @@ class ProjectMeetingControllerTest {
             verifyLinkCreatedInDatabase(link.getTitle(), link.getUrl());
         }
         
-        System.out.println("✅ 다중 링크 포함 회의록 생성 테스트 성공");
     }
 
     @Test
@@ -575,7 +556,7 @@ class ProjectMeetingControllerTest {
     void createProjectMeeting_WithEmptyLinksArray_NoLinkStorage() throws Exception {
         // Given: 빈 링크 배열이 포함된 회의록 생성 요청
         ProjectMeetingCreateRequestDto request = createValidMeetingRequest();
-        request.setProjectId(TEST_PROJECT_ID + 400); // 고유한 프로젝트 ID
+        request.setProjectId(TEST_PROJECT_ID); // 기존 프로젝트 사용
         request.setLinks(List.of()); // 빈 링크 배열
 
         // When: 회의록 생성 API 호출
@@ -591,9 +572,8 @@ class ProjectMeetingControllerTest {
 
         // Then: 데이터베이스에 회의록은 저장되었지만 링크는 저장되지 않았는지 검증
         verifyMeetingCreatedInDatabase(request);
-        verifyNoLinkCreatedForProject(TEST_PROJECT_ID + 400);
+        verifyNoLinkCreatedForProject(TEST_PROJECT_ID);
         
-        System.out.println("✅ 빈 링크 배열 회의록 생성 테스트 성공");
     }
 
     @Test
@@ -615,20 +595,15 @@ class ProjectMeetingControllerTest {
         
         // 실제 응답 내용 출력
         String responseContent = result.getResponse().getContentAsString();
-        System.out.println("API 응답: " + responseContent);
         
         // JSON 파싱하여 isParticipantable 필드 확인
         try {
             com.fasterxml.jackson.databind.JsonNode jsonNode = objectMapper.readTree(responseContent);
-            System.out.println("data 필드: " + jsonNode.get("data"));
             if (jsonNode.get("data") != null) {
-                System.out.println("isParticipantable 필드: " + jsonNode.get("data").get("isParticipantable"));
             }
         } catch (Exception e) {
-            System.out.println("JSON 파싱 오류: " + e.getMessage());
         }
         
-        System.out.println("✅ 프로젝트 상세 조회 isParticipantable 필드 테스트 성공");
     }
 
     @Test
@@ -651,24 +626,17 @@ class ProjectMeetingControllerTest {
         
         // 실제 응답 내용 출력
         String responseContent = result.getResponse().getContentAsString();
-        System.out.println("프로젝트 목록 API 응답: " + responseContent);
         
         // JSON 파싱하여 isParticipantable 필드 확인
         try {
             com.fasterxml.jackson.databind.JsonNode jsonNode = objectMapper.readTree(responseContent);
-            System.out.println("data 필드: " + jsonNode.get("data"));
             if (jsonNode.get("data") != null && jsonNode.get("data").get("content") != null) {
-                System.out.println("content 배열: " + jsonNode.get("data").get("content"));
                 if (jsonNode.get("data").get("content").isArray() && jsonNode.get("data").get("content").size() > 0) {
-                    System.out.println("첫 번째 프로젝트: " + jsonNode.get("data").get("content").get(0));
-                    System.out.println("isParticipantable 필드: " + jsonNode.get("data").get("content").get(0).get("isParticipantable"));
                 }
             }
         } catch (Exception e) {
-            System.out.println("JSON 파싱 오류: " + e.getMessage());
         }
         
-        System.out.println("✅ 프로젝트 목록 조회 isParticipantable 필드 테스트 성공");
     }
 
     @Test
@@ -691,20 +659,15 @@ class ProjectMeetingControllerTest {
         
         // 실제 응답 내용 출력
         String responseContent = result.getResponse().getContentAsString();
-        System.out.println("프로젝트 상세 API 응답: " + responseContent);
         
         // JSON 파싱하여 attachments 필드 확인
         try {
             com.fasterxml.jackson.databind.JsonNode jsonNode = objectMapper.readTree(responseContent);
-            System.out.println("data 필드: " + jsonNode.get("data"));
             if (jsonNode.get("data") != null) {
-                System.out.println("attachments 필드: " + jsonNode.get("data").get("attachments"));
             }
         } catch (Exception e) {
-            System.out.println("JSON 파싱 오류: " + e.getMessage());
         }
         
-        System.out.println("✅ 프로젝트 상세 조회 attachments 필드 테스트 성공");
     }
 
 
@@ -730,24 +693,17 @@ class ProjectMeetingControllerTest {
         
         // 실제 응답 내용 출력
         String responseContent = result.getResponse().getContentAsString();
-        System.out.println("프로젝트 회의록 목록 API 응답: " + responseContent);
         
         // JSON 파싱하여 content 필드 확인
         try {
             com.fasterxml.jackson.databind.JsonNode jsonNode = objectMapper.readTree(responseContent);
-            System.out.println("data 필드: " + jsonNode.get("data"));
             if (jsonNode.get("data") != null && jsonNode.get("data").get("content") != null) {
-                System.out.println("content 배열: " + jsonNode.get("data").get("content"));
                 if (jsonNode.get("data").get("content").isArray() && jsonNode.get("data").get("content").size() > 0) {
-                    System.out.println("첫 번째 회의록: " + jsonNode.get("data").get("content").get(0));
-                    System.out.println("content 필드: " + jsonNode.get("data").get("content").get(0).get("content"));
                 }
             }
         } catch (Exception e) {
-            System.out.println("JSON 파싱 오류: " + e.getMessage());
         }
         
-        System.out.println("✅ 프로젝트 회의록 목록 조회 content 필드 테스트 성공");
     }
 
 
@@ -766,7 +722,7 @@ class ProjectMeetingControllerTest {
         request.setContent("수정된 회의록 내용");
         request.setParticipantNumber(3); // participants 대신 participantNumber 사용
         request.setLinks(List.of(
-            new org.certis.studyplatform.shared.dto.LinkDto("새로운 링크", "https://new-link.com/updated-document.pdf")
+            new LinkDto("새로운 링크", "https://new-link.com/updated-document.pdf")
         ));
 
         // When: 회의록 수정 API 호출
@@ -778,7 +734,6 @@ class ProjectMeetingControllerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.statusCode").value(409));
 
-        System.out.println("✅ 첨부 URL 변경 테스트 성공 (권한 검증으로 인한 예상된 실패)");
     }
 
     // =================================================================
@@ -796,9 +751,9 @@ class ProjectMeetingControllerTest {
         request.setParticipantNumber(2);
         
         // 새로운 links 구조 사용
-        List<org.certis.studyplatform.shared.dto.LinkDto> links = List.of(
-            new org.certis.studyplatform.shared.dto.LinkDto("회의록 문서", "https://example.com/meeting-notes.pdf"),
-            new org.certis.studyplatform.shared.dto.LinkDto("발표 자료", "https://example.com/presentation.pdf")
+        List<LinkDto> links = List.of(
+            new LinkDto("회의록 문서", "https://example.com/meeting-notes.pdf"),
+            new LinkDto("발표 자료", "https://example.com/presentation.pdf")
         );
         request.setLinks(links);
         return request;
@@ -858,7 +813,6 @@ class ProjectMeetingControllerTest {
                     .execute();
 
         } catch (Exception e) {
-            System.out.println("테스트 데이터 설정 중 오류 발생 (이미 존재할 수 있음): " + e.getMessage());
         }
     }
 
@@ -873,7 +827,6 @@ class ProjectMeetingControllerTest {
             dsl.deleteFrom(PROJECT).execute();
             dsl.deleteFrom(MEMBER).execute();
         } catch (Exception e) {
-            System.out.println("테스트 데이터 정리 중 오류 발생: " + e.getMessage());
         }
     }
 

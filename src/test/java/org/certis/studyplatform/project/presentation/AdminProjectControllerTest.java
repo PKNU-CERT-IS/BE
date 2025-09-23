@@ -74,21 +74,17 @@ class AdminProjectControllerTest {
 
     @BeforeEach
     void setUp() {
-        System.out.println("🔧 관리자 프로젝트 테스트 데이터 설정 시작");
         // 데이터 충돌 방지: 관련 테이블 초기화
         dsl.execute("TRUNCATE TABLE project_participant RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE project RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
 
         setupTestData();
-        System.out.println("✅ 관리자 프로젝트 테스트 데이터 설정 완료");
     }
 
     @AfterEach
     void tearDown() {
-        System.out.println("🧹 관리자 프로젝트 테스트 데이터 정리 시작");
         cleanupTestData();
-        System.out.println("✅ 관리자 프로젝트 테스트 데이터 정리 완료");
     }
 
     // =================================================================

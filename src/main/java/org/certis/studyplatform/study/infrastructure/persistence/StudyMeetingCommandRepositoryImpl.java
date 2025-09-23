@@ -163,26 +163,4 @@ public class StudyMeetingCommandRepositoryImpl implements StudyMeetingCommandRep
         }
         return result;
     }
-
-    /**
-     * String[] participants를 List<Long> participantIds로 변환
-     * 임시로 단순 변환 처리 (실제로는 participants가 이름 문자열이므로 별도 매핑 필요)
-     */
-    private java.util.List<Long> convertParticipantsToIds(String[] participants) {
-        if (participants == null) {
-            return java.util.List.of();
-        }
-        
-        // TODO: 실제로는 participant 이름을 Member ID로 변환하는 로직 필요
-        // 임시로 문자열을 Long으로 변환 시도
-        return java.util.Arrays.stream(participants)
-            .map(s -> {
-                try {
-                    return Long.parseLong(s);
-                } catch (NumberFormatException e) {
-                    return 0L; // 임시 처리
-                }
-            })
-            .toList();
-    }
 } 

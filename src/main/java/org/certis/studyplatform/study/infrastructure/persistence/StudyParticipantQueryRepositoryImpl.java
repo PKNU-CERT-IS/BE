@@ -9,6 +9,7 @@ import org.certis.studyplatform.study.domain.vo.StudyParticipantVo;
 import org.certis.studyplatform.study.infrastructure.mapper.StudyInfrastructureMapper;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
+import static org.jooq.impl.DSL.inline;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -72,6 +73,7 @@ public class StudyParticipantQueryRepositoryImpl implements StudyParticipantQuer
 
         var s = STUDY_PARTICIPANT.as("ss");
         var m = MEMBER.as("m");
+        var st = STUDY.as("st");
 
         Condition condition = s.STUDY_ID.eq(studyId).and(s.DELETED_AT.isNull());
         if (status != null) {
@@ -91,13 +93,17 @@ public class StudyParticipantQueryRepositoryImpl implements StudyParticipantQuer
         // 페이징된 데이터 조회
         List<StudyParticipantSummaryVo> participants = dsl.select(
                         s.ID,
+                        s.STUDY_ID,
                         s.MEMBER_ID,
                         m.NAME.as("member_name"),
+                        m.GRADE.as("member_grade"),
+                        st.TITLE.as("study_title"),
                         s.STATUS,
                         s.CREATED_AT
                 )
                 .from(s)
                 .leftJoin(m).on(s.MEMBER_ID.eq(m.ID))
+                .leftJoin(st).on(s.STUDY_ID.eq(st.ID))
                 .where(condition)
                 .orderBy(s.CREATED_AT.desc())
                 .limit(pageable.getPageSize())
@@ -117,8 +123,9 @@ public class StudyParticipantQueryRepositoryImpl implements StudyParticipantQuer
     public Page<StudyParticipantSummaryVo> findByMemberId(Long memberId, Pageable pageable) {
         log.info("jOOQ: Finding participants by member - memberId: {}", memberId);
 
-        var s = STUDY_PARTICIPANT.as("ss");
+        var s = STUDY_PARTICIPANT.as("s");
         var p = STUDY.as("p");
+        var m = MEMBER.as("m");
 
         Condition condition = s.MEMBER_ID.eq(memberId).and(s.DELETED_AT.isNull());
 
@@ -132,21 +139,52 @@ public class StudyParticipantQueryRepositoryImpl implements StudyParticipantQuer
             return new PageImpl<>(List.of(), pageable, 0);
         }
 
-        // 페이징된 데이터 조회 (프로젝트 정보 포함)
-        List<StudyParticipantSummaryVo> participants = dsl.select(
-                        s.ID,
-                        s.MEMBER_ID,
-                        p.TITLE.as("member_name"), // 프로젝트 제목을 memberName 필드에 임시 저장
-                        s.STATUS,
-                        s.CREATED_AT
-                )
-                .from(s)
-                .leftJoin(p).on(s.STUDY_ID.eq(p.ID))
-                .where(condition)
-                .orderBy(s.CREATED_AT.desc())
-                .limit(pageable.getPageSize())
-                .offset((int) pageable.getOffset())
-                .fetch(mapper::toSummaryVoFromRecord);
+        // 페이징된 데이터 조회 (스터디 정보 포함)
+        List<StudyParticipantSummaryVo> participants;
+        
+        if (pageable.isUnpaged()) {
+            // Pageable이 unpaged인 경우 페이징 없이 조회
+            var query = dsl.select(
+                            s.ID,
+                            s.STUDY_ID,
+                            s.MEMBER_ID,
+                            m.NAME.as("member_name"),
+                            m.GRADE.as("member_grade"),
+                            p.TITLE.as("study_title"), // 스터디 제목을 별도 필드로 저장
+                            s.STATUS,
+                            s.CREATED_AT
+                    )
+                    .from(s)
+                    .leftJoin(p).on(s.STUDY_ID.eq(p.ID))
+                    .leftJoin(m).on(s.MEMBER_ID.eq(m.ID))
+                    .where(condition)
+                    .orderBy(s.CREATED_AT.desc());
+            
+            log.info("jOOQ Query: {}", query.getSQL());
+            log.info("jOOQ Bind values: {}", query.getBindValues());
+            
+            participants = query.fetch(mapper::toSummaryVoFromRecord);
+        } else {
+            // Pageable이 페이징된 경우 limit/offset 적용
+            participants = dsl.select(
+                            s.ID,
+                            s.STUDY_ID,
+                            s.MEMBER_ID,
+                            m.NAME.as("member_name"),
+                            m.GRADE.as("member_grade"),
+                            p.TITLE.as("study_title"), // 스터디 제목을 별도 필드로 저장
+                            s.STATUS,
+                            s.CREATED_AT
+                    )
+                    .from(s)
+                    .leftJoin(p).on(s.STUDY_ID.eq(p.ID))
+                    .leftJoin(m).on(s.MEMBER_ID.eq(m.ID))
+                    .where(condition)
+                    .orderBy(s.CREATED_AT.desc())
+                    .limit(pageable.getPageSize())
+                    .offset((int) pageable.getOffset())
+                    .fetch(mapper::toSummaryVoFromRecord);
+        }
 
         log.info("jOOQ: Found {} member participations", total);
         return new PageImpl<>(participants, pageable, total);
@@ -263,21 +301,26 @@ public class StudyParticipantQueryRepositoryImpl implements StudyParticipantQuer
     @Override
     public List<StudyParticipantSummaryVo> findAllApprovedByStudyId(Long studyId) {
         log.info("jOOQ: Finding all approved participants by study - studyId: {}", studyId);
-        System.out.println("=== DEBUG: findAllApprovedByStudyId called with studyId: " + studyId + " ===");
+        log.debug("=== DEBUG: findAllApprovedByStudyId called with studyId: {} ===", studyId);
 
         var s = STUDY_PARTICIPANT.as("ss");
         var m = MEMBER.as("m");
+        var st = STUDY.as("st");
 
         try {
             List<StudyParticipantSummaryVo> participants = dsl.select(
                             s.ID,
+                            s.STUDY_ID,
                             s.MEMBER_ID,
                             m.NAME.as("member_name"),
+                            m.GRADE.as("member_grade"),
+                            st.TITLE.as("study_title"),
                             s.STATUS,
                             s.CREATED_AT
                     )
                     .from(s)
                     .leftJoin(m).on(s.MEMBER_ID.eq(m.ID))
+                    .leftJoin(st).on(s.STUDY_ID.eq(st.ID))
                     .where(s.STUDY_ID.eq(studyId)
                             .and(s.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
                             .and(s.DELETED_AT.isNull()))
@@ -285,15 +328,13 @@ public class StudyParticipantQueryRepositoryImpl implements StudyParticipantQuer
                     .fetch(mapper::toSummaryVoFromRecord);
 
             log.info("jOOQ: Found {} approved participants", participants.size());
-            System.out.println("=== DEBUG: Found " + participants.size() + " approved participants ===");
+            log.debug("=== DEBUG: Found {} approved participants ===", participants.size());
             for (StudyParticipantSummaryVo participant : participants) {
-                System.out.println("=== DEBUG: Participant - memberId: " + participant.memberId() + 
-                                 ", status: " + participant.status() + " ===");
+                log.debug("=== DEBUG: Participant - memberId: {}, status: {} ===", participant.memberId(), participant.status());
             }
             return participants;
         } catch (Exception e) {
             log.error("jOOQ: Error finding approved participants - studyId: {}, error: {}", studyId, e.getMessage(), e);
-            System.out.println("=== DEBUG: Error finding participants: " + e.getMessage() + " ===");
             e.printStackTrace();
             throw e;
         }

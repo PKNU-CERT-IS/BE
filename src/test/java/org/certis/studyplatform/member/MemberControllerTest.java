@@ -17,8 +17,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -61,20 +59,16 @@ class MemberControllerTest {
 
     @BeforeEach
     void setUp() {
-        System.out.println("🔧 테스트 데이터 설정 시작");
         // 데이터 충돌 방지: 관련 테이블 초기화
         dsl.execute("TRUNCATE TABLE member_contact RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
 
         setupTestData();
-        System.out.println("✅ 테스트 데이터 설정 완료");
     }
 
     @AfterEach
     void tearDown() {
-        System.out.println("🧹 테스트 데이터 정리 시작");
         cleanupTestData();
-        System.out.println("✅ 테스트 데이터 정리 완료");
     }
 
     // =================================================================
@@ -101,7 +95,20 @@ class MemberControllerTest {
                 .andExpect(jsonPath("$.data[0].email").exists())
                 .andExpect(jsonPath("$.data[0].githubUrl").exists());
 
-        System.out.println("✅ 이름 검색 테스트 성공");
+    }
+
+    @Test
+    @Order(1)
+    @DisplayName("🔍 회원 검색 - page/size 누락 시 기본값 적용")
+    void searchMembers_DefaultPaging_WhenNoPageSizeParams() throws Exception {
+        // When: page/size 미전달
+        mockMvc.perform(get(BASE_URL + "/search")
+                        .param("keyword", "김"))
+                .andDo(print())
+                // Then: 기본값이 적용되어도 응답은 성공해야 함 (리스트 응답)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isArray());
+        // Member 검색은 Page가 아닌 List 반환 구조라 페이징 메타 검증은 생략
     }
 
     @Test
@@ -119,7 +126,6 @@ class MemberControllerTest {
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data[0].major").value(TEST_MAJOR));
 
-        System.out.println("✅ 전공 검색 테스트 성공");
     }
 
     @Test
@@ -137,7 +143,6 @@ class MemberControllerTest {
                 .andExpect(jsonPath("$.data[0].skills[0]").value("Java"))
                 .andExpect(jsonPath("$.data[0].skills").isArray());
 
-        System.out.println("✅ 기술스택 검색 테스트 성공");
     }
 
     @Test
@@ -155,7 +160,6 @@ class MemberControllerTest {
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data[0].grade").value(MemberGrade.SENIOR.name()));
 
-        System.out.println("✅ 학년 필터링 테스트 성공");
     }
 
     @Test
@@ -173,7 +177,6 @@ class MemberControllerTest {
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data[0].role").value("PLAYER"));
 
-        System.out.println("✅ 역할 필터링 테스트 성공");
     }
 
     @Test
@@ -192,7 +195,6 @@ class MemberControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray());
 
-        System.out.println("✅ 복합 조건 검색 테스트 성공");
     }
 
     @Test
@@ -216,7 +218,6 @@ class MemberControllerTest {
         // Then: 데이터베이스에서 실제 수정 확인
         verifyMemberUpdatedInDatabase(TEST_MEMBER_ID, request.getName());
 
-        System.out.println("✅ 회원 정보 수정 테스트 성공");
     }
 
     // =================================================================

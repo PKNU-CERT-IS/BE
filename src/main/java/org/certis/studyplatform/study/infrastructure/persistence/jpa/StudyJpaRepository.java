@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 
 /**
  * Study JPA Repository
@@ -28,4 +29,23 @@ public interface StudyJpaRepository extends JpaRepository<StudyEntity, Long> {
     @Query("UPDATE StudyEntity p SET p.deletedAt = :deletedAt, p.updatedAt = :deletedAt " +
             "WHERE p.id = :id AND p.deletedAt IS NULL")
     int bulkSoftDeleteById(@Param("id") Long id, @Param("deletedAt") OffsetDateTime deletedAt);
+
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE StudyEntity s SET s.resultSubmittedAt = :submittedAt, s.resultSubmitStatus = :status, s.resultAttachmentUrl = :attachmentUrl, s.updatedAt = :submittedAt WHERE s.id = :id AND s.deletedAt IS NULL")
+    int updateResultSubmission(@Param("id") Long id,
+                               @Param("submittedAt") OffsetDateTime submittedAt,
+                               @Param("status") ResultSubmitStatus status,
+                               @Param("attachmentUrl") String attachmentUrl);
+
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE StudyEntity s SET s.resultSubmitStatus = :status, s.endedAt = :endedAt, s.updatedAt = :endedAt WHERE s.id = :id AND s.deletedAt IS NULL")
+    int approveEnd(@Param("id") Long id,
+                   @Param("endedAt") OffsetDateTime endedAt,
+                   @Param("status") ResultSubmitStatus status);
+
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE StudyEntity s SET s.resultSubmitStatus = :status, s.resultAttachmentUrl = NULL, s.resultSubmittedAt = NULL, s.updatedAt = :now WHERE s.id = :id AND s.deletedAt IS NULL")
+    int rejectEnd(@Param("id") Long id,
+                  @Param("status") ResultSubmitStatus status,
+                  @Param("now") OffsetDateTime now);
 }

@@ -3,6 +3,7 @@ package org.certis.studyplatform.study.domain.vo;
 import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.member.domain.MemberGrade;
+import org.certis.studyplatform.study.domain.StudyStatus;
 
 import java.time.OffsetDateTime;
 import java.util.Collections;
@@ -235,15 +236,15 @@ public record StudyVo(
 
     /**
      * ended_at을 기준으로 status 계산
-     * ended_at이 현재 시간보다 지났으면 "ENDED", 아니면 "ACTIVE"
+     * ended_at이 현재 시간보다 지났으면 COMPLETED, 아니면 INPROGRESS
      */
     private static String calculateStatus(OffsetDateTime endedAt) {
         if (endedAt == null) {
-            return "ACTIVE"; // 종료일이 없으면 활성 상태
+            return StudyStatus.INPROGRESS.name(); // 종료일이 없으면 진행 중 상태
         }
         
         OffsetDateTime now = OffsetDateTime.now();
-        return endedAt.isBefore(now) ? "ENDED" : "ACTIVE";
+        return endedAt.isBefore(now) ? StudyStatus.COMPLETED.name() : StudyStatus.INPROGRESS.name();
     }
 
 }

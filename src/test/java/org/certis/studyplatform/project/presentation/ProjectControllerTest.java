@@ -21,6 +21,7 @@ import java.time.OffsetDateTime;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.certis.generated.jooq.Tables.*;
+import org.certis.studyplatform.response.ResponseStatus;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -80,7 +81,6 @@ class ProjectControllerTest {
 
     @BeforeEach
     void setUp() {
-        System.out.println("🔧 테스트 데이터 설정 시작");
         // 데이터 충돌 방지를 위해 매 테스트 시작 시 테이블 정리
         dsl.execute("TRUNCATE TABLE project_meeting_link RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE project_meeting RESTART IDENTITY CASCADE");
@@ -89,14 +89,11 @@ class ProjectControllerTest {
         dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
 
         setupTestData();
-        System.out.println("✅ 테스트 데이터 설정 완료");
     }
 
     @AfterEach
     void tearDown() {
-        System.out.println("🧹 테스트 데이터 정리 시작");
         cleanupTestData();
-        System.out.println("✅ 테스트 데이터 정리 완료");
     }
 
     // =================================================================
@@ -117,13 +114,12 @@ class ProjectControllerTest {
                 .andDo(print())
                 // Then: HTTP 201 Created 응답과 성공 메시지 확인
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.statusCode").value(org.certis.studyplatform.response.ResponseStatus.PROJECT_CREATE_SUCCESS.getStatusCode()))
-                .andExpect(jsonPath("$.message").value(org.certis.studyplatform.response.ResponseStatus.PROJECT_CREATE_SUCCESS.getMessage()));
+                .andExpect(jsonPath("$.statusCode").value(ResponseStatus.PROJECT_CREATE_SUCCESS.getStatusCode()))
+                .andExpect(jsonPath("$.message").value(ResponseStatus.PROJECT_CREATE_SUCCESS.getMessage()));
 
         // Then: 데이터베이스에 프로젝트가 정상적으로 저장되었는지 검증
         verifyProjectCreatedInDatabase(request);
 
-        System.out.println("✅ 프로젝트 생성 테스트 성공");
     }
 
     @Test
@@ -139,8 +135,8 @@ class ProjectControllerTest {
                 .andDo(print())
                 // Then: HTTP 200 OK 응답과 완전한 프로젝트 정보 반환
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value(org.certis.studyplatform.response.ResponseStatus.PROJECT_FIND_SUCCESS.getStatusCode()))
-                .andExpect(jsonPath("$.message").value(org.certis.studyplatform.response.ResponseStatus.PROJECT_FIND_SUCCESS.getMessage()))
+                .andExpect(jsonPath("$.statusCode").value(ResponseStatus.PROJECT_FIND_SUCCESS.getStatusCode()))
+                .andExpect(jsonPath("$.message").value(ResponseStatus.PROJECT_FIND_SUCCESS.getMessage()))
                 .andExpect(jsonPath("$.data").exists())
                 .andExpect(jsonPath("$.data.id").value(TEST_PROJECT_ID))
                 .andExpect(jsonPath("$.data.creatorId").value(TEST_MEMBER_ID))
@@ -162,7 +158,6 @@ class ProjectControllerTest {
                 .fetchOne(PROJECT.MEMBER_ID);
         assertThat(responseCreatorId).isEqualTo(dbCreatorId);
 
-        System.out.println("✅ 프로젝트 상세 조회 테스트 성공");
     }
 
     @Test
@@ -189,13 +184,50 @@ class ProjectControllerTest {
                 .andDo(print())
                 // Then: HTTP 200 OK 응답과 성공 메시지
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value(org.certis.studyplatform.response.ResponseStatus.PROJECT_UPDATE_SUCCESS.getStatusCode()))
-                .andExpect(jsonPath("$.message").value(org.certis.studyplatform.response.ResponseStatus.PROJECT_UPDATE_SUCCESS.getMessage()));
+                .andExpect(jsonPath("$.statusCode").value(ResponseStatus.PROJECT_UPDATE_SUCCESS.getStatusCode()))
+                .andExpect(jsonPath("$.message").value(ResponseStatus.PROJECT_UPDATE_SUCCESS.getMessage()));
 
         // Then: 데이터베이스에서 프로젝트 수정 확인
         verifyProjectUpdatedInDatabase(request);
 
-        System.out.println("✅ 프로젝트 수정 테스트 성공");
+    }
+
+    @Test
+    @Order(3)
+    @DisplayName("✏️ 프로젝트 수정 - attachments=null 이면 기존 첨부 삭제")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
+    void updateProject_NullAttachments_ShouldDeleteExisting() throws Exception {
+        // Given: 프로젝트와 기존 첨부 존재
+        createTestProjectInDatabase();
+        OffsetDateTime now = OffsetDateTime.now();
+        dsl.insertInto(PROJECT_ATTACHED)
+                .set(PROJECT_ATTACHED.PROJECT_ID, TEST_PROJECT_ID)
+                .set(PROJECT_ATTACHED.MEMBER_ID, TEST_MEMBER_ID)
+                .set(PROJECT_ATTACHED.NAME, "old.txt")
+                .set(PROJECT_ATTACHED.TYPE, "text/plain")
+                .set(PROJECT_ATTACHED.SIZE, "10")
+                .set(PROJECT_ATTACHED.ATTACHED_URL, "https://s3.example.com/old.txt")
+                .set(PROJECT_ATTACHED.CREATED_AT, now)
+                .set(PROJECT_ATTACHED.UPDATED_AT, now)
+                .execute();
+
+        ProjectUpdateRequestDto request = new ProjectUpdateRequestDto();
+        request.setProjectId(TEST_PROJECT_ID);
+        request.setTitle("제목유지");
+        request.setDescription("설명유지");
+        request.setAttachments(null); // 핵심: null 전달
+
+        // When
+        mockMvc.perform(put("/api/v1/project/update")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(ResponseStatus.PROJECT_UPDATE_SUCCESS.getStatusCode()));
+
+        // Then: 첨부 테이블이 비어있어야 함
+        Integer count = dsl.fetchCount(PROJECT_ATTACHED, PROJECT_ATTACHED.PROJECT_ID.eq(TEST_PROJECT_ID));
+        assertThat(count).isZero();
     }
 
     @Test
@@ -208,7 +240,7 @@ class ProjectControllerTest {
         // When: 전체 프로젝트 목록 조회
         mockMvc.perform(get("/api/v1/project"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value(org.certis.studyplatform.response.ResponseStatus.PROJECT_SEARCH_SUCCESS.getStatusCode()))
+                .andExpect(jsonPath("$.statusCode").value(ResponseStatus.PROJECT_SEARCH_SUCCESS.getStatusCode()))
                 .andExpect(jsonPath("$.data.content").isArray())  // 변경: $.data → $.data.content
                 .andExpect(jsonPath("$.data.content").isNotEmpty())
                 .andExpect(jsonPath("$.data.totalElements").value(3))
@@ -216,7 +248,6 @@ class ProjectControllerTest {
                 .andExpect(jsonPath("$.data.first").value(true))
                 .andExpect(jsonPath("$.data.last").value(true));
 
-        System.out.println("✅ 전체 프로젝트 목록 조회 테스트 성공");
     }
 
     @Test
@@ -234,15 +265,31 @@ class ProjectControllerTest {
                 .andDo(print())
                 // Then: 검색 결과와 페이징 정보 반환
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value(org.certis.studyplatform.response.ResponseStatus.PROJECT_SEARCH_SUCCESS.getStatusCode()))
-                .andExpect(jsonPath("$.message").value(org.certis.studyplatform.response.ResponseStatus.PROJECT_SEARCH_SUCCESS.getMessage()))
+                .andExpect(jsonPath("$.statusCode").value(ResponseStatus.PROJECT_SEARCH_SUCCESS.getStatusCode()))
+                .andExpect(jsonPath("$.message").value(ResponseStatus.PROJECT_SEARCH_SUCCESS.getMessage()))
                 .andExpect(jsonPath("$.data.content").isArray())
                 .andExpect(jsonPath("$.data.totalElements").exists())
                 .andExpect(jsonPath("$.data.totalPages").exists())
                 .andExpect(jsonPath("$.data.size").value(10))
                 .andExpect(jsonPath("$.data.number").value(0));
 
-        System.out.println("✅ 프로젝트 키워드 검색 테스트 성공");
+    }
+
+    @Test
+    @Order(5)
+    @DisplayName("🔍 프로젝트 고급 검색 - page/size 누락 시 기본값 적용")
+    void searchProjects_DefaultPaging_WhenNoPageSizeParams() throws Exception {
+        // Given
+        createSearchableProjectsInDatabase();
+
+        // When: page/size 미전달
+        mockMvc.perform(get("/api/v1/project/search")
+                        .param("keyword", "플랫폼"))
+                .andDo(print())
+                // Then: 기본 페이징(page=0, size=10)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.number").value(0))
+                .andExpect(jsonPath("$.data.size").value(10));
     }
 
     @Test
@@ -263,13 +310,12 @@ class ProjectControllerTest {
                 .andDo(print())
                 // Then: HTTP 200 OK 응답과 성공 메시지
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value(org.certis.studyplatform.response.ResponseStatus.PROJECT_DELETE_SUCCESS.getStatusCode()))
-                .andExpect(jsonPath("$.message").value(org.certis.studyplatform.response.ResponseStatus.PROJECT_DELETE_SUCCESS.getMessage()));
+                .andExpect(jsonPath("$.statusCode").value(ResponseStatus.PROJECT_DELETE_SUCCESS.getStatusCode()))
+                .andExpect(jsonPath("$.message").value(ResponseStatus.PROJECT_DELETE_SUCCESS.getMessage()));
 
         // Then: 데이터베이스에서 소프트 삭제 확인 (deletedAt 필드 설정)
         verifyProjectDeletedInDatabase(TEST_PROJECT_ID);
 
-        System.out.println("✅ 프로젝트 삭제 테스트 성공");
     }
 
     @Test
@@ -285,11 +331,10 @@ class ProjectControllerTest {
                 .andDo(print())
                 // Then: 해당 프로젝트의 회의록 목록 반환
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value(org.certis.studyplatform.response.ResponseStatus.PROJECT_FIND_SUCCESS.getStatusCode()))
-                .andExpect(jsonPath("$.message").value(org.certis.studyplatform.response.ResponseStatus.PROJECT_FIND_SUCCESS.getMessage()))
+                .andExpect(jsonPath("$.statusCode").value(ResponseStatus.PROJECT_FIND_SUCCESS.getStatusCode()))
+                .andExpect(jsonPath("$.message").value(ResponseStatus.PROJECT_FIND_SUCCESS.getMessage()))
                 .andExpect(jsonPath("$.data").isArray());
 
-        System.out.println("✅ 프로젝트 회의록 목록 조회 테스트 성공");
     }
 
     // =================================================================
@@ -312,7 +357,6 @@ class ProjectControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400));
 
-        System.out.println("✅ 필수 필드 누락 검증 테스트 성공");
     }
 
     @Test
@@ -337,7 +381,6 @@ class ProjectControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400));
 
-        System.out.println("✅ 잘못된 데이터 형식 검증 테스트 성공");
     }
 
     @Test
@@ -354,7 +397,6 @@ class ProjectControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.statusCode").value(404));
 
-        System.out.println("✅ 존재하지 않는 프로젝트 조회 테스트 성공");
     }
 
     @Test
@@ -371,7 +413,6 @@ class ProjectControllerTest {
         request.setDescription("권한이 없는 사용자의 수정 시도");
 
         // When & Then: HTTP 400 BadRequest 응답
-        // TODO: 하드코딩 변경에 따라 변경
         mockMvc.perform(put("/api/v1/project/update")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -379,7 +420,6 @@ class ProjectControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400));
 
-        System.out.println("✅ 권한 없는 사용자 수정 시도 테스트 성공");
     }
 
     @Test
@@ -401,7 +441,6 @@ class ProjectControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400));
 
-        System.out.println("✅ 권한 없는 사용자 삭제 시도 테스트 성공");
     }
 
     // =================================================================
@@ -422,7 +461,6 @@ class ProjectControllerTest {
                 .andDo(print())
                 .andExpect(status().isUnsupportedMediaType());
 
-        System.out.println("✅ 잘못된 Content-Type 테스트 성공");
     }
 
     @Test
@@ -436,7 +474,6 @@ class ProjectControllerTest {
                 .andDo(print())
                 .andExpect(status().isBadRequest());
 
-        System.out.println("✅ 잘못된 JSON 형식 테스트 성공");
     }
 
     @Test
@@ -449,7 +486,6 @@ class ProjectControllerTest {
                 .andDo(print())
                 .andExpect(status().isMethodNotAllowed());
 
-        System.out.println("✅ 잘못된 HTTP 메서드 테스트 성공");
     }
 
     @Test
@@ -461,7 +497,6 @@ class ProjectControllerTest {
                 .andDo(print())
                 .andExpect(status().isNotFound());
 
-        System.out.println("✅ 존재하지 않는 엔드포인트 테스트 성공");
     }
 
     // =================================================================
@@ -480,7 +515,7 @@ class ProjectControllerTest {
         // When: 전체 프로젝트 목록 조회
         mockMvc.perform(get("/api/v1/project"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value(org.certis.studyplatform.response.ResponseStatus.PROJECT_SEARCH_SUCCESS.getStatusCode()))
+                .andExpect(jsonPath("$.statusCode").value(ResponseStatus.PROJECT_SEARCH_SUCCESS.getStatusCode()))
                 .andExpect(jsonPath("$.data.content").isArray())  // 변경: $.data → $.data.content
                 .andExpect(jsonPath("$.data.content").isNotEmpty())
                 .andExpect(jsonPath("$.data.totalElements").value(50))
@@ -494,7 +529,6 @@ class ProjectControllerTest {
         // 성능 검증: 2초 이내 응답
         assertThat(executionTime).isLessThan(2000);
 
-        System.out.println("✅ 대용량 데이터 성능 테스트 성공 - 실행시간: " + executionTime + "ms");
     }
 
     @Test
@@ -524,7 +558,6 @@ class ProjectControllerTest {
         // 성능 검증: 1초 이내 응답
         assertThat(executionTime).isLessThan(1000);
 
-        System.out.println("✅ 복합 조건 검색 성능 테스트 성공 - 실행시간: " + executionTime + "ms");
     }
 
 
@@ -585,7 +618,6 @@ class ProjectControllerTest {
                     .execute();
 
         } catch (Exception e) {
-            System.out.println("테스트 데이터 설정 중 오류 발생 (이미 존재할 수 있음): " + e.getMessage());
         }
     }
 
@@ -599,7 +631,6 @@ class ProjectControllerTest {
             dsl.deleteFrom(PROJECT).execute();
             dsl.deleteFrom(MEMBER).execute();
         } catch (Exception e) {
-            System.out.println("테스트 데이터 정리 중 오류 발생: " + e.getMessage());
         }
     }
 
@@ -978,7 +1009,7 @@ class ProjectControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("프로젝트가 성공적으로 종료되었습니다"))
                 .andExpect(jsonPath("$.data.id").value(projectId))
-                .andExpect(jsonPath("$.data.status").value("ENDED")); // 종료된 상태 확인
+                .andExpect(jsonPath("$.data.status").value("COMPLETED")); // 종료된 상태 확인
         
         // 데이터베이스에서 프로젝트 상태 확인
         var project = dsl.selectFrom(PROJECT)
@@ -1036,5 +1067,181 @@ class ProjectControllerTest {
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.statusCode").value(422))
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("이미 종료된 프로젝트입니다")));
+    }
+
+    @Test
+    @Order(200)
+    @DisplayName("✅ 프로젝트 상세 조회 - Status 값 검증")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
+    void should_return_correct_project_status_in_detail() throws Exception {
+        // Given
+        Long projectId = 1L;
+        setupTestData();
+        
+        // 프로젝트를 현재 진행 중인 상태로 생성
+        OffsetDateTime now = OffsetDateTime.now();
+        dsl.insertInto(PROJECT)
+                .set(PROJECT.ID, projectId)
+                .set(PROJECT.TITLE, "진행 중인 프로젝트")
+                .set(PROJECT.DESCRIPTION, "현재 진행 중인 프로젝트")
+                .set(PROJECT.CONTENT, "진행 중인 프로젝트 상세 내용")
+                .set(PROJECT.MEMBER_ID, 1L)
+                .set(PROJECT.CATEGORY, "웹 개발")
+                .set(PROJECT.SUBCATEGORY, "풀스택")
+                .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(PROJECT.STARTED_AT, now.minusDays(1)) // 1일 전 시작
+                .set(PROJECT.ENDED_AT, now.plusDays(30))   // 30일 후 종료
+                .set(PROJECT.CREATED_AT, now)
+                .set(PROJECT.UPDATED_AT, now)
+                .execute();
+        
+        // When & Then - 진행 중인 프로젝트 조회
+        mockMvc.perform(get("/api/v1/project/detail")
+                        .param("projectId", String.valueOf(projectId)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.data.id").value(projectId))
+                .andExpect(jsonPath("$.data.status").value("INPROGRESS")); // 진행 중 상태 확인
+    }
+
+    @Test
+    @Order(201)
+    @DisplayName("✅ 프로젝트 목록 조회 - Status 값 검증")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
+    void should_return_correct_project_status_in_list() throws Exception {
+        // Given
+        setupTestData();
+        
+        // 프로젝트를 현재 진행 중인 상태로 생성
+        OffsetDateTime now = OffsetDateTime.now();
+        dsl.insertInto(PROJECT)
+                .set(PROJECT.ID, 1L)
+                .set(PROJECT.TITLE, "진행 중인 프로젝트")
+                .set(PROJECT.DESCRIPTION, "현재 진행 중인 프로젝트")
+                .set(PROJECT.CONTENT, "진행 중인 프로젝트 상세 내용")
+                .set(PROJECT.MEMBER_ID, 1L)
+                .set(PROJECT.CATEGORY, "웹 개발")
+                .set(PROJECT.SUBCATEGORY, "풀스택")
+                .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(PROJECT.STARTED_AT, now.minusDays(1)) // 1일 전 시작
+                .set(PROJECT.ENDED_AT, now.plusDays(30))   // 30일 후 종료
+                .set(PROJECT.CREATED_AT, now)
+                .set(PROJECT.UPDATED_AT, now)
+                .execute();
+        
+        // When & Then - 프로젝트 목록 조회
+        mockMvc.perform(get("/api/v1/project")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.data.content[0].status").value("INPROGRESS")); // 진행 중 상태 확인
+    }
+
+    @Test
+    @Order(202)
+    @DisplayName("✅ 완료된 프로젝트 - Status 값 검증")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
+    void should_return_completed_status_for_ended_project() throws Exception {
+        // Given
+        Long projectId = 1L;
+        setupTestData();
+        createTestProjectInDatabase();
+        
+        // 프로젝트를 완료된 상태로 설정
+        dsl.update(PROJECT)
+                .set(PROJECT.STARTED_AT, OffsetDateTime.now().minusDays(10))
+                .set(PROJECT.ENDED_AT, OffsetDateTime.now().minusDays(1))
+                .where(PROJECT.ID.eq(projectId))
+                .execute();
+        
+        // When & Then - 완료된 프로젝트 조회
+        mockMvc.perform(get("/api/v1/project/detail")
+                        .param("projectId", String.valueOf(projectId)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.data.id").value(projectId))
+                .andExpect(jsonPath("$.data.status").value("COMPLETED")); // 완료 상태 확인
+    }
+
+    @Test
+    @Order(203)
+    @DisplayName("✅ 준비 중인 프로젝트 - Status 값 검증")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
+    void should_return_ready_status_for_future_project() throws Exception {
+        // Given
+        Long projectId = 1L;
+        setupTestData();
+        
+        // 프로젝트를 처음부터 미래 날짜로 생성
+        OffsetDateTime now = OffsetDateTime.now();
+        dsl.insertInto(PROJECT)
+                .set(PROJECT.ID, projectId)
+                .set(PROJECT.TITLE, "미래 프로젝트")
+                .set(PROJECT.DESCRIPTION, "미래에 시작될 프로젝트")
+                .set(PROJECT.CONTENT, "미래 프로젝트 상세 내용")
+                .set(PROJECT.MEMBER_ID, 1L)
+                .set(PROJECT.CATEGORY, "웹 개발")
+                .set(PROJECT.SUBCATEGORY, "풀스택")
+                .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(PROJECT.STARTED_AT, now.plusDays(10)) // 10일 후 시작
+                .set(PROJECT.ENDED_AT, now.plusDays(40))   // 40일 후 종료
+                .set(PROJECT.CREATED_AT, now)
+                .set(PROJECT.UPDATED_AT, now)
+                .execute();
+        
+        // When & Then - 준비 중인 프로젝트 조회
+        mockMvc.perform(get("/api/v1/project/detail")
+                        .param("projectId", String.valueOf(projectId)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.data.id").value(projectId))
+                .andExpect(jsonPath("$.data.status").value("READY")); // 준비 중 상태 확인
+    }
+
+    @Test
+    @Order(300)
+    @DisplayName("✅ 프로젝트 상세 조회 - 첨부파일이 존재하면 배열에 채워진다")
+    void should_return_attachments_in_project_detail_when_exist() throws Exception {
+        // Given
+        OffsetDateTime now = OffsetDateTime.now();
+        dsl.insertInto(PROJECT)
+                .set(PROJECT.ID, TEST_PROJECT_ID)
+                .set(PROJECT.TITLE, TEST_PROJECT_TITLE)
+                .set(PROJECT.DESCRIPTION, TEST_PROJECT_DESCRIPTION)
+                .set(PROJECT.CONTENT, TEST_PROJECT_CONTENT)
+                .set(PROJECT.MEMBER_ID, TEST_MEMBER_ID)
+                .set(PROJECT.CATEGORY, TEST_PROJECT_CATEGORY)
+                .set(PROJECT.SUBCATEGORY, TEST_PROJECT_SUBCATEGORY)
+                .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(PROJECT.STARTED_AT, now.plusDays(1))
+                .set(PROJECT.ENDED_AT, now.plusDays(30))
+                .set(PROJECT.CREATED_AT, now)
+                .set(PROJECT.UPDATED_AT, now)
+                .execute();
+
+        dsl.insertInto(PROJECT_ATTACHED)
+                .set(PROJECT_ATTACHED.PROJECT_ID, TEST_PROJECT_ID)
+                .set(PROJECT_ATTACHED.MEMBER_ID, TEST_MEMBER_ID)
+                .set(PROJECT_ATTACHED.NAME, "spec.pdf")
+                .set(PROJECT_ATTACHED.TYPE, "application/pdf")
+                .set(PROJECT_ATTACHED.SIZE, "12345")
+                .set(PROJECT_ATTACHED.ATTACHED_URL, "https://s3.example.com/spec.pdf")
+                .set(PROJECT_ATTACHED.CREATED_AT, now)
+                .set(PROJECT_ATTACHED.UPDATED_AT, now)
+                .execute();
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/project/detail")
+                        .param("projectId", TEST_PROJECT_ID.toString()))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.attachments").isArray())
+                .andExpect(jsonPath("$.data.attachments.length()").value(1))
+                .andExpect(jsonPath("$.data.attachments[0].attachedUrl").value("https://s3.example.com/spec.pdf"));
     }
 }
