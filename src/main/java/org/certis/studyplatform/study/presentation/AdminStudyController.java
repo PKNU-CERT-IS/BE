@@ -8,6 +8,11 @@ import org.certis.studyplatform.response.GlobalResponseHandler;
 import org.certis.studyplatform.response.ResponseStatus;
 import org.certis.studyplatform.shared.security.CurrentUser;
 import org.certis.studyplatform.study.application.StudyParticipantFacadeService;
+import org.certis.studyplatform.study.application.command.StudyCommandService;
+import org.certis.studyplatform.study.infrastructure.persistence.jpa.StudyJpaRepository;
+import org.certis.studyplatform.study.infrastructure.persistence.entity.StudyEntity;
+import java.util.Map;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.certis.studyplatform.study.presentation.dto.request.AdminStudyParticipantApprovalRequestDto;
 import org.certis.studyplatform.study.presentation.dto.response.AdminStudyParticipantApprovalResponseDto;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +34,8 @@ import org.springframework.web.bind.annotation.*;
 public class AdminStudyController {
 
     private final StudyParticipantFacadeService studyParticipantFacadeService;
+    private final StudyCommandService studyCommandService;
+    private final StudyJpaRepository studyJpaRepository;
 
     /**
      * 스터디 참가 신청 승인
@@ -78,5 +85,37 @@ public class AdminStudyController {
                 response.getParticipantId());
 
         return GlobalResponseHandler.success(ResponseStatus.STUDY_PARTICIPANT_REJECT_SUCCESS, response);
+    }
+
+    @PostMapping("/end/approve")
+    @Operation(summary = "스터디 종료 제출 승인", description = "스터디 종료 제출을 승인하고 endedAt을 설정합니다")
+    public ResponseEntity<GlobalResponseHandler<Void>> approveStudyEnd(
+            @RequestParam Long studyId,
+            @AuthenticationPrincipal CurrentUser currentUser) {
+        studyCommandService.approveStudyEnd(studyId, currentUser.getId());
+        return GlobalResponseHandler.success(ResponseStatus.STUDY_END_SUCCESS);
+    }
+
+    @PostMapping("/end/reject")
+    @Operation(summary = "스터디 종료 제출 거절", description = "스터디 종료 제출을 거절하고 첨부를 삭제합니다")
+    public ResponseEntity<GlobalResponseHandler<Void>> rejectStudyEnd(
+            @RequestParam Long studyId,
+            @AuthenticationPrincipal CurrentUser currentUser) {
+        studyCommandService.rejectStudyEnd(studyId, currentUser.getId());
+        return GlobalResponseHandler.success(ResponseStatus.STUDY_END_REJECT_SUCCESS);
+    }
+
+    @GetMapping("/end/{studyId}")
+    @Operation(summary = "스터디 종료 제출 조회", description = "제출 상태/시간/첨부를 조회합니다")
+    public ResponseEntity<GlobalResponseHandler<Map<String, Object>>> getStudyEndSubmission(
+            @PathVariable Long studyId) {
+        StudyEntity e = studyJpaRepository.findById(studyId).orElse(null);
+        Map<String, Object> body = Map.of(
+                "studyId", studyId,
+                "status", e != null ? String.valueOf(e.getResultSubmitStatus()) : null,
+                "submittedAt", e != null ? e.getResultSubmittedAt() : null,
+                "attachments", e != null ? e.getResultAttachmentUrl() : null
+        );
+        return GlobalResponseHandler.success(ResponseStatus.STUDY_FIND_SUCCESS, body);
     }
 }

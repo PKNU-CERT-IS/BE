@@ -7,8 +7,12 @@ import org.certis.studyplatform.study.domain.vo.StudyVo;
 import org.certis.studyplatform.study.infrastructure.mapper.StudyInfrastructureMapper;
 import org.certis.studyplatform.study.infrastructure.persistence.entity.StudyEntity;
 import org.certis.studyplatform.study.infrastructure.persistence.jpa.StudyJpaRepository;
+import org.certis.studyplatform.study.infrastructure.persistence.jpa.StudyAttachedJpaRepository;
+import org.certis.studyplatform.study.infrastructure.persistence.entity.StudyAttachedEntity;
+import org.certis.studyplatform.shared.service.S3FileService;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.OffsetDateTime;
 
@@ -27,7 +31,9 @@ import java.time.OffsetDateTime;
 public class StudyCommandRepositoryImpl implements StudyCommandRepository {
 
     private final StudyJpaRepository jpaRepository;
+    private final StudyAttachedJpaRepository studyAttachedJpaRepository;
     private final StudyInfrastructureMapper mapper;
+    private final S3FileService s3FileService;
 
     /**
      * 새로운 프로젝트 생성
@@ -64,6 +70,40 @@ public class StudyCommandRepositoryImpl implements StudyCommandRepository {
         } else {
             log.warn("Command: Study not found for deletion - ID: {}", id);
             throw new IllegalArgumentException("Study not found with ID: " + id);
+        }
+    }
+
+    /**
+     * 스터디 첨부파일 업로드
+     */
+    @Override
+    @Transactional
+    public String uploadStudyAttachment(Long studyId, Long memberId, MultipartFile file) {
+        log.debug("Command Infrastructure: Uploading study attachment for study ID: {}, member ID: {}", studyId, memberId);
+
+        try {
+            // S3에 첨부파일 업로드
+            String attachmentUrl = s3FileService.uploadFile(file, "study");
+
+            // 첨부파일 정보를 DB에 저장
+            StudyAttachedEntity entity = StudyAttachedEntity.builder()
+                    .studyId(studyId)
+                    .memberId(memberId)
+                    .attachedUrl(attachmentUrl)
+                    .name(file.getOriginalFilename())
+                    .type(file.getContentType())
+                    .size(String.valueOf(file.getSize()))
+                    .createdAt(OffsetDateTime.now())
+                    .build();
+
+            studyAttachedJpaRepository.save(entity);
+
+            log.debug("Command Infrastructure: Study attachment uploaded successfully for study ID: {}, member ID: {}", studyId, memberId);
+            return attachmentUrl;
+
+        } catch (Exception e) {
+            log.error("Error uploading study attachment for study ID {}, member ID {}: {}", studyId, memberId, e.getMessage());
+            throw new RuntimeException("Failed to upload study attachment", e);
         }
     }
 }

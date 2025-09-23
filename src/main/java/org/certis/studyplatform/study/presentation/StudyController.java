@@ -56,7 +56,7 @@ public class StudyController {
     private final StudyFacadeService studyFacadeService;
 
     /**
-     * 프로젝트 생성 (임시 - Spring Security 미구축 상태)
+     * 프로젝트 생성
      *
      * @param request 프로젝트 생성 요청 DTO (leaderId, creatorName 포함)
      * @return 생성된 프로젝트 정보
@@ -77,7 +77,7 @@ public class StudyController {
     }
 
     /**
-     * 프로젝트 정보 수정 (임시 - Spring Security 미구축 상태)
+     * 프로젝트 정보 수정
      *
      * @param request 프로젝트 수정 요청 DTO (studyId, requesterId 포함)
      * @return 수정된 프로젝트 정보
@@ -96,7 +96,7 @@ public class StudyController {
     }
 
     /**
-     * 프로젝트 정보 삭제 (임시 - Spring Security 미구축 상태)
+     * 프로젝트 정보 삭제
      *
      * @param request 프로젝트 삭제 요청 DTO (studyId, requesterId 포함)
      * @return 성공 응답

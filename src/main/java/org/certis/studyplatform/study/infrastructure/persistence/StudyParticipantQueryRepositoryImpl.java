@@ -301,7 +301,7 @@ public class StudyParticipantQueryRepositoryImpl implements StudyParticipantQuer
     @Override
     public List<StudyParticipantSummaryVo> findAllApprovedByStudyId(Long studyId) {
         log.info("jOOQ: Finding all approved participants by study - studyId: {}", studyId);
-        System.out.println("=== DEBUG: findAllApprovedByStudyId called with studyId: " + studyId + " ===");
+        log.debug("=== DEBUG: findAllApprovedByStudyId called with studyId: {} ===", studyId);
 
         var s = STUDY_PARTICIPANT.as("ss");
         var m = MEMBER.as("m");
@@ -328,15 +328,13 @@ public class StudyParticipantQueryRepositoryImpl implements StudyParticipantQuer
                     .fetch(mapper::toSummaryVoFromRecord);
 
             log.info("jOOQ: Found {} approved participants", participants.size());
-            System.out.println("=== DEBUG: Found " + participants.size() + " approved participants ===");
+            log.debug("=== DEBUG: Found {} approved participants ===", participants.size());
             for (StudyParticipantSummaryVo participant : participants) {
-                System.out.println("=== DEBUG: Participant - memberId: " + participant.memberId() + 
-                                 ", status: " + participant.status() + " ===");
+                log.debug("=== DEBUG: Participant - memberId: {}, status: {} ===", participant.memberId(), participant.status());
             }
             return participants;
         } catch (Exception e) {
             log.error("jOOQ: Error finding approved participants - studyId: {}, error: {}", studyId, e.getMessage(), e);
-            System.out.println("=== DEBUG: Error finding participants: " + e.getMessage() + " ===");
             e.printStackTrace();
             throw e;
         }

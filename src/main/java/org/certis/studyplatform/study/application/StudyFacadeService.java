@@ -93,6 +93,19 @@ public class StudyFacadeService {
     }
 
     /**
+     * 스터디 첨부파일 업로드
+     */
+    public String uploadStudyAttachment(Long studyId, Long memberId, MultipartFile file) {
+        log.info("Facade: Uploading study attachment for study ID: {}, member ID: {}", studyId, memberId);
+
+        // S3에 첨부파일 업로드
+        String attachmentUrl = studyCommandService.uploadStudyAttachment(studyId, memberId, file);
+
+        log.info("Facade: Study attachment uploaded successfully for study ID: {}, member ID: {}, URL: {}", studyId, memberId, attachmentUrl);
+        return attachmentUrl;
+    }
+
+    /**
      * 프로젝트 삭제 (임시 - Spring Security 미구축 상태)
      */
     public void deleteStudy(StudyDeleteRequestDto requestDto, Long requesterId) {

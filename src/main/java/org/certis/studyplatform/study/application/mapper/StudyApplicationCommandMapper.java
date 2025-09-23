@@ -4,7 +4,6 @@ import org.certis.studyplatform.study.presentation.dto.request.*;
 import org.certis.studyplatform.study.application.object.command.*;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,9 +21,9 @@ public class StudyApplicationCommandMapper {
     public CreateStudyCommand toCreateStudyCommand(StudyCreateRequestDto dto, Long creatorId) {
         // attachedFiles 리스트를 변환합니다. (null-safe 처리 포함)
         List<CreateStudyAttachedCommand> attachedCommands =
-                (dto.getAttachments() == null) ? Collections.emptyList() :
+                (dto.getAttachments() == null) ? null :
                         dto.getAttachments().stream()
-                                .map(this::toCreateStudyAttachedCommand) // 람다식(메서드 참조)을 사용한 변환
+                                .map(this::toCreateStudyAttachedCommand)
                                 .collect(Collectors.toList());
 
         return CreateStudyCommand.of(
@@ -62,7 +61,7 @@ public class StudyApplicationCommandMapper {
     public UpdateStudyCommand toUpdateStudyCommand(StudyUpdateRequestDto dto, Long requesterId) {
         // attachments 리스트를 변환합니다. (null-safe 처리 포함)
         List<CreateStudyAttachedCommand> attachedCommands =
-                (dto.getAttachments() == null) ? Collections.emptyList() :
+                (dto.getAttachments() == null) ? null :
                         dto.getAttachments().stream()
                                 .map(this::toCreateStudyAttachedCommand) // 람다식(메서드 참조)을 사용한 변환
                                 .collect(Collectors.toList());

@@ -1,6 +1,7 @@
 package org.certis.studyplatform.study.domain.repository;
 
 import org.certis.studyplatform.study.domain.vo.StudyVo;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Study Command Repository Interface
@@ -26,4 +27,14 @@ public interface StudyCommandRepository {
      * @param id 삭제할 스터디 ID
      */
     void deleteById(Long id);
+
+    /**
+     * 스터디 첨부파일 업로드
+     *
+     * @param studyId 스터디 ID
+     * @param memberId 사용자 ID
+     * @param file 업로드할 파일
+     * @return 업로드된 파일 URL
+     */
+    String uploadStudyAttachment(Long studyId, Long memberId, MultipartFile file);
 }

@@ -26,6 +26,7 @@ import org.certis.studyplatform.study.domain.vo.StudyVo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -149,6 +150,19 @@ public class StudyDomainService {
         commandRepository.deleteById(existingStudy.id());
 
         log.info("Domain: Study deleted successfully - ID: {}", existingStudy.id());
+    }
+
+    /**
+     * 스터디 첨부파일 업로드
+     */
+    public String uploadStudyAttachment(Long studyId, Long memberId, MultipartFile file) {
+        log.info("Domain: Uploading study attachment for study ID: {}, member ID: {}", studyId, memberId);
+
+        // S3에 첨부파일 업로드
+        String attachmentUrl = commandRepository.uploadStudyAttachment(studyId, memberId, file);
+
+        log.info("Domain: Study attachment uploaded successfully for study ID: {}, member ID: {}, URL: {}", studyId, memberId, attachmentUrl);
+        return attachmentUrl;
     }
 
     // ================================================================
@@ -370,31 +384,9 @@ public class StudyDomainService {
         // 권한 검증: STAFF 이상이거나 스터디 생성자인지 확인
         validateStudyEndPermission(command.requesterId(), existingStudy.creatorId());
 
-        // 이미 종료된 스터디인지 확인
-        if (existingStudy.endDate() != null && existingStudy.endDate().isBefore(OffsetDateTime.now())) {
-            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION,
-                    "이미 종료된 스터디입니다: " + command.studyId());
-        }
-
-        // ended_at을 현재 시간으로 설정하여 스터디 종료
-            StudyVo endedStudyVo = StudyVo.updateFrom(
-                    existingStudy,
-                    existingStudy.title(),
-                    existingStudy.description(),
-                    existingStudy.content(),
-                    existingStudy.category(),
-                    existingStudy.subCategory(),
-                    existingStudy.startDate(),
-                    OffsetDateTime.now(), // ended_at을 현재 시간으로 설정
-                    existingStudy.maxParticipants()
-            );
-
-        // Command Repository를 통한 저장 (VO 전달)
-        StudyVo savedStudyVo = commandRepository.save(endedStudyVo);
-
-        log.info("Domain: Study ended successfully - ID: {}", savedStudyVo.id());
-
-        return savedStudyVo;
+        // 제출 단계: 종료는 승인 시 처리. 여기서는 변경 없이 반환.
+        log.info("Domain: Study end submission initiated - ID: {}", existingStudy.id());
+        return existingStudy;
     }
 
     /**
