@@ -91,10 +91,22 @@ public class S3FileService {
     public boolean bucketExists() {
         // 테스트/로컬 환경에서 AWS 자격 증명이 없으면 업로드 테스트를 건너뛰기 위해 false 반환
         try {
-            String accessKey = System.getenv("AWS_ACCESS_KEY_ID");
-            String secretKey = System.getenv("AWS_SECRET_ACCESS_KEY");
-            if (accessKey == null || accessKey.isEmpty() || secretKey == null || secretKey.isEmpty()) {
-                log.info("S3 bucket existence check: AWS credentials not found in env, returning false for tests");
+            // 우선 시스템 프로퍼티 확인 (테스트에서 System.setProperty 로 설정하는 경우 지원)
+            String accessKeyProp = System.getProperty("AWS_ACCESS_KEY_ID");
+            String secretKeyProp = System.getProperty("AWS_SECRET_ACCESS_KEY");
+
+            boolean hasProps = accessKeyProp != null && !accessKeyProp.isEmpty()
+                    && secretKeyProp != null && !secretKeyProp.isEmpty();
+
+            // 환경변수도 확인 (CI 또는 로컬 환경변수 설정 지원)
+            String accessKeyEnv = System.getenv("AWS_ACCESS_KEY_ID");
+            String secretKeyEnv = System.getenv("AWS_SECRET_ACCESS_KEY");
+
+            boolean hasEnvs = accessKeyEnv != null && !accessKeyEnv.isEmpty()
+                    && secretKeyEnv != null && !secretKeyEnv.isEmpty();
+
+            if (!hasProps && !hasEnvs) {
+                log.info("S3 bucket existence check: AWS credentials not found in system properties or env, returning false for tests");
                 return false;
             }
         } catch (Exception ignored) {
