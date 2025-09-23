@@ -99,6 +99,19 @@ public class ProjectFacadeService {
     }
 
     /**
+     * 프로젝트 첨부파일 업로드
+     */
+    public String uploadProjectAttachment(Long projectId, Long memberId, MultipartFile file) {
+        log.info("Facade: Uploading project attachment for project ID: {}, member ID: {}", projectId, memberId);
+
+        // S3에 첨부파일 업로드
+        String attachmentUrl = projectCommandService.uploadProjectAttachment(projectId, memberId, file);
+
+        log.info("Facade: Project attachment uploaded successfully for project ID: {}, member ID: {}, URL: {}", projectId, memberId, attachmentUrl);
+        return attachmentUrl;
+    }
+
+    /**
      * 프로젝트 삭제 (임시 - Spring Security 미구축 상태)
      */
     public void deleteProject(ProjectDeleteRequestDto requestDto, Long requesterId) {

@@ -13,11 +13,14 @@ import org.certis.studyplatform.project.domain.vo.*;
 import org.certis.studyplatform.shared.service.S3FileService;
 import org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectAttachedEntity;
 import org.certis.studyplatform.project.infrastructure.persistence.jpa.ProjectAttachedJpaRepository;
+import org.certis.studyplatform.project.infrastructure.persistence.jpa.ProjectJpaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.OffsetDateTime;
+import java.util.List;
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 
 /**
  * Project Command Service
@@ -37,6 +40,9 @@ public class ProjectCommandService {
     private final S3FileService s3FileService;
     private final GracePeriodService gracePeriodService;
     private final ProjectAttachedJpaRepository projectAttachedJpaRepository;
+    private final ProjectJpaRepository projectJpaRepository;
+    // ObjectMapper retained for potential future use
+    // private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * 프로젝트 생성
@@ -84,8 +90,19 @@ public class ProjectCommandService {
         // Command 객체를 Domain Service로 전달
         ProjectVo updatedVo = projectDomainService.updateProject(command);
 
-        // 첨부파일 저장 (요청에 첨부가 포함된 경우 추가)
-        if (command.attachedFiles() != null && !command.attachedFiles().isEmpty()) {
+        // 첨부파일 null이면 기존 첨부 전체 삭제 (S3 + DB)
+        if (command.attachedFiles() == null) {
+            // 기존 첨부 전체 삭제 (S3 + DB)
+            List<ProjectAttachedEntity> existing = projectAttachedJpaRepository.findByProjectId(updatedVo.id());
+            for (ProjectAttachedEntity e : existing) {
+                try {
+                    s3FileService.deleteFile(e.getAttachedUrl());
+                } catch (Exception ex) {
+                    log.warn("Failed to delete project attachment from S3 url={} projectId={}", e.getAttachedUrl(), updatedVo.id(), ex);
+                }
+            }
+            projectAttachedJpaRepository.deleteByProjectId(updatedVo.id());
+        } else if (!command.attachedFiles().isEmpty()) {
             for (var file : command.attachedFiles()) {
                 ProjectAttachedEntity entity = ProjectAttachedEntity.builder()
                         .projectId(updatedVo.id())
@@ -160,26 +177,25 @@ public class ProjectCommandService {
             log.warn("Command: Cannot check early termination - missing dates for project ID: {}", endedVo.id());
         }
 
-        // 파일 업로드 (있는 경우) - Domain Service에서 프로젝트 정보를 가져온 후 처리
+        // 파일 업로드 후 단일 URL 저장 및 제출 상태 갱신
+        String attachmentUrl = null;
         if (command.files() != null && !command.files().isEmpty()) {
             for (MultipartFile file : command.files()) {
-                if (!file.isEmpty()) {
+                if (file != null && !file.isEmpty()) {
                     try {
-                        // 파일명 생성: 프로젝트제목_ID_생성자이름_원본파일명
                         String originalFilename = file.getOriginalFilename();
                         String fileExtension = "";
                         if (originalFilename != null && originalFilename.contains(".")) {
                             fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
                         }
-                        
-                        String customFilename = String.format("%s_%d_%s%s", 
-                                sanitizeFilename(endedVo.title()), 
-                                endedVo.id(), 
+                        String customFilename = String.format("%s_%d_%s%s",
+                                sanitizeFilename(endedVo.title()),
+                                endedVo.id(),
                                 sanitizeFilename(endedVo.creatorName()),
                                 fileExtension);
-                        
                         String fileUrl = s3FileService.uploadFileWithCustomName(file, "project-end-attachments", customFilename);
-                        log.info("Project end attachment uploaded successfully: {}", fileUrl);
+                        attachmentUrl = fileUrl; // 첫 번째 유효 파일 URL 사용
+                        break;
                     } catch (Exception e) {
                         log.error("Failed to upload project end attachment: {}", file.getOriginalFilename(), e);
                         throw new RuntimeException("프로젝트 종료 첨부파일 업로드에 실패했습니다: " + file.getOriginalFilename(), e);
@@ -188,13 +204,55 @@ public class ProjectCommandService {
             }
         }
 
+        projectJpaRepository.updateResultSubmission(
+                endedVo.id(),
+                OffsetDateTime.now(),
+                ResultSubmitStatus.INPROGRESS,
+                attachmentUrl
+        );
+
         log.info("Command: Project ended successfully - ID: {}", endedVo.id());
         return endedVo;
+    }
+
+    @Transactional
+    public void approveProjectEnd(Long projectId, Long adminId) {
+        log.info("Command: Approving project end - projectId: {} by admin: {}", projectId, adminId);
+        projectJpaRepository.approveEnd(projectId, OffsetDateTime.now(), ResultSubmitStatus.APPROVED);
+    }
+
+    @Transactional
+    public void rejectProjectEnd(Long projectId, Long adminId) {
+        log.info("Command: Rejecting project end - projectId: {} by admin: {}", projectId, adminId);
+        // Read current attachment URL and delete from S3
+        projectJpaRepository.findById(projectId).ifPresent(entity -> {
+            String url = entity.getResultAttachmentUrl();
+            if (url != null && !url.isEmpty()) {
+                try { s3FileService.deleteFile(url); } catch (Exception ex) {
+                    log.warn("Failed to delete S3 file on reject: {}", url, ex);
+                }
+            }
+        });
+        projectJpaRepository.rejectEnd(projectId, ResultSubmitStatus.REJECTED, OffsetDateTime.now());
     }
 
     /**
      * 파일명에서 특수문자 제거 및 안전한 파일명 생성
      */
+    /**
+     * 프로젝트 첨부파일 업로드
+     */
+    @Transactional
+    public String uploadProjectAttachment(Long projectId, Long memberId, MultipartFile file) {
+        log.info("Command: Uploading project attachment for project ID: {}, member ID: {}", projectId, memberId);
+
+        // S3에 첨부파일 업로드
+        String attachmentUrl = projectDomainService.uploadProjectAttachment(projectId, memberId, file);
+
+        log.info("Command: Project attachment uploaded successfully for project ID: {}, member ID: {}, URL: {}", projectId, memberId, attachmentUrl);
+        return attachmentUrl;
+    }
+
     private String sanitizeFilename(String filename) {
         if (filename == null) return "unknown";
         return filename.replaceAll("[^a-zA-Z0-9가-힣]", "_")

@@ -2,6 +2,7 @@ package org.certis.studyplatform.project.domain.repository;
 
 import org.certis.studyplatform.project.domain.vo.ProjectUpdateVo;
 import org.certis.studyplatform.project.domain.vo.ProjectVo;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Project Command Repository Interface
@@ -27,4 +28,14 @@ public interface ProjectCommandRepository {
      * @param id 삭제할 프로젝트 ID
      */
     void deleteById(Long id);
+
+    /**
+     * 프로젝트 첨부파일 업로드
+     *
+     * @param projectId 프로젝트 ID
+     * @param memberId 사용자 ID
+     * @param file 업로드할 파일
+     * @return 업로드된 파일 URL
+     */
+    String uploadProjectAttachment(Long projectId, Long memberId, MultipartFile file);
 }

@@ -11,7 +11,6 @@ import org.certis.studyplatform.project.domain.vo.ProjectSearchCriteriaVo;
 import org.certis.studyplatform.project.domain.vo.ProjectSearchResultVo;
 import org.certis.studyplatform.project.domain.vo.ExternalUrlVo;
 import org.certis.studyplatform.project.infrastructure.mapper.ProjectInfrastructureMapper;
-import org.certis.studyplatform.study.domain.vo.StudySummaryVo;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
@@ -683,7 +682,15 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         m.GRADE,
                         p.MAX_PARTICIPANTS_NUMBER,
                         p.GITHUB_URL,
-                        p.EXTERNAL_URL
+                        p.EXTERNAL_URL,
+                        p.THUMBNAIL_URL,
+                        p.DEMO_URL,
+                        // 현재 참여자 수 서브쿼리 (다른 메서드들과 일관성 유지)
+                        select(count())
+                                .from(PROJECT_PARTICIPANT)
+                                .where(PROJECT_PARTICIPANT.PROJECT_ID.eq(p.ID))
+                                .and(PROJECT_PARTICIPANT.DELETED_AT.isNull())
+                                .asField("current_participants")
                 )
                 .from(p)
                 .leftJoin(m).on(p.MEMBER_ID.eq(m.ID))
