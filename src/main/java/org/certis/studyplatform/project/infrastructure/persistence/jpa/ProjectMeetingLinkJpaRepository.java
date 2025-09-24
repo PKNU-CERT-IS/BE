@@ -8,8 +8,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.Optional;
 
 /**
  * Project Meeting Link JPA Repository
@@ -27,8 +25,8 @@ public interface ProjectMeetingLinkJpaRepository extends JpaRepository<ProjectMe
     @Query("UPDATE ProjectMeetingLinkEntity e SET " +
             "e.deletedAt = :deletedAt, " +
             "e.updatedAt = :deletedAt " +
-            "WHERE e.projectId = :projectId AND e.deletedAt IS NULL")
-    int bulkSoftDeleteByProjectId(@Param("projectId") Long projectId,
+            "WHERE e.meetingId = :meetingId AND e.deletedAt IS NULL")
+    int bulkSoftDeleteByMeetingId(@Param("meetingId") Long meetingId,
                                   @Param("deletedAt") OffsetDateTime deletedAt);
 
     /**

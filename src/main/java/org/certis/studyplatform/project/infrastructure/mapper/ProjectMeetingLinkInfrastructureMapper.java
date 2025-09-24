@@ -22,7 +22,7 @@ public class ProjectMeetingLinkInfrastructureMapper {
     public ProjectMeetingLinkEntity toEntity(ProjectMeetingLinkVo vo) {
         return ProjectMeetingLinkEntity.builder()
                 .id(vo.id())
-                .projectId(vo.projectId())
+                .meetingId(vo.meetingId())
                 .memberId(vo.memberId())
                 .name(vo.name())
                 .attachedUrl(vo.attachedUrl())
@@ -37,7 +37,7 @@ public class ProjectMeetingLinkInfrastructureMapper {
     public ProjectMeetingLinkVo toVo(ProjectMeetingLinkEntity entity) {
         return new ProjectMeetingLinkVo(
                 entity.getId(),
-                entity.getProjectId(),
+                entity.getMeetingId(),
                 entity.getMemberId(),
                 entity.getName(),
                 entity.getAttachedUrl(),
@@ -54,7 +54,7 @@ public class ProjectMeetingLinkInfrastructureMapper {
 
         return new ProjectMeetingLinkVo(
                 record.get(pml.ID),
-                record.get(pml.PROJECT_ID),
+                record.get(pml.field("meeting_id", Long.class)),
                 record.get(pml.MEMBER_ID),
                 record.get(pml.NAME),
                 record.get(pml.ATTACHED_URL),

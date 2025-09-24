@@ -88,7 +88,7 @@ public class StudyMeetingInfrastructureMapper {
 
         return StudyMeetingLinkVo.of(
                 entity.getId(),
-                entity.getStudyId(),
+                entity.getMeetingId(),
                 entity.getMemberId(),
                 entity.getName(),
                 entity.getAttachedUrl(),
@@ -107,7 +107,7 @@ public class StudyMeetingInfrastructureMapper {
 
         return StudyMeetingLinkEntity.builder()
                 .id(vo.id())
-                .studyId(vo.studyId())
+                .meetingId(vo.meetingId())
                 .memberId(vo.memberId())
                 .name(vo.name())
                 .attachedUrl(vo.attachedUrl())

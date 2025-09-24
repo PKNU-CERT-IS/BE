@@ -85,7 +85,7 @@ public class ProjectMeetingInfrastructureMapper {
 
         return ProjectMeetingLinkVo.of(
                 entity.getId(),
-                entity.getProjectId(),
+                entity.getMeetingId(),
                 entity.getMemberId(),
                 entity.getName(),
                 entity.getAttachedUrl(),
@@ -104,7 +104,7 @@ public class ProjectMeetingInfrastructureMapper {
 
         return ProjectMeetingLinkEntity.builder()
                 .id(vo.id())
-                .projectId(vo.projectId())
+                .meetingId(vo.meetingId())
                 .memberId(vo.memberId())
                 .name(vo.name())
                 .attachedUrl(vo.attachedUrl())

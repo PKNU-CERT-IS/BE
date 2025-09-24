@@ -17,7 +17,7 @@ public class ProjectMeetingLink implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private Long id;
-    private Long projectId;
+    private Long meetingId;
     private Long memberId;
     private String name;
     private String attachedUrl;
@@ -29,7 +29,7 @@ public class ProjectMeetingLink implements Serializable {
 
     public ProjectMeetingLink(ProjectMeetingLink value) {
         this.id = value.id;
-        this.projectId = value.projectId;
+        this.meetingId = value.meetingId;
         this.memberId = value.memberId;
         this.name = value.name;
         this.attachedUrl = value.attachedUrl;
@@ -40,7 +40,7 @@ public class ProjectMeetingLink implements Serializable {
 
     public ProjectMeetingLink(
         Long id,
-        Long projectId,
+        Long meetingId,
         Long memberId,
         String name,
         String attachedUrl,
@@ -49,7 +49,7 @@ public class ProjectMeetingLink implements Serializable {
         OffsetDateTime deletedAt
     ) {
         this.id = id;
-        this.projectId = projectId;
+        this.meetingId = meetingId;
         this.memberId = memberId;
         this.name = name;
         this.attachedUrl = attachedUrl;
@@ -73,17 +73,17 @@ public class ProjectMeetingLink implements Serializable {
     }
 
     /**
-     * Getter for <code>public.project_meeting_link.project_id</code>.
+     * Getter for <code>public.project_meeting_link.meeting_id</code>.
      */
-    public Long getProjectId() {
-        return this.projectId;
+    public Long getMeetingId() {
+        return this.meetingId;
     }
 
     /**
-     * Setter for <code>public.project_meeting_link.project_id</code>.
+     * Setter for <code>public.project_meeting_link.meeting_id</code>.
      */
-    public void setProjectId(Long projectId) {
-        this.projectId = projectId;
+    public void setMeetingId(Long meetingId) {
+        this.meetingId = meetingId;
     }
 
     /**
@@ -185,11 +185,11 @@ public class ProjectMeetingLink implements Serializable {
         }
         else if (!this.id.equals(other.id))
             return false;
-        if (this.projectId == null) {
-            if (other.projectId != null)
+        if (this.meetingId == null) {
+            if (other.meetingId != null)
                 return false;
         }
-        else if (!this.projectId.equals(other.projectId))
+        else if (!this.meetingId.equals(other.meetingId))
             return false;
         if (this.memberId == null) {
             if (other.memberId != null)
@@ -235,7 +235,7 @@ public class ProjectMeetingLink implements Serializable {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((this.id == null) ? 0 : this.id.hashCode());
-        result = prime * result + ((this.projectId == null) ? 0 : this.projectId.hashCode());
+        result = prime * result + ((this.meetingId == null) ? 0 : this.meetingId.hashCode());
         result = prime * result + ((this.memberId == null) ? 0 : this.memberId.hashCode());
         result = prime * result + ((this.name == null) ? 0 : this.name.hashCode());
         result = prime * result + ((this.attachedUrl == null) ? 0 : this.attachedUrl.hashCode());
@@ -250,7 +250,7 @@ public class ProjectMeetingLink implements Serializable {
         StringBuilder sb = new StringBuilder("ProjectMeetingLink (");
 
         sb.append(id);
-        sb.append(", ").append(projectId);
+        sb.append(", ").append(meetingId);
         sb.append(", ").append(memberId);
         sb.append(", ").append(name);
         sb.append(", ").append(attachedUrl);

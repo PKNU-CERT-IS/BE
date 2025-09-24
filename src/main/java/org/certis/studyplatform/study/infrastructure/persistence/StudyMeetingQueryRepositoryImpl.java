@@ -83,18 +83,18 @@ public class StudyMeetingQueryRepositoryImpl implements StudyMeetingQueryReposit
                         sm.CREATED_AT,
                         m.NAME.as("writer_name"),
                         // 최근 생성된 링크 1건의 URL/Title 서브쿼리로 조회
-                        dsl.select(STUDY_MEETING_LINK.ATTACHED_URL)
-                                .from(STUDY_MEETING_LINK)
-                                .where(STUDY_MEETING_LINK.STUDY_ID.eq(sm.STUDY_ID))
-                                .and(STUDY_MEETING_LINK.DELETED_AT.isNull())
-                                .orderBy(STUDY_MEETING_LINK.CREATED_AT.desc())
+                        dsl.select(STUDY_MEETING_LINK.as("smlk").ATTACHED_URL)
+                                .from(STUDY_MEETING_LINK.as("smlk"))
+                                .where(STUDY_MEETING_LINK.as("smlk").field("meeting_id", Long.class).eq(sm.ID))
+                                .and(STUDY_MEETING_LINK.as("smlk").DELETED_AT.isNull())
+                                .orderBy(STUDY_MEETING_LINK.as("smlk").CREATED_AT.desc())
                                 .limit(1)
                                 .asField("attached_url"),
-                        dsl.select(STUDY_MEETING_LINK.NAME)
-                                .from(STUDY_MEETING_LINK)
-                                .where(STUDY_MEETING_LINK.STUDY_ID.eq(sm.STUDY_ID))
-                                .and(STUDY_MEETING_LINK.DELETED_AT.isNull())
-                                .orderBy(STUDY_MEETING_LINK.CREATED_AT.desc())
+                        dsl.select(STUDY_MEETING_LINK.as("smlk").NAME)
+                                .from(STUDY_MEETING_LINK.as("smlk"))
+                                .where(STUDY_MEETING_LINK.as("smlk").field("meeting_id", Long.class).eq(sm.ID))
+                                .and(STUDY_MEETING_LINK.as("smlk").DELETED_AT.isNull())
+                                .orderBy(STUDY_MEETING_LINK.as("smlk").CREATED_AT.desc())
                                 .limit(1)
                                 .asField("attached_title")
                 )

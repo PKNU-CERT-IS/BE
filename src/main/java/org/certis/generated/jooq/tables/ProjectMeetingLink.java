@@ -12,7 +12,7 @@ import java.util.List;
 import org.certis.generated.jooq.Keys;
 import org.certis.generated.jooq.Public;
 import org.certis.generated.jooq.tables.Member.MemberPath;
-import org.certis.generated.jooq.tables.Project.ProjectPath;
+import org.certis.generated.jooq.tables.ProjectMeeting.ProjectMeetingPath;
 import org.certis.generated.jooq.tables.records.ProjectMeetingLinkRecord;
 import org.jooq.Condition;
 import org.jooq.Field;
@@ -64,9 +64,9 @@ public class ProjectMeetingLink extends TableImpl<ProjectMeetingLinkRecord> {
     public final TableField<ProjectMeetingLinkRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.nullable(false).identity(true), this, "");
 
     /**
-     * The column <code>public.project_meeting_link.project_id</code>.
+     * The column <code>public.project_meeting_link.meeting_id</code>.
      */
-    public final TableField<ProjectMeetingLinkRecord, Long> PROJECT_ID = createField(DSL.name("project_id"), SQLDataType.BIGINT.nullable(false), this, "");
+    public final TableField<ProjectMeetingLinkRecord, Long> MEETING_ID = createField(DSL.name("meeting_id"), SQLDataType.BIGINT.nullable(false), this, "");
 
     /**
      * The column <code>public.project_meeting_link.member_id</code>.
@@ -179,7 +179,20 @@ public class ProjectMeetingLink extends TableImpl<ProjectMeetingLinkRecord> {
 
     @Override
     public List<ForeignKey<ProjectMeetingLinkRecord, ?>> getReferences() {
-        return Arrays.asList(Keys.PROJECT_MEETING_LINK__FK_PROJECT_MEETING_LINK_MEMBER, Keys.PROJECT_MEETING_LINK__FK_PROJECT_MEETING_LINK_PROJECT);
+        return Arrays.asList(Keys.PROJECT_MEETING_LINK__FK_PROJECT_MEETING_LINK_MEETING, Keys.PROJECT_MEETING_LINK__FK_PROJECT_MEETING_LINK_MEMBER);
+    }
+
+    private transient ProjectMeetingPath _projectMeeting;
+
+    /**
+     * Get the implicit join path to the <code>public.project_meeting</code>
+     * table.
+     */
+    public ProjectMeetingPath projectMeeting() {
+        if (_projectMeeting == null)
+            _projectMeeting = new ProjectMeetingPath(this, Keys.PROJECT_MEETING_LINK__FK_PROJECT_MEETING_LINK_MEETING, null);
+
+        return _projectMeeting;
     }
 
     private transient MemberPath _member;
@@ -192,18 +205,6 @@ public class ProjectMeetingLink extends TableImpl<ProjectMeetingLinkRecord> {
             _member = new MemberPath(this, Keys.PROJECT_MEETING_LINK__FK_PROJECT_MEETING_LINK_MEMBER, null);
 
         return _member;
-    }
-
-    private transient ProjectPath _project;
-
-    /**
-     * Get the implicit join path to the <code>public.project</code> table.
-     */
-    public ProjectPath project() {
-        if (_project == null)
-            _project = new ProjectPath(this, Keys.PROJECT_MEETING_LINK__FK_PROJECT_MEETING_LINK_PROJECT, null);
-
-        return _project;
     }
 
     @Override

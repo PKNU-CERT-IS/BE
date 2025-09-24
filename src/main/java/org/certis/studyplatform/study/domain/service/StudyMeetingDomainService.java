@@ -66,7 +66,7 @@ public class StudyMeetingDomainService {
         if (command.links() != null && !command.links().isEmpty()) {
             for (var link : command.links()) {
                 StudyMeetingLinkVo linkVo = StudyMeetingLinkVo.forCreation(
-                        createdVo.studyId(),
+                        createdVo.id(),
                         createdVo.writerId(),
                         link.getTitle(),
                         link.getUrl()
@@ -113,7 +113,7 @@ public class StudyMeetingDomainService {
             if (!command.links().isEmpty()) {
                 for (var link : command.links()) {
                     StudyMeetingLinkVo linkVo = StudyMeetingLinkVo.forCreation(
-                            existingMeeting.studyId(),
+                            existingMeeting.id(),
                             command.requesterId(),
                             link.getTitle(),
                             link.getUrl()
@@ -141,8 +141,8 @@ public class StudyMeetingDomainService {
         // 권한 체크: 작성자만 삭제 가능
         validateWriterPermission(existingMeeting.writerId(), command.requesterId(), "회의록을 삭제할 권한이 없습니다");
 
-        studyMeetingLinkCommandRepository.deleteByStudyId(existingMeeting.studyId());
-        log.info("MeetingDomain: Study meeting links deleted - studyId: {}", existingMeeting.studyId());
+        studyMeetingLinkCommandRepository.deleteByMeetingId(existingMeeting.id());
+        log.info("MeetingDomain: Study meeting links deleted - meetingId: {}", existingMeeting.id());
 
         studyMeetingCommandRepository.deleteByIdWithPermission(command.meetingId(), command.requesterId());
 
@@ -160,8 +160,8 @@ public class StudyMeetingDomainService {
         StudyMeetingVo meetingVo = studyMeetingQueryRepository.findById(query.meetingId())
                 .orElseThrow(() -> new DomainException(ExceptionStatus.STUDY_INFRASTRUCTURE_NOT_FOUND, "회의록을 찾을 수 없습니다"));
 
-        // 해당 스터디의 모든 링크 조회
-        List<StudyMeetingLinkVo> links = studyMeetingLinkQueryRepository.findByStudyId(meetingVo.studyId());
+        // 해당 미팅의 링크만 조회
+        List<StudyMeetingLinkVo> links = studyMeetingLinkQueryRepository.findByMeetingId(meetingVo.id());
         log.info("MeetingDomain: Found {} links for meeting - meetingId: {}", links.size(), query.meetingId());
 
         // 링크 정보를 포함한 상세 VO 생성

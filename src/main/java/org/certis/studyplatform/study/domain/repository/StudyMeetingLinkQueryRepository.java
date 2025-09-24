@@ -20,6 +20,11 @@ public interface StudyMeetingLinkQueryRepository {
     List<StudyMeetingLinkVo> findByStudyId(Long studyId);
 
     /**
+     * 미팅별 링크 목록 조회
+     */
+    List<StudyMeetingLinkVo> findByMeetingId(Long meetingId);
+
+    /**
      * 스터디별 링크 목록 페이징 조회
      */
     Page<StudyMeetingLinkVo> findByStudyId(Long studyId, Pageable pageable);

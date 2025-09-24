@@ -34,16 +34,16 @@ public class ProjectMeetingLinkRecord extends UpdatableRecordImpl<ProjectMeeting
     }
 
     /**
-     * Setter for <code>public.project_meeting_link.project_id</code>.
+     * Setter for <code>public.project_meeting_link.meeting_id</code>.
      */
-    public void setProjectId(Long value) {
+    public void setMeetingId(Long value) {
         set(1, value);
     }
 
     /**
-     * Getter for <code>public.project_meeting_link.project_id</code>.
+     * Getter for <code>public.project_meeting_link.meeting_id</code>.
      */
-    public Long getProjectId() {
+    public Long getMeetingId() {
         return (Long) get(1);
     }
 
@@ -154,11 +154,11 @@ public class ProjectMeetingLinkRecord extends UpdatableRecordImpl<ProjectMeeting
     /**
      * Create a detached, initialised ProjectMeetingLinkRecord
      */
-    public ProjectMeetingLinkRecord(Long id, Long projectId, Long memberId, String name, String attachedUrl, OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
+    public ProjectMeetingLinkRecord(Long id, Long meetingId, Long memberId, String name, String attachedUrl, OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
         super(ProjectMeetingLink.PROJECT_MEETING_LINK);
 
         setId(id);
-        setProjectId(projectId);
+        setMeetingId(meetingId);
         setMemberId(memberId);
         setName(name);
         setAttachedUrl(attachedUrl);
@@ -176,7 +176,7 @@ public class ProjectMeetingLinkRecord extends UpdatableRecordImpl<ProjectMeeting
 
         if (value != null) {
             setId(value.getId());
-            setProjectId(value.getProjectId());
+            setMeetingId(value.getMeetingId());
             setMemberId(value.getMemberId());
             setName(value.getName());
             setAttachedUrl(value.getAttachedUrl());

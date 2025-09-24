@@ -15,6 +15,11 @@ public interface StudyMeetingLinkCommandRepository {
     void deleteByStudyId(Long studyId);
 
     /**
+     * 회의록별 모든 링크 삭제
+     */
+    void deleteByMeetingId(Long meetingId);
+
+    /**
      * 특정 링크 삭제
      */
     void deleteById(Long linkId);

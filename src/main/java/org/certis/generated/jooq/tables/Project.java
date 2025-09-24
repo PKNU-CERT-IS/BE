@@ -9,19 +9,20 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import org.certis.generated.jooq.Indexes;
 import org.certis.generated.jooq.Keys;
 import org.certis.generated.jooq.Public;
 import org.certis.generated.jooq.tables.Blog.BlogPath;
 import org.certis.generated.jooq.tables.Member.MemberPath;
 import org.certis.generated.jooq.tables.ProjectAttached.ProjectAttachedPath;
 import org.certis.generated.jooq.tables.ProjectMeeting.ProjectMeetingPath;
-import org.certis.generated.jooq.tables.ProjectMeetingLink.ProjectMeetingLinkPath;
 import org.certis.generated.jooq.tables.ProjectParticipant.ProjectParticipantPath;
 import org.certis.generated.jooq.tables.records.ProjectRecord;
 import org.jooq.Condition;
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Identity;
+import org.jooq.Index;
 import org.jooq.InverseForeignKey;
 import org.jooq.Name;
 import org.jooq.Path;
@@ -147,6 +148,21 @@ public class Project extends TableImpl<ProjectRecord> {
      */
     public final TableField<ProjectRecord, String> THUMBNAIL_URL = createField(DSL.name("thumbnail_url"), SQLDataType.VARCHAR, this, "");
 
+    /**
+     * The column <code>public.project.result_submitted_at</code>.
+     */
+    public final TableField<ProjectRecord, OffsetDateTime> RESULT_SUBMITTED_AT = createField(DSL.name("result_submitted_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "");
+
+    /**
+     * The column <code>public.project.result_submit_status</code>.
+     */
+    public final TableField<ProjectRecord, String> RESULT_SUBMIT_STATUS = createField(DSL.name("result_submit_status"), SQLDataType.VARCHAR.nullable(false).defaultValue(DSL.field(DSL.raw("'READY'::character varying"), SQLDataType.VARCHAR)), this, "");
+
+    /**
+     * The column <code>public.project.result_attached_url</code>.
+     */
+    public final TableField<ProjectRecord, String> RESULT_ATTACHED_URL = createField(DSL.name("result_attached_url"), SQLDataType.VARCHAR, this, "");
+
     private Project(Name alias, Table<ProjectRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
@@ -215,6 +231,11 @@ public class Project extends TableImpl<ProjectRecord> {
     }
 
     @Override
+    public List<Index> getIndexes() {
+        return Arrays.asList(Indexes.IDX_PROJECT_RESULT_STATUS);
+    }
+
+    @Override
     public Identity<ProjectRecord, Long> getIdentity() {
         return (Identity<ProjectRecord, Long>) super.getIdentity();
     }
@@ -264,19 +285,6 @@ public class Project extends TableImpl<ProjectRecord> {
             _projectAttached = new ProjectAttachedPath(this, null, Keys.PROJECT_ATTACHED__FK_PROJECT_ATTACHED_PROJECT.getInverseKey());
 
         return _projectAttached;
-    }
-
-    private transient ProjectMeetingLinkPath _projectMeetingLink;
-
-    /**
-     * Get the implicit to-many join path to the
-     * <code>public.project_meeting_link</code> table
-     */
-    public ProjectMeetingLinkPath projectMeetingLink() {
-        if (_projectMeetingLink == null)
-            _projectMeetingLink = new ProjectMeetingLinkPath(this, null, Keys.PROJECT_MEETING_LINK__FK_PROJECT_MEETING_LINK_PROJECT.getInverseKey());
-
-        return _projectMeetingLink;
     }
 
     private transient ProjectMeetingPath _projectMeeting;

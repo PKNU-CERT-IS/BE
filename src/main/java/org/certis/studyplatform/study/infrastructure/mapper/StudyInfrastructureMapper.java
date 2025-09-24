@@ -83,7 +83,8 @@ public class StudyInfrastructureMapper {
                 null, // creatorName은 별도 조회 필요
                 null, // creatorGrade는 별도 조회 필요
                 calculateSemester(entity.getEndedAt()), // semester 계산
-                calculateStatusString(entity.getStartedAt(), entity.getEndedAt()), // status 계산
+                calculateStatusString(entity.getStartedAt(), entity.getEndedAt(), entity.getDeletedAt(), entity.getResultSubmitStatus()), // status 계산
+                entity.getResultSubmitStatus(),
                 entity.getMaxParticipantsNumber(),
                 0, // currentParticipants는 별도 계산 필요
                 determineParticipantable(entity.getStartedAt(), entity.getEndedAt(), 
@@ -138,6 +139,13 @@ public class StudyInfrastructureMapper {
 
         // ✅ [MODIFICATION] StudyVo 생성자 인자 순서 변경 (createdAt, updatedAt 추가)
         OffsetDateTime endedAt = firstRecord.get("ended_at", OffsetDateTime.class);
+        // Safely read optional columns that may not be selected in some queries
+        OffsetDateTime deletedAt = firstRecord.field("deleted_at") != null
+                ? firstRecord.get("deleted_at", OffsetDateTime.class)
+                : null;
+        org.certis.studyplatform.shared.domain.ResultSubmitStatus submitStatus = firstRecord.field("result_submit_status") != null
+                ? firstRecord.get("result_submit_status", org.certis.studyplatform.shared.domain.ResultSubmitStatus.class)
+                : null;
         
         return new StudyVo(
                 firstRecord.get("id", Long.class),
@@ -154,7 +162,8 @@ public class StudyInfrastructureMapper {
                 firstRecord.get("creator_name", String.class),
                 safeParseMemberGrade(firstRecord.get("creator_grade", String.class)),
                 calculateSemester(endedAt), // semester 계산
-                calculateStatusString(firstRecord.get("started_at", OffsetDateTime.class), endedAt), // status 계산
+                calculateStatusString(firstRecord.get("started_at", OffsetDateTime.class), endedAt, deletedAt, submitStatus), // status 계산
+                submitStatus,
                 firstRecord.get("max_participants_number", Integer.class),
                 firstRecord.get("current_participants", Integer.class),
                 determineParticipantable(firstRecord.get("started_at", OffsetDateTime.class), endedAt,
@@ -187,6 +196,12 @@ public class StudyInfrastructureMapper {
 
         // ✅ [MODIFICATION] StudyVo 생성자 인자 순서 변경 (createdAt, updatedAt 추가)
         OffsetDateTime endedAt = firstRecord.get("ended_at", OffsetDateTime.class);
+        OffsetDateTime deletedAt = firstRecord.field("deleted_at") != null
+                ? firstRecord.get("deleted_at", OffsetDateTime.class)
+                : null;
+        org.certis.studyplatform.shared.domain.ResultSubmitStatus submitStatus = firstRecord.field("result_submit_status") != null
+                ? firstRecord.get("result_submit_status", org.certis.studyplatform.shared.domain.ResultSubmitStatus.class)
+                : null;
         
         return new StudyVo(
                 firstRecord.get("id", Long.class),
@@ -203,7 +218,8 @@ public class StudyInfrastructureMapper {
                 firstRecord.get("creator_name", String.class),
                 safeParseMemberGrade(firstRecord.get("creator_grade", String.class)),
                 calculateSemester(endedAt), // semester 계산
-                calculateStatusString(firstRecord.get("started_at", OffsetDateTime.class), endedAt), // status 계산
+                calculateStatusString(firstRecord.get("started_at", OffsetDateTime.class), endedAt, deletedAt, submitStatus), // status 계산
+                submitStatus,
                 firstRecord.get("max_participants_number", Integer.class),
                 firstRecord.get("current_participants", Integer.class),
                 determineParticipantable(firstRecord.get("started_at", OffsetDateTime.class), endedAt,
@@ -260,6 +276,12 @@ public class StudyInfrastructureMapper {
 
         MemberGrade memberGrade = safeParseMemberGrade(firstRecord.get("creator_grade", String.class));
         OffsetDateTime endedAt = firstRecord.get("ended_at", OffsetDateTime.class);
+        OffsetDateTime deletedAt = firstRecord.field("deleted_at") != null
+                ? firstRecord.get("deleted_at", OffsetDateTime.class)
+                : null;
+        org.certis.studyplatform.shared.domain.ResultSubmitStatus submitStatus = firstRecord.field("result_submit_status") != null
+                ? firstRecord.get("result_submit_status", org.certis.studyplatform.shared.domain.ResultSubmitStatus.class)
+                : null;
 
         return StudySummaryVo.of(
                 studyId,
@@ -272,7 +294,7 @@ public class StudyInfrastructureMapper {
                 firstRecord.get("creator_name", String.class),
                 memberGrade,
                 calculateSemester(endedAt), // semester 계산
-                calculateStatusString(firstRecord.get("started_at", OffsetDateTime.class), endedAt), // status 계산
+                calculateStatusString(firstRecord.get("started_at", OffsetDateTime.class), endedAt, deletedAt, submitStatus), // status 계산
                 isParticipantable,
                 attachedVos,
                 firstRecord.get("max_participants_number", Integer.class),
@@ -473,20 +495,33 @@ public class StudyInfrastructureMapper {
     /**
      * 스터디 상태를 StudyStatus enum으로 계산
      */
-    private String calculateStatusString(OffsetDateTime startDate, OffsetDateTime endDate) {
-        if (startDate == null || endDate == null) {
-            return StudyStatus.READY.name();
+    private String calculateStatusString(OffsetDateTime startDate, OffsetDateTime endDate,
+                                         OffsetDateTime deletedAt,
+                                         org.certis.studyplatform.shared.domain.ResultSubmitStatus resultSubmitStatus) {
+        if (deletedAt != null) {
+            return StudyStatus.REJECTED.name();
         }
 
         OffsetDateTime now = OffsetDateTime.now();
 
-        // 스터디가 종료된 경우 (endDate가 현재 시간보다 과거이거나, startDate가 endDate보다 미래인 경우)
-        if (now.isAfter(endDate) || startDate.isAfter(endDate)) {
+        // 종료 승인 또는 종료 시간이 현재와 같거나 이전이면 완료 처리
+        if (resultSubmitStatus == org.certis.studyplatform.shared.domain.ResultSubmitStatus.COMPLETED) {
             return StudyStatus.COMPLETED.name();
-        } else if (now.isBefore(startDate)) {
+        }
+        if (endDate != null && (now.isAfter(endDate) || now.isEqual(endDate))) {
+            return StudyStatus.COMPLETED.name();
+        }
+
+        if (startDate == null || endDate == null) {
             return StudyStatus.READY.name();
-        } else {
+        }
+
+        if (now.isBefore(startDate)) {
+            return StudyStatus.READY.name();
+        }
+        if (now.isBefore(endDate)) {
             return StudyStatus.INPROGRESS.name();
         }
+        return StudyStatus.INPROGRESS.name();
     }
 }

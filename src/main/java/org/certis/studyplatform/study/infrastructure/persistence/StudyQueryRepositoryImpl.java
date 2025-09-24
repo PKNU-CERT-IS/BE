@@ -141,6 +141,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         m.NAME.as("creator_name"),
                                         m.GRADE.as("creator_grade"),
                                         s.MAX_PARTICIPANTS_NUMBER,
+                                        s.DELETED_AT.as("deleted_at"),
                                         // 현재 참여자 수 서브쿼리
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
@@ -680,6 +681,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         m.NAME.as("creator_name"),
                                         m.GRADE.as("creator_grade"),
                                         s.MAX_PARTICIPANTS_NUMBER,
+                                        s.DELETED_AT.as("deleted_at"),
                                         s.CREATED_AT,
                                         s.UPDATED_AT,
                                         // 현재 참여자 수 서브쿼리
@@ -732,6 +734,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         m.NAME.as("creator_name"),
                                         m.GRADE.as("creator_grade"),
                                         s.MAX_PARTICIPANTS_NUMBER,
+                                        s.DELETED_AT.as("deleted_at"),
                                         s.CREATED_AT,
                                         s.UPDATED_AT,
                                         // 현재 참여자 수 서브쿼리

@@ -28,8 +28,8 @@ public class ProjectMeetingLinkEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, name = "project_id")
-    private Long projectId;
+    @Column(nullable = false, name = "meeting_id")
+    private Long meetingId;
 
     @Column(nullable = false, name = "member_id")
     private Long memberId;

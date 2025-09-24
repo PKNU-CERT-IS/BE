@@ -461,6 +461,110 @@ class ProjectMeetingControllerTest {
     }
 
     @Test
+    @Order(40)
+    @DisplayName("🔗 /project/meeting/all 링크가 회의록별로 올바르게 매핑되어야 한다")
+    void meetingAll_ShouldReturnLinksPerMeeting() throws Exception {
+        // Given: 동일 프로젝트에 회의록 2개를 만들고, 첫 번째 생성 시 링크를 1개 추가
+        setupTestData();
+
+        // create meeting #1 with a link via API
+        ProjectMeetingCreateRequestDto req1 = new ProjectMeetingCreateRequestDto();
+        req1.setProjectId(TEST_PROJECT_ID);
+        req1.setTitle("회의록 1");
+        req1.setContent("내용 1");
+        req1.setParticipantNumber(2);
+        req1.setLinks(List.of(new LinkDto("문서1", "https://example.com/doc1")));
+        mockMvc.perform(post("/api/v1/project/meeting/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req1)))
+                .andExpect(status().isCreated());
+
+        // create meeting #2 without links via DB (distinct meeting id)
+        OffsetDateTime now = OffsetDateTime.now();
+        dsl.execute(
+            "INSERT INTO project_meeting (id, project_id, member_id, title, content, participants, created_at, updated_at) " +
+            "VALUES (?, ?, ?, ?, ?, ?, CAST(? AS TIMESTAMPTZ), CAST(? AS TIMESTAMPTZ))",
+            2L, TEST_PROJECT_ID, TEST_MEMBER_ID, "회의록 2", "내용 2", new Long[]{TEST_MEMBER_ID}, now, now
+        );
+
+        // When: /meeting/all 조회
+        var result = mockMvc.perform(get("/api/v1/project/meeting/all")
+                        .param("projectId", TEST_PROJECT_ID.toString())
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // Then: 회의록별로 링크 개수가 달라야 한다 (1번만 링크 존재)
+        String body = result.getResponse().getContentAsString();
+        com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(body);
+        var content = root.path("data").path("content");
+        assertThat(content.isArray()).isTrue();
+        // 회의록 2개 이상
+        assertThat(content.size()).isGreaterThanOrEqualTo(2);
+        // 하나는 links 비어있지 않고, 다른 하나는 비어있어야 함
+        int nonEmptyLinks = 0;
+        int emptyLinks = 0;
+        for (var item : content) {
+            if (item.path("links").isArray() && item.path("links").size() > 0) nonEmptyLinks++;
+            else emptyLinks++;
+        }
+        assertThat(nonEmptyLinks).isGreaterThanOrEqualTo(1);
+        assertThat(emptyLinks).isGreaterThanOrEqualTo(1);
+    }
+
+    @Test
+    @Order(41)
+    @DisplayName("🚫 한 회의록에 추가한 links가 다른 회의록 detail에 섞이면 안 된다")
+    void creatingLinks_ShouldNotAffectOtherMeetingDetails() throws Exception {
+        // Given: 회의록 2개 생성 후, 첫 번째에만 링크 생성
+        setupTestData();
+
+        // meeting #1 with link via API
+        ProjectMeetingCreateRequestDto req1 = new ProjectMeetingCreateRequestDto();
+        req1.setProjectId(TEST_PROJECT_ID);
+        req1.setTitle("회의록 A");
+        req1.setContent("내용 A");
+        req1.setParticipantNumber(2);
+        req1.setLinks(List.of(new LinkDto("A-문서", "https://example.com/a")));
+        mockMvc.perform(post("/api/v1/project/meeting/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req1)))
+                .andExpect(status().isCreated());
+
+        // meeting #2 without link via API
+        ProjectMeetingCreateRequestDto req2 = new ProjectMeetingCreateRequestDto();
+        req2.setProjectId(TEST_PROJECT_ID);
+        req2.setTitle("회의록 B");
+        req2.setContent("내용 B");
+        req2.setParticipantNumber(1);
+        mockMvc.perform(post("/api/v1/project/meeting/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req2)))
+                .andExpect(status().isCreated());
+
+        // When: 각각 상세 조회 (id 1, 2 가정)
+        var res1 = mockMvc.perform(get("/api/v1/project/meeting/detail").param("meetingId", "1"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
+
+        var res2 = mockMvc.perform(get("/api/v1/project/meeting/detail").param("meetingId", "2"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // Then: #1 detail 은 links 가 존재, #2 detail 은 links 가 없어야 함
+        com.fasterxml.jackson.databind.JsonNode d1 = objectMapper.readTree(res1.getResponse().getContentAsString());
+        com.fasterxml.jackson.databind.JsonNode d2 = objectMapper.readTree(res2.getResponse().getContentAsString());
+        assertThat(d1.path("data").path("links").isArray()).isTrue();
+        assertThat(d1.path("data").path("links").size()).isGreaterThan(0);
+        assertThat(d2.path("data").path("links").isArray()).isTrue();
+        assertThat(d2.path("data").path("links").size()).isEqualTo(0);
+    }
+
+    @Test
     @Order(31)
     @DisplayName("🔗 첨부 URL이 있는 회의록 생성 - 성공적인 링크 저장")
     void createProjectMeeting_WithAttachedUrl_SuccessfulLinkStorage() throws Exception {
@@ -714,7 +818,7 @@ class ProjectMeetingControllerTest {
     void updateProjectMeeting_ChangeAttachedUrl_ReplaceExistingLink() throws Exception {
         // Given: 기존 회의록과 링크가 존재함
         createTestMeetingInDatabase();
-        createTestLinkInDatabase(TEST_PROJECT_ID, "기존 링크", "https://old-link.com/document.pdf");
+        createTestLinkInDatabase(TEST_MEETING_ID, "기존 링크", "https://old-link.com/document.pdf");
         
         ProjectMeetingUpdateRequestDto request = new ProjectMeetingUpdateRequestDto();
         request.setMeetingId(TEST_MEETING_ID);
@@ -960,7 +1064,7 @@ class ProjectMeetingControllerTest {
     private void verifyNoLinkCreatedForProject(Long projectId) {
         var links = dsl.select()
                 .from("project_meeting_link")
-                .where("project_id = ? AND deleted_at IS NULL", projectId)
+                .where("meeting_id IN (SELECT id FROM project_meeting WHERE project_id = ? AND deleted_at IS NULL) AND deleted_at IS NULL", projectId)
                 .fetch();
 
         assertThat(links).isEmpty();
@@ -969,13 +1073,13 @@ class ProjectMeetingControllerTest {
     /**
      * 테스트용 링크 생성
      */
-    private void createTestLinkInDatabase(Long projectId, String title, String url) {
+    private void createTestLinkInDatabase(Long meetingId, String title, String url) {
         OffsetDateTime now = OffsetDateTime.now();
         
         dsl.execute(
-            "INSERT INTO project_meeting_link (id, project_id, member_id, name, attached_url, created_at, updated_at) " +
+            "INSERT INTO project_meeting_link (id, meeting_id, member_id, name, attached_url, created_at, updated_at) " +
             "VALUES (?, ?, ?, ?, ?, CAST(? AS TIMESTAMPTZ), CAST(? AS TIMESTAMPTZ))",
-            1L, projectId, TEST_MEMBER_ID, title, url, now, now
+            1L, meetingId, TEST_MEMBER_ID, title, url, now, now
         );
     }
 
