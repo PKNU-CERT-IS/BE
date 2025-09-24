@@ -3,9 +3,11 @@ package org.certis.studyplatform.study.domain.repository;
 import org.certis.studyplatform.study.domain.vo.StudySearchCriteriaVo;
 import org.certis.studyplatform.study.domain.vo.StudySearchResultVo;
 import org.certis.studyplatform.study.domain.vo.StudySummaryVo;
+import org.certis.studyplatform.study.domain.vo.StudyEndSubmissionInfoVo;
 import org.certis.studyplatform.study.domain.vo.StudyVo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+
 
 import java.util.List;
 import java.util.Optional;
@@ -131,4 +133,5 @@ public interface StudyQueryRepository {
      * 특정 멤버가 생성한 완료된 스터디 목록 조회 (전체)
      */
     List<StudySummaryVo> findCompletedStudiesListByMember(Long memberId);
+    Optional<StudyEndSubmissionInfoVo> getEndSubmissionInfo(Long studyId);
 }

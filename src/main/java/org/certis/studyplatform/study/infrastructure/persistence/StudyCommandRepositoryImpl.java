@@ -14,6 +14,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 import java.time.OffsetDateTime;
 
 /**
@@ -105,5 +106,34 @@ public class StudyCommandRepositoryImpl implements StudyCommandRepository {
             log.error("Error uploading study attachment for study ID {}, member ID {}: {}", studyId, memberId, e.getMessage());
             throw new RuntimeException("Failed to upload study attachment", e);
         }
+    }
+
+    @Override
+    public void updateResultSubmission(Long studyId, OffsetDateTime submittedAt,
+                                       ResultSubmitStatus status,
+                                       String attachmentUrl) {
+        jpaRepository.updateResultSubmission(studyId, submittedAt, status, attachmentUrl);
+    }
+
+    @Override
+    public void approveEnd(Long studyId, OffsetDateTime endedAt,
+                           ResultSubmitStatus status) {
+        jpaRepository.approveEnd(studyId, endedAt, status);
+    }
+
+    @Override
+    public void rejectEnd(Long studyId, ResultSubmitStatus status,
+                          OffsetDateTime now) {
+        jpaRepository.rejectEnd(studyId, status, now);
+    }
+
+    @Override
+    public void bulkSoftDeleteById(Long studyId, OffsetDateTime deletedAt) {
+        jpaRepository.bulkSoftDeleteById(studyId, deletedAt);
+    }
+
+    @Override
+    public java.util.Optional<String> getResultAttachmentUrlById(Long studyId) {
+        return jpaRepository.findById(studyId).map(StudyEntity::getResultAttachmentUrl);
     }
 }

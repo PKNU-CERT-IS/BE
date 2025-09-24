@@ -9,12 +9,14 @@ import org.certis.studyplatform.response.ResponseStatus;
 import org.certis.studyplatform.shared.security.CurrentUser;
 import org.certis.studyplatform.study.application.StudyParticipantFacadeService;
 import org.certis.studyplatform.study.application.command.StudyCommandService;
-import org.certis.studyplatform.study.infrastructure.persistence.jpa.StudyJpaRepository;
-import org.certis.studyplatform.study.infrastructure.persistence.entity.StudyEntity;
-import java.util.Map;
+
 import org.springframework.web.bind.annotation.PathVariable;
 import org.certis.studyplatform.study.presentation.dto.request.AdminStudyParticipantApprovalRequestDto;
+import org.certis.studyplatform.study.presentation.dto.response.AdminStudyEndSubmissionResponseDto;
 import org.certis.studyplatform.study.presentation.dto.response.AdminStudyParticipantApprovalResponseDto;
+import org.certis.studyplatform.study.application.StudyFacadeService;
+
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -34,8 +36,7 @@ import org.springframework.web.bind.annotation.*;
 public class AdminStudyController {
 
     private final StudyParticipantFacadeService studyParticipantFacadeService;
-    private final StudyCommandService studyCommandService;
-    private final StudyJpaRepository studyJpaRepository;
+    private final StudyFacadeService studyFacadeService;
 
     /**
      * 스터디 참가 신청 승인
@@ -92,7 +93,7 @@ public class AdminStudyController {
     public ResponseEntity<GlobalResponseHandler<Void>> approveStudyEnd(
             @RequestParam Long studyId,
             @AuthenticationPrincipal CurrentUser currentUser) {
-        studyCommandService.approveStudyEnd(studyId, currentUser.getId());
+        studyFacadeService.approveStudyEnd(studyId, currentUser.getId());
         return GlobalResponseHandler.success(ResponseStatus.STUDY_END_SUCCESS);
     }
 
@@ -101,21 +102,15 @@ public class AdminStudyController {
     public ResponseEntity<GlobalResponseHandler<Void>> rejectStudyEnd(
             @RequestParam Long studyId,
             @AuthenticationPrincipal CurrentUser currentUser) {
-        studyCommandService.rejectStudyEnd(studyId, currentUser.getId());
+        studyFacadeService.rejectStudyEnd(studyId, currentUser.getId());
         return GlobalResponseHandler.success(ResponseStatus.STUDY_END_REJECT_SUCCESS);
     }
 
     @GetMapping("/end/{studyId}")
     @Operation(summary = "스터디 종료 제출 조회", description = "제출 상태/시간/첨부를 조회합니다")
-    public ResponseEntity<GlobalResponseHandler<Map<String, Object>>> getStudyEndSubmission(
+    public ResponseEntity<GlobalResponseHandler<AdminStudyEndSubmissionResponseDto>> getStudyEndSubmission(
             @PathVariable Long studyId) {
-        StudyEntity e = studyJpaRepository.findById(studyId).orElse(null);
-        Map<String, Object> body = Map.of(
-                "studyId", studyId,
-                "status", e != null ? String.valueOf(e.getResultSubmitStatus()) : null,
-                "submittedAt", e != null ? e.getResultSubmittedAt() : null,
-                "attachments", e != null ? e.getResultAttachmentUrl() : null
-        );
+        AdminStudyEndSubmissionResponseDto body = studyFacadeService.getAdminStudyEndSubmission(studyId);
         return GlobalResponseHandler.success(ResponseStatus.STUDY_FIND_SUCCESS, body);
     }
 
@@ -124,7 +119,7 @@ public class AdminStudyController {
     public ResponseEntity<GlobalResponseHandler<Void>> approveStudyCreation(
             @RequestParam Long studyId,
             @AuthenticationPrincipal CurrentUser currentUser) {
-        studyCommandService.approveStudyCreation(studyId, currentUser.getId());
+        studyFacadeService.approveStudyCreation(studyId, currentUser.getId());
         return GlobalResponseHandler.success(ResponseStatus.STUDY_UPDATE_SUCCESS);
     }
 
@@ -133,7 +128,7 @@ public class AdminStudyController {
     public ResponseEntity<GlobalResponseHandler<Void>> rejectStudyCreation(
             @RequestParam Long studyId,
             @AuthenticationPrincipal CurrentUser currentUser) {
-        studyCommandService.rejectStudyCreation(studyId, currentUser.getId());
+        studyFacadeService.rejectStudyCreation(studyId, currentUser.getId());
         return GlobalResponseHandler.success(ResponseStatus.STUDY_DELETE_SUCCESS);
     }
 }

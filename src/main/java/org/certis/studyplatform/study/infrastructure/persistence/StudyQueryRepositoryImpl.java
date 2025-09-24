@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 
 import static org.certis.generated.jooq.Tables.*;
 import static org.jooq.impl.DSL.*;
@@ -45,6 +46,31 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
     private final DSLContext dsl;
 
     private final StudyInfrastructureMapper mapper;
+    @Override
+    public Optional<StudyEndSubmissionInfoVo> getEndSubmissionInfo(Long studyId) {
+        var s = STUDY.as("s");
+        return Optional.ofNullable(
+                dsl.select(
+                            s.ID,
+                            s.RESULT_SUBMIT_STATUS,
+                            s.RESULT_SUBMITTED_AT,
+                            s.RESULT_ATTACHED_URL
+                        )
+                        .from(s)
+                        .where(s.ID.eq(studyId))
+                        .and(s.DELETED_AT.isNull())
+                        .fetchOne()
+        ).map(r -> {
+            String statusString = r.get(s.RESULT_SUBMIT_STATUS);
+            ResultSubmitStatus status = statusString != null ? ResultSubmitStatus.valueOf(statusString) : null;
+            return new StudyEndSubmissionInfoVo(
+                    r.get(s.ID),
+                    status,
+                    r.get(s.RESULT_SUBMITTED_AT),
+                    r.get(s.RESULT_ATTACHED_URL)
+            );
+        });
+    }
 
     @Override
     public Optional<StudyVo> findStudyDetailById(Long studyId) {
@@ -66,6 +92,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         s.CATEGORY,
                                         s.SUBCATEGORY,
                                         s.MAX_PARTICIPANTS_NUMBER,
+                                        s.RESULT_SUBMIT_STATUS.as("result_submit_status"),
                                         s.STARTED_AT,
                                         s.ENDED_AT,
                                         s.CREATED_AT,
@@ -141,6 +168,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         m.NAME.as("creator_name"),
                                         m.GRADE.as("creator_grade"),
                                         s.MAX_PARTICIPANTS_NUMBER,
+                                        s.RESULT_SUBMIT_STATUS.as("result_submit_status"),
                                         s.DELETED_AT.as("deleted_at"),
                                         // 현재 참여자 수 서브쿼리
                                         select(count())
@@ -220,6 +248,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         m.NAME.as("creator_name"),
                                         m.GRADE.as("creator_grade"),
                                         s.MAX_PARTICIPANTS_NUMBER,
+                                        s.RESULT_SUBMIT_STATUS.as("result_submit_status"),
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
                                                 .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
@@ -282,6 +311,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         m.NAME.as("creator_name"),
                                         m.GRADE.as("creator_grade"),
                                         s.MAX_PARTICIPANTS_NUMBER,
+                                        s.RESULT_SUBMIT_STATUS.as("result_submit_status"),
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
                                                 .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
@@ -346,6 +376,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         m.NAME.as("creator_name"),
                                         m.GRADE.as("creator_grade"),
                                         s.MAX_PARTICIPANTS_NUMBER,
+                                        s.RESULT_SUBMIT_STATUS.as("result_submit_status"),
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
                                                 .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
@@ -414,6 +445,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         m.NAME.as("creator_name"),
                                         m.GRADE.as("creator_grade"),
                                         s.MAX_PARTICIPANTS_NUMBER,
+                                        s.RESULT_SUBMIT_STATUS.as("result_submit_status"),
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
                                                 .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))

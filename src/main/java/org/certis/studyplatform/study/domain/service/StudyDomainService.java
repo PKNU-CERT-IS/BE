@@ -28,6 +28,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -393,6 +394,39 @@ public class StudyDomainService {
         // 제출 단계: 종료는 승인 시 처리. 여기서는 변경 없이 반환.
         log.info("Domain: Study end submission initiated - ID: {}", existingStudy.id());
         return existingStudy;
+    }
+
+    // ===== Commands previously in CommandService moved behind command repository =====
+    public void updateResultSubmission(Long studyId, OffsetDateTime submittedAt,
+                                       ResultSubmitStatus status,
+                                       String attachmentUrl) {
+        commandRepository.updateResultSubmission(studyId, submittedAt, status, attachmentUrl);
+    }
+
+    public void approveEnd(Long studyId, OffsetDateTime endedAt,
+                           ResultSubmitStatus status) {
+        commandRepository.approveEnd(studyId, endedAt, status);
+    }
+
+    public void rejectEnd(Long studyId, ResultSubmitStatus status,
+                          OffsetDateTime now) {
+        commandRepository.rejectEnd(studyId, status, now);
+    }
+
+    public void bulkSoftDeleteById(Long studyId, OffsetDateTime deletedAt) {
+        commandRepository.bulkSoftDeleteById(studyId, deletedAt);
+    }
+
+    public java.util.Optional<String> getResultAttachmentUrlById(Long studyId) {
+        return commandRepository.getResultAttachmentUrlById(studyId);
+    }
+
+    /**
+     * 종료 제출 정보 조회 (계층: Domain -> QueryRepository)
+     */
+    public org.certis.studyplatform.study.domain.vo.StudyEndSubmissionInfoVo getEndSubmissionInfo(Long studyId) {
+        return queryRepository.getEndSubmissionInfo(studyId)
+                .orElse(new org.certis.studyplatform.study.domain.vo.StudyEndSubmissionInfoVo(studyId, null, null, null));
     }
 
     /**

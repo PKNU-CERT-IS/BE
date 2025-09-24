@@ -4,9 +4,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
+import org.certis.studyplatform.board.presentation.dto.request.AttachmentRequestDto;
 
 /**
  * Study End Request DTO
@@ -22,5 +20,5 @@ public class StudyEndRequestDto {
     @NotNull(message = "스터디 ID는 필수입니다")
     private Long studyId;
 
-    private List<MultipartFile> files;
+    private AttachmentRequestDto attachment;
 }

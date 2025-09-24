@@ -3,6 +3,10 @@ package org.certis.studyplatform.study.domain.repository;
 import org.certis.studyplatform.study.domain.vo.StudyVo;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.OffsetDateTime;
+
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
+
 /**
  * Study Command Repository Interface
  *
@@ -37,4 +41,19 @@ public interface StudyCommandRepository {
      * @return 업로드된 파일 URL
      */
     String uploadStudyAttachment(Long studyId, Long memberId, MultipartFile file);
+
+    // ===== End submission and lifecycle commands =====
+    void updateResultSubmission(Long studyId, OffsetDateTime submittedAt,
+                                ResultSubmitStatus status,
+                                String attachmentUrl);
+
+    void approveEnd(Long studyId, OffsetDateTime endedAt,
+                    ResultSubmitStatus status);
+
+    void rejectEnd(Long studyId, ResultSubmitStatus status,
+                   OffsetDateTime now);
+
+    void bulkSoftDeleteById(Long studyId, OffsetDateTime deletedAt);
+
+    java.util.Optional<String> getResultAttachmentUrlById(Long studyId);
 }
