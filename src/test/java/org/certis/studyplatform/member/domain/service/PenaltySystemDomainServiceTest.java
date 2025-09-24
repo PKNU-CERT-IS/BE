@@ -9,10 +9,12 @@ import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.MemberGrade;
 import java.util.Optional;
 import org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository;
+import org.certis.studyplatform.project.domain.repository.ProjectQueryRepository;
 import org.certis.studyplatform.project.domain.ProjectParticipantStatus;
 import org.certis.studyplatform.project.domain.vo.ProjectParticipantSummaryVo;
 import org.certis.studyplatform.shared.util.GracePeriodCalculator;
 import org.certis.studyplatform.study.domain.repository.StudyParticipantQueryRepository;
+import org.certis.studyplatform.study.domain.repository.StudyQueryRepository;
 import org.certis.studyplatform.study.domain.StudyParticipantStatus;
 import org.certis.studyplatform.study.domain.vo.StudyParticipantSummaryVo;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,6 +59,12 @@ class PenaltySystemDomainServiceTest {
     private ProjectParticipantQueryRepository projectParticipantQueryRepository;
 
     @Mock
+    private StudyQueryRepository studyQueryRepository;
+
+    @Mock
+    private ProjectQueryRepository projectQueryRepository;
+
+    @Mock
     private MemberDomainMapper memberDomainMapper;
 
     @Mock
@@ -74,6 +82,8 @@ class PenaltySystemDomainServiceTest {
             memberCommandRepository,
             studyParticipantQueryRepository,
             projectParticipantQueryRepository,
+            studyQueryRepository,
+            projectQueryRepository,
             memberQueryRepository
         );
 

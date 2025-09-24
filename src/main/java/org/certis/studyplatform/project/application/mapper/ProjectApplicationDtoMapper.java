@@ -46,6 +46,7 @@ public class ProjectApplicationDtoMapper {
                 .projectCreatorGrade(vo.creatorGrade())
                 .semester(vo.semester())
                 .status(vo.status() != null ? vo.status().toString() : null)
+                .resultSubmitStatus(vo.resultSubmitStatus())
                 .githubUrl(vo.githubUrl())
                 .externalUrl(vo.externalUrl() != null ? 
                     ExternalUrlResponseDto.builder()
@@ -82,6 +83,7 @@ public class ProjectApplicationDtoMapper {
                 .projectCreatorGrade(vo.projectCreatorGrade())
                 .semester(vo.semester())
                 .status(vo.status())
+                .resultSubmitStatus(null)
                 .isParticipantable(vo.isParticipantable())
                 .githubUrl(vo.githubUrl())
                 .externalUrl(vo.externalUrl() != null ? 
@@ -233,7 +235,9 @@ public class ProjectApplicationDtoMapper {
         }
 
         List<ProjectSummaryResponseDto> dtoList = toProjectSummaryResponseDtoList(voPage.getContent());
-        return new PageImpl<>(dtoList, voPage.getPageable(), voPage.getTotalElements());
+        // Normalize Pageable to avoid Unpaged serialization issues
+        var pageable = voPage.getPageable().isPaged() ? voPage.getPageable() : org.springframework.data.domain.PageRequest.of(0, dtoList.size() == 0 ? 1 : dtoList.size());
+        return new PageImpl<>(dtoList, pageable, voPage.getTotalElements());
     }
 
     /**

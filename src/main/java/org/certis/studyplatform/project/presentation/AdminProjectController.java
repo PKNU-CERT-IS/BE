@@ -118,4 +118,22 @@ public class AdminProjectController {
         );
         return GlobalResponseHandler.success(ResponseStatus.PROJECT_FIND_SUCCESS, body);
     }
+
+    @PostMapping("/create/approve")
+    @Operation(summary = "프로젝트 생성 승인", description = "프로젝트 생성 요청을 승인하고 유예기간을 연장합니다")
+    public ResponseEntity<GlobalResponseHandler<Void>> approveProjectCreation(
+            @RequestParam Long projectId,
+            @AuthenticationPrincipal CurrentUser currentUser) {
+        projectCommandService.approveProjectCreation(projectId, currentUser.getId());
+        return GlobalResponseHandler.success(ResponseStatus.PROJECT_UPDATE_SUCCESS);
+    }
+
+    @PostMapping("/create/reject")
+    @Operation(summary = "프로젝트 생성 거절", description = "프로젝트 생성 요청을 거절하고 소프트 삭제합니다")
+    public ResponseEntity<GlobalResponseHandler<Void>> rejectProjectCreation(
+            @RequestParam Long projectId,
+            @AuthenticationPrincipal CurrentUser currentUser) {
+        projectCommandService.rejectProjectCreation(projectId, currentUser.getId());
+        return GlobalResponseHandler.success(ResponseStatus.PROJECT_DELETE_SUCCESS);
+    }
 }

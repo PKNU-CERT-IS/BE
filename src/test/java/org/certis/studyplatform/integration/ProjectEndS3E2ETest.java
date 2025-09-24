@@ -148,7 +148,7 @@ class ProjectEndS3E2ETest {
 
         // DB에서 결과 확인
         var rec = dsl.fetchOne("select result_submit_status, result_attached_url from project where id=?", PROJECT_ID);
-        assertThat(rec.get("result_submit_status", String.class)).isEqualTo("INPROGRESS");
+        assertThat(rec.get("result_submit_status", String.class)).isEqualTo("COMPLETED");
         
         String url = rec.get("result_attached_url", String.class);
         assertThat(url).isNotBlank();
@@ -203,7 +203,7 @@ class ProjectEndS3E2ETest {
 
         // DB에서 결과 확인 (단일 URL 저장 확인)
         var rec = dsl.fetchOne("select result_submit_status, result_attached_url from project where id=?", PROJECT_ID);
-        assertThat(rec.get("result_submit_status", String.class)).isEqualTo("INPROGRESS");
+        assertThat(rec.get("result_submit_status", String.class)).isEqualTo("COMPLETED");
         
         String url = rec.get("result_attached_url", String.class);
         assertThat(url).isNotBlank();

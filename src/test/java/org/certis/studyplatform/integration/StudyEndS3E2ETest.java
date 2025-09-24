@@ -123,7 +123,7 @@ class StudyEndS3E2ETest {
                     .andExpect(status().isOk());
 
             var rec = dsl.fetchOne("select result_submit_status, result_attached_url from study where id=?", STUDY_ID);
-            assertThat(rec.get("result_submit_status", String.class)).isEqualTo("INPROGRESS");
+            assertThat(rec.get("result_submit_status", String.class)).isEqualTo("COMPLETED");
             String url = rec.get("result_attached_url", String.class);
             assertThat(url).isNotBlank();
             assertThat(url).startsWith("https://");
