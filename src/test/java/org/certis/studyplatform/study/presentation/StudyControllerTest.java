@@ -146,6 +146,7 @@ class StudyControllerTest {
                 .andExpect(jsonPath("$.data.currentParticipantNumber").exists())
                 .andExpect(jsonPath("$.data.maxParticipantNumber").value(10))
                 .andExpect(jsonPath("$.data.attachments").isArray())
+                .andExpect(jsonPath("$.data.resultSubmitStatus").exists())
                 .andExpect(jsonPath("$.data.createdAt").exists())
                 .andExpect(jsonPath("$.data.updatedAt").exists())
                 .andReturn();
@@ -249,6 +250,7 @@ class StudyControllerTest {
                 .andExpect(jsonPath("$.data.content.length()").value(3)) // 3개 스터디
                 .andExpect(jsonPath("$.data.totalElements").value(3))
                 .andExpect(jsonPath("$.data.totalPages").value(1))
+                .andExpect(jsonPath("$.data.content[0].resultSubmitStatus").exists())
                 .andExpect(jsonPath("$.data.size").value(10))
                 .andExpect(jsonPath("$.data.number").value(0))
                 .andExpect(jsonPath("$.data.first").value(true))
@@ -272,7 +274,8 @@ class StudyControllerTest {
                 .andExpect(jsonPath("$.data.content").isArray())
                 .andExpect(jsonPath("$.data.content[0].currentParticipantNumber").exists())
                 .andExpect(jsonPath("$.data.content[0].maxParticipantNumber").exists())
-                .andExpect(jsonPath("$.data.content[0].attachments").exists());
+                .andExpect(jsonPath("$.data.content[0].attachments").exists())
+                .andExpect(jsonPath("$.data.content[0].resultSubmitStatus").exists());
     }
 
     @Test
@@ -294,7 +297,8 @@ class StudyControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("스터디 검색을 성공적으로 완료했습니다"))
-                .andExpect(jsonPath("$.data.content").isArray());
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content[0].resultSubmitStatus").exists());
 
     }
 
@@ -903,8 +907,8 @@ class StudyControllerTest {
         
         // When & Then
         mockMvc.perform(post("/api/v1/study/end")
-                        .param("studyId", String.valueOf(studyId))
-                        .contentType("multipart/form-data"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"studyId\": " + studyId + "}"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
@@ -919,6 +923,33 @@ class StudyControllerTest {
         
         assertThat(study).isNotNull();
         assertThat(study.getEndedAt()).isNotNull(); // 종료 시간이 설정되었는지 확인
+    }
+
+    @Test
+    @Order(107)
+    @DisplayName("✅ 스터디 종료 신청 후 resultSubmitStatus가 COMPLETED로 변경된다 (JSON 요청)")
+    @WithMockUser(username = "testuser", roles = {"PLAYER"})
+    void should_update_resultSubmitStatus_after_study_end_request_json() throws Exception {
+        // Given
+        createStudyWithNewFields();
+
+        String body = "{\n" +
+                "  \"studyId\": " + TEST_STUDY_ID + "\n" +
+                "}";
+
+        // When
+        mockMvc.perform(post("/api/v1/study/end")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        // Then: DB의 result_submit_status가 COMPLETED로 변경되었는지 확인
+        String submitStatus = dsl.select(STUDY.RESULT_SUBMIT_STATUS)
+                .from(STUDY)
+                .where(STUDY.ID.eq(TEST_STUDY_ID))
+                .fetchOne(STUDY.RESULT_SUBMIT_STATUS);
+        assertThat(submitStatus).isEqualTo("COMPLETED");
     }
 
     @Test
@@ -954,8 +985,8 @@ class StudyControllerTest {
         // unauthorized 사용자(ID=999)가 다른 사용자가 생성한 스터디를 종료하려고 시도
         // When & Then
         mockMvc.perform(post("/api/v1/study/end")
-                        .param("studyId", String.valueOf(studyId))
-                        .contentType("multipart/form-data"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"studyId\": " + studyId + "}"))
                 .andDo(print())
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.statusCode").value(422))
@@ -981,8 +1012,8 @@ class StudyControllerTest {
         
         // When & Then
         mockMvc.perform(post("/api/v1/study/end")
-                        .param("studyId", String.valueOf(studyId))
-                        .contentType("multipart/form-data"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"studyId\": " + studyId + "}"))
                 .andDo(print())
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.statusCode").value(422))
@@ -1016,7 +1047,8 @@ class StudyControllerTest {
         
         // When & Then - 스터디 종료
         mockMvc.perform(post("/api/v1/study/end")
-                        .param("studyId", String.valueOf(studyId)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"studyId\": " + studyId + "}"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))

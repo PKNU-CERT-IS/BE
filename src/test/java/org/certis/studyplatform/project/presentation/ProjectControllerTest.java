@@ -145,6 +145,7 @@ class ProjectControllerTest {
                 .andExpect(jsonPath("$.data.content").value(TEST_PROJECT_CONTENT))
                 .andExpect(jsonPath("$.data.category").value(TEST_PROJECT_CATEGORY))
                 .andExpect(jsonPath("$.data.subCategory").value(TEST_PROJECT_SUBCATEGORY))
+                .andExpect(jsonPath("$.data.resultSubmitStatus").exists())
                 .andExpect(jsonPath("$.data.maxParticipantNumber").exists())
                 .andExpect(jsonPath("$.data.currentParticipantNumber").exists())
                 .andReturn();
@@ -245,6 +246,7 @@ class ProjectControllerTest {
                 .andExpect(jsonPath("$.data.content").isNotEmpty())
                 .andExpect(jsonPath("$.data.totalElements").value(3))
                 .andExpect(jsonPath("$.data.totalPages").value(1))
+                .andExpect(jsonPath("$.data.content[0].resultSubmitStatus").exists())
                 .andExpect(jsonPath("$.data.first").value(true))
                 .andExpect(jsonPath("$.data.last").value(true));
 
@@ -271,6 +273,7 @@ class ProjectControllerTest {
                 .andExpect(jsonPath("$.data.totalElements").exists())
                 .andExpect(jsonPath("$.data.totalPages").exists())
                 .andExpect(jsonPath("$.data.size").value(10))
+                .andExpect(jsonPath("$.data.content[0].resultSubmitStatus").exists())
                 .andExpect(jsonPath("$.data.number").value(0));
 
     }
@@ -1002,8 +1005,8 @@ class ProjectControllerTest {
         
         // When & Then
         mockMvc.perform(post("/api/v1/project/end")
-                        .param("projectId", String.valueOf(projectId))
-                        .contentType("multipart/form-data"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"projectId\": " + projectId + "}"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
@@ -1021,6 +1024,34 @@ class ProjectControllerTest {
     }
 
     @Test
+    @Order(106)
+    @DisplayName("✅ 프로젝트 종료 신청 후 resultSubmitStatus가 COMPLETED로 변경된다 (JSON 요청)")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
+    void should_update_resultSubmitStatus_after_project_end_request_json() throws Exception {
+        // Given
+        setupTestData();
+        createTestProjectInDatabase();
+
+        String body = "{\n" +
+                "  \"projectId\": " + TEST_PROJECT_ID + "\n" +
+                "}";
+
+        // When
+        mockMvc.perform(post("/api/v1/project/end")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        // Then: DB의 result_submit_status가 COMPLETED로 변경되었는지 확인
+        String submitStatus = dsl.select(PROJECT.RESULT_SUBMIT_STATUS)
+                .from(PROJECT)
+                .where(PROJECT.ID.eq(TEST_PROJECT_ID))
+                .fetchOne(PROJECT.RESULT_SUBMIT_STATUS);
+        assertThat(submitStatus).isEqualTo("COMPLETED");
+    }
+
+    @Test
     @Order(104)
     @DisplayName("✅ 프로젝트 종료 API 테스트 - 권한 없음")
     @WithMockUser(username = "user2", roles = {"PLAYER"})
@@ -1034,8 +1065,8 @@ class ProjectControllerTest {
         
         // When & Then
         mockMvc.perform(post("/api/v1/project/end")
-                        .param("projectId", String.valueOf(projectId))
-                        .contentType("multipart/form-data"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"projectId\": " + projectId + "}"))
                 .andDo(print())
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.statusCode").value(422))
@@ -1061,8 +1092,8 @@ class ProjectControllerTest {
         
         // When & Then
         mockMvc.perform(post("/api/v1/project/end")
-                        .param("projectId", String.valueOf(projectId))
-                        .contentType("multipart/form-data"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"projectId\": " + projectId + "}"))
                 .andDo(print())
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.statusCode").value(422))
