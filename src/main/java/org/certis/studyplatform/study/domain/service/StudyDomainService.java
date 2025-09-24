@@ -384,6 +384,12 @@ public class StudyDomainService {
         // 권한 검증: STAFF 이상이거나 스터디 생성자인지 확인
         validateStudyEndPermission(command.requesterId(), existingStudy.creatorId());
 
+        // 이미 종료된 스터디인지 검증
+        if (existingStudy.endDate() != null && existingStudy.endDate().isBefore(OffsetDateTime.now())) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION,
+                    "이미 종료된 스터디입니다");
+        }
+
         // 제출 단계: 종료는 승인 시 처리. 여기서는 변경 없이 반환.
         log.info("Domain: Study end submission initiated - ID: {}", existingStudy.id());
         return existingStudy;

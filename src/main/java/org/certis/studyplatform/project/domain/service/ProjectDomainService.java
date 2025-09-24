@@ -379,6 +379,12 @@ public class ProjectDomainService {
         // 권한 검증: STAFF 이상이거나 프로젝트 생성자인지 확인
         validateProjectEndPermission(command.requesterId(), existingProject.creatorId());
 
+        // 이미 종료된 프로젝트인지 검증
+        if (existingProject.endDate() != null && existingProject.endDate().isBefore(OffsetDateTime.now())) {
+            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION,
+                    "이미 종료된 프로젝트입니다");
+        }
+
         // 제출 단계: 종료는 승인 시 처리. 여기서는 변경 없이 반환.
         log.info("Domain: Project end submission initiated - ID: {}", existingProject.id());
         return existingProject;

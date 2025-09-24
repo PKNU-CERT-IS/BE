@@ -13,6 +13,7 @@ import org.certis.generated.jooq.Keys;
 import org.certis.generated.jooq.Public;
 import org.certis.generated.jooq.tables.Member.MemberPath;
 import org.certis.generated.jooq.tables.Study.StudyPath;
+import org.certis.generated.jooq.tables.StudyMeetingLink.StudyMeetingLinkPath;
 import org.certis.generated.jooq.tables.records.StudyMeetingRecord;
 import org.jooq.Condition;
 import org.jooq.Field;
@@ -207,6 +208,19 @@ public class StudyMeeting extends TableImpl<StudyMeetingRecord> {
             _study = new StudyPath(this, Keys.STUDY_MEETING__FK_STUDY_MEETING_STUDY, null);
 
         return _study;
+    }
+
+    private transient StudyMeetingLinkPath _studyMeetingLink;
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>public.study_meeting_link</code> table
+     */
+    public StudyMeetingLinkPath studyMeetingLink() {
+        if (_studyMeetingLink == null)
+            _studyMeetingLink = new StudyMeetingLinkPath(this, null, Keys.STUDY_MEETING_LINK__FK_STUDY_MEETING_LINK_MEETING.getInverseKey());
+
+        return _studyMeetingLink;
     }
 
     @Override

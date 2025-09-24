@@ -66,7 +66,7 @@ public class ProjectMeetingDomainService {
         if (command.links() != null && !command.links().isEmpty()) {
             for (var link : command.links()) {
                 ProjectMeetingLinkVo linkVo = ProjectMeetingLinkVo.forCreation(
-                        createdVo.projectId(),
+                        createdVo.id(),
                         createdVo.writerId(),
                         link.getTitle(),
                         link.getUrl()
@@ -108,12 +108,12 @@ public class ProjectMeetingDomainService {
         ProjectMeetingUpdatedVo updatedVo = projectMeetingCommandRepository.update(updatedMeetingVo);
 
         if (command.links() != null) {
-            projectMeetingLinkCommandRepository.deleteByProjectId(existingMeeting.projectId());
+            projectMeetingLinkCommandRepository.deleteByMeetingId(existingMeeting.id());
 
             if (!command.links().isEmpty()) {
                 for (var link : command.links()) {
                     ProjectMeetingLinkVo linkVo = ProjectMeetingLinkVo.forCreation(
-                            existingMeeting.projectId(),
+                            existingMeeting.id(),
                             command.requesterId(),
                             link.getTitle(),
                             link.getUrl()
@@ -141,8 +141,8 @@ public class ProjectMeetingDomainService {
         // 권한 체크: 작성자만 삭제 가능
         validateWriterPermission(existingMeeting.writerId(), command.requesterId(), "회의록을 삭제할 권한이 없습니다");
 
-        projectMeetingLinkCommandRepository.deleteByProjectId(existingMeeting.projectId());
-        log.info("MeetingDomain: Project meeting links deleted - projectId: {}", existingMeeting.projectId());
+        projectMeetingLinkCommandRepository.deleteByMeetingId(existingMeeting.id());
+        log.info("MeetingDomain: Project meeting links deleted - meetingId: {}", existingMeeting.id());
 
         projectMeetingCommandRepository.deleteByIdWithPermission(command.meetingId(), command.requesterId());
 
@@ -161,7 +161,7 @@ public class ProjectMeetingDomainService {
                 .orElseThrow(() -> new DomainException(ExceptionStatus.PROJECT_INFRASTRUCTURE_NOT_FOUND, "회의록을 찾을 수 없습니다"));
 
         // 해당 프로젝트의 모든 링크 조회
-        List<ProjectMeetingLinkVo> links = projectMeetingLinkQueryRepository.findByProjectId(meetingVo.projectId());
+        List<ProjectMeetingLinkVo> links = projectMeetingLinkQueryRepository.findByMeetingId(meetingVo.id());
         log.info("MeetingDomain: Found {} links for meeting - meetingId: {}", links.size(), query.meetingId());
 
         // 링크 정보를 포함한 상세 VO 생성
@@ -184,8 +184,10 @@ public class ProjectMeetingDomainService {
         Page<ProjectMeetingSummaryVo> meetings = projectMeetingQueryRepository.findByProjectId(
                 query.projectId(), query.pageable());
 
-        // 해당 프로젝트의 모든 링크 조회
-        List<ProjectMeetingLinkVo> allLinks = projectMeetingLinkQueryRepository.findByProjectId(query.projectId());
+        // 해당 프로젝트의 모든 링크 조회 (해당 페이지의 회의록 ID들 기준)
+        List<ProjectMeetingLinkVo> allLinks = meetings.getContent().stream()
+                .flatMap(summary -> projectMeetingLinkQueryRepository.findByMeetingId(summary.id()).stream())
+                .toList();
         log.info("MeetingDomain: Found {} total links for project - projectId: {}", allLinks.size(), query.projectId());
 
         // 링크 정보를 포함한 페이지 결과 생성

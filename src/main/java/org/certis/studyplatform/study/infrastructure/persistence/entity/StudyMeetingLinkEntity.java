@@ -28,8 +28,8 @@ public class StudyMeetingLinkEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, name = "study_id")
-    private Long studyId;
+    @Column(nullable = false, name = "meeting_id")
+    private Long meetingId;
 
     @Column(nullable = false, name = "member_id")
     private Long memberId;

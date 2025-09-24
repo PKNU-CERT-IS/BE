@@ -103,7 +103,8 @@ public class ProjectInfrastructureMapper {
                 null, // creatorName은 별도 조회 필요
                 null, // creatorGrade는 별도 조회 필요
                 calculateSemester(endedAt), // semester 계산
-                calculateStatusString(entity.getStartedAt(), endedAt), // status 계산
+                calculateStatusString(entity.getStartedAt(), endedAt, entity.getDeletedAt(), entity.getResultSubmitStatus()), // status 계산
+                entity.getResultSubmitStatus(),
                 entity.getGithubUrl(),
                 externalUrlVo,
                 entity.getDemoUrl(),
@@ -165,6 +166,8 @@ public class ProjectInfrastructureMapper {
         }
 
         OffsetDateTime endedAt = record.get(PROJECT.ENDED_AT);
+        OffsetDateTime deletedAt = record.get(PROJECT.DELETED_AT);
+        org.certis.studyplatform.shared.domain.ResultSubmitStatus submitStatus = record.get("result_submit_status", org.certis.studyplatform.shared.domain.ResultSubmitStatus.class);
         
         return ProjectVo.of(
                 record.get(PROJECT.ID),
@@ -179,7 +182,8 @@ public class ProjectInfrastructureMapper {
                 record.get(MEMBER.NAME), // JOIN된 creatorName
                 record.get(MEMBER.GRADE, String.class), // JOIN된 creatorGrade
                 calculateSemester(endedAt), // semester 계산
-                calculateStatusString(record.get(PROJECT.STARTED_AT), endedAt), // status 계산
+                calculateStatusString(record.get(PROJECT.STARTED_AT), endedAt, deletedAt, submitStatus), // status 계산
+                submitStatus,
                 record.get(PROJECT.GITHUB_URL), // githubUrl은 별도 관리
                 externalUrlVo,
                 record.get(PROJECT.DEMO_URL),
@@ -206,7 +210,9 @@ public class ProjectInfrastructureMapper {
         // 동적 상태 계산
         String status = calculateStatusString(
                 record.get(PROJECT.STARTED_AT),
-                record.get(PROJECT.ENDED_AT)
+                record.get(PROJECT.ENDED_AT),
+                record.get(PROJECT.DELETED_AT),
+                record.get("result_submit_status", org.certis.studyplatform.shared.domain.ResultSubmitStatus.class)
         );
 
         // 참여 가능 여부 계산
@@ -306,6 +312,8 @@ public class ProjectInfrastructureMapper {
         }
 
         OffsetDateTime endedAt = firstRecord.get(PROJECT.ENDED_AT);
+        OffsetDateTime deletedAt = firstRecord.get(PROJECT.DELETED_AT);
+        org.certis.studyplatform.shared.domain.ResultSubmitStatus submitStatus = firstRecord.get("result_submit_status", org.certis.studyplatform.shared.domain.ResultSubmitStatus.class);
         
         return ProjectVo.of(
                 firstRecord.get(PROJECT.ID),
@@ -320,7 +328,8 @@ public class ProjectInfrastructureMapper {
                 firstRecord.get(MEMBER.NAME), // JOIN된 creatorName
                 firstRecord.get(MEMBER.GRADE, String.class), // JOIN된 creatorGrade
                 calculateSemester(endedAt), // semester 계산
-                calculateStatusString(firstRecord.get(PROJECT.STARTED_AT), endedAt), // status 계산
+                calculateStatusString(firstRecord.get(PROJECT.STARTED_AT), endedAt, deletedAt, submitStatus), // status 계산
+                submitStatus,
                 firstRecord.get(PROJECT.GITHUB_URL), // githubUrl은 별도 관리
                 externalUrlVo,
                 firstRecord.get(PROJECT.DEMO_URL),
@@ -374,6 +383,8 @@ public class ProjectInfrastructureMapper {
         }
 
         OffsetDateTime endedAt = record.get(PROJECT.ENDED_AT);
+        OffsetDateTime deletedAt = record.get(PROJECT.DELETED_AT);
+        org.certis.studyplatform.shared.domain.ResultSubmitStatus submitStatus = record.get("result_submit_status", org.certis.studyplatform.shared.domain.ResultSubmitStatus.class);
         
         return ProjectVo.of(
                 record.get(PROJECT.ID),
@@ -388,7 +399,8 @@ public class ProjectInfrastructureMapper {
                 record.get(MEMBER.NAME), // JOIN된 creatorName
                 record.get(MEMBER.GRADE, String.class), // JOIN된 creatorGrade
                 calculateSemester(endedAt), // semester 계산
-                calculateStatusString(record.get(PROJECT.STARTED_AT), endedAt), // status 계산
+                calculateStatusString(record.get(PROJECT.STARTED_AT), endedAt, deletedAt, submitStatus), // status 계산
+                submitStatus,
                 record.get(PROJECT.GITHUB_URL), // githubUrl은 별도 관리
                 externalUrlVo,
                 record.get(PROJECT.DEMO_URL),
@@ -450,21 +462,30 @@ public class ProjectInfrastructureMapper {
     /**
      * 프로젝트 상태를 ProjectStatus enum으로 계산
      */
-    private String calculateStatusString(OffsetDateTime startDate, OffsetDateTime endDate) {
+    private String calculateStatusString(OffsetDateTime startDate, OffsetDateTime endDate,
+                                         OffsetDateTime deletedAt,
+                                         org.certis.studyplatform.shared.domain.ResultSubmitStatus resultSubmitStatus) {
+        if (deletedAt != null) {
+            return ProjectStatus.REJECTED.name();
+        }
+        OffsetDateTime now = OffsetDateTime.now();
+        // 종료 승인 또는 종료 시간이 현재와 같거나 이전이면 완료 처리
+        if (resultSubmitStatus == org.certis.studyplatform.shared.domain.ResultSubmitStatus.COMPLETED) {
+            return ProjectStatus.COMPLETED.name();
+        }
+        if (endDate != null && (now.isAfter(endDate) || now.isEqual(endDate))) {
+            return ProjectStatus.COMPLETED.name();
+        }
         if (startDate == null || endDate == null) {
             return ProjectStatus.READY.name();
         }
-
-        OffsetDateTime now = OffsetDateTime.now();
-
-        // 프로젝트가 종료된 경우 (endDate가 현재 시간보다 과거이거나, startDate가 endDate보다 미래인 경우)
-        if (now.isAfter(endDate) || startDate.isAfter(endDate)) {
-            return ProjectStatus.COMPLETED.name();
-        } else if (now.isBefore(startDate)) {
+        if (now.isBefore(startDate)) {
             return ProjectStatus.READY.name();
-        } else {
+        }
+        if (now.isBefore(endDate)) {
             return ProjectStatus.INPROGRESS.name();
         }
+        return ProjectStatus.INPROGRESS.name();
     }
 
     /**

@@ -144,13 +144,11 @@ public class StudyCommandService {
         // Command 객체를 Domain Service로 전달 (파일명은 Domain Service에서 처리)
         StudyVo endedVo = studyDomainService.endStudy(command);
 
-        // 조기 종료 시 유예기간 재조정
-        if (endedVo.startDate() != null && endedVo.endDate() != null) {
-            // 원래 예정된 종료일과 실제 종료일을 비교하여 조기 종료인지 확인
+        // 조기 종료 시 유예기간 재조정 (실제 종료 시점은 현재 시각으로 판단)
+        if (endedVo.startDate() != null) {
             OffsetDateTime originalEndDate = endedVo.startDate().plusWeeks(4); // 기본 4주 스터디 가정
-            OffsetDateTime actualEndDate = endedVo.endDate();
+            OffsetDateTime actualEndDate = OffsetDateTime.now();
             
-            // 실제 종료일이 원래 예정일보다 빠른 경우 조기 종료로 간주
             if (actualEndDate.isBefore(originalEndDate)) {
                 log.info("Command: Study terminated early - adjusting grace period for study ID: {}", endedVo.id());
                 try {
@@ -206,15 +204,21 @@ public class StudyCommandService {
                 ResultSubmitStatus.INPROGRESS,
                 attachmentUrl
         );
+        // 즉시 승인 처리 및 종료 시간 설정
+        studyJpaRepository.approveEnd(
+                endedVo.id(),
+                OffsetDateTime.now(),
+                ResultSubmitStatus.COMPLETED
+        );
 
-        log.info("Command: Study ended successfully - ID: {}", endedVo.id());
+        log.info("Command: Study ended and approved successfully - ID: {}", endedVo.id());
         return endedVo;
     }
 
     @Transactional
     public void approveStudyEnd(Long studyId, Long adminId) {
         log.info("Command: Approving study end - studyId: {} by admin: {}", studyId, adminId);
-        studyJpaRepository.approveEnd(studyId, OffsetDateTime.now(), ResultSubmitStatus.APPROVED);
+        studyJpaRepository.approveEnd(studyId, OffsetDateTime.now(), ResultSubmitStatus.COMPLETED);
     }
 
     @Transactional
@@ -230,6 +234,31 @@ public class StudyCommandService {
             }
         });
         studyJpaRepository.rejectEnd(studyId, ResultSubmitStatus.REJECTED, OffsetDateTime.now());
+    }
+
+    /**
+     * 스터디 생성 승인: 유예기간 연장만 수행 (상태 계산은 조회 시 동적 반영)
+     */
+    @Transactional
+    public void approveStudyCreation(Long studyId, Long adminId) {
+        log.info("Command: Approving study creation - studyId: {} by admin: {}", studyId, adminId);
+        studyJpaRepository.findById(studyId).ifPresent(entity -> {
+            try {
+                gracePeriodService.extendGracePeriodForApprovedStudy(
+                        entity.getId(), entity.getStartedAt(), entity.getEndedAt());
+            } catch (Exception e) {
+                log.warn("Failed to extend grace period on study creation approve - studyId: {}", studyId, e);
+            }
+        });
+    }
+
+    /**
+     * 스터디 생성 거절: 소프트 삭제 처리 (deleted_at 설정)
+     */
+    @Transactional
+    public void rejectStudyCreation(Long studyId, Long adminId) {
+        log.info("Command: Rejecting study creation - studyId: {} by admin: {}", studyId, adminId);
+        studyJpaRepository.bulkSoftDeleteById(studyId, OffsetDateTime.now());
     }
 
     /**

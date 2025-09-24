@@ -268,10 +268,12 @@ public class StudyFacadeService {
         // Command Service 호출 (VO 반환)
         StudyVo endedVo = studyCommandService.endStudy(command);
 
-        // VO → DTO 변환
-        StudyDetailResponseDto responseDto = dtoMapper.toStudyDetailResponseDto(endedVo);
+        // 상태 확정 후 최신 데이터로 재조회하여 DTO 변환
+        GetStudyByIdQuery refreshQuery = queryMapper.toGetStudyByIdQuery(studyId);
+        StudyVo refreshed = studyQueryService.getStudyById(refreshQuery);
+        StudyDetailResponseDto responseDto = dtoMapper.toStudyDetailResponseDto(refreshed);
 
-        log.info("Facade: Study ended successfully - ID: {}", endedVo.id());
+        log.info("Facade: Study ended successfully - ID: {}", refreshed.id());
         return responseDto;
     }
 

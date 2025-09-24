@@ -118,4 +118,22 @@ public class AdminStudyController {
         );
         return GlobalResponseHandler.success(ResponseStatus.STUDY_FIND_SUCCESS, body);
     }
+
+    @PostMapping("/create/approve")
+    @Operation(summary = "스터디 생성 승인", description = "스터디 생성 요청을 승인하고 유예기간을 연장합니다")
+    public ResponseEntity<GlobalResponseHandler<Void>> approveStudyCreation(
+            @RequestParam Long studyId,
+            @AuthenticationPrincipal CurrentUser currentUser) {
+        studyCommandService.approveStudyCreation(studyId, currentUser.getId());
+        return GlobalResponseHandler.success(ResponseStatus.STUDY_UPDATE_SUCCESS);
+    }
+
+    @PostMapping("/create/reject")
+    @Operation(summary = "스터디 생성 거절", description = "스터디 생성 요청을 거절하고 소프트 삭제합니다")
+    public ResponseEntity<GlobalResponseHandler<Void>> rejectStudyCreation(
+            @RequestParam Long studyId,
+            @AuthenticationPrincipal CurrentUser currentUser) {
+        studyCommandService.rejectStudyCreation(studyId, currentUser.getId());
+        return GlobalResponseHandler.success(ResponseStatus.STUDY_DELETE_SUCCESS);
+    }
 }

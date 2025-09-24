@@ -13,6 +13,7 @@ import org.certis.generated.jooq.Keys;
 import org.certis.generated.jooq.Public;
 import org.certis.generated.jooq.tables.Member.MemberPath;
 import org.certis.generated.jooq.tables.Project.ProjectPath;
+import org.certis.generated.jooq.tables.ProjectMeetingLink.ProjectMeetingLinkPath;
 import org.certis.generated.jooq.tables.records.ProjectMeetingRecord;
 import org.jooq.Condition;
 import org.jooq.Field;
@@ -207,6 +208,19 @@ public class ProjectMeeting extends TableImpl<ProjectMeetingRecord> {
             _project = new ProjectPath(this, Keys.PROJECT_MEETING__FK_PROJECT_MEETING_PROJECT, null);
 
         return _project;
+    }
+
+    private transient ProjectMeetingLinkPath _projectMeetingLink;
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>public.project_meeting_link</code> table
+     */
+    public ProjectMeetingLinkPath projectMeetingLink() {
+        if (_projectMeetingLink == null)
+            _projectMeetingLink = new ProjectMeetingLinkPath(this, null, Keys.PROJECT_MEETING_LINK__FK_PROJECT_MEETING_LINK_MEETING.getInverseKey());
+
+        return _projectMeetingLink;
     }
 
     @Override

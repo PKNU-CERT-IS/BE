@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.certis.studyplatform.study.domain.StudyStatus;
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 
 import java.time.OffsetDateTime;
 
@@ -22,6 +23,7 @@ public class ProfileStudyResponseDto {
     private String title;
     private String description;
     private StudyStatus studyStatus;
+    private ResultSubmitStatus resultSubmitStatus;
     private OffsetDateTime studyStartDate;
     private OffsetDateTime studyEndDate;
     private String[] tags;

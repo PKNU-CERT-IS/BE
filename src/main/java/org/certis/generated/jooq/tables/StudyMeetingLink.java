@@ -12,7 +12,7 @@ import java.util.List;
 import org.certis.generated.jooq.Keys;
 import org.certis.generated.jooq.Public;
 import org.certis.generated.jooq.tables.Member.MemberPath;
-import org.certis.generated.jooq.tables.Study.StudyPath;
+import org.certis.generated.jooq.tables.StudyMeeting.StudyMeetingPath;
 import org.certis.generated.jooq.tables.records.StudyMeetingLinkRecord;
 import org.jooq.Condition;
 import org.jooq.Field;
@@ -64,9 +64,9 @@ public class StudyMeetingLink extends TableImpl<StudyMeetingLinkRecord> {
     public final TableField<StudyMeetingLinkRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.nullable(false).identity(true), this, "");
 
     /**
-     * The column <code>public.study_meeting_link.study_id</code>.
+     * The column <code>public.study_meeting_link.meeting_id</code>.
      */
-    public final TableField<StudyMeetingLinkRecord, Long> STUDY_ID = createField(DSL.name("study_id"), SQLDataType.BIGINT.nullable(false), this, "");
+    public final TableField<StudyMeetingLinkRecord, Long> MEETING_ID = createField(DSL.name("meeting_id"), SQLDataType.BIGINT.nullable(false), this, "");
 
     /**
      * The column <code>public.study_meeting_link.member_id</code>.
@@ -177,7 +177,20 @@ public class StudyMeetingLink extends TableImpl<StudyMeetingLinkRecord> {
 
     @Override
     public List<ForeignKey<StudyMeetingLinkRecord, ?>> getReferences() {
-        return Arrays.asList(Keys.STUDY_MEETING_LINK__FK_STUDY_MEETING_LINK_MEMBER, Keys.STUDY_MEETING_LINK__FK_STUDY_MEETING_LINK_STUDY);
+        return Arrays.asList(Keys.STUDY_MEETING_LINK__FK_STUDY_MEETING_LINK_MEETING, Keys.STUDY_MEETING_LINK__FK_STUDY_MEETING_LINK_MEMBER);
+    }
+
+    private transient StudyMeetingPath _studyMeeting;
+
+    /**
+     * Get the implicit join path to the <code>public.study_meeting</code>
+     * table.
+     */
+    public StudyMeetingPath studyMeeting() {
+        if (_studyMeeting == null)
+            _studyMeeting = new StudyMeetingPath(this, Keys.STUDY_MEETING_LINK__FK_STUDY_MEETING_LINK_MEETING, null);
+
+        return _studyMeeting;
     }
 
     private transient MemberPath _member;
@@ -190,18 +203,6 @@ public class StudyMeetingLink extends TableImpl<StudyMeetingLinkRecord> {
             _member = new MemberPath(this, Keys.STUDY_MEETING_LINK__FK_STUDY_MEETING_LINK_MEMBER, null);
 
         return _member;
-    }
-
-    private transient StudyPath _study;
-
-    /**
-     * Get the implicit join path to the <code>public.study</code> table.
-     */
-    public StudyPath study() {
-        if (_study == null)
-            _study = new StudyPath(this, Keys.STUDY_MEETING_LINK__FK_STUDY_MEETING_LINK_STUDY, null);
-
-        return _study;
     }
 
     @Override

@@ -143,19 +143,17 @@ public class ProjectCommandService {
         // Command 객체를 Domain Service로 전달 (파일명은 Domain Service에서 처리)
         ProjectVo endedVo = projectDomainService.endProject(command);
 
-        // 조기 종료 시 유예기간 재조정
-        log.info("Command: Checking for early termination - project ID: {}, startDate: {}, endDate: {}", 
-            endedVo.id(), endedVo.startDate(), endedVo.endDate());
+        // 조기 종료 시 유예기간 재조정 (실제 종료 시점은 현재 시각으로 판단)
+        log.info("Command: Checking for early termination - project ID: {}, startDate: {}", 
+            endedVo.id(), endedVo.startDate());
         
-        if (endedVo.startDate() != null && endedVo.endDate() != null) {
-            // 원래 예정된 종료일과 실제 종료일을 비교하여 조기 종료인지 확인
+        if (endedVo.startDate() != null) {
             OffsetDateTime originalEndDate = endedVo.startDate().plusWeeks(4); // 기본 4주 프로젝트 가정
-            OffsetDateTime actualEndDate = endedVo.endDate();
+            OffsetDateTime actualEndDate = OffsetDateTime.now();
             
-            log.info("Command: Early termination check - originalEndDate: {}, actualEndDate: {}, isEarly: {}", 
+            log.info("Command: Early termination check - originalEndDate: {}, actualEndDate(now): {}, isEarly: {}", 
                 originalEndDate, actualEndDate, actualEndDate.isBefore(originalEndDate));
             
-            // 실제 종료일이 원래 예정일보다 빠른 경우 조기 종료로 간주
             if (actualEndDate.isBefore(originalEndDate)) {
                 log.info("Command: Project terminated early - adjusting grace period for project ID: {}", endedVo.id());
                 try {
@@ -173,8 +171,6 @@ public class ProjectCommandService {
             } else {
                 log.info("Command: Project not terminated early - no grace period adjustment needed for project ID: {}", endedVo.id());
             }
-        } else {
-            log.warn("Command: Cannot check early termination - missing dates for project ID: {}", endedVo.id());
         }
 
         // 파일 업로드 후 단일 URL 저장 및 제출 상태 갱신
@@ -211,14 +207,21 @@ public class ProjectCommandService {
                 attachmentUrl
         );
 
-        log.info("Command: Project ended successfully - ID: {}", endedVo.id());
+        // 즉시 승인 처리: 종료 상태 확정 및 endedAt 현재로 설정
+        projectJpaRepository.approveEnd(
+                endedVo.id(),
+                OffsetDateTime.now(),
+                ResultSubmitStatus.COMPLETED
+        );
+
+        log.info("Command: Project ended and approved successfully - ID: {}", endedVo.id());
         return endedVo;
     }
 
     @Transactional
     public void approveProjectEnd(Long projectId, Long adminId) {
         log.info("Command: Approving project end - projectId: {} by admin: {}", projectId, adminId);
-        projectJpaRepository.approveEnd(projectId, OffsetDateTime.now(), ResultSubmitStatus.APPROVED);
+        projectJpaRepository.approveEnd(projectId, OffsetDateTime.now(), ResultSubmitStatus.COMPLETED);
     }
 
     @Transactional
@@ -234,6 +237,31 @@ public class ProjectCommandService {
             }
         });
         projectJpaRepository.rejectEnd(projectId, ResultSubmitStatus.REJECTED, OffsetDateTime.now());
+    }
+
+    /**
+     * 프로젝트 생성 승인: 유예기간 연장만 수행 (상태 계산은 조회 시 동적 반영)
+     */
+    @Transactional
+    public void approveProjectCreation(Long projectId, Long adminId) {
+        log.info("Command: Approving project creation - projectId: {} by admin: {}", projectId, adminId);
+        projectJpaRepository.findById(projectId).ifPresent(entity -> {
+            try {
+                gracePeriodService.extendGracePeriodForApprovedProject(
+                        entity.getId(), entity.getStartedAt(), entity.getEndedAt());
+            } catch (Exception e) {
+                log.warn("Failed to extend grace period on project creation approve - projectId: {}", projectId, e);
+            }
+        });
+    }
+
+    /**
+     * 프로젝트 생성 거절: 소프트 삭제 처리 (deleted_at 설정)
+     */
+    @Transactional
+    public void rejectProjectCreation(Long projectId, Long adminId) {
+        log.info("Command: Rejecting project creation - projectId: {} by admin: {}", projectId, adminId);
+        projectJpaRepository.bulkSoftDeleteById(projectId, OffsetDateTime.now());
     }
 
     /**

@@ -62,6 +62,7 @@ public class StudyApplicationDtoMapper {
                 .studyCreatorGrade(vo.creatorGrade() != null ? vo.creatorGrade().toString() : null)
                 .semester(vo.semester())
                 .status(vo.status())
+                .resultSubmitStatus(vo.resultSubmitStatus())
                 .thumbnailUrl(thumbnailUrl)
                 .attachments(toStudyAttachedResponseDtoList(vo.attached()))
                 .meetingSummaries(toStudyMeetingSummaryResponseDtoList(vo.summaryVoList()))
@@ -107,6 +108,7 @@ public class StudyApplicationDtoMapper {
                 .studyCreatorGrade(vo.studyCreatorGrade())
                 .semester(vo.semester())
                 .status(vo.status())
+                .resultSubmitStatus(null)
                 .isParticipantable(vo.isParticipantable())
                 .currentParticipantNumber(vo.currentParticipants())
                 .maxParticipantNumber(vo.maxParticipants())
@@ -239,7 +241,9 @@ public class StudyApplicationDtoMapper {
         }
 
         List<StudySummaryResponseDto> dtoList = toStudySummaryResponseDtoList(voPage.getContent());
-        return new PageImpl<>(dtoList, voPage.getPageable(), voPage.getTotalElements());
+        // Normalize Pageable to avoid Unpaged serialization issues
+        var pageable = voPage.getPageable().isPaged() ? voPage.getPageable() : org.springframework.data.domain.PageRequest.of(0, dtoList.size() == 0 ? 1 : dtoList.size());
+        return new PageImpl<>(dtoList, pageable, voPage.getTotalElements());
     }
 
     /**

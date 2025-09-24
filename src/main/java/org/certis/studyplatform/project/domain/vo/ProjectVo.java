@@ -2,6 +2,7 @@ package org.certis.studyplatform.project.domain.vo;
 
 import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 
 import java.time.OffsetDateTime;
 import java.util.Collections;
@@ -28,6 +29,7 @@ public record ProjectVo(
         String creatorGrade,
         String semester,
         String status,
+        ResultSubmitStatus resultSubmitStatus,
         String githubUrl,
         ExternalUrlVo externalUrl,
         String demoUrl,
@@ -117,6 +119,7 @@ public record ProjectVo(
             String creatorGrade,
             String semester,
             String status,
+            ResultSubmitStatus resultSubmitStatus,
             String githubUrl,
             ExternalUrlVo externalUrl,
             String demoUrl,
@@ -129,12 +132,45 @@ public record ProjectVo(
     ) {
         return new ProjectVo(
                 id, title, description, content, category, subCategory,
-                startDate, endDate, creatorId, creatorName, creatorGrade, semester, status,
+                startDate, endDate, creatorId, creatorName, creatorGrade, semester, status, resultSubmitStatus,
                 githubUrl, externalUrl, demoUrl, thumbnailUrl, maxParticipants, currentParticipants,
                 isParticipantable,
                 attached,
                 meetingSummaryVos
         );
+    }
+
+    /**
+     * Backward-compatible factory method without resultSubmitStatus (for legacy tests)
+     */
+    public static ProjectVo of(
+            Long id,
+            String title,
+            String description,
+            String content,
+            String category,
+            String subCategory,
+            OffsetDateTime startDate,
+            OffsetDateTime endDate,
+            Long creatorId,
+            String creatorName,
+            String creatorGrade,
+            String semester,
+            String status,
+            String githubUrl,
+            ExternalUrlVo externalUrl,
+            String demoUrl,
+            String thumbnailUrl,
+            Integer maxParticipants,
+            Integer currentParticipants,
+            boolean isParticipantable,
+            List<ProjectAttachedVo> attached,
+            List<ProjectMeetingSummaryVo> meetingSummaryVos
+    ) {
+        return of(id, title, description, content, category, subCategory, startDate, endDate,
+                creatorId, creatorName, creatorGrade, semester, status, null,
+                githubUrl, externalUrl, demoUrl, thumbnailUrl, maxParticipants, currentParticipants,
+                isParticipantable, attached, meetingSummaryVos);
     }
 
     /**
@@ -163,6 +199,7 @@ public record ProjectVo(
                 null, // id는 null (새 생성)
                 title, description, content, category, subCategory,
                 startDate, endDate, creatorId, creatorName, creatorGrade, semester, status,
+                null,
                 githubUrl, externalUrl, demoUrl, thumbnailUrl, maxParticipants, 0, // 초기 참가자는 0명
                 true, // 새로 생성된 프로젝트는 참여 가능
                 Collections.emptyList(), // attached
@@ -200,6 +237,7 @@ public record ProjectVo(
                 existing.creatorGrade(),
                 existing.semester(),
                 existing.status(),
+                existing.resultSubmitStatus(),
                 githubUrl != null ? githubUrl : existing.githubUrl(),
                 externalUrl != null ? externalUrl : existing.externalUrl(),
                 demoUrl != null ? demoUrl : existing.demoUrl(),
@@ -210,6 +248,39 @@ public record ProjectVo(
                 existing.attached(), // 기존 첨부파일 유지
                 existing.meetingSummaryVos()
         );
+    }
+
+    /**
+     * Backward-compatible auxiliary constructor to support legacy tests using new ProjectVo(...)
+     */
+    public ProjectVo(
+            Long id,
+            String title,
+            String description,
+            String content,
+            String category,
+            String subCategory,
+            OffsetDateTime startDate,
+            OffsetDateTime endDate,
+            Long creatorId,
+            String creatorName,
+            String creatorGrade,
+            String semester,
+            String status,
+            String githubUrl,
+            ExternalUrlVo externalUrl,
+            String demoUrl,
+            String thumbnailUrl,
+            Integer maxParticipants,
+            Integer currentParticipants,
+            boolean isParticipantable,
+            List<ProjectAttachedVo> attached,
+            List<ProjectMeetingSummaryVo> meetingSummaryVos
+    ) {
+        this(id, title, description, content, category, subCategory, startDate, endDate,
+                creatorId, creatorName, creatorGrade, semester, status, null,
+                githubUrl, externalUrl, demoUrl, thumbnailUrl, maxParticipants, currentParticipants,
+                isParticipantable, attached, meetingSummaryVos);
     }
 
 }

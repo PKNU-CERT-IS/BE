@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.certis.generated.jooq.Tables.STUDY_MEETING_LINK;
+import static org.certis.generated.jooq.Tables.STUDY_MEETING;
 
 /**
  * StudyMeetingLink Query Repository Implementation using Generated jOOQ Tables
@@ -43,20 +44,18 @@ public class StudyMeetingLinkQueryRepositoryImpl implements StudyMeetingLinkQuer
     public Optional<StudyMeetingLinkVo> findById(Long linkId) {
         log.info("jOOQ: Finding study meeting link by ID - {}", linkId);
 
-        var sml = STUDY_MEETING_LINK.as("sml");
-
         Optional<StudyMeetingLinkVo> result = dsl.select(
-                        sml.ID,
-                        sml.STUDY_ID,
-                        sml.MEMBER_ID,
-                        sml.NAME,
-                        sml.ATTACHED_URL,
-                        sml.CREATED_AT,
-                        sml.UPDATED_AT
+                        STUDY_MEETING_LINK.ID,
+                        STUDY_MEETING_LINK.MEETING_ID,
+                        STUDY_MEETING_LINK.MEMBER_ID,
+                        STUDY_MEETING_LINK.NAME,
+                        STUDY_MEETING_LINK.ATTACHED_URL,
+                        STUDY_MEETING_LINK.CREATED_AT,
+                        STUDY_MEETING_LINK.UPDATED_AT
                 )
-                .from(sml)
-                .where(sml.ID.eq(linkId))
-                .and(sml.DELETED_AT.isNull())
+                .from(STUDY_MEETING_LINK)
+                .where(STUDY_MEETING_LINK.ID.eq(linkId))
+                .and(STUDY_MEETING_LINK.DELETED_AT.isNull())
                 .fetchOptional(mapper::toVoFromRecord);
 
         log.info("jOOQ: Study meeting link found - ID: {}", linkId);
@@ -70,21 +69,24 @@ public class StudyMeetingLinkQueryRepositoryImpl implements StudyMeetingLinkQuer
     public List<StudyMeetingLinkVo> findByStudyId(Long studyId) {
         log.info("jOOQ: Finding study meeting links by studyId - {}", studyId);
 
-        var sml = STUDY_MEETING_LINK.as("sml");
-
         List<StudyMeetingLinkVo> result = dsl.select(
-                        sml.ID,
-                        sml.STUDY_ID,
-                        sml.MEMBER_ID,
-                        sml.NAME,
-                        sml.ATTACHED_URL,
-                        sml.CREATED_AT,
-                        sml.UPDATED_AT
+                        STUDY_MEETING_LINK.ID,
+                        STUDY_MEETING_LINK.MEETING_ID,
+                        STUDY_MEETING_LINK.MEMBER_ID,
+                        STUDY_MEETING_LINK.NAME,
+                        STUDY_MEETING_LINK.ATTACHED_URL,
+                        STUDY_MEETING_LINK.CREATED_AT,
+                        STUDY_MEETING_LINK.UPDATED_AT
                 )
-                .from(sml)
-                .where(sml.STUDY_ID.eq(studyId))
-                .and(sml.DELETED_AT.isNull())
-                .orderBy(sml.CREATED_AT.desc())
+                .from(STUDY_MEETING_LINK)
+                .where(STUDY_MEETING_LINK.MEETING_ID.in(
+                        dsl.select(STUDY_MEETING.ID)
+                                .from(STUDY_MEETING)
+                                .where(STUDY_MEETING.STUDY_ID.eq(studyId))
+                                .and(STUDY_MEETING.DELETED_AT.isNull())
+                ))
+                .and(STUDY_MEETING_LINK.DELETED_AT.isNull())
+                .orderBy(STUDY_MEETING_LINK.CREATED_AT.desc())
                 .fetch(mapper::toVoFromRecord);
 
         log.info("jOOQ: Found {} study meeting links for studyId: {}", result.size(), studyId);
@@ -98,13 +100,16 @@ public class StudyMeetingLinkQueryRepositoryImpl implements StudyMeetingLinkQuer
     public Page<StudyMeetingLinkVo> findByStudyId(Long studyId, Pageable pageable) {
         log.info("jOOQ: Finding study meeting links by studyId with pagination - studyId: {}", studyId);
 
-        var sml = STUDY_MEETING_LINK.as("sml");
-
         // 총 개수 조회
         int total = dsl.selectCount()
-                .from(sml)
-                .where(sml.STUDY_ID.eq(studyId))
-                .and(sml.DELETED_AT.isNull())
+                .from(STUDY_MEETING_LINK)
+                .where(STUDY_MEETING_LINK.MEETING_ID.in(
+                        dsl.select(STUDY_MEETING.ID)
+                                .from(STUDY_MEETING)
+                                .where(STUDY_MEETING.STUDY_ID.eq(studyId))
+                                .and(STUDY_MEETING.DELETED_AT.isNull())
+                ))
+                .and(STUDY_MEETING_LINK.DELETED_AT.isNull())
                 .fetchOne(0, int.class);
 
         if (total == 0) {
@@ -114,18 +119,23 @@ public class StudyMeetingLinkQueryRepositoryImpl implements StudyMeetingLinkQuer
 
         // 페이징된 데이터 조회
         List<StudyMeetingLinkVo> links = dsl.select(
-                        sml.ID,
-                        sml.STUDY_ID,
-                        sml.MEMBER_ID,
-                        sml.NAME,
-                        sml.ATTACHED_URL,
-                        sml.CREATED_AT,
-                        sml.UPDATED_AT
+                        STUDY_MEETING_LINK.ID,
+                        STUDY_MEETING_LINK.MEETING_ID,
+                        STUDY_MEETING_LINK.MEMBER_ID,
+                        STUDY_MEETING_LINK.NAME,
+                        STUDY_MEETING_LINK.ATTACHED_URL,
+                        STUDY_MEETING_LINK.CREATED_AT,
+                        STUDY_MEETING_LINK.UPDATED_AT
                 )
-                .from(sml)
-                .where(sml.STUDY_ID.eq(studyId))
-                .and(sml.DELETED_AT.isNull())
-                .orderBy(sml.CREATED_AT.desc())
+                .from(STUDY_MEETING_LINK)
+                .where(STUDY_MEETING_LINK.MEETING_ID.in(
+                        dsl.select(STUDY_MEETING.ID)
+                                .from(STUDY_MEETING)
+                                .where(STUDY_MEETING.STUDY_ID.eq(studyId))
+                                .and(STUDY_MEETING.DELETED_AT.isNull())
+                ))
+                .and(STUDY_MEETING_LINK.DELETED_AT.isNull())
+                .orderBy(STUDY_MEETING_LINK.CREATED_AT.desc())
                 .limit(pageable.getPageSize())
                 .offset((int) pageable.getOffset())
                 .fetch(mapper::toVoFromRecord);
@@ -141,24 +151,47 @@ public class StudyMeetingLinkQueryRepositoryImpl implements StudyMeetingLinkQuer
     public List<StudyMeetingLinkVo> findByMemberId(Long memberId) {
         log.info("jOOQ: Finding study meeting links by memberId - {}", memberId);
 
-        var sml = STUDY_MEETING_LINK.as("sml");
-
         List<StudyMeetingLinkVo> result = dsl.select(
-                        sml.ID,
-                        sml.STUDY_ID,
-                        sml.MEMBER_ID,
-                        sml.NAME,
-                        sml.ATTACHED_URL,
-                        sml.CREATED_AT,
-                        sml.UPDATED_AT
+                        STUDY_MEETING_LINK.ID,
+                        STUDY_MEETING_LINK.MEETING_ID,
+                        STUDY_MEETING_LINK.MEMBER_ID,
+                        STUDY_MEETING_LINK.NAME,
+                        STUDY_MEETING_LINK.ATTACHED_URL,
+                        STUDY_MEETING_LINK.CREATED_AT,
+                        STUDY_MEETING_LINK.UPDATED_AT
                 )
-                .from(sml)
-                .where(sml.MEMBER_ID.eq(memberId))
-                .and(sml.DELETED_AT.isNull())
-                .orderBy(sml.CREATED_AT.desc())
+                .from(STUDY_MEETING_LINK)
+                .where(STUDY_MEETING_LINK.MEMBER_ID.eq(memberId))
+                .and(STUDY_MEETING_LINK.DELETED_AT.isNull())
+                .orderBy(STUDY_MEETING_LINK.CREATED_AT.desc())
                 .fetch(mapper::toVoFromRecord);
 
         log.info("jOOQ: Found {} study meeting links for memberId: {}", result.size(), memberId);
+        return result;
+    }
+
+    /**
+     * 미팅별 링크 목록 조회
+     */
+    public List<StudyMeetingLinkVo> findByMeetingId(Long meetingId) {
+        log.info("jOOQ: Finding study meeting links by meetingId - {}", meetingId);
+
+        List<StudyMeetingLinkVo> result = dsl.select(
+                        STUDY_MEETING_LINK.ID,
+                        STUDY_MEETING_LINK.MEETING_ID.as("meeting_id"),
+                        STUDY_MEETING_LINK.MEMBER_ID,
+                        STUDY_MEETING_LINK.NAME,
+                        STUDY_MEETING_LINK.ATTACHED_URL,
+                        STUDY_MEETING_LINK.CREATED_AT,
+                        STUDY_MEETING_LINK.UPDATED_AT
+                )
+                .from(STUDY_MEETING_LINK)
+                .where(STUDY_MEETING_LINK.MEETING_ID.eq(meetingId))
+                .and(STUDY_MEETING_LINK.DELETED_AT.isNull())
+                .orderBy(STUDY_MEETING_LINK.CREATED_AT.desc())
+                .fetch(mapper::toVoFromRecord);
+
+        log.info("jOOQ: Found {} study meeting links for meetingId: {}", result.size(), meetingId);
         return result;
     }
 
@@ -168,13 +201,11 @@ public class StudyMeetingLinkQueryRepositoryImpl implements StudyMeetingLinkQuer
     public boolean existsById(Long linkId) {
         log.info("jOOQ: Checking if study meeting link exists by ID - {}", linkId);
 
-        var sml = STUDY_MEETING_LINK.as("sml");
-
         boolean exists = dsl.fetchExists(
                 dsl.selectOne()
-                        .from(sml)
-                        .where(sml.ID.eq(linkId))
-                        .and(sml.DELETED_AT.isNull())
+                        .from(STUDY_MEETING_LINK)
+                        .where(STUDY_MEETING_LINK.ID.eq(linkId))
+                        .and(STUDY_MEETING_LINK.DELETED_AT.isNull())
         );
 
         log.info("jOOQ: Study meeting link exists: {} - ID: {}", exists, linkId);
@@ -187,17 +218,20 @@ public class StudyMeetingLinkQueryRepositoryImpl implements StudyMeetingLinkQuer
     public boolean existsByStudyId(Long studyId) {
         log.info("jOOQ: Checking if study meeting links exist by studyId - {}", studyId);
 
-        var sml = STUDY_MEETING_LINK.as("sml");
-
-        boolean exists = dsl.fetchExists(
+        boolean existsMeeting = dsl.fetchExists(
                 dsl.selectOne()
-                        .from(sml)
-                        .where(sml.STUDY_ID.eq(studyId))
-                        .and(sml.DELETED_AT.isNull())
+                        .from(STUDY_MEETING_LINK)
+                        .where(STUDY_MEETING_LINK.MEETING_ID.in(
+                                dsl.select(STUDY_MEETING.ID)
+                                        .from(STUDY_MEETING)
+                                        .where(STUDY_MEETING.STUDY_ID.eq(studyId))
+                                        .and(STUDY_MEETING.DELETED_AT.isNull())
+                        ))
+                        .and(STUDY_MEETING_LINK.DELETED_AT.isNull())
         );
 
-        log.info("jOOQ: Study meeting links exist: {} - studyId: {}", exists, studyId);
-        return exists;
+        log.info("jOOQ: Study meeting links exist: {} - studyId: {}", existsMeeting, studyId);
+        return existsMeeting;
     }
 
     /**
@@ -206,12 +240,15 @@ public class StudyMeetingLinkQueryRepositoryImpl implements StudyMeetingLinkQuer
     public int countByStudyId(Long studyId) {
         log.info("jOOQ: Counting study meeting links by studyId - {}", studyId);
 
-        var sml = STUDY_MEETING_LINK.as("sml");
-
         int count = dsl.selectCount()
-                .from(sml)
-                .where(sml.STUDY_ID.eq(studyId))
-                .and(sml.DELETED_AT.isNull())
+                .from(STUDY_MEETING_LINK)
+                .where(STUDY_MEETING_LINK.MEETING_ID.in(
+                        dsl.select(STUDY_MEETING.ID)
+                                .from(STUDY_MEETING)
+                                .where(STUDY_MEETING.STUDY_ID.eq(studyId))
+                                .and(STUDY_MEETING.DELETED_AT.isNull())
+                ))
+                .and(STUDY_MEETING_LINK.DELETED_AT.isNull())
                 .fetchOne(0, int.class);
 
         log.info("jOOQ: Found {} study meeting links for studyId: {}", count, studyId);

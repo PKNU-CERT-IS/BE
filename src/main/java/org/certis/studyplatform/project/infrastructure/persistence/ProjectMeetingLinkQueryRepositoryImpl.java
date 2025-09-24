@@ -43,20 +43,18 @@ public class ProjectMeetingLinkQueryRepositoryImpl implements ProjectMeetingLink
     public Optional<ProjectMeetingLinkVo> findById(Long linkId) {
         log.info("jOOQ: Finding project meeting link by ID - {}", linkId);
 
-        var pml = PROJECT_MEETING_LINK.as("pml");
-
         Optional<ProjectMeetingLinkVo> result = dsl.select(
-                        pml.ID,
-                        pml.PROJECT_ID,
-                        pml.MEMBER_ID,
-                        pml.NAME,
-                        pml.ATTACHED_URL,
-                        pml.CREATED_AT,
-                        pml.UPDATED_AT
+                        PROJECT_MEETING_LINK.ID,
+                        PROJECT_MEETING_LINK.MEETING_ID,
+                        PROJECT_MEETING_LINK.MEMBER_ID,
+                        PROJECT_MEETING_LINK.NAME,
+                        PROJECT_MEETING_LINK.ATTACHED_URL,
+                        PROJECT_MEETING_LINK.CREATED_AT,
+                        PROJECT_MEETING_LINK.UPDATED_AT
                 )
-                .from(pml)
-                .where(pml.ID.eq(linkId))
-                .and(pml.DELETED_AT.isNull())
+                .from(PROJECT_MEETING_LINK)
+                .where(PROJECT_MEETING_LINK.ID.eq(linkId))
+                .and(PROJECT_MEETING_LINK.DELETED_AT.isNull())
                 .fetchOptional(mapper::toVoFromRecord);
 
         log.info("jOOQ: Project meeting link found - ID: {}", linkId);
@@ -67,27 +65,25 @@ public class ProjectMeetingLinkQueryRepositoryImpl implements ProjectMeetingLink
      * 프로젝트별 링크 목록 조회
      */
     @Override
-    public List<ProjectMeetingLinkVo> findByProjectId(Long projectId) {
-        log.info("jOOQ: Finding project meeting links by projectId - {}", projectId);
-
-        var pml = PROJECT_MEETING_LINK.as("pml");
+    public List<ProjectMeetingLinkVo> findByMeetingId(Long meetingId) {
+        log.info("jOOQ: Finding project meeting links by meetingId - {}", meetingId);
 
         List<ProjectMeetingLinkVo> result = dsl.select(
-                        pml.ID,
-                        pml.PROJECT_ID,
-                        pml.MEMBER_ID,
-                        pml.NAME,
-                        pml.ATTACHED_URL,
-                        pml.CREATED_AT,
-                        pml.UPDATED_AT
+                        PROJECT_MEETING_LINK.ID,
+                        PROJECT_MEETING_LINK.MEETING_ID,
+                        PROJECT_MEETING_LINK.MEMBER_ID,
+                        PROJECT_MEETING_LINK.NAME,
+                        PROJECT_MEETING_LINK.ATTACHED_URL,
+                        PROJECT_MEETING_LINK.CREATED_AT,
+                        PROJECT_MEETING_LINK.UPDATED_AT
                 )
-                .from(pml)
-                .where(pml.PROJECT_ID.eq(projectId))
-                .and(pml.DELETED_AT.isNull())
-                .orderBy(pml.CREATED_AT.desc())
+                .from(PROJECT_MEETING_LINK)
+                .where(PROJECT_MEETING_LINK.MEETING_ID.eq(meetingId))
+                .and(PROJECT_MEETING_LINK.DELETED_AT.isNull())
+                .orderBy(PROJECT_MEETING_LINK.CREATED_AT.desc())
                 .fetch(mapper::toVoFromRecord);
 
-        log.info("jOOQ: Found {} project meeting links for projectId: {}", result.size(), projectId);
+        log.info("jOOQ: Found {} project meeting links for meetingId: {}", result.size(), meetingId);
         return result;
     }
 
@@ -95,42 +91,40 @@ public class ProjectMeetingLinkQueryRepositoryImpl implements ProjectMeetingLink
      * 프로젝트별 링크 목록 페이징 조회
      */
     @Override
-    public Page<ProjectMeetingLinkVo> findByProjectId(Long projectId, Pageable pageable) {
-        log.info("jOOQ: Finding project meeting links by projectId with pagination - projectId: {}", projectId);
-
-        var pml = PROJECT_MEETING_LINK.as("pml");
+    public Page<ProjectMeetingLinkVo> findByMeetingId(Long meetingId, Pageable pageable) {
+        log.info("jOOQ: Finding project meeting links by meetingId with pagination - meetingId: {}", meetingId);
 
         // 총 개수 조회
         int total = dsl.selectCount()
-                .from(pml)
-                .where(pml.PROJECT_ID.eq(projectId))
-                .and(pml.DELETED_AT.isNull())
+                .from(PROJECT_MEETING_LINK)
+                .where(PROJECT_MEETING_LINK.MEETING_ID.eq(meetingId))
+                .and(PROJECT_MEETING_LINK.DELETED_AT.isNull())
                 .fetchOne(0, int.class);
 
         if (total == 0) {
-            log.debug("jOOQ: No project meeting links found for projectId: {}", projectId);
+            log.debug("jOOQ: No project meeting links found for meetingId: {}", meetingId);
             return new PageImpl<>(List.of(), pageable, 0);
         }
 
         // 페이징된 데이터 조회
         List<ProjectMeetingLinkVo> links = dsl.select(
-                        pml.ID,
-                        pml.PROJECT_ID,
-                        pml.MEMBER_ID,
-                        pml.NAME,
-                        pml.ATTACHED_URL,
-                        pml.CREATED_AT,
-                        pml.UPDATED_AT
+                        PROJECT_MEETING_LINK.ID,
+                        PROJECT_MEETING_LINK.MEETING_ID,
+                        PROJECT_MEETING_LINK.MEMBER_ID,
+                        PROJECT_MEETING_LINK.NAME,
+                        PROJECT_MEETING_LINK.ATTACHED_URL,
+                        PROJECT_MEETING_LINK.CREATED_AT,
+                        PROJECT_MEETING_LINK.UPDATED_AT
                 )
-                .from(pml)
-                .where(pml.PROJECT_ID.eq(projectId))
-                .and(pml.DELETED_AT.isNull())
-                .orderBy(pml.CREATED_AT.desc())
+                .from(PROJECT_MEETING_LINK)
+                .where(PROJECT_MEETING_LINK.MEETING_ID.eq(meetingId))
+                .and(PROJECT_MEETING_LINK.DELETED_AT.isNull())
+                .orderBy(PROJECT_MEETING_LINK.CREATED_AT.desc())
                 .limit(pageable.getPageSize())
                 .offset((int) pageable.getOffset())
                 .fetch(mapper::toVoFromRecord);
 
-        log.info("jOOQ: Found {} project meeting links for projectId: {}", total, projectId);
+        log.info("jOOQ: Found {} project meeting links for meetingId: {}", total, meetingId);
         return new PageImpl<>(links, pageable, total);
     }
 
@@ -145,7 +139,7 @@ public class ProjectMeetingLinkQueryRepositoryImpl implements ProjectMeetingLink
 
         List<ProjectMeetingLinkVo> result = dsl.select(
                         pml.ID,
-                        pml.PROJECT_ID,
+                        pml.MEETING_ID,
                         pml.MEMBER_ID,
                         pml.NAME,
                         pml.ATTACHED_URL,
@@ -184,37 +178,33 @@ public class ProjectMeetingLinkQueryRepositoryImpl implements ProjectMeetingLink
     /**
      * 프로젝트별 링크 존재 여부 확인
      */
-    public boolean existsByProjectId(Long projectId) {
-        log.info("jOOQ: Checking if project meeting links exist by projectId - {}", projectId);
-
-        var pml = PROJECT_MEETING_LINK.as("pml");
+    public boolean existsByMeetingId(Long meetingId) {
+        log.info("jOOQ: Checking if project meeting links exist by meetingId - {}", meetingId);
 
         boolean exists = dsl.fetchExists(
                 dsl.selectOne()
-                        .from(pml)
-                        .where(pml.PROJECT_ID.eq(projectId))
-                        .and(pml.DELETED_AT.isNull())
+                        .from(PROJECT_MEETING_LINK)
+                        .where(PROJECT_MEETING_LINK.MEETING_ID.eq(meetingId))
+                        .and(PROJECT_MEETING_LINK.DELETED_AT.isNull())
         );
 
-        log.info("jOOQ: Project meeting links exist: {} - projectId: {}", exists, projectId);
+        log.info("jOOQ: Project meeting links exist: {} - meetingId: {}", exists, meetingId);
         return exists;
     }
 
     /**
      * 프로젝트별 링크 개수 조회
      */
-    public int countByProjectId(Long projectId) {
-        log.info("jOOQ: Counting project meeting links by projectId - {}", projectId);
-
-        var pml = PROJECT_MEETING_LINK.as("pml");
+    public int countByMeetingId(Long meetingId) {
+        log.info("jOOQ: Counting project meeting links by meetingId - {}", meetingId);
 
         int count = dsl.selectCount()
-                .from(pml)
-                .where(pml.PROJECT_ID.eq(projectId))
-                .and(pml.DELETED_AT.isNull())
+                .from(PROJECT_MEETING_LINK)
+                .where(PROJECT_MEETING_LINK.MEETING_ID.eq(meetingId))
+                .and(PROJECT_MEETING_LINK.DELETED_AT.isNull())
                 .fetchOne(0, int.class);
 
-        log.info("jOOQ: Found {} project meeting links for projectId: {}", count, projectId);
+        log.info("jOOQ: Found {} project meeting links for meetingId: {}", count, meetingId);
         return count;
     }
 }

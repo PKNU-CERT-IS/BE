@@ -79,7 +79,9 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                                         p.DEMO_URL,
                                         p.MAX_PARTICIPANTS_NUMBER,
                                         p.STARTED_AT,
-                                        p.ENDED_AT,
+                        p.ENDED_AT,
+                        p.DELETED_AT,
+                        val((String) null).as("result_submit_status"),
                                         // 현재 참여자 수 서브쿼리
                                         select(count())
                                                 .from(PROJECT_PARTICIPANT)
@@ -99,9 +101,6 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                                 .where(p.ID.eq(projectId))
                                 .and(p.DELETED_AT.isNull())
                                 .fetch()
-                                .stream()
-                                .map(record -> (Record) record)
-                                .toList()
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.toProjectVoFromRecordsWithAttachments(records));
 
@@ -154,6 +153,13 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.MAX_PARTICIPANTS_NUMBER,
                         p.STARTED_AT,
                         p.ENDED_AT,
+                        p.DELETED_AT,
+                        p.ENDED_AT,
+                        p.DELETED_AT,
+                        val((String) null).as("result_submit_status"),
+                        p.ENDED_AT,
+                        p.DELETED_AT,
+                        val((String) null).as("result_submit_status"),
                         // 현재 참여자 수 서브쿼리
                         select(count())
                                 .from(PROJECT_PARTICIPANT)
@@ -216,6 +222,8 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.MAX_PARTICIPANTS_NUMBER,
                         p.STARTED_AT,
                         p.ENDED_AT,
+                        p.DELETED_AT,
+                        val((String) null).as("result_submit_status"),
                         select(count())
                                 .from(PROJECT_PARTICIPANT)
                                 .where(PROJECT_PARTICIPANT.PROJECT_ID.eq(p.ID))
@@ -263,6 +271,8 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.MAX_PARTICIPANTS_NUMBER,
                         p.STARTED_AT,
                         p.ENDED_AT,
+                        p.DELETED_AT,
+                        val((String) null).as("result_submit_status"),
                         select(count())
                                 .from(PROJECT_PARTICIPANT)
                                 .where(PROJECT_PARTICIPANT.PROJECT_ID.eq(p.ID))
@@ -489,6 +499,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.SUBCATEGORY,
                         p.STARTED_AT,
                         p.ENDED_AT,
+                        p.DELETED_AT,
                         p.MEMBER_ID,
                         m.NAME,
                         m.GRADE,
@@ -499,6 +510,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.DEMO_URL,
                         p.CREATED_AT,
                         p.UPDATED_AT,
+                        val((String) null).as("result_submit_status"),
                         // 현재 참여자 수 서브쿼리
                         select(count())
                                 .from(PROJECT_PARTICIPANT)
@@ -541,6 +553,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.SUBCATEGORY,
                         p.STARTED_AT,
                         p.ENDED_AT,
+                        p.DELETED_AT,
                         p.MEMBER_ID,
                         m.NAME,
                         m.GRADE,
@@ -551,6 +564,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.MAX_PARTICIPANTS_NUMBER,
                         p.CREATED_AT,
                         p.UPDATED_AT,
+                        val((String) null).as("result_submit_status"),
                         // 현재 참여자 수 서브쿼리
                         select(count())
                                 .from(PROJECT_PARTICIPANT)
@@ -606,6 +620,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.SUBCATEGORY,
                         p.STARTED_AT,
                         p.ENDED_AT,
+                        p.DELETED_AT,
                         m.NAME.as("creator_name"),
                         m.GRADE,
                         p.MAX_PARTICIPANTS_NUMBER,
@@ -678,6 +693,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.SUBCATEGORY,
                         p.STARTED_AT,
                         p.ENDED_AT,
+                        p.DELETED_AT,
                         m.NAME.as("creator_name"),
                         m.GRADE,
                         p.MAX_PARTICIPANTS_NUMBER,

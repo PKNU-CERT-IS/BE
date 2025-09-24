@@ -1,8 +1,6 @@
 package org.certis.studyplatform.project.domain.repository;
 
-import org.certis.studyplatform.project.domain.vo.ProjectMeetingCreatedVo;
 import org.certis.studyplatform.project.domain.vo.ProjectMeetingLinkVo;
-import org.certis.studyplatform.project.domain.vo.ProjectMeetingVo;
 
 public interface ProjectMeetingLinkCommandRepository {
 
@@ -12,9 +10,14 @@ public interface ProjectMeetingLinkCommandRepository {
     void save(ProjectMeetingLinkVo linkVo);
 
     /**
-     * 프로젝트별 모든 링크 삭제
+     * 프로젝트별 모든 링크 삭제 (deprecated: 사용 자제)
      */
     void deleteByProjectId(Long projectId);
+
+    /**
+     * 회의록별 모든 링크 삭제
+     */
+    void deleteByMeetingId(Long meetingId);
 
     /**
      * 특정 링크 삭제

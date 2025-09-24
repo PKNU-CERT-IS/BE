@@ -10,7 +10,7 @@ import java.time.OffsetDateTime;
  */
 public record StudyMeetingLinkVo(
         Long id,
-        Long studyId,
+        Long meetingId,
         Long memberId,
         String name,
         String attachedUrl,
@@ -21,11 +21,11 @@ public record StudyMeetingLinkVo(
     /**
      * 생성용 정적 팩토리 메서드
      */
-    public static StudyMeetingLinkVo forCreation(Long studyId, Long memberId, String name, String attachedUrl) {
+    public static StudyMeetingLinkVo forCreation(Long meetingId, Long memberId, String name, String attachedUrl) {
         validate(name, attachedUrl);
         return new StudyMeetingLinkVo(
                 null, // ID는 생성 시 null
-                studyId,
+                meetingId,
                 memberId,
                 name,
                 attachedUrl,
@@ -41,7 +41,7 @@ public record StudyMeetingLinkVo(
         validate(name, attachedUrl);
         return new StudyMeetingLinkVo(
                 id,
-                null, // studyId는 변경하지 않음
+                null, // meetingId는 변경하지 않음
                 null, // memberId는 변경하지 않음
                 name,
                 attachedUrl,
@@ -50,16 +50,16 @@ public record StudyMeetingLinkVo(
         );
     }
 
-    public static StudyMeetingLinkVo of(Long id, Long studyId, Long memberId, String name, String attachedUrl, OffsetDateTime createdAt, OffsetDateTime updatedAt) {
+    public static StudyMeetingLinkVo of(Long id, Long meetingId, Long memberId, String name, String attachedUrl, OffsetDateTime createdAt, OffsetDateTime updatedAt) {
         validate(name, attachedUrl);
         return new StudyMeetingLinkVo(
                 id,
-                studyId,
+                meetingId,
                 memberId, // memberId는 변경하지 않음
                 name,
                 attachedUrl,
-                null, // createdAt은 변경하지 않음
-                null  // updatedAt은 Repository에서 설정
+                createdAt,
+                updatedAt
         );
 
     }

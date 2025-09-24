@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.certis.studyplatform.member.domain.MemberGrade;
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -45,6 +46,8 @@ public class StudySummaryResponseDto {
     private String semester;
 
     private String status;
+
+    private ResultSubmitStatus resultSubmitStatus;
 
     private boolean isParticipantable;
 

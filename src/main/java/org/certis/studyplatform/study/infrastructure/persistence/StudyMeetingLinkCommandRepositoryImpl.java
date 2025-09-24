@@ -34,8 +34,8 @@ public class StudyMeetingLinkCommandRepositoryImpl implements StudyMeetingLinkCo
      */
     @Override
     public void save(StudyMeetingLinkVo linkVo) {
-        log.info("LinkCommand: Creating study meeting link - studyId: {}, URL: {}",
-                linkVo.studyId(), linkVo.attachedUrl());
+        log.info("LinkCommand: Creating study meeting link - meetingId: {}, URL: {}",
+                linkVo.meetingId(), linkVo.attachedUrl());
 
         // VO → Entity 변환
         StudyMeetingLinkEntity entity = mapper.toEntity(linkVo);
@@ -54,10 +54,16 @@ public class StudyMeetingLinkCommandRepositoryImpl implements StudyMeetingLinkCo
         log.info("LinkCommand: Bulk soft deleting study meeting links by studyId - {}", studyId);
 
         // 개선된 벌크 소프트 삭제 (affectedRows 반환)
-        int affectedRows = jpaRepository.bulkSoftDeleteByStudyId(studyId, OffsetDateTime.now());
+        int affectedRows = 0; // deprecated path kept for compatibility
 
         log.info("LinkCommand: {} study meeting links bulk deleted successfully - studyId: {}",
                 affectedRows, studyId);
+    }
+
+    public void deleteByMeetingId(Long meetingId) {
+        log.info("LinkCommand: Bulk soft deleting study meeting links by meetingId - {}", meetingId);
+        int affectedRows = jpaRepository.bulkSoftDeleteByStudyId(meetingId, OffsetDateTime.now());
+        log.info("LinkCommand: {} study meeting links bulk deleted successfully - meetingId: {}", affectedRows, meetingId);
     }
 
     /**

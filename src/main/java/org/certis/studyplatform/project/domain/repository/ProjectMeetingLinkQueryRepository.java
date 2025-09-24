@@ -15,14 +15,14 @@ public interface ProjectMeetingLinkQueryRepository {
     Optional<ProjectMeetingLinkVo> findById(Long linkId);
 
     /**
-     * 프로젝트별 링크 목록 조회
+     * 회의록별 링크 목록 조회
      */
-    List<ProjectMeetingLinkVo> findByProjectId(Long projectId);
+    List<ProjectMeetingLinkVo> findByMeetingId(Long meetingId);
 
     /**
-     * 프로젝트별 링크 목록 페이징 조회
+     * 회의록별 링크 목록 페이징 조회
      */
-    Page<ProjectMeetingLinkVo> findByProjectId(Long projectId, Pageable pageable);
+    Page<ProjectMeetingLinkVo> findByMeetingId(Long meetingId, Pageable pageable);
 
     /**
      * 회원별 링크 목록 조회
@@ -35,12 +35,12 @@ public interface ProjectMeetingLinkQueryRepository {
     boolean existsById(Long linkId);
 
     /**
-     * 프로젝트별 링크 존재 여부 확인
+     * 회의록별 링크 존재 여부 확인
      */
-    boolean existsByProjectId(Long projectId);
+    boolean existsByMeetingId(Long meetingId);
 
     /**
-     * 프로젝트별 링크 개수 조회
+     * 회의록별 링크 개수 조회
      */
-    int countByProjectId(Long projectId);
+    int countByMeetingId(Long meetingId);
 }

@@ -22,7 +22,7 @@ public class StudyMeetingLinkInfrastructureMapper {
     public StudyMeetingLinkEntity toEntity(StudyMeetingLinkVo vo) {
         return StudyMeetingLinkEntity.builder()
                 .id(vo.id())
-                .studyId(vo.studyId())
+                .meetingId(vo.meetingId())
                 .memberId(vo.memberId())
                 .name(vo.name())
                 .attachedUrl(vo.attachedUrl())
@@ -37,7 +37,7 @@ public class StudyMeetingLinkInfrastructureMapper {
     public StudyMeetingLinkVo toVo(StudyMeetingLinkEntity entity) {
         return new StudyMeetingLinkVo(
                 entity.getId(),
-                entity.getStudyId(),
+                entity.getMeetingId(),
                 entity.getMemberId(),
                 entity.getName(),
                 entity.getAttachedUrl(),
@@ -54,7 +54,7 @@ public class StudyMeetingLinkInfrastructureMapper {
 
         return new StudyMeetingLinkVo(
                 record.get(pml.ID),
-                record.get(pml.STUDY_ID),
+                record.get(pml.field("meeting_id", Long.class)),
                 record.get(pml.MEMBER_ID),
                 record.get(pml.NAME),
                 record.get(pml.ATTACHED_URL),

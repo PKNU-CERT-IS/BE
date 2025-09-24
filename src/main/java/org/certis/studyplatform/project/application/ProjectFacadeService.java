@@ -285,10 +285,12 @@ public class ProjectFacadeService {
         // Command Service 호출 (VO 반환)
         ProjectVo endedVo = projectCommandService.endProject(command);
 
-        // VO → DTO 변환
-        ProjectDetailResponseDto responseDto = dtoMapper.toProjectDetailResponseDto(endedVo);
+        // 상태 확정 후 최신 데이터로 재조회하여 DTO 변환
+        GetProjectByIdQuery refreshQuery = queryMapper.toGetProjectByIdQuery(projectId);
+        ProjectVo refreshed = projectQueryService.getProjectById(refreshQuery);
+        ProjectDetailResponseDto responseDto = dtoMapper.toProjectDetailResponseDto(refreshed);
 
-        log.info("Facade: Project ended successfully - ID: {}", endedVo.id());
+        log.info("Facade: Project ended successfully - ID: {}", refreshed.id());
         return responseDto;
     }
 

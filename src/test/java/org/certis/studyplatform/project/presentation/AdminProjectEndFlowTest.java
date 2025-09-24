@@ -63,7 +63,7 @@ class AdminProjectEndFlowTest {
 
     @Test
     @WithMockUser(username = "staff", roles = {"STAFF"})
-    @DisplayName("관리자가 종료 승인 시 상태가 APPROVED 되고 ended_at이 갱신된다")
+    @DisplayName("관리자가 종료 승인 시 상태가 COMPLETED 되고 ended_at이 갱신된다")
     void approve_end_updates_status_and_ended_at() throws Exception {
         mockMvc.perform(post(ADMIN_BASE + "/end/approve")
                         .param("projectId", String.valueOf(PROJECT_ID))
@@ -73,7 +73,7 @@ class AdminProjectEndFlowTest {
 
         var rec = dsl.fetchOne("select result_submit_status, ended_at from project where id = ?", PROJECT_ID);
         assertThat(rec).isNotNull();
-        assertThat(rec.get("result_submit_status", String.class)).isEqualTo("APPROVED");
+        assertThat(rec.get("result_submit_status", String.class)).isEqualTo("COMPLETED");
         assertThat(rec.get("ended_at", java.time.OffsetDateTime.class)).isNotNull();
     }
 

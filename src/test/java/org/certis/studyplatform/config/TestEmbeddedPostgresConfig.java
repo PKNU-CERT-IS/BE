@@ -23,39 +23,71 @@ import java.io.IOException;
 public class TestEmbeddedPostgresConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(TestEmbeddedPostgresConfig.class);
+    private static volatile EmbeddedPostgres SHARED_INSTANCE;
+    private static final Object LOCK = new Object();
 
-    @Bean(destroyMethod = "close")
+    @Bean(destroyMethod = "")
     @Primary
     public EmbeddedPostgres embeddedPostgres() throws IOException {
-        logger.info("🐘 Starting Test Embedded PostgreSQL...");
-        
-        try {
-            // 고유한 데이터 디렉토리 생성 (타임스탬프 기반)
-            String dataDir = System.getProperty("java.io.tmpdir") + "/embedded-postgres-test-" + System.currentTimeMillis();
-            
-            EmbeddedPostgres postgres = EmbeddedPostgres.builder()
-                    .setPort(0) // 랜덤 포트 사용으로 충돌 방지
-                    .setCleanDataDirectory(true) // 테스트에서는 깨끗한 데이터 디렉토리 사용
-                    .setDataDirectory(dataDir)
-                    .start();
+        if (SHARED_INSTANCE != null) {
+            return SHARED_INSTANCE;
+        }
 
-            int actualPort = postgres.getPort();
-            logger.info("✅ Test Embedded PostgreSQL started successfully on port: {}", actualPort);
-            logger.info("📁 Data directory: {}", dataDir);
-            
-            // 연결 테스트
-            String jdbcUrl = postgres.getJdbcUrl("postgres", "postgres");
-            logger.info("📍 JDBC URL: {}", jdbcUrl);
-
-            return postgres;
-
-        } catch (Exception e) {
-            logger.error("❌ Failed to start Test Embedded PostgreSQL: {}", e.getMessage(), e);
-            // 더 구체적인 에러 정보 제공
-            if (e.getCause() != null) {
-                logger.error("❌ Root cause: {}", e.getCause().getMessage());
+        synchronized (LOCK) {
+            if (SHARED_INSTANCE != null) {
+                return SHARED_INSTANCE;
             }
-            throw new RuntimeException("Could not start embedded PostgreSQL for testing", e);
+
+            logger.info("🐘 Starting Test Embedded PostgreSQL (singleton, with retry)...");
+
+            int maxAttempts = 3;
+            Exception lastError = null;
+            for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+                try {
+                    String dataDir = System.getProperty("java.io.tmpdir") + "/embedded-postgres-test-" + System.currentTimeMillis();
+
+                    EmbeddedPostgres postgres = EmbeddedPostgres.builder()
+                            .setPort(0)
+                            .setCleanDataDirectory(true)
+                            .setDataDirectory(dataDir)
+                            .start();
+
+                    int actualPort = postgres.getPort();
+                    logger.info("✅ Embedded PostgreSQL started on port {} (attempt {}/{})", actualPort, attempt, maxAttempts);
+                    logger.info("📁 Data directory: {}", dataDir);
+
+                    // 연결 테스트 로그 (드라이버가 실제 연결 확인)
+                    String jdbcUrl = postgres.getJdbcUrl("postgres", "postgres");
+                    logger.info("📍 JDBC URL: {}", jdbcUrl);
+
+                    SHARED_INSTANCE = postgres;
+
+                    // 종료 훅 한 번만 등록
+                    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                        try {
+                            logger.info("🧹 Shutting down Embedded PostgreSQL");
+                            postgres.close();
+                        } catch (Exception ignore) {
+                        }
+                    }));
+
+                    return SHARED_INSTANCE;
+                } catch (Exception e) {
+                    lastError = e;
+                    logger.warn("⚠️ Failed to start Embedded PostgreSQL (attempt {}/{}): {}", attempt, maxAttempts, e.getMessage());
+                    try {
+                        Thread.sleep(1500L * attempt);
+                    } catch (InterruptedException ignored) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            }
+
+            logger.error("❌ Failed to start Embedded PostgreSQL after {} attempts", maxAttempts, lastError);
+            if (lastError != null && lastError.getCause() != null) {
+                logger.error("❌ Root cause: {}", lastError.getCause().getMessage());
+            }
+            throw new RuntimeException("Could not start embedded PostgreSQL for testing", lastError);
         }
     }
 

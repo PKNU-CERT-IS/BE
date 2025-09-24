@@ -33,6 +33,9 @@ public class Project implements Serializable {
     private String externalUrl;
     private String demoUrl;
     private String thumbnailUrl;
+    private OffsetDateTime resultSubmittedAt;
+    private String resultSubmitStatus;
+    private String resultAttachedUrl;
 
     public Project() {}
 
@@ -54,6 +57,9 @@ public class Project implements Serializable {
         this.externalUrl = value.externalUrl;
         this.demoUrl = value.demoUrl;
         this.thumbnailUrl = value.thumbnailUrl;
+        this.resultSubmittedAt = value.resultSubmittedAt;
+        this.resultSubmitStatus = value.resultSubmitStatus;
+        this.resultAttachedUrl = value.resultAttachedUrl;
     }
 
     public Project(
@@ -73,7 +79,10 @@ public class Project implements Serializable {
         String githubUrl,
         String externalUrl,
         String demoUrl,
-        String thumbnailUrl
+        String thumbnailUrl,
+        OffsetDateTime resultSubmittedAt,
+        String resultSubmitStatus,
+        String resultAttachedUrl
     ) {
         this.id = id;
         this.memberId = memberId;
@@ -92,6 +101,9 @@ public class Project implements Serializable {
         this.externalUrl = externalUrl;
         this.demoUrl = demoUrl;
         this.thumbnailUrl = thumbnailUrl;
+        this.resultSubmittedAt = resultSubmittedAt;
+        this.resultSubmitStatus = resultSubmitStatus;
+        this.resultAttachedUrl = resultAttachedUrl;
     }
 
     /**
@@ -332,6 +344,48 @@ public class Project implements Serializable {
         this.thumbnailUrl = thumbnailUrl;
     }
 
+    /**
+     * Getter for <code>public.project.result_submitted_at</code>.
+     */
+    public OffsetDateTime getResultSubmittedAt() {
+        return this.resultSubmittedAt;
+    }
+
+    /**
+     * Setter for <code>public.project.result_submitted_at</code>.
+     */
+    public void setResultSubmittedAt(OffsetDateTime resultSubmittedAt) {
+        this.resultSubmittedAt = resultSubmittedAt;
+    }
+
+    /**
+     * Getter for <code>public.project.result_submit_status</code>.
+     */
+    public String getResultSubmitStatus() {
+        return this.resultSubmitStatus;
+    }
+
+    /**
+     * Setter for <code>public.project.result_submit_status</code>.
+     */
+    public void setResultSubmitStatus(String resultSubmitStatus) {
+        this.resultSubmitStatus = resultSubmitStatus;
+    }
+
+    /**
+     * Getter for <code>public.project.result_attached_url</code>.
+     */
+    public String getResultAttachedUrl() {
+        return this.resultAttachedUrl;
+    }
+
+    /**
+     * Setter for <code>public.project.result_attached_url</code>.
+     */
+    public void setResultAttachedUrl(String resultAttachedUrl) {
+        this.resultAttachedUrl = resultAttachedUrl;
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
@@ -443,6 +497,24 @@ public class Project implements Serializable {
         }
         else if (!this.thumbnailUrl.equals(other.thumbnailUrl))
             return false;
+        if (this.resultSubmittedAt == null) {
+            if (other.resultSubmittedAt != null)
+                return false;
+        }
+        else if (!this.resultSubmittedAt.equals(other.resultSubmittedAt))
+            return false;
+        if (this.resultSubmitStatus == null) {
+            if (other.resultSubmitStatus != null)
+                return false;
+        }
+        else if (!this.resultSubmitStatus.equals(other.resultSubmitStatus))
+            return false;
+        if (this.resultAttachedUrl == null) {
+            if (other.resultAttachedUrl != null)
+                return false;
+        }
+        else if (!this.resultAttachedUrl.equals(other.resultAttachedUrl))
+            return false;
         return true;
     }
 
@@ -467,6 +539,9 @@ public class Project implements Serializable {
         result = prime * result + ((this.externalUrl == null) ? 0 : this.externalUrl.hashCode());
         result = prime * result + ((this.demoUrl == null) ? 0 : this.demoUrl.hashCode());
         result = prime * result + ((this.thumbnailUrl == null) ? 0 : this.thumbnailUrl.hashCode());
+        result = prime * result + ((this.resultSubmittedAt == null) ? 0 : this.resultSubmittedAt.hashCode());
+        result = prime * result + ((this.resultSubmitStatus == null) ? 0 : this.resultSubmitStatus.hashCode());
+        result = prime * result + ((this.resultAttachedUrl == null) ? 0 : this.resultAttachedUrl.hashCode());
         return result;
     }
 
@@ -491,6 +566,9 @@ public class Project implements Serializable {
         sb.append(", ").append(externalUrl);
         sb.append(", ").append(demoUrl);
         sb.append(", ").append(thumbnailUrl);
+        sb.append(", ").append(resultSubmittedAt);
+        sb.append(", ").append(resultSubmitStatus);
+        sb.append(", ").append(resultAttachedUrl);
 
         sb.append(")");
         return sb.toString();

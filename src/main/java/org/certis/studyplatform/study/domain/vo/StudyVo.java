@@ -4,6 +4,7 @@ import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.study.domain.StudyStatus;
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 
 import java.time.OffsetDateTime;
 import java.util.Collections;
@@ -32,6 +33,7 @@ public record StudyVo(
         MemberGrade creatorGrade,
         String semester,
         String status,
+        ResultSubmitStatus resultSubmitStatus,
         Integer maxParticipants,
         Integer currentParticipants,
         boolean isParticipantable,
@@ -120,6 +122,7 @@ public record StudyVo(
             MemberGrade creatorGrade,
             String semester,
             String status,
+            ResultSubmitStatus resultSubmitStatus,
             Integer maxParticipants,
             Integer currentParticipants,
             boolean isParticipantable,
@@ -129,12 +132,39 @@ public record StudyVo(
                 id, title, description, content, category, subCategory,
                 startDate, endDate, createdAt, updatedAt,
                 creatorId, creatorName, creatorGrade,
-                semester, status,
+                semester, status, resultSubmitStatus,
                 maxParticipants, currentParticipants,
                 isParticipantable,
                 attached,
                 Collections.emptyList(), Collections.emptyList()
         );
+    }
+
+    // Backward-compatible factory without resultSubmitStatus used in legacy tests
+    public static StudyVo of(
+            Long id,
+            String title,
+            String description,
+            String content,
+            String category,
+            String subCategory,
+            OffsetDateTime startDate,
+            OffsetDateTime endDate,
+            OffsetDateTime createdAt,
+            OffsetDateTime updatedAt,
+            Long creatorId,
+            String creatorName,
+            MemberGrade creatorGrade,
+            String semester,
+            String status,
+            Integer maxParticipants,
+            Integer currentParticipants,
+            boolean isParticipantable,
+            List<StudyAttachedVo> attached
+    ) {
+        return of(id, title, description, content, category, subCategory, startDate, endDate,
+                createdAt, updatedAt, creatorId, creatorName, creatorGrade, semester, status, null,
+                maxParticipants, currentParticipants, isParticipantable, attached);
     }
 
     /**
@@ -161,6 +191,7 @@ public record StudyVo(
                 creatorId, creatorName, creatorGrade,
                 calculateSemester(endDate), // semester 계산
                 calculateStatus(endDate), // status 계산
+                null,
                 maxParticipants, 0, // 초기 참가자는 0명
                 true, // 새로 생성된 스터디는 참여 가능
                 Collections.emptyList(),
@@ -199,6 +230,7 @@ public record StudyVo(
                 existing.creatorGrade(), // 기존 creatorGrade 유지
                 calculateSemester(newEndDate), // semester 재계산
                 calculateStatus(newEndDate), // status 재계산
+                existing.resultSubmitStatus(),
                 maxParticipants != null ? maxParticipants : existing.maxParticipants(),
                 existing.currentParticipants(),
                 existing.isParticipantable(), // 기존 참여 가능 여부 유지
@@ -207,6 +239,35 @@ public record StudyVo(
                 existing.participantVoList() // 기존 participantVoList 유지
 
         );
+    }
+
+    // Backward-compatible auxiliary constructor for tests using new StudyVo(...) without resultSubmitStatus
+    public StudyVo(
+            Long id,
+            String title,
+            String description,
+            String content,
+            String category,
+            String subCategory,
+            OffsetDateTime startDate,
+            OffsetDateTime endDate,
+            OffsetDateTime createdAt,
+            OffsetDateTime updatedAt,
+            Long creatorId,
+            String creatorName,
+            MemberGrade creatorGrade,
+            String semester,
+            String status,
+            Integer maxParticipants,
+            Integer currentParticipants,
+            boolean isParticipantable,
+            List<StudyAttachedVo> attached,
+            List<StudyMeetingSummaryVo> summaryVoList,
+            List<StudyParticipantVo> participantVoList
+    ) {
+        this(id, title, description, content, category, subCategory, startDate, endDate,
+                createdAt, updatedAt, creatorId, creatorName, creatorGrade, semester, status, null,
+                maxParticipants, currentParticipants, isParticipantable, attached, summaryVoList, participantVoList);
     }
 
     // ================================================================

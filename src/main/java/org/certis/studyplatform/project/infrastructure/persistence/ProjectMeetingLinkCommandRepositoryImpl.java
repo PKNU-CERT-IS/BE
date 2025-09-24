@@ -34,8 +34,8 @@ public class ProjectMeetingLinkCommandRepositoryImpl implements ProjectMeetingLi
      */
     @Override
     public void save(ProjectMeetingLinkVo linkVo) {
-        log.info("LinkCommand: Creating project meeting link - projectId: {}, URL: {}",
-                linkVo.projectId(), linkVo.attachedUrl());
+        log.info("LinkCommand: Creating project meeting link - meetingId: {}, URL: {}",
+                linkVo.meetingId(), linkVo.attachedUrl());
 
         // VO → Entity 변환
         ProjectMeetingLinkEntity entity = mapper.toEntity(linkVo);
@@ -54,10 +54,22 @@ public class ProjectMeetingLinkCommandRepositoryImpl implements ProjectMeetingLi
         log.info("LinkCommand: Bulk soft deleting project meeting links by projectId - {}", projectId);
 
         // 개선된 벌크 소프트 삭제 (affectedRows 반환)
-        int affectedRows = jpaRepository.bulkSoftDeleteByProjectId(projectId, OffsetDateTime.now());
+        int affectedRows = 0; // deprecated: project-scoped delete not used anymore
 
         log.info("LinkCommand: {} project meeting links bulk deleted successfully - projectId: {}",
                 affectedRows, projectId);
+    }
+
+    /**
+     * 회의록별 모든 링크 소프트 삭제 - 신규 메서드
+     */
+    public void deleteByMeetingId(Long meetingId) {
+        log.info("LinkCommand: Bulk soft deleting project meeting links by meetingId - {}", meetingId);
+
+        int affectedRows = jpaRepository.bulkSoftDeleteByMeetingId(meetingId, OffsetDateTime.now());
+
+        log.info("LinkCommand: {} project meeting links bulk deleted successfully - meetingId: {}",
+                affectedRows, meetingId);
     }
 
     /**
