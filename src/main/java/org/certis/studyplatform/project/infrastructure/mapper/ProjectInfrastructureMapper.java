@@ -7,6 +7,7 @@ import org.certis.studyplatform.project.infrastructure.persistence.entity.Projec
 import org.jooq.Record;
 import org.springframework.stereotype.Component;
 
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 import java.time.OffsetDateTime;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -57,6 +58,8 @@ public class ProjectInfrastructureMapper {
                 .thumbnailUrl(vo.thumbnailUrl())
                 .startedAt(vo.startDate()) // startDate → startedAt
                 .endedAt(vo.endDate()) // endDate → endedAt
+                // 기본 상태값 설정 (NOT NULL 제약 대응)
+                .resultSubmitStatus(ResultSubmitStatus.READY)
                 .build();
     }
 
@@ -167,7 +170,10 @@ public class ProjectInfrastructureMapper {
 
         OffsetDateTime endedAt = record.get(PROJECT.ENDED_AT);
         OffsetDateTime deletedAt = record.get(PROJECT.DELETED_AT);
-        org.certis.studyplatform.shared.domain.ResultSubmitStatus submitStatus = record.get("result_submit_status", org.certis.studyplatform.shared.domain.ResultSubmitStatus.class);
+        ResultSubmitStatus submitStatus = record.get("result_submit_status", ResultSubmitStatus.class);
+        if (submitStatus == null) {
+            submitStatus = ResultSubmitStatus.READY;
+        }
         
         return ProjectVo.of(
                 record.get(PROJECT.ID),
@@ -212,7 +218,7 @@ public class ProjectInfrastructureMapper {
                 record.get(PROJECT.STARTED_AT),
                 record.get(PROJECT.ENDED_AT),
                 record.get(PROJECT.DELETED_AT),
-                record.get("result_submit_status", org.certis.studyplatform.shared.domain.ResultSubmitStatus.class)
+                record.get("result_submit_status", ResultSubmitStatus.class)
         );
 
         // 참여 가능 여부 계산
@@ -258,7 +264,8 @@ public class ProjectInfrastructureMapper {
                 record.get(PROJECT.THUMBNAIL_URL),
                 record.get(PROJECT.DEMO_URL), // demoUrl
                 record.get(PROJECT.MAX_PARTICIPANTS_NUMBER), // maxParticipantNumber
-                record.get("current_participants", Integer.class) // currentParticipantNumber
+                record.get("current_participants", Integer.class), // currentParticipantNumber
+                record.get("result_submit_status", ResultSubmitStatus.class)
         );
     }
 
@@ -313,7 +320,10 @@ public class ProjectInfrastructureMapper {
 
         OffsetDateTime endedAt = firstRecord.get(PROJECT.ENDED_AT);
         OffsetDateTime deletedAt = firstRecord.get(PROJECT.DELETED_AT);
-        org.certis.studyplatform.shared.domain.ResultSubmitStatus submitStatus = firstRecord.get("result_submit_status", org.certis.studyplatform.shared.domain.ResultSubmitStatus.class);
+        ResultSubmitStatus submitStatus = firstRecord.get("result_submit_status", ResultSubmitStatus.class);
+        if (submitStatus == null) {
+            submitStatus = ResultSubmitStatus.READY;
+        }
         
         return ProjectVo.of(
                 firstRecord.get(PROJECT.ID),
@@ -384,7 +394,10 @@ public class ProjectInfrastructureMapper {
 
         OffsetDateTime endedAt = record.get(PROJECT.ENDED_AT);
         OffsetDateTime deletedAt = record.get(PROJECT.DELETED_AT);
-        org.certis.studyplatform.shared.domain.ResultSubmitStatus submitStatus = record.get("result_submit_status", org.certis.studyplatform.shared.domain.ResultSubmitStatus.class);
+        ResultSubmitStatus submitStatus = record.get("result_submit_status", ResultSubmitStatus.class);
+        if (submitStatus == null) {
+            submitStatus = ResultSubmitStatus.READY;
+        }
         
         return ProjectVo.of(
                 record.get(PROJECT.ID),
@@ -464,13 +477,13 @@ public class ProjectInfrastructureMapper {
      */
     private String calculateStatusString(OffsetDateTime startDate, OffsetDateTime endDate,
                                          OffsetDateTime deletedAt,
-                                         org.certis.studyplatform.shared.domain.ResultSubmitStatus resultSubmitStatus) {
+                                         ResultSubmitStatus resultSubmitStatus) {
         if (deletedAt != null) {
             return ProjectStatus.REJECTED.name();
         }
         OffsetDateTime now = OffsetDateTime.now();
         // 종료 승인 또는 종료 시간이 현재와 같거나 이전이면 완료 처리
-        if (resultSubmitStatus == org.certis.studyplatform.shared.domain.ResultSubmitStatus.COMPLETED) {
+        if (resultSubmitStatus == ResultSubmitStatus.COMPLETED) {
             return ProjectStatus.COMPLETED.name();
         }
         if (endDate != null && (now.isAfter(endDate) || now.isEqual(endDate))) {

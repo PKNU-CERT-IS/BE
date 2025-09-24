@@ -6,6 +6,7 @@ import org.certis.studyplatform.project.presentation.dto.response.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Component;
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 
 import java.time.OffsetDateTime;
 import java.util.Collections;
@@ -46,7 +47,7 @@ public class ProjectApplicationDtoMapper {
                 .projectCreatorGrade(vo.creatorGrade())
                 .semester(vo.semester())
                 .status(vo.status() != null ? vo.status().toString() : null)
-                .resultSubmitStatus(vo.resultSubmitStatus())
+                .resultSubmitStatus(vo.resultSubmitStatus() != null ? vo.resultSubmitStatus() : ResultSubmitStatus.READY)
                 .githubUrl(vo.githubUrl())
                 .externalUrl(vo.externalUrl() != null ? 
                     ExternalUrlResponseDto.builder()
@@ -83,7 +84,7 @@ public class ProjectApplicationDtoMapper {
                 .projectCreatorGrade(vo.projectCreatorGrade())
                 .semester(vo.semester())
                 .status(vo.status())
-                .resultSubmitStatus(null)
+                .resultSubmitStatus(vo.resultSubmitStatus() != null ? vo.resultSubmitStatus() : ResultSubmitStatus.READY)
                 .isParticipantable(vo.isParticipantable())
                 .githubUrl(vo.githubUrl())
                 .externalUrl(vo.externalUrl() != null ? 
