@@ -8,14 +8,15 @@ import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.vo.GracePeriodVo;
 import org.certis.studyplatform.member.domain.vo.MemberIdVo;
 import org.certis.studyplatform.member.domain.vo.MemberVo;
-import org.certis.studyplatform.member.domain.vo.MemberSearchForAdminVo;
+// import removed: MemberSearchForAdminVo not used
 import org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository;
+import org.certis.studyplatform.project.domain.repository.ProjectQueryRepository;
 import org.certis.studyplatform.project.domain.vo.ProjectParticipantSummaryVo;
 import org.certis.studyplatform.shared.util.GracePeriodCalculator;
 import org.certis.studyplatform.study.domain.repository.StudyParticipantQueryRepository;
+import org.certis.studyplatform.study.domain.repository.StudyQueryRepository;
 import org.certis.studyplatform.study.domain.vo.StudyParticipantSummaryVo;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+// unused imports removed
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,7 +39,10 @@ public class GracePeriodExtensionDomainService {
     private final MemberCommandRepository memberCommandRepository;
     private final StudyParticipantQueryRepository studyParticipantQueryRepository;
     private final ProjectParticipantQueryRepository projectParticipantQueryRepository;
+    private final StudyQueryRepository studyQueryRepository;
+    private final ProjectQueryRepository projectQueryRepository;
     private final MemberQueryRepository memberQueryRepository;
+
 
     /**
      * 스터디 승인 시 모든 참가자의 유예기간 연장
@@ -57,11 +61,6 @@ public class GracePeriodExtensionDomainService {
         for (StudyParticipantSummaryVo participant : participants) {
             log.info("Domain: Participant - memberId: {}, status: {}", participant.memberId(), participant.status());
         }
-        
-        if (participants.isEmpty()) {
-            log.warn("Domain: No participants found for study - studyId: {}", studyId);
-            return;
-        }
 
         // 2. 새로운 유예기간 계산
         OffsetDateTime newGracePeriod = GracePeriodCalculator.calculateGracePeriodForActivity(
@@ -74,16 +73,35 @@ public class GracePeriodExtensionDomainService {
         }
 
         // 3. UPSOLVER 참가자에게만 유예기간 업데이트
-        for (StudyParticipantSummaryVo participant : participants) {
-            boolean isUpsolverMember = isUpsolver(participant.memberId());
-            log.info("Domain: Member {} is Upsolver: {}", participant.memberId(), isUpsolverMember);
-            if (isUpsolverMember) {
-                log.info("Domain: About to update grace period for memberId={}, newGracePeriod={}", 
-                    participant.memberId(), newGracePeriod);
-                updateMemberGracePeriod(participant.memberId(), newGracePeriod);
-                log.info("Domain: Completed grace period update for memberId={}", participant.memberId());
-            } else {
-                log.debug("Domain: Skipping grace period update for non-Upsolver memberId={}", participant.memberId());
+        if (!participants.isEmpty()) {
+            for (StudyParticipantSummaryVo participant : participants) {
+                boolean isUpsolverMember = isUpsolver(participant.memberId());
+                log.info("Domain: Member {} is Upsolver: {}", participant.memberId(), isUpsolverMember);
+                if (isUpsolverMember) {
+                    log.info("Domain: About to update grace period for memberId={}, newGracePeriod={}",
+                        participant.memberId(), newGracePeriod);
+                    updateMemberGracePeriod(participant.memberId(), newGracePeriod);
+                    log.info("Domain: Completed grace period update for memberId={}", participant.memberId());
+                } else {
+                    log.debug("Domain: Skipping grace period update for non-Upsolver memberId={}", participant.memberId());
+                }
+            }
+        } else {
+            // 참가자가 아직 없는 경우: 스터디 생성자(creator)에게 유예기간 적용 (UPSOLVER 한정)
+            log.warn("Domain: No participants found for study - studyId: {}. Falling back to creator.", studyId);
+            try {
+                studyQueryRepository.findById(studyId).ifPresent(studyVo -> {
+                    Long creatorId = studyVo.creatorId();
+                    log.info("Domain: Found study creator - memberId: {} for studyId: {}", creatorId, studyId);
+                    if (creatorId != null && isUpsolver(creatorId)) {
+                        log.info("Domain: Updating grace period for creator memberId={}, newGracePeriod={}", creatorId, newGracePeriod);
+                        updateMemberGracePeriod(creatorId, newGracePeriod);
+                    } else {
+                        log.debug("Domain: Creator is null or not UPSOLVER. Skipping grace period update.");
+                    }
+                });
+            } catch (Exception e) {
+                log.warn("Domain: Failed to apply grace period fallback to creator for studyId={} due to error: {}", studyId, e.getMessage(), e);
             }
         }
 
@@ -104,11 +122,6 @@ public class GracePeriodExtensionDomainService {
         // 1. 프로젝트 참가자들 조회 (페이징 없이 모든 참가자)
         List<ProjectParticipantSummaryVo> participants = getAllProjectParticipants(projectId);
         
-        if (participants.isEmpty()) {
-            log.warn("Domain: No participants found for project - projectId: {}", projectId);
-            return;
-        }
-
         // 2. 새로운 유예기간 계산
         OffsetDateTime newGracePeriod = GracePeriodCalculator.calculateGracePeriodForActivity(
             projectStartDate, projectEndDate
@@ -120,11 +133,30 @@ public class GracePeriodExtensionDomainService {
         }
 
         // 3. UPSOLVER 참가자에게만 유예기간 업데이트
-        for (ProjectParticipantSummaryVo participant : participants) {
-            if (isUpsolver(participant.memberId())) {
-                updateMemberGracePeriod(participant.memberId(), newGracePeriod);
-            } else {
-                log.debug("Domain: Skipping grace period update for non-Upsolver memberId={}", participant.memberId());
+        if (!participants.isEmpty()) {
+            for (ProjectParticipantSummaryVo participant : participants) {
+                if (isUpsolver(participant.memberId())) {
+                    updateMemberGracePeriod(participant.memberId(), newGracePeriod);
+                } else {
+                    log.debug("Domain: Skipping grace period update for non-Upsolver memberId={}", participant.memberId());
+                }
+            }
+        } else {
+            // 참가자가 아직 없는 경우: 프로젝트 생성자(creator)에게 유예기간 적용 (UPSOLVER 한정)
+            log.warn("Domain: No participants found for project - projectId: {}. Falling back to creator.", projectId);
+            try {
+                projectQueryRepository.findById(projectId).ifPresent(projectVo -> {
+                    Long creatorId = projectVo.creatorId();
+                    log.info("Domain: Found project creator - memberId: {} for projectId: {}", creatorId, projectId);
+                    if (creatorId != null && isUpsolver(creatorId)) {
+                        log.info("Domain: Updating grace period for project creator memberId={}, newGracePeriod={}", creatorId, newGracePeriod);
+                        updateMemberGracePeriod(creatorId, newGracePeriod);
+                    } else {
+                        log.debug("Domain: Project creator is null or not UPSOLVER. Skipping grace period update.");
+                    }
+                });
+            } catch (Exception e) {
+                log.warn("Domain: Failed to apply grace period fallback to project creator for projectId={} due to error: {}", projectId, e.getMessage(), e);
             }
         }
 

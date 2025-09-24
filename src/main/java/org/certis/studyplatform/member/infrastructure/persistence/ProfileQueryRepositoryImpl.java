@@ -165,7 +165,7 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
 
             // 개별 스터디 조회
             List<StudyVo> studies = studyIds.stream()
-                    .map(studyId -> studyQueryRepository.findById(studyId))
+                    .map(studyId -> studyQueryRepository.findByIdAndDeletedAtIsNull(studyId))
                     .filter(Optional::isPresent)
                     .map(Optional::get)
                     .toList();
@@ -204,7 +204,7 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
 
             // 개별 프로젝트 조회
             List<ProjectVo> projects = projectIds.stream()
-                    .map(projectId -> projectQueryRepository.findById(projectId))
+                    .map(projectId -> projectQueryRepository.findByIdAndDeletedAtIsNull(projectId))
                     .filter(Optional::isPresent)
                     .map(Optional::get)
                     .toList();
