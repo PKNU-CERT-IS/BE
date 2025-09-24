@@ -29,7 +29,11 @@ import org.certis.studyplatform.study.domain.vo.StudyVo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+
 import org.springframework.stereotype.Service;
+
+import org.certis.studyplatform.study.domain.repository.StudyParticipantQueryRepository;
+import org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,6 +64,8 @@ public class BlogDomainService {
     private final StudyDomainService studyDomainService;
     private final ProjectDomainService projectDomainService;
     private final BlogViewDomainService blogViewDomainService;
+    private final StudyParticipantQueryRepository studyParticipantQueryRepository;
+    private final ProjectParticipantQueryRepository projectParticipantQueryRepository;
 
     // ================================================================
     // COMMAND OPERATIONS
@@ -295,6 +301,70 @@ public class BlogDomainService {
 
         } catch (Exception e) {
             log.error("Domain: Error retrieving completed blog reference list for member: {}", memberId, e);
+            return List.of();
+        }
+    }
+
+
+    /**
+     * 특정 멤버가 참여(승인)한 Study/Project를 참조 대상으로 조회
+     */
+    public List<BlogEnableReferenceVo> getBlogReferenceByParticipatedMember(Long memberId) {
+        log.info("Domain: Getting blog reference list for participated items by member - {}", memberId);
+
+        List<BlogEnableReferenceVo> referenceList = new ArrayList<>();
+
+        try {
+            // 참여한 Study 목록 조회 (APPROVED 상태만)
+            var studyParticipants = studyParticipantQueryRepository
+                    .findByMemberId(memberId, Pageable.unpaged())
+                    .getContent();
+
+            List<BlogEnableReferenceVo> studyReferences = studyParticipants.stream()
+                    .filter(p -> p.status() == org.certis.studyplatform.study.domain.StudyParticipantStatus.APPROVED)
+                    .map(p -> BlogEnableReferenceVo.of(
+                            ArticleReferenceType.STUDY,
+                            p.studyId(),
+                            p.studyTitle()
+                    ))
+                    .toList();
+
+            // 참여한 Project 목록 조회 (APPROVED 상태만)
+            var projectParticipants = projectParticipantQueryRepository
+                    .findByMemberId(memberId, Pageable.unpaged())
+                    .getContent();
+
+            List<BlogEnableReferenceVo> projectReferences = projectParticipants.stream()
+                    .filter(p -> p.status() == org.certis.studyplatform.project.domain.ProjectParticipantStatus.APPROVED)
+                    .map(p -> BlogEnableReferenceVo.of(
+                            ArticleReferenceType.PROJECT,
+                            p.projectId(),
+                            p.projectTitle()
+                    ))
+                    .toList();
+
+            referenceList.addAll(studyReferences);
+            referenceList.addAll(projectReferences);
+
+            // 중복 제거 및 정렬 (type, title)
+            referenceList = referenceList.stream()
+                    .distinct()
+                    .sorted((a, b) -> {
+                        int typeComparison = a.referenceType().compareTo(b.referenceType());
+                        if (typeComparison != 0) {
+                            return typeComparison;
+                        }
+                        return a.title().compareTo(b.title());
+                    })
+                    .toList();
+
+            log.info("Domain: Participated member's blog reference list retrieved - Member: {}, Studies+Projects: {}",
+                    memberId, referenceList.size());
+
+            return referenceList;
+
+        } catch (Exception e) {
+            log.error("Domain: Error retrieving participated blog reference list for member: {}", memberId, e);
             return List.of();
         }
     }

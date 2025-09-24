@@ -82,8 +82,8 @@ public class BlogQueryService {
     public List<BlogEnableReferenceVo> getBlogReference(Long memberId) {
         log.info("Query: Getting blog reference list");
 
-        // Domain Service로 전달
-        List<BlogEnableReferenceVo> blogReferenceList = blogDomainService.getBlogReferenceByCompletedMember(memberId);
+        // Domain Service로 전달: 참여한 스터디/프로젝트 기준으로 변경
+        List<BlogEnableReferenceVo> blogReferenceList = blogDomainService.getBlogReferenceByParticipatedMember(memberId);
 
         log.info("Query: Blog reference list retrieved - found {} items", blogReferenceList.size());
         return blogReferenceList;

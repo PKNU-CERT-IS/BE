@@ -355,8 +355,15 @@ class BlogControllerTest {
     @DisplayName("🔗 작성 가능한 참조 목록 조회 - 블로그 작성 준비")
     void getBlogReference_AvailableReferences() throws Exception {
         // Given: 인증된 사용자로 설정하고 작성 가능한 스터디/프로젝트가 존재함
-        setupAuthentication(TEST_MEMBER_ID, TEST_MEMBER_NAME);
-        // setupTestData에서 이미 스터디 생성됨
+        setupAuthentication(TEST_MEMBER_2_ID, TEST_MEMBER_2_NAME);
+        // TEST_MEMBER_2가 TEST_STUDY에 참가(승인)한 것으로 설정
+        dsl.insertInto(STUDY_PARTICIPANT)
+                .set(STUDY_PARTICIPANT.STUDY_ID, TEST_STUDY_ID)
+                .set(STUDY_PARTICIPANT.MEMBER_ID, TEST_MEMBER_2_ID)
+                .set(STUDY_PARTICIPANT.STATUS, "APPROVED")
+                .set(STUDY_PARTICIPANT.CREATED_AT, OffsetDateTime.now())
+                .set(STUDY_PARTICIPANT.UPDATED_AT, OffsetDateTime.now())
+                .execute();
 
         // When: 작성 가능한 참조 목록 조회 API 호출
         mockMvc.perform(get("/api/v1/blog/reference"))
@@ -365,7 +372,8 @@ class BlogControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("블로그 글을 성공적으로 조회했습니다"))
-                .andExpect(jsonPath("$.data").isArray());
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data[0].referenceTitle").exists());
 
     }
 
@@ -712,6 +720,15 @@ class BlogControllerTest {
                 .andExpect(jsonPath("$.data.id").value(e2eStudyId))
                 .andExpect(jsonPath("$.data.status").value("COMPLETED"));
 
+        // And: 생성자 본인도 참가자로 승인 처리 (참여 기준으로 변경됨)
+        dsl.insertInto(STUDY_PARTICIPANT)
+                .set(STUDY_PARTICIPANT.STUDY_ID, e2eStudyId)
+                .set(STUDY_PARTICIPANT.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY_PARTICIPANT.STATUS, "APPROVED")
+                .set(STUDY_PARTICIPANT.CREATED_AT, now)
+                .set(STUDY_PARTICIPANT.UPDATED_AT, now)
+                .execute();
+
         // Then: 블로그 참조 목록에서 해당 스터디가 포함되고 참조 필드가 노출됨
         var mvcResult = mockMvc.perform(get("/api/v1/blog/reference"))
                 .andDo(print())
@@ -776,6 +793,15 @@ class BlogControllerTest {
         dsl.update(PROJECT)
                 .set(PROJECT.ENDED_AT, OffsetDateTime.now().minusSeconds(2))
                 .where(PROJECT.ID.eq(e2eProjectId))
+                .execute();
+
+        // And: 생성자 본인도 참가자로 승인 처리 (참여 기준으로 변경됨)
+        dsl.insertInto(PROJECT_PARTICIPANT)
+                .set(PROJECT_PARTICIPANT.PROJECT_ID, e2eProjectId)
+                .set(PROJECT_PARTICIPANT.MEMBER_ID, TEST_MEMBER_ID)
+                .set(PROJECT_PARTICIPANT.STATUS, "APPROVED")
+                .set(PROJECT_PARTICIPANT.CREATED_AT, now)
+                .set(PROJECT_PARTICIPANT.UPDATED_AT, now)
                 .execute();
 
         // Then: 블로그 참조 목록에서 해당 프로젝트가 포함되고 참조 필드가 노출됨
