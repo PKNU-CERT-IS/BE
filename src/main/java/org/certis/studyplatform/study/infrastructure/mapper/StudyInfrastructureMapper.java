@@ -11,6 +11,7 @@ import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -56,6 +57,8 @@ public class StudyInfrastructureMapper {
                 .maxParticipantsNumber(vo.maxParticipants())
                 .startedAt(vo.startDate())
                 .endedAt(vo.endDate())
+                // 기본 상태값 설정 (NOT NULL 제약 대응)
+                .resultSubmitStatus(ResultSubmitStatus.READY)
                 .build();
     }
 
@@ -143,9 +146,12 @@ public class StudyInfrastructureMapper {
         OffsetDateTime deletedAt = firstRecord.field("deleted_at") != null
                 ? firstRecord.get("deleted_at", OffsetDateTime.class)
                 : null;
-        org.certis.studyplatform.shared.domain.ResultSubmitStatus submitStatus = firstRecord.field("result_submit_status") != null
-                ? firstRecord.get("result_submit_status", org.certis.studyplatform.shared.domain.ResultSubmitStatus.class)
+        ResultSubmitStatus submitStatus = firstRecord.field("result_submit_status") != null
+                ? firstRecord.get("result_submit_status", ResultSubmitStatus.class)
                 : null;
+        if (submitStatus == null) {
+            submitStatus = ResultSubmitStatus.READY;
+        }
         
         return new StudyVo(
                 firstRecord.get("id", Long.class),
@@ -199,9 +205,13 @@ public class StudyInfrastructureMapper {
         OffsetDateTime deletedAt = firstRecord.field("deleted_at") != null
                 ? firstRecord.get("deleted_at", OffsetDateTime.class)
                 : null;
-        org.certis.studyplatform.shared.domain.ResultSubmitStatus submitStatus = firstRecord.field("result_submit_status") != null
-                ? firstRecord.get("result_submit_status", org.certis.studyplatform.shared.domain.ResultSubmitStatus.class)
-                : null;
+        ResultSubmitStatus submitStatus;
+        if (firstRecord.field("result_submit_status") != null) {
+            String statusString = firstRecord.get("result_submit_status", String.class);
+            submitStatus = statusString != null ? ResultSubmitStatus.valueOf(statusString) : ResultSubmitStatus.READY;
+        } else {
+            submitStatus = ResultSubmitStatus.READY;
+        }
         
         return new StudyVo(
                 firstRecord.get("id", Long.class),
@@ -279,9 +289,7 @@ public class StudyInfrastructureMapper {
         OffsetDateTime deletedAt = firstRecord.field("deleted_at") != null
                 ? firstRecord.get("deleted_at", OffsetDateTime.class)
                 : null;
-        org.certis.studyplatform.shared.domain.ResultSubmitStatus submitStatus = firstRecord.field("result_submit_status") != null
-                ? firstRecord.get("result_submit_status", org.certis.studyplatform.shared.domain.ResultSubmitStatus.class)
-                : null;
+        ResultSubmitStatus submitStatus = firstRecord.get("result_submit_status", ResultSubmitStatus.class);
 
         return StudySummaryVo.of(
                 studyId,
@@ -298,7 +306,8 @@ public class StudyInfrastructureMapper {
                 isParticipantable,
                 attachedVos,
                 firstRecord.get("max_participants_number", Integer.class),
-                firstRecord.get("current_participants", Integer.class)
+                firstRecord.get("current_participants", Integer.class),
+                submitStatus
         );
     }
 
@@ -497,7 +506,7 @@ public class StudyInfrastructureMapper {
      */
     private String calculateStatusString(OffsetDateTime startDate, OffsetDateTime endDate,
                                          OffsetDateTime deletedAt,
-                                         org.certis.studyplatform.shared.domain.ResultSubmitStatus resultSubmitStatus) {
+                                         ResultSubmitStatus resultSubmitStatus) {
         if (deletedAt != null) {
             return StudyStatus.REJECTED.name();
         }
@@ -505,7 +514,7 @@ public class StudyInfrastructureMapper {
         OffsetDateTime now = OffsetDateTime.now();
 
         // 종료 승인 또는 종료 시간이 현재와 같거나 이전이면 완료 처리
-        if (resultSubmitStatus == org.certis.studyplatform.shared.domain.ResultSubmitStatus.COMPLETED) {
+        if (resultSubmitStatus == ResultSubmitStatus.COMPLETED) {
             return StudyStatus.COMPLETED.name();
         }
         if (endDate != null && (now.isAfter(endDate) || now.isEqual(endDate))) {

@@ -108,7 +108,7 @@ public class StudyApplicationDtoMapper {
                 .studyCreatorGrade(vo.studyCreatorGrade())
                 .semester(vo.semester())
                 .status(vo.status())
-                .resultSubmitStatus(null)
+                .resultSubmitStatus(vo.resultSubmitStatus())
                 .isParticipantable(vo.isParticipantable())
                 .currentParticipantNumber(vo.currentParticipants())
                 .maxParticipantNumber(vo.maxParticipants())
