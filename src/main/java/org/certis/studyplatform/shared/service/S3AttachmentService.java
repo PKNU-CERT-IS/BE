@@ -261,6 +261,39 @@ public class S3AttachmentService {
     }
 
     /**
+     * 객체 메타데이터 조회
+     */
+    public S3ObjectInfo getObjectInfo(String s3Url) {
+        try {
+            if (s3Url == null || s3Url.isEmpty()) {
+                return null;
+            }
+
+            String s3Key = extractS3KeyFromUrl(s3Url);
+            if (s3Key == null) {
+                return null;
+            }
+
+            HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(s3Key)
+                    .build();
+
+            var head = s3Client.headObject(headObjectRequest);
+
+            String contentType = head.contentType();
+            Long contentLength = head.contentLength();
+            String name = s3Key.contains("/") ? s3Key.substring(s3Key.lastIndexOf('/') + 1) : s3Key;
+
+            return new S3ObjectInfo(name, contentType, contentLength, s3Url);
+
+        } catch (Exception e) {
+            log.error("S3 객체 메타데이터 조회 실패: url={}, error={}", s3Url, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
      * S3 URL에서 키 추출
      */
     private String extractS3KeyFromUrl(String s3Url) {

@@ -117,4 +117,11 @@ public class S3FileService {
         log.debug("S3 bucket existence check: credentials present, returning true");
         return true;
     }
+
+    /**
+     * 파일 메타데이터 조회 (이름/타입/크기/URL)
+     */
+    public S3ObjectInfo getObjectInfo(String s3Url) {
+        return s3AttachmentService.getObjectInfo(s3Url);
+    }
 }
