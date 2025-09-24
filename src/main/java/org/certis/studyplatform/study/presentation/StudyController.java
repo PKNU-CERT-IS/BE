@@ -212,7 +212,7 @@ public class StudyController {
      */
     @PostMapping("/end")
     public ResponseEntity<GlobalResponseHandler<StudyDetailResponseDto>> endStudy(
-            @Valid @ModelAttribute StudyEndRequestDto request,
+            @Valid @RequestBody StudyEndRequestDto request,
             @AuthenticationPrincipal CurrentUser currentUser) {
         log.info("REST: Ending study - ID: {}, requesterId: {}", request.getStudyId(), currentUser.getId());
 
@@ -220,7 +220,7 @@ public class StudyController {
         StudyDetailResponseDto endedStudy = studyFacadeService.endStudy(
                 request.getStudyId(),
                 currentUser.getId(),
-                request.getFiles()
+                null
         );
 
         log.info("REST: Study ended successfully - ID: {}", endedStudy.getId());
