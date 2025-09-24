@@ -4,6 +4,8 @@ import org.certis.studyplatform.project.domain.vo.ProjectUpdateVo;
 import org.certis.studyplatform.project.domain.vo.ProjectVo;
 import org.springframework.web.multipart.MultipartFile;
 
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
+
 /**
  * Project Command Repository Interface
  *
@@ -38,4 +40,19 @@ public interface ProjectCommandRepository {
      * @return 업로드된 파일 URL
      */
     String uploadProjectAttachment(Long projectId, Long memberId, MultipartFile file);
+
+    // ===== End submission and lifecycle commands =====
+    void updateResultSubmission(Long projectId, java.time.OffsetDateTime submittedAt,
+                                ResultSubmitStatus status,
+                                String attachmentUrl);
+
+    void approveEnd(Long projectId, java.time.OffsetDateTime endedAt,
+                    ResultSubmitStatus status);
+
+    void rejectEnd(Long projectId, ResultSubmitStatus status,
+                   java.time.OffsetDateTime now);
+
+    void bulkSoftDeleteById(Long projectId, java.time.OffsetDateTime deletedAt);
+
+    java.util.Optional<String> getResultAttachmentUrlById(Long projectId);
 }

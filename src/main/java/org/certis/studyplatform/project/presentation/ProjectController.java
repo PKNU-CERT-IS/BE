@@ -215,7 +215,7 @@ public class ProjectController {
      */
     @PostMapping("/end")
     public ResponseEntity<GlobalResponseHandler<ProjectDetailResponseDto>> endProject(
-            @Valid @ModelAttribute ProjectEndRequestDto request,
+            @Valid @RequestBody ProjectEndRequestDto request,
             @AuthenticationPrincipal CurrentUser currentUser) {
         log.info("REST: Ending project - ID: {}, requesterId: {}", request.getProjectId(), currentUser.getId());
 
@@ -223,7 +223,7 @@ public class ProjectController {
         ProjectDetailResponseDto endedProject = projectFacadeService.endProject(
                 request.getProjectId(),
                 currentUser.getId(),
-                request.getFiles()
+                null
         );
 
         log.info("REST: Project ended successfully - ID: {}", endedProject.getId());

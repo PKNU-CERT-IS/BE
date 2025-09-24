@@ -18,6 +18,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
+
 /**
  * Project Command Repository Implementation
  *
@@ -107,5 +109,34 @@ public class ProjectCommandRepositoryImpl implements ProjectCommandRepository {
             log.error("Error uploading project attachment for project ID {}, member ID {}: {}", projectId, memberId, e.getMessage());
             throw new RuntimeException("Failed to upload project attachment", e);
         }
+    }
+
+    @Override
+    public void updateResultSubmission(Long projectId, OffsetDateTime submittedAt,
+                                       ResultSubmitStatus status,
+                                       String attachmentUrl) {
+        jpaRepository.updateResultSubmission(projectId, submittedAt, status, attachmentUrl);
+    }
+
+    @Override
+    public void approveEnd(Long projectId, OffsetDateTime endedAt,
+                           ResultSubmitStatus status) {
+        jpaRepository.approveEnd(projectId, endedAt, status);
+    }
+
+    @Override
+    public void rejectEnd(Long projectId, ResultSubmitStatus status,
+                          OffsetDateTime now) {
+        jpaRepository.rejectEnd(projectId, status, now);
+    }
+
+    @Override
+    public void bulkSoftDeleteById(Long projectId, OffsetDateTime deletedAt) {
+        jpaRepository.bulkSoftDeleteById(projectId, deletedAt);
+    }
+
+    @Override
+    public Optional<String> getResultAttachmentUrlById(Long projectId) {
+        return jpaRepository.findById(projectId).map(ProjectEntity::getResultAttachmentUrl);
     }
 }

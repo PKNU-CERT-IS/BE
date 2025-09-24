@@ -22,7 +22,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
-
+import org.certis.studyplatform.project.domain.vo.ProjectEndSubmissionInfoVo;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -55,6 +55,32 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
     private final ProjectInfrastructureMapper mapper;
 
     @Override
+    public Optional<ProjectEndSubmissionInfoVo> getEndSubmissionInfo(Long projectId) {
+        var p = PROJECT.as("p");
+        return java.util.Optional.ofNullable(
+                dsl.select(
+                                p.ID,
+                                p.RESULT_SUBMIT_STATUS,
+                                p.RESULT_SUBMITTED_AT,
+                                p.RESULT_ATTACHED_URL
+                        )
+                        .from(p)
+                        .where(p.ID.eq(projectId))
+                        .and(p.DELETED_AT.isNull())
+                        .fetchOne()
+        ).map(r -> {
+            String statusString = r.get(p.RESULT_SUBMIT_STATUS);
+            org.certis.studyplatform.shared.domain.ResultSubmitStatus status = statusString != null ? org.certis.studyplatform.shared.domain.ResultSubmitStatus.valueOf(statusString) : null;
+            return new org.certis.studyplatform.project.domain.vo.ProjectEndSubmissionInfoVo(
+                    r.get(p.ID),
+                    status,
+                    r.get(p.RESULT_SUBMITTED_AT),
+                    r.get(p.RESULT_ATTACHED_URL)
+            );
+        });
+    }
+
+    @Override
     public Optional<ProjectVo> findProjectDetailById(Long projectId) {
         log.info("jOOQ: Finding project detail by ID - {}", projectId);
 
@@ -81,7 +107,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                                         p.STARTED_AT,
                         p.ENDED_AT,
                         p.DELETED_AT,
-                        val((String) null).as("result_submit_status"),
+                        p.RESULT_SUBMIT_STATUS.as("result_submit_status"),
                                         // 현재 참여자 수 서브쿼리
                                         select(count())
                                                 .from(PROJECT_PARTICIPANT)
@@ -154,12 +180,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.STARTED_AT,
                         p.ENDED_AT,
                         p.DELETED_AT,
-                        p.ENDED_AT,
-                        p.DELETED_AT,
-                        val((String) null).as("result_submit_status"),
-                        p.ENDED_AT,
-                        p.DELETED_AT,
-                        val((String) null).as("result_submit_status"),
+                        p.RESULT_SUBMIT_STATUS.as("result_submit_status"),
                         // 현재 참여자 수 서브쿼리
                         select(count())
                                 .from(PROJECT_PARTICIPANT)
@@ -223,7 +244,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.STARTED_AT,
                         p.ENDED_AT,
                         p.DELETED_AT,
-                        val((String) null).as("result_submit_status"),
+                        p.RESULT_SUBMIT_STATUS.as("result_submit_status"),
                         select(count())
                                 .from(PROJECT_PARTICIPANT)
                                 .where(PROJECT_PARTICIPANT.PROJECT_ID.eq(p.ID))
@@ -272,7 +293,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.STARTED_AT,
                         p.ENDED_AT,
                         p.DELETED_AT,
-                        val((String) null).as("result_submit_status"),
+                        p.RESULT_SUBMIT_STATUS.as("result_submit_status"),
                         select(count())
                                 .from(PROJECT_PARTICIPANT)
                                 .where(PROJECT_PARTICIPANT.PROJECT_ID.eq(p.ID))
@@ -322,6 +343,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.MAX_PARTICIPANTS_NUMBER,
                         p.STARTED_AT,
                         p.ENDED_AT,
+                        p.RESULT_SUBMIT_STATUS.as("result_submit_status"),
                         select(count())
                                 .from(PROJECT_PARTICIPANT)
                                 .where(PROJECT_PARTICIPANT.PROJECT_ID.eq(p.ID))
@@ -373,6 +395,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.MAX_PARTICIPANTS_NUMBER,
                         p.STARTED_AT,
                         p.ENDED_AT,
+                        p.RESULT_SUBMIT_STATUS.as("result_submit_status"),
                         select(count())
                                 .from(PROJECT_PARTICIPANT)
                                 .where(PROJECT_PARTICIPANT.PROJECT_ID.eq(p.ID))
@@ -423,6 +446,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.MAX_PARTICIPANTS_NUMBER,
                         p.STARTED_AT,
                         p.ENDED_AT,
+                        p.RESULT_SUBMIT_STATUS.as("result_submit_status"),
                         select(count())
                                 .from(PROJECT_PARTICIPANT)
                                 .where(PROJECT_PARTICIPANT.PROJECT_ID.eq(p.ID))
@@ -510,7 +534,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.DEMO_URL,
                         p.CREATED_AT,
                         p.UPDATED_AT,
-                        val((String) null).as("result_submit_status"),
+                        p.RESULT_SUBMIT_STATUS.as("result_submit_status"),
                         // 현재 참여자 수 서브쿼리
                         select(count())
                                 .from(PROJECT_PARTICIPANT)
@@ -564,7 +588,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.MAX_PARTICIPANTS_NUMBER,
                         p.CREATED_AT,
                         p.UPDATED_AT,
-                        val((String) null).as("result_submit_status"),
+                        p.RESULT_SUBMIT_STATUS.as("result_submit_status"),
                         // 현재 참여자 수 서브쿼리
                         select(count())
                                 .from(PROJECT_PARTICIPANT)
@@ -671,7 +695,8 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                             record.get(p.THUMBNAIL_URL),
                             record.get(p.DEMO_URL), // demoUrl
                             record.get(p.MAX_PARTICIPANTS_NUMBER, Integer.class), // maxParticipantNumber
-                            record.get("current_participants", Integer.class) // currentParticipantNumber
+                            record.get("current_participants", Integer.class), // currentParticipantNumber
+                            null
                     );
                 });
 
@@ -750,7 +775,8 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                             record.get(p.THUMBNAIL_URL),
                             record.get(p.DEMO_URL), // demoUrl
                             record.get(p.MAX_PARTICIPANTS_NUMBER, Integer.class), // maxParticipantNumber
-                            record.get("current_participants", Integer.class) // currentParticipantNumber
+                            record.get("current_participants", Integer.class), // currentParticipantNumber
+                            null
                     );
                 });
     }

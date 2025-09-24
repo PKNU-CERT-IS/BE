@@ -8,7 +8,6 @@ import org.certis.studyplatform.member.application.object.query.GetMemberByIdQue
 import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.service.MemberDomainService;
 import org.certis.studyplatform.member.domain.vo.MemberVo;
-import org.certis.studyplatform.member.infrastructure.persistence.MemberQueryRepositoryImpl;
 import org.certis.studyplatform.project.application.object.command.CreateProjectCommand;
 import org.certis.studyplatform.project.application.object.command.DeleteProjectCommand;
 import org.certis.studyplatform.project.application.object.command.EndProjectCommand;
@@ -27,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 
 /**
  * Project Domain Service
@@ -388,6 +388,39 @@ public class ProjectDomainService {
         // 제출 단계: 종료는 승인 시 처리. 여기서는 변경 없이 반환.
         log.info("Domain: Project end submission initiated - ID: {}", existingProject.id());
         return existingProject;
+    }
+
+    // ===== Commands previously in CommandService moved behind command repository =====
+    public void updateResultSubmission(Long projectId, OffsetDateTime submittedAt,
+                                       ResultSubmitStatus status,
+                                       String attachmentUrl) {
+        commandRepository.updateResultSubmission(projectId, submittedAt, status, attachmentUrl);
+    }
+
+    public void approveEnd(Long projectId, OffsetDateTime endedAt,
+                           ResultSubmitStatus status) {
+        commandRepository.approveEnd(projectId, endedAt, status);
+    }
+
+    public void rejectEnd(Long projectId, ResultSubmitStatus status,
+                          OffsetDateTime now) {
+        commandRepository.rejectEnd(projectId, status, now);
+    }
+
+    public void bulkSoftDeleteById(Long projectId, OffsetDateTime deletedAt) {
+        commandRepository.bulkSoftDeleteById(projectId, deletedAt);
+    }
+
+    public java.util.Optional<String> getResultAttachmentUrlById(Long projectId) {
+        return commandRepository.getResultAttachmentUrlById(projectId);
+    }
+
+    /**
+     * 종료 제출 정보 조회 (계층: Domain -> QueryRepository)
+     */
+    public org.certis.studyplatform.project.domain.vo.ProjectEndSubmissionInfoVo getEndSubmissionInfo(Long projectId) {
+        return queryRepository.getEndSubmissionInfo(projectId)
+                .orElse(new org.certis.studyplatform.project.domain.vo.ProjectEndSubmissionInfoVo(projectId, null, null, null));
     }
 
     /**

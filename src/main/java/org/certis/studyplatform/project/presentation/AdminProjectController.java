@@ -9,13 +9,15 @@ import org.certis.studyplatform.response.ResponseStatus;
 import org.certis.studyplatform.shared.security.CurrentUser;
 import org.certis.studyplatform.project.application.ProjectParticipantFacadeService;
 import org.certis.studyplatform.project.application.command.ProjectCommandService;
-import org.certis.studyplatform.project.infrastructure.persistence.jpa.ProjectJpaRepository;
-import org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectEntity;
-import java.util.Map;
+
 import org.springframework.web.bind.annotation.PathVariable;
 import org.certis.studyplatform.project.presentation.dto.request.AdminProjectParticipantApprovalRequestDto;
 import org.certis.studyplatform.project.presentation.dto.response.AdminProjectParticipantApprovalResponseDto;
+import org.certis.studyplatform.project.presentation.dto.response.AdminProjectEndSubmissionResponseDto;
+import org.certis.studyplatform.project.application.ProjectFacadeService;
+
 import org.springframework.http.ResponseEntity;
+
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -34,8 +36,7 @@ import org.springframework.web.bind.annotation.*;
 public class AdminProjectController {
 
     private final ProjectParticipantFacadeService projectParticipantFacadeService;
-    private final ProjectCommandService projectCommandService;
-    private final ProjectJpaRepository projectJpaRepository;
+    private final ProjectFacadeService projectFacadeService;
 
     /**
      * 프로젝트 참가 신청 승인
@@ -92,7 +93,7 @@ public class AdminProjectController {
     public ResponseEntity<GlobalResponseHandler<Void>> approveProjectEnd(
             @RequestParam Long projectId,
             @AuthenticationPrincipal CurrentUser currentUser) {
-        projectCommandService.approveProjectEnd(projectId, currentUser.getId());
+        projectFacadeService.approveProjectEnd(projectId, currentUser.getId());
         return GlobalResponseHandler.success(ResponseStatus.PROJECT_END_SUCCESS);
     }
 
@@ -101,21 +102,15 @@ public class AdminProjectController {
     public ResponseEntity<GlobalResponseHandler<Void>> rejectProjectEnd(
             @RequestParam Long projectId,
             @AuthenticationPrincipal CurrentUser currentUser) {
-        projectCommandService.rejectProjectEnd(projectId, currentUser.getId());
+        projectFacadeService.rejectProjectEnd(projectId, currentUser.getId());
         return GlobalResponseHandler.success(ResponseStatus.PROJECT_END_REJECT_SUCCESS);
     }
 
     @GetMapping("/end/{projectId}")
     @Operation(summary = "프로젝트 종료 제출 조회", description = "제출 상태/시간/첨부를 조회합니다")
-    public ResponseEntity<GlobalResponseHandler<Map<String, Object>>> getProjectEndSubmission(
+    public ResponseEntity<GlobalResponseHandler<AdminProjectEndSubmissionResponseDto>> getProjectEndSubmission(
             @PathVariable Long projectId) {
-        ProjectEntity e = projectJpaRepository.findById(projectId).orElse(null);
-        Map<String, Object> body = Map.of(
-                "projectId", projectId,
-                "status", e != null ? String.valueOf(e.getResultSubmitStatus()) : null,
-                "submittedAt", e != null ? e.getResultSubmittedAt() : null,
-                "attachments", e != null ? e.getResultAttachmentUrl() : null
-        );
+        AdminProjectEndSubmissionResponseDto body = projectFacadeService.getAdminProjectEndSubmission(projectId);
         return GlobalResponseHandler.success(ResponseStatus.PROJECT_FIND_SUCCESS, body);
     }
 
@@ -124,7 +119,7 @@ public class AdminProjectController {
     public ResponseEntity<GlobalResponseHandler<Void>> approveProjectCreation(
             @RequestParam Long projectId,
             @AuthenticationPrincipal CurrentUser currentUser) {
-        projectCommandService.approveProjectCreation(projectId, currentUser.getId());
+        projectFacadeService.approveProjectCreation(projectId, currentUser.getId());
         return GlobalResponseHandler.success(ResponseStatus.PROJECT_UPDATE_SUCCESS);
     }
 
@@ -133,7 +128,7 @@ public class AdminProjectController {
     public ResponseEntity<GlobalResponseHandler<Void>> rejectProjectCreation(
             @RequestParam Long projectId,
             @AuthenticationPrincipal CurrentUser currentUser) {
-        projectCommandService.rejectProjectCreation(projectId, currentUser.getId());
+        projectFacadeService.rejectProjectCreation(projectId, currentUser.getId());
         return GlobalResponseHandler.success(ResponseStatus.PROJECT_DELETE_SUCCESS);
     }
 }

@@ -34,6 +34,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import org.certis.studyplatform.shared.service.S3FileService;
+import org.certis.studyplatform.project.domain.service.ProjectDomainService;
+
+import org.certis.studyplatform.project.presentation.dto.response.AdminProjectEndSubmissionResponseDto;
+import org.certis.studyplatform.project.presentation.dto.response.ProjectAttachedResponseDto;
+
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -63,6 +69,8 @@ public class ProjectFacadeService {
     private final Executor virtualThreadExecutor;
     private final ProjectMeetingQueryService projectMeetingQueryService;
     private final ProjectMeetingFacadeService projectMeetingFacadeService;
+    private final S3FileService s3FileService;
+    private final ProjectDomainService projectDomainService;
 
     // ================================================================
     // COMMAND OPERATIONS - 상태 변경 작업
@@ -292,6 +300,53 @@ public class ProjectFacadeService {
 
         log.info("Facade: Project ended successfully - ID: {}", refreshed.id());
         return responseDto;
+    }
+
+    /**
+     * Admin: 프로젝트 종료 제출 조회 (S3 메타 포함)
+     */
+    public AdminProjectEndSubmissionResponseDto getAdminProjectEndSubmission(Long projectId) {
+        var infoVo = projectDomainService.getEndSubmissionInfo(projectId);
+
+        ProjectAttachedResponseDto attachment = null;
+        if (infoVo.attachmentUrl() != null) {
+            var info = s3FileService.getObjectInfo(infoVo.attachmentUrl());
+            if (info != null) {
+                attachment = ProjectAttachedResponseDto.builder()
+                        .id(null)
+                        .name(info.getName())
+                        .type(info.getContentType())
+                        .size(info.getSize() != null ? String.valueOf(info.getSize()) : null)
+                        .attachedUrl(info.getUrl())
+                        .build();
+            }
+        }
+        return AdminProjectEndSubmissionResponseDto.builder()
+                .projectId(projectId)
+                .status(infoVo.status())
+                .submittedAt(infoVo.submittedAt())
+                .attachment(attachment)
+                .build();
+    }
+
+    // ================================================================
+    // ADMIN COMMAND OPERATIONS (delegate to command service)
+    // ================================================================
+
+    public void approveProjectEnd(Long projectId, Long adminId) {
+        projectCommandService.approveProjectEnd(projectId, adminId);
+    }
+
+    public void rejectProjectEnd(Long projectId, Long adminId) {
+        projectCommandService.rejectProjectEnd(projectId, adminId);
+    }
+
+    public void approveProjectCreation(Long projectId, Long adminId) {
+        projectCommandService.approveProjectCreation(projectId, adminId);
+    }
+
+    public void rejectProjectCreation(Long projectId, Long adminId) {
+        projectCommandService.rejectProjectCreation(projectId, adminId);
     }
 
 }

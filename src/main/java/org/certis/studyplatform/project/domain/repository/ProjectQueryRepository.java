@@ -131,4 +131,5 @@ public interface ProjectQueryRepository {
      */
     List<ProjectSummaryVo> findCompletedProjectsListByMember(Long memberId);
 
+    java.util.Optional<org.certis.studyplatform.project.domain.vo.ProjectEndSubmissionInfoVo> getEndSubmissionInfo(Long projectId);
 }
