@@ -26,6 +26,7 @@ import static org.certis.generated.jooq.Tables.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 @Slf4j
 @SpringBootTest
@@ -134,14 +135,11 @@ class ProjectEndS3E2ETest {
         // Assumptions.assumeTrue(s3FileService.bucketExists(), 
         //         "Skipping: S3 bucket does not exist or is not accessible");
 
-        MockMultipartFile file1 = new MockMultipartFile("files", "report1.txt", 
+        MockMultipartFile file1 = new MockMultipartFile("attachment", "report1.txt", 
                 MediaType.TEXT_PLAIN_VALUE, "hello world".getBytes());
-        MockMultipartFile file2 = new MockMultipartFile("files", "report2.txt", 
-                MediaType.TEXT_PLAIN_VALUE, "bye world".getBytes());
 
         mockMvc.perform(multipart(USER_BASE + "/end")
-                        .file(file1)
-                        .file(file2)
+                        .file("attachment", file1.getBytes())
                         .param("projectId", String.valueOf(PROJECT_ID)))
                 .andDo(print())
                 .andExpect(status().isOk());
@@ -159,6 +157,52 @@ class ProjectEndS3E2ETest {
         assertThat(s3FileService.fileExists(url)).isTrue();
         
         log.info("✅ S3 파일 업로드 및 URL 저장 테스트 성공: {}", url);
+    }
+
+    @Test
+    @WithMockUser(username = "staff", roles = {"STAFF"})
+    @DisplayName("/project/end then GET detail returns status and S3 URL")
+    void end_then_detail_returns_status_and_url() throws Exception {
+        String accessKeyId = dotenv.get("AWS_ACCESS_KEY_ID");
+        String secretAccessKey = dotenv.get("AWS_SECRET_ACCESS_KEY");
+        String region = dotenv.get("AWS_DEFAULT_REGION");
+        String bucketName = dotenv.get("AWS_S3_BUCKET");
+
+        assumeTrue(accessKeyId != null && !accessKeyId.isEmpty(), "AWS_ACCESS_KEY_ID 환경변수가 설정되지 않았습니다.");
+        assumeTrue(secretAccessKey != null && !secretAccessKey.isEmpty(), "AWS_SECRET_ACCESS_KEY 환경변수가 설정되지 않았습니다.");
+        assumeTrue(region != null && !region.isEmpty(), "AWS_DEFAULT_REGION 환경변수가 설정되지 않았습니다.");
+        assumeTrue(bucketName != null && !bucketName.isEmpty(), "AWS_S3_BUCKET 환경변수가 설정되지 않았습니다.");
+
+        MockMultipartFile file = new MockMultipartFile("attachment", "result.txt",
+                MediaType.TEXT_PLAIN_VALUE, "done".getBytes());
+
+        mockMvc.perform(multipart(USER_BASE + "/end")
+                        .file("attachment", file.getBytes())
+                        .param("projectId", String.valueOf(PROJECT_ID)))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get(USER_BASE + "/detail").param("projectId", String.valueOf(PROJECT_ID)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.resultSubmitStatus").value("COMPLETED"));
+
+        // DB에서 URL 재확인 (detail 응답에는 별도 필드로 노출되지 않음)
+        var rec = dsl.fetchOne("select result_attached_url from project where id=?", PROJECT_ID);
+        String url = rec.get("result_attached_url", String.class);
+        assertThat(url).isNotBlank();
+        assertThat(url).startsWith("https://");
+        assertThat(url).contains(bucketName);
+    }
+
+    @Test
+    @WithMockUser(username = "staff", roles = {"STAFF"})
+    @DisplayName("/project/end without file returns 400 Bad Request")
+    void end_without_file_returns_bad_request() throws Exception {
+        mockMvc.perform(multipart(USER_BASE + "/end")
+                        .param("projectId", String.valueOf(PROJECT_ID)))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -186,17 +230,11 @@ class ProjectEndS3E2ETest {
                 "Skipping: S3 bucket does not exist or is not accessible");
 
         // 다양한 파일 타입 준비
-        MockMultipartFile pdfFile = new MockMultipartFile("files", "report.pdf", 
+        MockMultipartFile pdfFile = new MockMultipartFile("attachment", "report.pdf", 
                 "application/pdf", createMockPdfData());
-        MockMultipartFile zipFile = new MockMultipartFile("files", "archive.zip", 
-                "application/zip", createMockZipData());
-        MockMultipartFile imageFile = new MockMultipartFile("files", "image.jpg", 
-                "image/jpeg", createMockImageData());
 
         mockMvc.perform(multipart(USER_BASE + "/end")
-                        .file(pdfFile)
-                        .file(zipFile)
-                        .file(imageFile)
+                        .file("attachment", pdfFile.getBytes())
                         .param("projectId", String.valueOf(PROJECT_ID)))
                 .andDo(print())
                 .andExpect(status().isOk());
@@ -228,13 +266,13 @@ class ProjectEndS3E2ETest {
                 region != null && !region.isEmpty() &&
                 bucketName != null && !bucketName.isEmpty();
 
-        MockMultipartFile file1 = new MockMultipartFile("files", "report1.txt", 
+        MockMultipartFile file1 = new MockMultipartFile("attachment", "report1.txt", 
                 MediaType.TEXT_PLAIN_VALUE, "hello world".getBytes());
 
         if (hasCredentials) {
             // 크레덴셜이 있는 경우에도 테스트를 수행하여 정상 동작 확인
             mockMvc.perform(multipart(USER_BASE + "/end")
-                            .file(file1)
+                            .file("attachment", file1.getBytes())
                             .param("projectId", String.valueOf(PROJECT_ID)))
                     .andDo(print())
                     .andExpect(status().isOk());
@@ -247,7 +285,7 @@ class ProjectEndS3E2ETest {
         } else {
             // 크레덴셜이 없는 경우 기대 동작(에러 또는 graceful 실패) 확인
             mockMvc.perform(multipart(USER_BASE + "/end")
-                            .file(file1)
+                            .file("attachment", file1.getBytes())
                             .param("projectId", String.valueOf(PROJECT_ID)))
                     .andDo(print())
                     .andExpect(status().is5xxServerError());

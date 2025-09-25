@@ -184,7 +184,7 @@ class GracePeriodAdjustmentIntegrationTest {
         assertThat(originalGracePeriod).isNotNull();
         
         // 프로젝트 종료 명령 생성
-        EndProjectCommand command = EndProjectCommand.of(projectId, memberId, List.of());
+        EndProjectCommand command = EndProjectCommand.of(projectId, memberId, null);
 
         // When
         ProjectVo endedProject = projectCommandService.endProject(command);
@@ -225,7 +225,7 @@ class GracePeriodAdjustmentIntegrationTest {
         assertThat(originalGracePeriod).isNotNull();
         
         // 스터디 종료 명령 생성
-        EndStudyCommand command = EndStudyCommand.of(studyId, memberId, List.of());
+        EndStudyCommand command = EndStudyCommand.of(studyId, memberId, null);
 
         // When
         StudyVo endedStudy = studyCommandService.endStudy(command);
@@ -308,7 +308,7 @@ class GracePeriodAdjustmentIntegrationTest {
         assertThat(originalGracePeriod).isNotNull();
         
         // 프로젝트 종료 명령 생성
-        EndProjectCommand command = EndProjectCommand.of(projectId, memberId, List.of());
+        EndProjectCommand command = EndProjectCommand.of(projectId, memberId, null);
 
         // When
         ProjectVo endedProject = projectCommandService.endProject(command);

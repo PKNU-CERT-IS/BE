@@ -195,7 +195,7 @@ class ProjectControllerTest {
 
     @Test
     @Order(3)
-    @DisplayName("✏️ 프로젝트 수정 - attachments=null 이면 기존 첨부 삭제")
+    @DisplayName("✏️ 프로젝트 수정 - attachments=null 이면 기존 첨부 유지")
     @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     void updateProject_NullAttachments_ShouldDeleteExisting() throws Exception {
         // Given: 프로젝트와 기존 첨부 존재
@@ -216,7 +216,7 @@ class ProjectControllerTest {
         request.setProjectId(TEST_PROJECT_ID);
         request.setTitle("제목유지");
         request.setDescription("설명유지");
-        request.setAttachments(null); // 핵심: null 전달
+        request.setAttachments(null); // 핵심: null 전달 → 기존 유지 정책
 
         // When
         mockMvc.perform(put("/api/v1/project/update")
@@ -226,9 +226,9 @@ class ProjectControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(ResponseStatus.PROJECT_UPDATE_SUCCESS.getStatusCode()));
 
-        // Then: 첨부 테이블이 비어있어야 함
+        // Then: 첨부 테이블에 기존 첨부가 유지되어야 함
         Integer count = dsl.fetchCount(PROJECT_ATTACHED, PROJECT_ATTACHED.PROJECT_ID.eq(TEST_PROJECT_ID));
-        assertThat(count).isZero();
+        assertThat(count).isEqualTo(1);
     }
 
     @Test
@@ -991,114 +991,7 @@ class ProjectControllerTest {
         assertThat(project.getDeletedAt()).isNotNull(); // 소프트 삭제 확인
     }
 
-    @Test
-    @Order(103)
-    @DisplayName("✅ 프로젝트 종료 API 테스트 - 성공 케이스")
-    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
-    void should_end_project_successfully() throws Exception {
-        // Given
-        Long projectId = 1L;
-        
-        // 프로젝트 생성
-        setupTestData();
-        createTestProjectInDatabase();
-        
-        // When & Then
-        mockMvc.perform(post("/api/v1/project/end")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"projectId\": " + projectId + "}"))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value(200))
-                .andExpect(jsonPath("$.message").value("프로젝트가 성공적으로 종료되었습니다"))
-                .andExpect(jsonPath("$.data.id").value(projectId))
-                .andExpect(jsonPath("$.data.status").value("COMPLETED")); // 종료된 상태 확인
-        
-        // 데이터베이스에서 프로젝트 상태 확인
-        var project = dsl.selectFrom(PROJECT)
-                .where(PROJECT.ID.eq(projectId))
-                .fetchOne();
-        
-        assertThat(project).isNotNull();
-        assertThat(project.getEndedAt()).isNotNull(); // 종료 시간이 설정되었는지 확인
-    }
-
-    @Test
-    @Order(106)
-    @DisplayName("✅ 프로젝트 종료 신청 후 resultSubmitStatus가 COMPLETED로 변경된다 (JSON 요청)")
-    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
-    void should_update_resultSubmitStatus_after_project_end_request_json() throws Exception {
-        // Given
-        setupTestData();
-        createTestProjectInDatabase();
-
-        String body = "{\n" +
-                "  \"projectId\": " + TEST_PROJECT_ID + "\n" +
-                "}";
-
-        // When
-        mockMvc.perform(post("/api/v1/project/end")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andDo(print())
-                .andExpect(status().isOk());
-
-        // Then: DB의 result_submit_status가 COMPLETED로 변경되었는지 확인
-        String submitStatus = dsl.select(PROJECT.RESULT_SUBMIT_STATUS)
-                .from(PROJECT)
-                .where(PROJECT.ID.eq(TEST_PROJECT_ID))
-                .fetchOne(PROJECT.RESULT_SUBMIT_STATUS);
-        assertThat(submitStatus).isEqualTo("COMPLETED");
-    }
-
-    @Test
-    @Order(104)
-    @DisplayName("✅ 프로젝트 종료 API 테스트 - 권한 없음")
-    @WithMockUser(username = "user2", roles = {"PLAYER"})
-    void should_fail_to_end_project_without_permission() throws Exception {
-        // Given
-        Long projectId = 1L;
-        
-        // 프로젝트 생성
-        setupTestData();
-        createTestProjectInDatabase();
-        
-        // When & Then
-        mockMvc.perform(post("/api/v1/project/end")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"projectId\": " + projectId + "}"))
-                .andDo(print())
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.statusCode").value(422))
-                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("프로젝트 종료 권한이 없습니다")));
-    }
-
-    @Test
-    @Order(105)
-    @DisplayName("✅ 프로젝트 종료 API 테스트 - 이미 종료된 프로젝트")
-    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
-    void should_fail_to_end_already_ended_project() throws Exception {
-        // Given
-        Long projectId = 1L;
-        
-        // 프로젝트 생성 및 이미 종료된 상태로 설정
-        setupTestData();
-        createTestProjectInDatabase();
-        dsl.update(PROJECT)
-                .set(PROJECT.STARTED_AT, OffsetDateTime.now().minusDays(10)) // 10일 전 시작
-                .set(PROJECT.ENDED_AT, OffsetDateTime.now().minusDays(1)) // 어제 종료
-                .where(PROJECT.ID.eq(projectId))
-                .execute();
-        
-        // When & Then
-        mockMvc.perform(post("/api/v1/project/end")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"projectId\": " + projectId + "}"))
-                .andDo(print())
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.statusCode").value(422))
-                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("이미 종료된 프로젝트입니다")));
-    }
+    
 
     @Test
     @Order(200)

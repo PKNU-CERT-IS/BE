@@ -106,7 +106,7 @@ class AdminStudyEndFlowTest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("INPROGRESS"))
-                .andExpect(jsonPath("$.data.attachments").isNotEmpty())
+                .andExpect(jsonPath("$.data.submittedAt").exists())
                 .andExpect(jsonPath("$.data.studyId").value(STUDY_ID));
     }
 }

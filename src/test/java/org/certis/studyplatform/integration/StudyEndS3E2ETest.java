@@ -112,12 +112,12 @@ class StudyEndS3E2ETest {
         boolean hasBucket = notEmpty(System.getProperty("AWS_S3_BUCKET", System.getenv("AWS_S3_BUCKET")));
         boolean hasCredentials = hasAccessKey && hasSecretKey && hasRegion && hasBucket;
 
-        MockMultipartFile file1 = new MockMultipartFile("files", "report1.txt", MediaType.TEXT_PLAIN_VALUE,
+        MockMultipartFile file1 = new MockMultipartFile("attachment", "report1.txt", MediaType.TEXT_PLAIN_VALUE,
                 "hello world".getBytes());
 
         if (hasCredentials) {
             mockMvc.perform(multipart(USER_BASE + "/end")
-                            .file(file1)
+                            .file("attachment", file1.getBytes())
                             .param("studyId", String.valueOf(STUDY_ID)))
                     .andDo(print())
                     .andExpect(status().isOk());
@@ -130,7 +130,7 @@ class StudyEndS3E2ETest {
             assertThat(s3FileService.fileExists(url)).isTrue();
         } else {
             mockMvc.perform(multipart(USER_BASE + "/end")
-                            .file(file1)
+                            .file("attachment", file1.getBytes())
                             .param("studyId", String.valueOf(STUDY_ID)))
                     .andDo(print())
                     .andExpect(status().is5xxServerError());

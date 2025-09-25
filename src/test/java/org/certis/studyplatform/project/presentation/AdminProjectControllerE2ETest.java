@@ -5,12 +5,16 @@ import org.certis.studyplatform.project.infrastructure.persistence.jpa.ProjectJp
 import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 import org.certis.studyplatform.shared.service.S3FileService;
 import org.certis.studyplatform.shared.service.S3ObjectInfo;
+import org.certis.studyplatform.project.domain.service.ProjectDomainService;
+import org.certis.studyplatform.project.domain.vo.ProjectEndSubmissionInfoVo;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.mockito.Mock;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -34,10 +38,14 @@ class AdminProjectControllerE2ETest {
     private ProjectJpaRepository projectJpaRepository;
 
     @MockBean
+    private ProjectDomainService projectDomainService;
+
+    @MockBean
     private S3FileService s3FileService;
 
     @Test
     @DisplayName("GET /api/v1/admin/project/end/{id} returns attachment built from S3 metadata")
+    @WithMockUser(username = "admin", roles = {"STAFF"})
     void getProjectEndSubmission_returnsAttachmentFromS3() throws Exception {
         // given
         Long projectId = 100L;
@@ -49,6 +57,14 @@ class AdminProjectControllerE2ETest {
                 .resultAttachmentUrl(s3Url)
                 .build();
         when(projectJpaRepository.findById(anyLong())).thenReturn(Optional.of(entity));
+        // mock domain service to provide status/submittedAt/url to facade
+        ProjectEndSubmissionInfoVo infoVo = new ProjectEndSubmissionInfoVo(
+                projectId,
+                ResultSubmitStatus.INPROGRESS,
+                OffsetDateTime.parse("2025-09-20T10:00:00Z"),
+                s3Url
+        );
+        when(projectDomainService.getEndSubmissionInfo(anyLong())).thenReturn(infoVo);
         when(s3FileService.getObjectInfo(s3Url)).thenReturn(new S3ObjectInfo(
                 "file.pdf", "application/pdf", 12345L, s3Url
         ));

@@ -29,21 +29,16 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.core.sync.RequestBody;
 
-import java.io.IOException;
-import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.ArrayList;
 import java.util.Base64;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.certis.generated.jooq.Tables.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -265,7 +260,7 @@ class FileUploadDeleteE2ETest {
 
         log.info("프로젝트 첨부파일 업로드 및 업데이트 완료: {}", uploadedProjectAttachmentUrl);
 
-        // When: 프로젝트 첨부파일을 null로 설정하여 삭제
+        // When: 프로젝트 첨부파일을 null로 설정 (이제는 보존 정책)
         ProjectUpdateRequestDto deleteRequest = new ProjectUpdateRequestDto();
         deleteRequest.setProjectId(TEST_PROJECT_ID);
         deleteRequest.setTitle("테스트 프로젝트");
@@ -279,11 +274,11 @@ class FileUploadDeleteE2ETest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200));
 
-        // Then: S3에서 파일이 실제로 삭제되었는지 확인
-        Thread.sleep(1000); // 삭제 처리 대기
+        // Then: S3의 기존 파일은 유지되어야 함
+        Thread.sleep(1000); // 처리 대기
         boolean fileExists = checkS3FileExists(accessKeyId, secretAccessKey, region, bucket, fileKey);
-        assertThat(fileExists).isFalse();
-        log.info("프로젝트 첨부파일 null로 업데이트 완료 - S3 파일 삭제 확인됨: {}", uploadedProjectAttachmentUrl);
+        assertThat(fileExists).isTrue();
+        log.info("프로젝트 첨부파일 null로 업데이트 완료 - S3 파일 유지 확인됨: {}", uploadedProjectAttachmentUrl);
     }
 
     @Test
@@ -335,7 +330,7 @@ class FileUploadDeleteE2ETest {
 
         log.info("스터디 첨부파일 업로드 및 업데이트 완료: {}", uploadedStudyAttachmentUrl);
 
-        // When: 스터디 첨부파일을 null로 설정하여 삭제
+        // When: 스터디 첨부파일을 null로 설정 (이제는 보존 정책)
         StudyUpdateRequestDto deleteRequest = new StudyUpdateRequestDto();
         deleteRequest.setStudyId(TEST_STUDY_ID);
         deleteRequest.setTitle("테스트 스터디");
@@ -349,11 +344,11 @@ class FileUploadDeleteE2ETest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200));
 
-        // Then: S3에서 파일이 실제로 삭제되었는지 확인
-        Thread.sleep(1000); // 삭제 처리 대기
+        // Then: S3의 기존 파일은 유지되어야 함
+        Thread.sleep(1000); // 처리 대기
         boolean fileExists = checkS3FileExists(accessKeyId, secretAccessKey, region, bucket, fileKey);
-        assertThat(fileExists).isFalse();
-        log.info("스터디 첨부파일 null로 업데이트 완료 - S3 파일 삭제 확인됨: {}", uploadedStudyAttachmentUrl);
+        assertThat(fileExists).isTrue();
+        log.info("스터디 첨부파일 null로 업데이트 완료 - S3 파일 유지 확인됨: {}", uploadedStudyAttachmentUrl);
     }
 
     // ================================================================
