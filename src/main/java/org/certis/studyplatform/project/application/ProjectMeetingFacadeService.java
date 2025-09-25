@@ -11,6 +11,7 @@ import org.certis.studyplatform.project.application.object.query.GetProjectMeeti
 import org.certis.studyplatform.project.application.query.ProjectMeetingQueryService;
 import org.certis.studyplatform.project.application.query.ProjectParticipantQueryService;
 import org.certis.studyplatform.project.domain.vo.*;
+import org.certis.studyplatform.project.domain.vo.ProjectMeetingLinkVo;
 import org.certis.studyplatform.project.presentation.dto.request.ProjectMeetingCreateRequestDto;
 import org.certis.studyplatform.project.presentation.dto.request.ProjectMeetingDetailRequestDto;
 import org.certis.studyplatform.project.presentation.dto.request.ProjectMeetingUpdateRequestDto;
@@ -207,16 +208,20 @@ public class ProjectMeetingFacadeService {
         ProjectMeetingPageResultVo meetingVos = projectMeetingQueryService.getAllProjectMeetings(query);
         
         // VO → DTO 변환 (Page.map 사용으로 직접 변환)
-        Page<ProjectMeetingSummaryResponseDto> result = meetingVos.meetings().map(vo ->
-                ProjectMeetingSummaryResponseDto.builder()
-                        .id(vo.id())
-                        .title(vo.title())
-                        .participantNumber(vo.participantNumber())
-                        .creatorName(vo.creatorName())
-                        .createdAt(vo.createdAt())
-                        .isEditable(vo.isEditable())
-                        .links(vo.hasLinks() ? createMockLinks(vo.safeLinkCount()) : Collections.emptyList())
-                        .build());
+        Page<ProjectMeetingSummaryResponseDto> result = meetingVos.meetings().map(vo -> {
+            List<ProjectMeetingLinkVo> links = vo.hasLinks() ? 
+                getMeetingLinks(vo.id()) : 
+                Collections.emptyList();
+            return ProjectMeetingSummaryResponseDto.builder()
+                    .id(vo.id())
+                    .title(vo.title())
+                    .participantNumber(vo.participantNumber())
+                    .creatorName(vo.creatorName())
+                    .createdAt(vo.createdAt())
+                    .isEditable(vo.isEditable())
+                    .links(getLinksFromS3(links))
+                    .build();
+        });
 
         log.info("MeetingFacade: Found {} meetings for project - ID: {}", result.getTotalElements(), request.getProjectId());
         
@@ -241,15 +246,20 @@ public class ProjectMeetingFacadeService {
         
         // VO → DTO 변환 (List로 변환)
         List<ProjectMeetingSummaryResponseDto> meetings = meetingVos.meetings().getContent().stream()
-            .map(vo -> ProjectMeetingSummaryResponseDto.builder()
-                .id(vo.id())
-                .title(vo.title())
-                .participantNumber(vo.participantNumber())
-                .creatorName(vo.creatorName())
-                .createdAt(vo.createdAt())
-                .isEditable(vo.isEditable())
-                .links(vo.hasLinks() ? createMockLinks(vo.safeLinkCount()) : Collections.emptyList())
-                .build())
+            .map(vo -> {
+                List<ProjectMeetingLinkVo> links = vo.hasLinks() ? 
+                    getMeetingLinks(vo.id()) : 
+                    Collections.emptyList();
+                return ProjectMeetingSummaryResponseDto.builder()
+                    .id(vo.id())
+                    .title(vo.title())
+                    .participantNumber(vo.participantNumber())
+                    .creatorName(vo.creatorName())
+                    .createdAt(vo.createdAt())
+                    .isEditable(vo.isEditable())
+                    .links(getLinksFromS3(links))
+                    .build();
+            })
             .toList();
 
         log.info("MeetingFacade: Found {} meetings for project - ID: {}", meetings.size(), projectId);
@@ -257,18 +267,43 @@ public class ProjectMeetingFacadeService {
     }
 
     /**
-     * 테스트용 링크 목록 생성
+     * 회의록의 링크 정보를 조회 (Query Service를 통해)
      */
-    private List<ProjectMeetingSummaryResponseDto.Link> createMockLinks(int count) {
-        if (count <= 0) {
+    private List<ProjectMeetingLinkVo> getMeetingLinks(Long meetingId) {
+        try {
+            GetProjectMeetingByIdQuery query = GetProjectMeetingByIdQuery.of(meetingId);
+            ProjectMeetingDetailVo detailVo = projectMeetingQueryService.getProjectMeetingById(query);
+            return detailVo.attachedLinks() != null ? detailVo.attachedLinks() : Collections.emptyList();
+        } catch (Exception e) {
+            log.warn("Failed to get meeting links for meetingId: {}", meetingId, e);
+            return Collections.emptyList();
+        }
+    }
+
+    /**
+     * S3에서 링크 정보를 조회하여 DTO로 변환
+     */
+    private List<ProjectMeetingSummaryResponseDto.Link> getLinksFromS3(List<ProjectMeetingLinkVo> attachedLinks) {
+        if (attachedLinks == null || attachedLinks.isEmpty()) {
             return Collections.emptyList();
         }
         
-        return IntStream.range(0, count)
-                .mapToObj(i -> ProjectMeetingSummaryResponseDto.Link.builder()
-                        .title("회의록 첨부 링크 " + (i + 1))
-                        .url("https://example.com/meeting-notes-" + (i + 1) + ".pdf")
-                        .build())
+        return attachedLinks.stream()
+                .map(linkVo -> {
+                    try {
+                        var info = s3FileService.getObjectInfo(linkVo.attachedUrl());
+                        if (info != null) {
+                            return ProjectMeetingSummaryResponseDto.Link.builder()
+                                    .title(info.getName())
+                                    .url(info.getUrl())
+                                    .build();
+                        }
+                    } catch (Exception ignored) {}
+                    return ProjectMeetingSummaryResponseDto.Link.builder()
+                            .title(linkVo.name())
+                            .url(linkVo.attachedUrl())
+                            .build();
+                })
                 .toList();
     }
 } 

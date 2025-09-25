@@ -6,6 +6,7 @@ import org.certis.studyplatform.study.domain.vo.StudyMeetingCreatedVo;
 import org.certis.studyplatform.study.domain.vo.StudyMeetingDetailVo;
 import org.certis.studyplatform.study.domain.vo.StudyMeetingPageResultVo;
 import org.certis.studyplatform.study.domain.vo.StudyMeetingUpdatedVo;
+import org.certis.studyplatform.study.domain.vo.StudyMeetingLinkVo;
 import org.certis.studyplatform.study.presentation.dto.request.*;
 import org.certis.studyplatform.study.presentation.dto.response.StudyMeetingDetailResponseDto;
 import org.certis.studyplatform.study.presentation.dto.response.StudyMeetingSummaryResponseDto;
@@ -23,7 +24,6 @@ import org.certis.studyplatform.shared.service.S3FileService;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.IntStream;
 
 
 
@@ -185,16 +185,20 @@ public class StudyMeetingFacadeService {
         StudyMeetingPageResultVo meetingVos = studyMeetingQueryService.getAllStudyMeetings(query);
         
         // VO → DTO 변환 (Page.map 사용으로 직접 변환)
-        Page<StudyMeetingSummaryResponseDto> result = meetingVos.meetings().map(vo ->
-                StudyMeetingSummaryResponseDto.builder()
-                        .id(vo.id())
-                        .title(vo.title())
-                        .participantNumber(vo.participantNumber())
-                        .creatorName(vo.creatorName())
-                        .createdAt(vo.createdAt())
-                        .isEditable(vo.isEditable())
-                        .links(vo.hasLinks() ? createMockLinks(vo.safeLinkCount()) : Collections.emptyList())
-                        .build());
+        Page<StudyMeetingSummaryResponseDto> result = meetingVos.meetings().map(vo -> {
+            List<StudyMeetingLinkVo> links = vo.hasLinks() ? 
+                getMeetingLinks(vo.id()) : 
+                Collections.emptyList();
+            return StudyMeetingSummaryResponseDto.builder()
+                    .id(vo.id())
+                    .title(vo.title())
+                    .participantNumber(vo.participantNumber())
+                    .creatorName(vo.creatorName())
+                    .createdAt(vo.createdAt())
+                    .isEditable(vo.isEditable())
+                    .links(getLinksFromS3(links))
+                    .build();
+        });
 
         log.info("MeetingFacade: Found {} meetings for study - ID: {}", result.getTotalElements(), request.getStudyId());
         
@@ -202,18 +206,43 @@ public class StudyMeetingFacadeService {
     }
 
     /**
-     * 테스트용 링크 목록 생성
+     * 회의록의 링크 정보를 조회 (Query Service를 통해)
      */
-    private List<StudyMeetingSummaryResponseDto.Link> createMockLinks(int count) {
-        if (count <= 0) {
+    private List<StudyMeetingLinkVo> getMeetingLinks(Long meetingId) {
+        try {
+            GetStudyMeetingByIdQuery query = GetStudyMeetingByIdQuery.of(meetingId);
+            StudyMeetingDetailVo detailVo = studyMeetingQueryService.getStudyMeetingById(query);
+            return detailVo.attachedLinks() != null ? detailVo.attachedLinks() : Collections.emptyList();
+        } catch (Exception e) {
+            log.warn("Failed to get meeting links for meetingId: {}", meetingId, e);
+            return Collections.emptyList();
+        }
+    }
+
+    /**
+     * S3에서 링크 정보를 조회하여 DTO로 변환
+     */
+    private List<StudyMeetingSummaryResponseDto.Link> getLinksFromS3(List<StudyMeetingLinkVo> attachedLinks) {
+        if (attachedLinks == null || attachedLinks.isEmpty()) {
             return Collections.emptyList();
         }
         
-        return IntStream.range(0, count)
-                .mapToObj(i -> StudyMeetingSummaryResponseDto.Link.builder()
-                        .title("회의록 첨부 링크 " + (i + 1))
-                        .url("https://example.com/meeting-notes-" + (i + 1) + ".pdf")
-                        .build())
+        return attachedLinks.stream()
+                .map(linkVo -> {
+                    try {
+                        var info = s3FileService.getObjectInfo(linkVo.attachedUrl());
+                        if (info != null) {
+                            return StudyMeetingSummaryResponseDto.Link.builder()
+                                    .title(info.getName())
+                                    .url(info.getUrl())
+                                    .build();
+                        }
+                    } catch (Exception ignored) {}
+                    return StudyMeetingSummaryResponseDto.Link.builder()
+                            .title(linkVo.name())
+                            .url(linkVo.attachedUrl())
+                            .build();
+                })
                 .toList();
     }
 } 
