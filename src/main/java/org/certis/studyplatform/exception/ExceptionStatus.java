@@ -384,22 +384,28 @@ public enum ExceptionStatus {
     // =================================================================
 
     // File - Infrastructure Layer
-    FILE_INFRASTRUCTURE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다"),
+    FILE_INFRASTRUCTURE_UPLOAD_FAILED(HttpStatus.BAD_REQUEST, "파일 업로드에 실패했습니다"),
     FILE_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일을 찾을 수 없습니다"),
-    FILE_INFRASTRUCTURE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 삭제에 실패했습니다"),
-    FILE_INFRASTRUCTURE_STORAGE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "파일 저장소 오류가 발생했습니다"),
+    FILE_INFRASTRUCTURE_DELETE_FAILED(HttpStatus.BAD_REQUEST, "파일 삭제에 실패했습니다"),
+    FILE_INFRASTRUCTURE_STORAGE_ERROR(HttpStatus.BAD_REQUEST, "파일 저장소 오류가 발생했습니다"),
 
     // S3 - Infrastructure Layer
-    S3_INFRASTRUCTURE_CONNECTION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "S3 연결에 실패했습니다"),
-    S3_INFRASTRUCTURE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "S3 파일 업로드에 실패했습니다"),
-    S3_INFRASTRUCTURE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "S3 파일 삭제에 실패했습니다"),
+    S3_INFRASTRUCTURE_CONNECTION_FAILED(HttpStatus.BAD_REQUEST, "S3 연결에 실패했습니다"),
+    S3_INFRASTRUCTURE_UPLOAD_FAILED(HttpStatus.BAD_REQUEST, "S3 파일 업로드에 실패했습니다"),
+    S3_INFRASTRUCTURE_DELETE_FAILED(HttpStatus.BAD_REQUEST, "S3 파일 삭제에 실패했습니다"),
     S3_INFRASTRUCTURE_FILE_TOO_LARGE(HttpStatus.BAD_REQUEST, "파일 크기가 제한을 초과했습니다"),
     S3_INFRASTRUCTURE_INVALID_FILE_TYPE(HttpStatus.BAD_REQUEST, "지원하지 않는 파일 형식입니다"),
+    
+    // Project - Application Layer (S3 관련)
+    PROJECT_APPLICATION_ATTACHMENT_UPLOAD_FAILED(HttpStatus.BAD_REQUEST, "프로젝트 첨부파일 업로드에 실패했습니다"),
+    
+    // Study - Application Layer (S3 관련)
+    STUDY_APPLICATION_ATTACHMENT_UPLOAD_FAILED(HttpStatus.BAD_REQUEST, "스터디 첨부파일 업로드에 실패했습니다"),
 
     // Notification - Infrastructure Layer
     NOTIFICATION_INFRASTRUCTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다"),
-    NOTIFICATION_INFRASTRUCTURE_DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "알림 데이터베이스 오류가 발생했습니다"),
-    NOTIFICATION_INFRASTRUCTURE_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "알림 전송에 실패했습니다"),
+    NOTIFICATION_INFRASTRUCTURE_DATABASE_ERROR(HttpStatus.BAD_REQUEST, "알림 데이터베이스 오류가 발생했습니다"),
+    NOTIFICATION_INFRASTRUCTURE_SEND_FAILED(HttpStatus.BAD_REQUEST, "알림 전송에 실패했습니다"),
 
     // =================================================================
     // SYSTEM LEVEL EXCEPTIONS (500)
