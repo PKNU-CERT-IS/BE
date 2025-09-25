@@ -267,17 +267,17 @@ public class StudyFacadeService {
     /**
      * 스터디 종료 (DTO 반환)
      */
-    public StudyDetailResponseDto endStudy(Long studyId, Long requesterId, List<MultipartFile> files) {
-        log.info("Facade: Ending study - ID: {}, requesterId: {}", studyId, requesterId);
+    public StudyDetailResponseDto endStudy(StudyEndRequestDto requestDto, Long requesterId) {
+        log.info("Facade: Ending study - ID: {}, requesterId: {}", requestDto.getStudyId(), requesterId);
 
         // Command 객체 생성
-        EndStudyCommand command = EndStudyCommand.of(studyId, requesterId, files);
+        EndStudyCommand command = EndStudyCommand.of(requestDto.getStudyId(), requesterId, requestDto.getAttachment());
 
         // Command Service 호출 (VO 반환)
         StudyVo endedVo = studyCommandService.endStudy(command);
 
         // 상태 확정 후 최신 데이터로 재조회하여 DTO 변환
-        GetStudyByIdQuery refreshQuery = queryMapper.toGetStudyByIdQuery(studyId);
+        GetStudyByIdQuery refreshQuery = queryMapper.toGetStudyByIdQuery(requestDto.getStudyId());
         StudyVo refreshed = studyQueryService.getStudyById(refreshQuery);
         StudyDetailResponseDto responseDto = dtoMapper.toStudyDetailResponseDto(refreshed);
 

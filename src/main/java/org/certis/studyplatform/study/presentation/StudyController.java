@@ -8,7 +8,6 @@ import org.certis.studyplatform.study.application.StudyFacadeService;
 import org.certis.studyplatform.study.presentation.dto.request.StudyCreateRequestDto;
 import org.certis.studyplatform.study.presentation.dto.request.StudyDeleteRequestDto;
 import org.certis.studyplatform.study.presentation.dto.request.StudyDetailRequestDto;
-import org.certis.studyplatform.study.presentation.dto.request.StudyEndRequestDto;
 import org.certis.studyplatform.study.presentation.dto.request.StudyUpdateRequestDto;
 import org.certis.studyplatform.study.presentation.dto.request.StudyAdvancedSearchRequestDto;
 import org.certis.studyplatform.study.presentation.dto.response.StudyDetailResponseDto;
@@ -21,8 +20,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.certis.studyplatform.study.presentation.dto.request.StudyEndRequestDto;
 
 import java.util.List;
 
@@ -210,17 +211,16 @@ public class StudyController {
      * 스터디 종료
      * POST /api/v1/study/end
      */
-    @PostMapping("/end")
+    @PostMapping(value = "/end", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<GlobalResponseHandler<StudyDetailResponseDto>> endStudy(
-            @Valid @RequestBody StudyEndRequestDto request,
+            @Valid @ModelAttribute StudyEndRequestDto requestDto,
             @AuthenticationPrincipal CurrentUser currentUser) {
-        log.info("REST: Ending study - ID: {}, requesterId: {}", request.getStudyId(), currentUser.getId());
+        log.info("REST: Ending study - ID: {}, requesterId: {}", requestDto.getStudyId(), currentUser.getId());
 
         // Facade Service 호출 (VO → DTO 변환 포함)
         StudyDetailResponseDto endedStudy = studyFacadeService.endStudy(
-                request.getStudyId(),
-                currentUser.getId(),
-                null
+                requestDto,
+                currentUser.getId()
         );
 
         log.info("REST: Study ended successfully - ID: {}", endedStudy.getId());

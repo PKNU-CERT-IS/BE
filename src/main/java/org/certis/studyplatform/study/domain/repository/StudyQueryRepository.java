@@ -5,6 +5,7 @@ import org.certis.studyplatform.study.domain.vo.StudySearchResultVo;
 import org.certis.studyplatform.study.domain.vo.StudySummaryVo;
 import org.certis.studyplatform.study.domain.vo.StudyEndSubmissionInfoVo;
 import org.certis.studyplatform.study.domain.vo.StudyVo;
+import org.certis.studyplatform.study.domain.vo.StudyAttachedVo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -134,4 +135,12 @@ public interface StudyQueryRepository {
      */
     List<StudySummaryVo> findCompletedStudiesListByMember(Long memberId);
     Optional<StudyEndSubmissionInfoVo> getEndSubmissionInfo(Long studyId);
+
+    /**
+     * 스터디 첨부파일 조회
+     *
+     * @param studyId 조회할 스터디 ID
+     * @return 첨부파일 VO 목록
+     */
+    List<StudyAttachedVo> findAttachmentsByStudyId(Long studyId);
 }

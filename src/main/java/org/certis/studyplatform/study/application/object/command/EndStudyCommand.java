@@ -18,13 +18,13 @@ public class EndStudyCommand {
     
     private final Long studyId;
     private final Long requesterId;
-    private final List<MultipartFile> files;
+    private final MultipartFile attachment;
     
-    public static EndStudyCommand of(Long studyId, Long requesterId, List<MultipartFile> files) {
+    public static EndStudyCommand of(Long studyId, Long requesterId, MultipartFile attachment) {
         return EndStudyCommand.builder()
                 .studyId(studyId)
                 .requesterId(requesterId)
-                .files(files)
+                .attachment(attachment)
                 .build();
     }
     
@@ -36,7 +36,7 @@ public class EndStudyCommand {
         return requesterId;
     }
     
-    public List<MultipartFile> files() {
-        return files;
+    public MultipartFile attachment() {
+        return attachment;
     }
 }

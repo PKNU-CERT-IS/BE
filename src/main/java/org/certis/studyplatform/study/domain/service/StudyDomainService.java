@@ -8,7 +8,6 @@ import org.certis.studyplatform.member.application.object.query.GetMemberByIdQue
 import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.service.MemberDomainService;
 import org.certis.studyplatform.member.domain.vo.MemberVo;
-import org.certis.studyplatform.member.infrastructure.persistence.MemberQueryRepositoryImpl;
 import org.certis.studyplatform.study.application.object.command.CreateStudyCommand;
 import org.certis.studyplatform.study.application.object.command.DeleteStudyCommand;
 import org.certis.studyplatform.study.application.object.command.EndStudyCommand;
@@ -31,6 +30,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 import java.time.OffsetDateTime;
 import java.util.List;
+import org.certis.studyplatform.study.application.object.command.CreateStudyAttachedCommand;
 
 /**
  * Study Domain Service
@@ -164,6 +164,13 @@ public class StudyDomainService {
 
         log.info("Domain: Study attachment uploaded successfully for study ID: {}, member ID: {}, URL: {}", studyId, memberId, attachmentUrl);
         return attachmentUrl;
+    }
+
+    /**
+     * 스터디 첨부파일 업데이트 (위임: Infrastructure Repository)
+     */
+    public void updateStudyAttachments(Long studyId, Long requesterId, List<CreateStudyAttachedCommand> attachments) {
+        commandRepository.updateStudyAttachments(studyId, requesterId, attachments);
     }
 
     // ================================================================

@@ -290,6 +290,9 @@ public class StudyInfrastructureMapper {
                 ? firstRecord.get("deleted_at", OffsetDateTime.class)
                 : null;
         ResultSubmitStatus submitStatus = firstRecord.get("result_submit_status", ResultSubmitStatus.class);
+        if (submitStatus == null) {
+            submitStatus = ResultSubmitStatus.READY;
+        }
 
         return StudySummaryVo.of(
                 studyId,

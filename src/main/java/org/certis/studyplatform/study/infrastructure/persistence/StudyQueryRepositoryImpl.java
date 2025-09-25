@@ -511,6 +511,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         m.NAME.as("creator_name"),
                                         m.GRADE.as("creator_grade"),
                                         s.MAX_PARTICIPANTS_NUMBER,
+                                        s.RESULT_SUBMIT_STATUS.as("result_submit_status"),
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
                                                 .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
@@ -956,5 +957,37 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
             return new String[0];
         }
         return skills.toArray(new String[0]);
+    }
+
+    @Override
+    public List<StudyAttachedVo> findAttachmentsByStudyId(Long studyId) {
+        log.info("jOOQ: Finding study attachments by study ID - {}", studyId);
+
+        var sa = STUDY_ATTACHED.as("sa");
+
+        List<StudyAttachedVo> attachments = dsl.select(
+                        sa.ID,
+                        sa.NAME,
+                        sa.TYPE,
+                        sa.SIZE,
+                        sa.ATTACHED_URL
+                )
+                .from(sa)
+                .where(sa.STUDY_ID.eq(studyId))
+                .and(sa.DELETED_AT.isNull())
+                .orderBy(sa.CREATED_AT.asc())
+                .fetch()
+                .stream()
+                .map(record -> StudyAttachedVo.of(
+                        record.get(sa.ID),
+                        record.get(sa.NAME),
+                        record.get(sa.TYPE),
+                        record.get(sa.SIZE),
+                        record.get(sa.ATTACHED_URL)
+                ))
+                .toList();
+
+        log.info("jOOQ: Found {} attachments for study ID: {}", attachments.size(), studyId);
+        return attachments;
     }
 }

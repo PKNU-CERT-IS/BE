@@ -6,6 +6,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.OffsetDateTime;
 
 import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
+import org.certis.studyplatform.study.application.object.command.CreateStudyAttachedCommand;
 
 /**
  * Study Command Repository Interface
@@ -56,4 +57,11 @@ public interface StudyCommandRepository {
     void bulkSoftDeleteById(Long studyId, OffsetDateTime deletedAt);
 
     java.util.Optional<String> getResultAttachmentUrlById(Long studyId);
+
+    /**
+     * 스터디 첨부파일 업데이트 (전체 교체 정책)
+     * attachments == null -> 기존 첨부 전체 삭제
+     * attachments 비어있지 않음 -> 기존 첨부 전체 삭제 후 신규 저장
+     */
+    void updateStudyAttachments(Long studyId, Long requesterId, java.util.List<CreateStudyAttachedCommand> attachments);
 }

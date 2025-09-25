@@ -10,6 +10,7 @@ import org.certis.studyplatform.study.infrastructure.persistence.jpa.StudyJpaRep
 import org.certis.studyplatform.study.infrastructure.persistence.jpa.StudyAttachedJpaRepository;
 import org.certis.studyplatform.study.infrastructure.persistence.entity.StudyAttachedEntity;
 import org.certis.studyplatform.shared.service.S3FileService;
+import org.certis.studyplatform.study.application.object.command.CreateStudyAttachedCommand;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -105,6 +106,39 @@ public class StudyCommandRepositoryImpl implements StudyCommandRepository {
         } catch (Exception e) {
             log.error("Error uploading study attachment for study ID {}, member ID {}: {}", studyId, memberId, e.getMessage());
             throw new RuntimeException("Failed to upload study attachment", e);
+        }
+    }
+
+    @Override
+    public void updateStudyAttachments(Long studyId, Long requesterId, java.util.List<CreateStudyAttachedCommand> attachments) {
+        // 삭제 정책: 항상 기존 첨부 전체 제거 (S3 + DB)
+        java.util.List<StudyAttachedEntity> existing = studyAttachedJpaRepository.findByStudyId(studyId);
+        for (var e : existing) {
+            try {
+                s3FileService.deleteFile(e.getAttachedUrl());
+            } catch (Exception ex) {
+                log.warn("Failed to delete study attachment from S3 url={} studyId={}", e.getAttachedUrl(), studyId, ex);
+            }
+        }
+        studyAttachedJpaRepository.deleteByStudyId(studyId);
+
+        // 첨부가 null이면 여기서 종료 (전체 삭제만 수행)
+        if (attachments == null || attachments.isEmpty()) {
+            return;
+        }
+
+        // 신규 첨부 저장
+        for (var file : attachments) {
+            StudyAttachedEntity entity = StudyAttachedEntity.builder()
+                    .studyId(studyId)
+                    .memberId(requesterId)
+                    .attachedUrl(file.url())
+                    .name(file.name())
+                    .type(file.type() != null ? file.type().name() : null)
+                    .size(file.size() != null ? String.valueOf(file.size()) : "0")
+                    .createdAt(java.time.OffsetDateTime.now())
+                    .build();
+            studyAttachedJpaRepository.save(entity);
         }
     }
 
