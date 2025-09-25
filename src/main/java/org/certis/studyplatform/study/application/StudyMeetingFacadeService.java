@@ -19,6 +19,7 @@ import org.certis.studyplatform.study.application.query.StudyMeetingQueryService
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.certis.studyplatform.shared.service.S3FileService;
 
 import java.util.Collections;
 import java.util.List;
@@ -40,6 +41,7 @@ public class StudyMeetingFacadeService {
 
     private final StudyMeetingCommandService studyMeetingCommandService;
     private final StudyMeetingQueryService studyMeetingQueryService;
+    private final S3FileService s3FileService;
 
     // ================================================================
     // STUDY MEETING OPERATIONS - 회의록 관리
@@ -98,11 +100,21 @@ public class StudyMeetingFacadeService {
                 .updatedAt(meetingVo.updatedAt())
                 .isEditable(meetingVo.isEditable())
                 .links(meetingVo.attachedLinks() == null ? Collections.emptyList() : meetingVo.attachedLinks().stream()
-                        .map(linkVo -> StudyMeetingDetailResponseDto.Link.builder()
-                                .title(linkVo.name())
-                                .url(linkVo.attachedUrl())
-                                .build())
-                        .toList())
+                        .map(linkVo -> {
+                            try {
+                                var info = s3FileService.getObjectInfo(linkVo.attachedUrl());
+                                if (info != null) {
+                                    return StudyMeetingDetailResponseDto.Link.builder()
+                                            .title(info.getName())
+                                            .url(info.getUrl())
+                                            .build();
+                                }
+                            } catch (Exception ignored) {}
+                            return StudyMeetingDetailResponseDto.Link.builder()
+                                    .title(linkVo.name())
+                                    .url(linkVo.attachedUrl())
+                                    .build();
+                        }).toList())
                 .build();
         
         log.info("MeetingFacade: Study meeting detail retrieved successfully - ID: {}", responseDto.getId());

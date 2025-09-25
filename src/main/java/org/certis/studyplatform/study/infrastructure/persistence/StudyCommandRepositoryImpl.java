@@ -111,23 +111,14 @@ public class StudyCommandRepositoryImpl implements StudyCommandRepository {
 
     @Override
     public void updateStudyAttachments(Long studyId, Long requesterId, java.util.List<CreateStudyAttachedCommand> attachments) {
-        // 삭제 정책: 항상 기존 첨부 전체 제거 (S3 + DB)
-        java.util.List<StudyAttachedEntity> existing = studyAttachedJpaRepository.findByStudyId(studyId);
-        for (var e : existing) {
-            try {
-                s3FileService.deleteFile(e.getAttachedUrl());
-            } catch (Exception ex) {
-                log.warn("Failed to delete study attachment from S3 url={} studyId={}", e.getAttachedUrl(), studyId, ex);
-            }
-        }
-        studyAttachedJpaRepository.deleteByStudyId(studyId);
-
-        // 첨부가 null이면 여기서 종료 (전체 삭제만 수행)
+        // 정책 변경 (Additive):
+        // - attachments == null 또는 비어있음 -> 아무 작업도 하지 않음 (기존 유지)
+        // - attachments 제공됨               -> 기존 보존 + 신규만 추가 저장
         if (attachments == null || attachments.isEmpty()) {
             return;
         }
 
-        // 신규 첨부 저장
+        // 신규 첨부 저장 (기존은 유지)
         for (var file : attachments) {
             StudyAttachedEntity entity = StudyAttachedEntity.builder()
                     .studyId(studyId)
