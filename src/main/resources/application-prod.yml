@@ -1,8 +1,15 @@
 # ===========================================
-# CERT-IS Study Platform - 운영환경 설정
+# CERT-IS Study Platform - 운영환경 설정 (개선버전)
 # ===========================================
 
 spring:
+  # 프로파일 명시적 설정
+  profiles:
+    active: prod
+  config:
+    activate:
+      on-profile: prod
+
   # 운영환경 데이터소스 설정 - 외부 PostgreSQL
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgresql:5432/certis_db}
@@ -10,18 +17,19 @@ spring:
     password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: ${DB_POOL_SIZE:50} # 500은 너무 큼, 50으로 조정
-      minimum-idle: ${DB_MIN_IDLE:10} # 50은 너무 큼, 10으로 조정
+      maximum-pool-size: ${DB_POOL_SIZE:20}
+      minimum-idle: ${DB_MIN_IDLE:5}
       leak-detection-threshold: 30000
       connection-timeout: 30000
       idle-timeout: 600000
       max-lifetime: 1800000
+      validation-timeout: 3000
 
-  # JPA/Hibernate 운영 설정 - Flyway와 함께 사용
+  # JPA/Hibernate 운영 설정
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: validate # Flyway가 마이그레이션 담당, JPA는 검증만
+      ddl-auto: validate # Flyway가 마이그레이션 담당
     show-sql: false
     properties:
       hibernate:
@@ -34,42 +42,52 @@ spring:
           batch_size: 25
           batch_versioned_data: true
 
-  # Flyway 설정 - PRODUCTION에서만 활성화
+  # Flyway 설정 - 운영환경 안전장치 강화
   flyway:
     enabled: true
-    locations: classpath:db/migration,classpath:db/common
-    baseline-on-migrate: false # 운영환경에서는 신중하게
+    locations:
+      - classpath:db/migration/common # mock 제외!
+    baseline-on-migrate: false
     validate-on-migrate: true
-    clean-on-validation-error: false # 운영에서는 절대 clean 안함
+    clean-on-validation-error: false
+    clean-disabled: true
     out-of-order: false
+    # 추가 안전장치
+    ignore-missing-migrations: false
+    ignore-ignored-migrations: false
+    ignore-pending-migrations: false
+    ignore-future-migrations: false
+    baseline-version: "1.0.0"
+    baseline-description: "Production baseline"
 
-  # SQL 초기화 설정 - 운영환경에서는 비활성화
+  # SQL 초기화 비활성화
   sql:
     init:
       mode: never
 
-  # Redis 설정 - 운영환경에서는 필수
+  # Redis 설정 - ElastiCache 최적화
   data:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:redis}
       port: ${SPRING_DATA_REDIS_PORT:6379}
       password: ${SPRING_DATA_REDIS_PASSWORD:}
       ssl: ${SPRING_DATA_REDIS_SSL:false}
-      timeout: 5000ms
+      timeout: 10000ms
+      connect-timeout: 10000ms
       database: 0
       lettuce:
         pool:
-          max-active: 20
+          max-active: 10
           max-wait: -1ms
-          max-idle: 20
-          min-idle: 5
+          max-idle: 10
+          min-idle: 2
         shutdown-timeout: 200ms
 
-  # 캐시 설정 - 운영환경에서는 Redis 필수
+  # 캐시 설정
   cache:
     type: redis
     redis:
-      time-to-live: 600000 # 10분
+      time-to-live: 600000
 
   # Spring Security 운영 설정
   security:
@@ -91,12 +109,10 @@ logging:
     root: WARN
     org.certis.studyplatform: INFO
     org.springframework: WARN
-    org.springframework.web: WARN
-    org.springframework.security: WARN
     org.hibernate: WARN
-    org.hibernate.SQL: WARN
-    org.flywaydb: INFO # Flyway 로그는 중요하므로 INFO
+    org.flywaydb: INFO
     com.zaxxer.hikari: INFO
+    io.lettuce.core: INFO
   file:
     name: ${LOG_FILE:/var/log/cert-is/application.log}
     max-size: 100MB
@@ -104,20 +120,28 @@ logging:
   pattern:
     file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-},%X{spanId:-}] %logger{50} - %msg%n"
 
-# Management/Actuator 운영 설정
+# Management/Actuator 운영 설정 강화
 management:
   endpoints:
     web:
       exposure:
         include: health,info,metrics,threaddump
+        exclude: flyway,env,configprops # 민감한 정보 제외
   endpoint:
     health:
       show-details: when-authorized
+      show-components: always
+    flyway:
+      enabled: false # Flyway 엔드포인트 비활성화
   server:
     port: ${MANAGEMENT_PORT:8081}
 
 # 운영환경 애플리케이션 설정
 app:
+  # 목 데이터 비활성화 (중요!)
+  mock-data:
+    enabled: false
+
   async:
     cpu-bound:
       core-pool-size: 16
@@ -133,7 +157,7 @@ app:
       background: 1200
 
   jwt:
-    secret: ${JWT_SECRET} # 반드시 환경변수에서 설정
+    secret: ${JWT_SECRET}
     access-token-expiry: 3600000
     refresh-token-expiry: 86400000
 
@@ -161,10 +185,13 @@ embedded:
   redis:
     enabled: false
 
-# 보안 설정
+# 보안 설정 강화
 server:
   forward-headers-strategy: native
   max-http-header-size: 8KB
+  error:
+    include-stacktrace: never # 운영환경 보안
+    include-message: always
   servlet:
     session:
       cookie:
