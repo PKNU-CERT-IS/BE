@@ -1,5 +1,7 @@
 package org.certis.studyplatform.project.presentation;
 
+import org.certis.studyplatform.project.presentation.dto.request.ProjectEndRequestDto;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -7,19 +9,11 @@ import org.certis.studyplatform.project.application.ProjectFacadeService;
 import org.certis.studyplatform.project.presentation.dto.request.ProjectCreateRequestDto;
 import org.certis.studyplatform.project.presentation.dto.request.ProjectDeleteRequestDto;
 import org.certis.studyplatform.project.presentation.dto.request.ProjectDetailRequestDto;
-import org.certis.studyplatform.project.presentation.dto.request.ProjectEndRequestDto;
-import org.certis.studyplatform.project.presentation.dto.request.ProjectSearchRequestDto;
 import org.certis.studyplatform.project.presentation.dto.request.ProjectUpdateRequestDto;
 import org.certis.studyplatform.project.presentation.dto.request.ProjectAdvancedSearchRequestDto;
-import org.certis.studyplatform.project.presentation.dto.request.ProjectMeetingCreateRequestDto;
-import org.certis.studyplatform.project.presentation.dto.request.ProjectMeetingUpdateRequestDto;
-import org.certis.studyplatform.project.presentation.dto.request.ProjectMeetingDeleteRequestDto;
-import org.certis.studyplatform.project.presentation.dto.request.ProjectMeetingDetailRequestDto;
 import org.certis.studyplatform.project.presentation.dto.response.ProjectDetailResponseDto;
 import org.certis.studyplatform.project.presentation.dto.response.ProjectSummaryResponseDto;
-import org.certis.studyplatform.project.presentation.dto.response.ProjectAttachedResponseDto;
 import org.certis.studyplatform.project.presentation.dto.response.ProjectMeetingSummaryResponseDto;
-import org.certis.studyplatform.project.presentation.dto.response.ProjectMeetingDetailResponseDto;
 import org.certis.studyplatform.response.GlobalResponseHandler;
 import org.certis.studyplatform.response.ResponseStatus;
 import org.certis.studyplatform.shared.security.CurrentUser;
@@ -28,8 +22,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -213,17 +209,16 @@ public class ProjectController {
      * 프로젝트 종료
      * POST /api/v1/project/end
      */
-    @PostMapping("/end")
+    @PostMapping(value = "/end", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<GlobalResponseHandler<ProjectDetailResponseDto>> endProject(
-            @Valid @RequestBody ProjectEndRequestDto request,
+            @Valid @ModelAttribute ProjectEndRequestDto requestDto,
             @AuthenticationPrincipal CurrentUser currentUser) {
-        log.info("REST: Ending project - ID: {}, requesterId: {}", request.getProjectId(), currentUser.getId());
+        log.info("REST: Ending project - ID: {}, requesterId: {}", requestDto.getProjectId(), currentUser.getId());
 
         // Facade Service 호출 (VO → DTO 변환 포함)
         ProjectDetailResponseDto endedProject = projectFacadeService.endProject(
-                request.getProjectId(),
-                currentUser.getId(),
-                null
+                requestDto,
+                currentUser.getId()
         );
 
         log.info("REST: Project ended successfully - ID: {}", endedProject.getId());

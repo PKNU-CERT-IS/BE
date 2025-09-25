@@ -1,5 +1,7 @@
 package org.certis.studyplatform.project.application;
 
+import org.certis.studyplatform.project.presentation.dto.request.ProjectEndRequestDto;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.project.application.command.ProjectCommandService;
@@ -284,17 +286,17 @@ public class ProjectFacadeService {
     /**
      * 프로젝트 종료 (DTO 반환)
      */
-    public ProjectDetailResponseDto endProject(Long projectId, Long requesterId, List<MultipartFile> files) {
-        log.info("Facade: Ending project - ID: {}, requesterId: {}", projectId, requesterId);
+    public ProjectDetailResponseDto endProject(ProjectEndRequestDto requestDto, Long requesterId) {
+        log.info("Facade: Ending project - ID: {}, requesterId: {}", requestDto.getProjectId(), requesterId);
 
         // Command 객체 생성
-        EndProjectCommand command = EndProjectCommand.of(projectId, requesterId, files);
+        EndProjectCommand command = EndProjectCommand.of(requestDto.getProjectId(), requesterId, requestDto.getAttachment());
 
         // Command Service 호출 (VO 반환)
         ProjectVo endedVo = projectCommandService.endProject(command);
 
         // 상태 확정 후 최신 데이터로 재조회하여 DTO 변환
-        GetProjectByIdQuery refreshQuery = queryMapper.toGetProjectByIdQuery(projectId);
+        GetProjectByIdQuery refreshQuery = queryMapper.toGetProjectByIdQuery(requestDto.getProjectId());
         ProjectVo refreshed = projectQueryService.getProjectById(refreshQuery);
         ProjectDetailResponseDto responseDto = dtoMapper.toProjectDetailResponseDto(refreshed);
 

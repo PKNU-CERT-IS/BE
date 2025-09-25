@@ -2,6 +2,8 @@ package org.certis.studyplatform.project.application.command;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.certis.studyplatform.exception.ApplicationException;
+import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.project.application.object.command.CreateProjectCommand;
 import org.certis.studyplatform.project.application.object.command.DeleteProjectCommand;
 import org.certis.studyplatform.project.application.object.command.EndProjectCommand;
@@ -175,28 +177,28 @@ public class ProjectCommandService {
 
         // 파일 업로드 후 단일 URL 저장 및 제출 상태 갱신
         String attachmentUrl = null;
-        if (command.files() != null && !command.files().isEmpty()) {
-            for (MultipartFile file : command.files()) {
-                if (file != null && !file.isEmpty()) {
-                    try {
-                        String originalFilename = file.getOriginalFilename();
-                        String fileExtension = "";
-                        if (originalFilename != null && originalFilename.contains(".")) {
-                            fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
-                        }
-                        String customFilename = String.format("%s_%d_%s%s",
-                                sanitizeFilename(endedVo.title()),
-                                endedVo.id(),
-                                sanitizeFilename(endedVo.creatorName()),
-                                fileExtension);
-                        String fileUrl = s3FileService.uploadFileWithCustomName(file, "project-end-attachments", customFilename);
-                        attachmentUrl = fileUrl; // 첫 번째 유효 파일 URL 사용
-                        break;
-                    } catch (Exception e) {
-                        log.error("Failed to upload project end attachment: {}", file.getOriginalFilename(), e);
-                        throw new RuntimeException("프로젝트 종료 첨부파일 업로드에 실패했습니다: " + file.getOriginalFilename(), e);
-                    }
+        if (command.attachment() != null && !command.attachment().isEmpty()) {
+            MultipartFile file = command.attachment();
+            try {
+                String originalFilename = file.getOriginalFilename();
+                String fileExtension = "";
+                if (originalFilename != null && originalFilename.contains(".")) {
+                    fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
                 }
+                String customFilename = String.format("%s_%d_%s%s",
+                        sanitizeFilename(endedVo.title()),
+                        endedVo.id(),
+                        sanitizeFilename(endedVo.creatorName()),
+                        fileExtension);
+                String fileUrl = s3FileService.uploadFileWithCustomName(file, "project-end-attachments", customFilename);
+                attachmentUrl = fileUrl; // 단일 파일 URL 사용
+            } catch (Exception e) {
+                log.error("Failed to upload project end attachment: {}", file.getOriginalFilename(), e);
+                throw new ApplicationException(
+                    ExceptionStatus.PROJECT_APPLICATION_ATTACHMENT_UPLOAD_FAILED,
+                    "프로젝트 종료 첨부파일 업로드에 실패했습니다: " + file.getOriginalFilename(),
+                    e
+                );
             }
         }
 

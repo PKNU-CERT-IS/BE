@@ -18,13 +18,13 @@ public class EndProjectCommand {
     
     private final Long projectId;
     private final Long requesterId;
-    private final List<MultipartFile> files;
+    private final MultipartFile attachment;
     
-    public static EndProjectCommand of(Long projectId, Long requesterId, List<MultipartFile> files) {
+    public static EndProjectCommand of(Long projectId, Long requesterId, MultipartFile attachment) {
         return EndProjectCommand.builder()
                 .projectId(projectId)
                 .requesterId(requesterId)
-                .files(files)
+                .attachment(attachment)
                 .build();
     }
     
@@ -36,7 +36,7 @@ public class EndProjectCommand {
         return requesterId;
     }
     
-    public List<MultipartFile> files() {
-        return files;
+    public MultipartFile attachment() {
+        return attachment;
     }
 }
