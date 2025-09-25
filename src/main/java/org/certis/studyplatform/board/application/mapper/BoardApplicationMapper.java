@@ -15,12 +15,16 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Component;
 
+import org.certis.studyplatform.shared.service.S3FileService;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
 public class BoardApplicationMapper {
+
+    private final S3FileService s3FileService;
 
     /**
      * BoardSearchRequestDto → SearchBoardsQuery 변환
@@ -145,8 +149,19 @@ public class BoardApplicationMapper {
                 .name(vo.name())
                 .type(vo.type())
                 .size(vo.size())
-                .attachedUrl(vo.attachedUrl())
+                // S3 URL을 presigned URL로 변환하여 프론트엔드에서 직접 접근 가능하도록 함
+                .attachedUrl(normalizeUrl(vo.attachedUrl()))
                 .build();
+    }
+
+    /**
+     * URL 정규화 - S3 URL을 presigned URL로 변환
+     */
+    private String normalizeUrl(String url) {
+        if (url == null || url.isBlank()) {
+            return url;
+        }
+        return s3FileService.getFileUrl(url);
     }
 
     /**
