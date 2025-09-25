@@ -265,7 +265,8 @@ public class ProjectInfrastructureMapper {
                 record.get(PROJECT.DEMO_URL), // demoUrl
                 record.get(PROJECT.MAX_PARTICIPANTS_NUMBER), // maxParticipantNumber
                 record.get("current_participants", Integer.class), // currentParticipantNumber
-                record.get("result_submit_status", ResultSubmitStatus.class)
+                record.get("result_submit_status", ResultSubmitStatus.class),
+                java.util.Collections.emptyList()
         );
     }
 

@@ -22,10 +22,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -209,9 +207,9 @@ public class ProjectController {
      * 프로젝트 종료
      * POST /api/v1/project/end
      */
-    @PostMapping(value = "/end", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/end")
     public ResponseEntity<GlobalResponseHandler<ProjectDetailResponseDto>> endProject(
-            @Valid @ModelAttribute ProjectEndRequestDto requestDto,
+            @Valid @RequestBody ProjectEndRequestDto requestDto,
             @AuthenticationPrincipal CurrentUser currentUser) {
         log.info("REST: Ending project - ID: {}, requesterId: {}", requestDto.getProjectId(), currentUser.getId());
 

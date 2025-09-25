@@ -47,7 +47,8 @@ public class StudyApplicationCommandMapper {
      * StudyAttachedCreateRequestDto를 CreateStudyAttachedCommand로 변환 (이 메서드는 변경 없음)
      */
     public CreateStudyAttachedCommand toCreateStudyAttachedCommand(StudyAttachedCreateRequestDto dto) {
-        return CreateStudyAttachedCommand.of(
+        // Preserve url if present; also carry base64 data and contentType for upload
+        return new CreateStudyAttachedCommand(
                 dto.getName(),
                 dto.getType(),
                 dto.getSize(),

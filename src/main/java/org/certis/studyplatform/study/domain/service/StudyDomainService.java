@@ -26,6 +26,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.certis.studyplatform.shared.service.S3FileService;
+import org.certis.studyplatform.study.application.object.command.CreateStudyAttachedCommand;
 
 import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 import java.time.OffsetDateTime;
@@ -50,6 +52,7 @@ public class StudyDomainService {
     private final StudyCommandRepository commandRepository;
     private final StudyQueryRepository queryRepository;
     private final MemberDomainService memberDomainService;
+    private final S3FileService s3FileService;
 
     // ================================================================
     // COMMAND OPERATIONS
@@ -88,9 +91,27 @@ public class StudyDomainService {
         // Command Repository를 통한 저장 (VO 전달)
         StudyVo savedStudyVo = commandRepository.save(studyVo);
 
+        // 첨부파일은 CommandService에서 S3 업로드 선행 및 저장 처리함
+
         log.info("Domain: Study created successfully - ID: {}", savedStudyVo.id());
 
         return savedStudyVo;
+    }
+
+    private String mapAttachedTypeToContentType(org.certis.studyplatform.shared.type.AttachedType type) {
+        if (type == null) return "application/octet-stream";
+        return switch (type) {
+            case PDF -> "application/pdf";
+            case HWP -> "application/x-hwp";
+            case WORD -> "application/msword";
+            case PPT -> "application/vnd.ms-powerpoint";
+            case PPTX -> "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+            case EXCEL -> "application/vnd.ms-excel";
+            case TEXT -> "text/plain";
+            case PNG -> "image/png";
+            case JPEG, JPG -> "image/jpeg";
+            case ZIP -> "application/zip";
+        };
     }
 
     /**
@@ -433,7 +454,25 @@ public class StudyDomainService {
      */
     public org.certis.studyplatform.study.domain.vo.StudyEndSubmissionInfoVo getEndSubmissionInfo(Long studyId) {
         return queryRepository.getEndSubmissionInfo(studyId)
-                .orElse(new org.certis.studyplatform.study.domain.vo.StudyEndSubmissionInfoVo(studyId, null, null, null));
+                .orElse(new org.certis.studyplatform.study.domain.vo.StudyEndSubmissionInfoVo(
+                        studyId,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                ));
+    }
+
+    public java.util.List<org.certis.studyplatform.study.domain.vo.StudyEndSubmissionInfoVo> getEndSubmissionsInProgress() {
+        return queryRepository.findEndSubmissionsInProgress();
     }
 
     /**

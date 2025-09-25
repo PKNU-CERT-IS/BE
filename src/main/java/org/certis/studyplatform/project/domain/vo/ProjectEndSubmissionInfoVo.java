@@ -8,7 +8,17 @@ public record ProjectEndSubmissionInfoVo(
         Long projectId,
         ResultSubmitStatus status,
         OffsetDateTime submittedAt,
-        String attachmentUrl
+        String attachmentUrl,
+        // additional context for admin list/detail
+        String category,
+        String subCategory,
+        String title,
+        String description,
+        Long creatorId,
+        OffsetDateTime startedAt,
+        OffsetDateTime endedAt,
+        Integer currentParticipantNumber,
+        Integer maxParticipantNumber
 ) {}
 
 

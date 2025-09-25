@@ -54,7 +54,21 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                             s.ID,
                             s.RESULT_SUBMIT_STATUS,
                             s.RESULT_SUBMITTED_AT,
-                            s.RESULT_ATTACHED_URL
+                            s.RESULT_ATTACHED_URL,
+                            s.CATEGORY,
+                            s.SUBCATEGORY,
+                            s.TITLE,
+                            s.DESCRIPTION,
+                            s.MEMBER_ID,
+                            s.STARTED_AT,
+                            s.ENDED_AT,
+                            select(count())
+                                    .from(STUDY_PARTICIPANT)
+                                    .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
+                                    .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
+                                    .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
+                                    .asField("current_participants"),
+                            s.MAX_PARTICIPANTS_NUMBER
                         )
                         .from(s)
                         .where(s.ID.eq(studyId))
@@ -67,7 +81,16 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                     r.get(s.ID),
                     status,
                     r.get(s.RESULT_SUBMITTED_AT),
-                    r.get(s.RESULT_ATTACHED_URL)
+                    r.get(s.RESULT_ATTACHED_URL),
+                    r.get(s.CATEGORY),
+                    r.get(s.SUBCATEGORY),
+                    r.get(s.TITLE),
+                    r.get(s.DESCRIPTION),
+                    r.get(s.MEMBER_ID),
+                    r.get(s.STARTED_AT),
+                    r.get(s.ENDED_AT),
+                    r.get("current_participants", Integer.class),
+                    r.get(s.MAX_PARTICIPANTS_NUMBER)
             );
         });
     }
@@ -405,6 +428,50 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                 .orElse(List.of());
 
         return createSearchResult(studySummaries, total, pageable);
+    }
+
+    @Override
+    public java.util.List<StudyEndSubmissionInfoVo> findEndSubmissionsInProgress() {
+        var s = STUDY.as("s");
+        return dsl.select(
+                        s.ID,
+                        s.RESULT_SUBMIT_STATUS,
+                        s.RESULT_SUBMITTED_AT,
+                        s.RESULT_ATTACHED_URL,
+                        s.CATEGORY,
+                        s.SUBCATEGORY,
+                        s.TITLE,
+                        s.DESCRIPTION,
+                        s.MEMBER_ID,
+                        s.STARTED_AT,
+                        s.ENDED_AT,
+                        select(count())
+                                .from(STUDY_PARTICIPANT)
+                                .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
+                                .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
+                                .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
+                                .asField("current_participants"),
+                        s.MAX_PARTICIPANTS_NUMBER
+                )
+                .from(s)
+                .where(s.RESULT_SUBMIT_STATUS.eq(org.certis.studyplatform.shared.domain.ResultSubmitStatus.INPROGRESS.name()))
+                .and(s.DELETED_AT.isNull())
+                .orderBy(s.RESULT_SUBMITTED_AT.desc())
+                .fetch(r -> new StudyEndSubmissionInfoVo(
+                        r.get(s.ID),
+                        org.certis.studyplatform.shared.domain.ResultSubmitStatus.valueOf(r.get(s.RESULT_SUBMIT_STATUS)),
+                        r.get(s.RESULT_SUBMITTED_AT),
+                        r.get(s.RESULT_ATTACHED_URL),
+                        r.get(s.CATEGORY),
+                        r.get(s.SUBCATEGORY),
+                        r.get(s.TITLE),
+                        r.get(s.DESCRIPTION),
+                        r.get(s.MEMBER_ID),
+                        r.get(s.STARTED_AT),
+                        r.get(s.ENDED_AT),
+                        r.get("current_participants", Integer.class),
+                        r.get(s.MAX_PARTICIPANTS_NUMBER)
+                ));
     }
 
     @Override

@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.web.multipart.MultipartFile;
+import jakarta.validation.constraints.NotBlank;
 
 /**
  * Project End Request DTO
@@ -19,11 +19,11 @@ public class ProjectEndRequestDto {
     
     @NotNull(message = "프로젝트 ID는 필수입니다")
     private Long projectId;
-    @NotNull(message = "종료 신청 보고서는 필수입니다")
-    private MultipartFile attachment;
+    @NotBlank(message = "종료 신청 보고서 URL은 필수입니다")
+    private String attachmentUrl;
     
-    public ProjectEndRequestDto(Long projectId, MultipartFile attachment) {
+    public ProjectEndRequestDto(Long projectId, String attachmentUrl) {
         this.projectId = projectId;
-        this.attachment = attachment;
+        this.attachmentUrl = attachmentUrl;
     }
 }

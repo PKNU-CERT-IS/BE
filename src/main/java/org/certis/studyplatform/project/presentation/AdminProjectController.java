@@ -8,7 +8,6 @@ import org.certis.studyplatform.response.GlobalResponseHandler;
 import org.certis.studyplatform.response.ResponseStatus;
 import org.certis.studyplatform.shared.security.CurrentUser;
 import org.certis.studyplatform.project.application.ProjectParticipantFacadeService;
-import org.certis.studyplatform.project.application.command.ProjectCommandService;
 
 import org.springframework.web.bind.annotation.PathVariable;
 import org.certis.studyplatform.project.presentation.dto.request.AdminProjectParticipantApprovalRequestDto;
@@ -112,6 +111,13 @@ public class AdminProjectController {
             @PathVariable Long projectId) {
         AdminProjectEndSubmissionResponseDto body = projectFacadeService.getAdminProjectEndSubmission(projectId);
         return GlobalResponseHandler.success(ResponseStatus.PROJECT_FIND_SUCCESS, body);
+    }
+
+    @GetMapping("/end")
+    @Operation(summary = "종료 제출 대기중 목록 조회", description = "resultSubmitStatus=INPROGRESS 인 프로젝트들을 조회합니다")
+    public ResponseEntity<GlobalResponseHandler<java.util.List<AdminProjectEndSubmissionResponseDto>>> getPendingProjectEnds() {
+        var list = projectFacadeService.getAdminProjectEndSubmissionsInProgress();
+        return GlobalResponseHandler.success(ResponseStatus.PROJECT_FIND_SUCCESS, list);
     }
 
     @PostMapping("/create/approve")

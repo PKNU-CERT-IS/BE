@@ -10,6 +10,7 @@ import org.certis.studyplatform.study.domain.service.StudyParticipantDomainServi
 import org.certis.studyplatform.study.domain.repository.StudyQueryRepository;
 import org.certis.studyplatform.study.domain.vo.StudyVo;
 import org.certis.studyplatform.study.application.object.command.CreateStudyCommand;
+import org.certis.studyplatform.study.application.object.command.CreateStudyAttachedCommand;
 import org.certis.studyplatform.study.application.object.command.DeleteStudyCommand;
 import org.certis.studyplatform.study.application.object.command.EndStudyCommand;
 import org.certis.studyplatform.study.application.object.command.UpdateStudyCommand;
@@ -57,16 +58,80 @@ public class StudyCommandService {
     public StudyVo createStudy(CreateStudyCommand command) {
         log.info("Command: Creating study - {}", command.title());
 
-        // Command 객체를 Domain Service로 전달
-        StudyVo createdVo = studyDomainService.createStudy(command);
+        // 1) 첨부파일을 S3에 먼저 업로드 (data URL이면 업로드, 아니면 기존 URL 사용)
+        java.util.List<CreateStudyAttachedCommand> processed = null;
+        if (command.attachedFiles() != null && !command.attachedFiles().isEmpty()) {
+            processed = new java.util.ArrayList<>();
+            for (var fileCmd : command.attachedFiles()) {
+                String finalUrl = fileCmd.url();
+                if (finalUrl != null && finalUrl.startsWith("data:")) {
+                    try {
+                        String[] parts = finalUrl.split(",", 2);
+                        String base64Part = parts.length == 2 ? parts[1] : parts[0];
+                        byte[] bytes = java.util.Base64.getDecoder().decode(base64Part);
+                        String contentType = mapAttachedTypeToContentType(fileCmd.type());
+                        finalUrl = s3FileService.uploadBytes(bytes, contentType, fileCmd.name(), "study");
+                    } catch (Exception e) {
+                        log.error("S3 upload failed for study attachment: {}", fileCmd.name(), e);
+                        throw new ApplicationException(
+                                ExceptionStatus.STUDY_APPLICATION_ATTACHMENT_UPLOAD_FAILED,
+                                "스터디 첨부파일 업로드에 실패했습니다: " + fileCmd.name(), e);
+                    }
+                }
+                if (finalUrl == null || finalUrl.isEmpty()) {
+                    throw new ApplicationException(
+                            ExceptionStatus.STUDY_APPLICATION_ATTACHMENT_UPLOAD_FAILED,
+                            "attachments[].attachedUrl 이 누락되었습니다. data: URL 또는 사전 업로드된 S3 URL을 보내주세요: " + fileCmd.name());
+                }
+                processed.add(CreateStudyAttachedCommand.of(fileCmd.name(), fileCmd.type(), fileCmd.size(), finalUrl));
+            }
+        }
 
-        // 첨부파일 저장은 Domain Service에서 처리하지 않음 (Command Repository에서 직접 처리)
-        // 첨부파일이 있는 경우 별도 처리 필요
+        // 2) 첨부가 반영된 새로운 Command 생성
+        CreateStudyCommand finalCommand = CreateStudyCommand.of(
+                command.title(),
+                command.description(),
+                command.content(),
+                command.category(),
+                command.subCategory(),
+                command.startDate(),
+                command.endDate(),
+                command.githubUrl(),
+                command.externalUrl(),
+                command.thumbnailUrl(),
+                processed,
+                command.maxParticipants(),
+                command.creatorId()
+        );
+
+        // 3) 도메인 서비스 호출 (생성)
+        StudyVo createdVo = studyDomainService.createStudy(finalCommand);
 
         studyParticipantDomainService.registerStudyCreatorAsParticipant(createdVo.id(), command.creatorId());
 
+        // 4) 첨부파일 정보 저장 (DB)
+        if (processed != null && !processed.isEmpty()) {
+            studyDomainService.updateStudyAttachments(createdVo.id(), command.creatorId(), processed);
+        }
+
         log.info("Command: Study created successfully - ID: {}", createdVo.id());
         return createdVo;
+    }
+
+    private String mapAttachedTypeToContentType(org.certis.studyplatform.shared.type.AttachedType type) {
+        if (type == null) return "application/octet-stream";
+        return switch (type) {
+            case PDF -> "application/pdf";
+            case HWP -> "application/x-hwp";
+            case WORD -> "application/msword";
+            case PPT -> "application/vnd.ms-powerpoint";
+            case PPTX -> "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+            case EXCEL -> "application/vnd.ms-excel";
+            case TEXT -> "text/plain";
+            case PNG -> "image/png";
+            case JPEG, JPG -> "image/jpeg";
+            case ZIP -> "application/zip";
+        };
     }
 
     /**
@@ -76,11 +141,42 @@ public class StudyCommandService {
     public StudyVo updateStudy(UpdateStudyCommand command) {
         log.info("Command: Updating study - ID: {}", command.id());
 
-        // Command 객체를 Domain Service로 전달
+        // 1) 첨부파일 사전 처리 (data URL -> S3 업로드)
+        java.util.List<CreateStudyAttachedCommand> processed = null;
+        if (command.attachedFiles() != null) {
+            processed = new java.util.ArrayList<>();
+            for (var fileCmd : command.attachedFiles()) {
+                String finalUrl = fileCmd.url();
+                if (finalUrl != null && finalUrl.startsWith("data:")) {
+                    try {
+                        String[] parts = finalUrl.split(",", 2);
+                        String base64Part = parts.length == 2 ? parts[1] : parts[0];
+                        byte[] bytes = java.util.Base64.getDecoder().decode(base64Part);
+                        String contentType = mapAttachedTypeToContentType(fileCmd.type());
+                        finalUrl = s3FileService.uploadBytes(bytes, contentType, fileCmd.name(), "study");
+                    } catch (Exception e) {
+                        log.error("S3 upload failed for study attachment(update): {}", fileCmd.name(), e);
+                        throw new ApplicationException(
+                                ExceptionStatus.STUDY_APPLICATION_ATTACHMENT_UPLOAD_FAILED,
+                                "스터디 첨부파일 업로드에 실패했습니다: " + fileCmd.name(), e);
+                    }
+                }
+                if (finalUrl == null || finalUrl.isEmpty()) {
+                    throw new ApplicationException(
+                            ExceptionStatus.STUDY_APPLICATION_ATTACHMENT_UPLOAD_FAILED,
+                            "attachments[].attachedUrl 이 누락되었습니다. data: URL 또는 사전 업로드된 S3 URL을 보내주세요: " + fileCmd.name());
+                }
+                processed.add(CreateStudyAttachedCommand.of(fileCmd.name(), fileCmd.type(), fileCmd.size(), finalUrl));
+            }
+        }
+
+        // 2) 도메인 서비스로 업데이트 수행
         StudyVo updatedVo = studyDomainService.updateStudy(command);
 
-        // 첨부파일 처리는 Infrastructure Repository에서 수행 (전체 교체 정책)
-        studyDomainService.updateStudyAttachments(updatedVo.id(), command.requesterId(), command.attachedFiles());
+        // 3) 첨부파일 덮어쓰기 (Infra 정책에 따라 전체 교체)
+        if (processed != null) {
+            studyDomainService.updateStudyAttachments(updatedVo.id(), command.requesterId(), processed);
+        }
 
         log.info("Command: Study updated successfully - ID: {}", updatedVo.id());
         return updatedVo;
@@ -132,29 +228,43 @@ public class StudyCommandService {
 
         // 파일 업로드 후 첨부 JSON 생성 및 제출 상태 갱신
         ArrayNode attachmentsArray = objectMapper.createArrayNode();
-        if (command.attachment() != null && !command.attachment().isEmpty()) {
-            MultipartFile file = command.attachment();
+        if (command.attachment() != null && !command.attachment().isBlank()) {
+            String provided = command.attachment();
             try {
-                String originalFilename = file.getOriginalFilename();
-                String fileExtension = "";
-                if (originalFilename != null && originalFilename.contains(".")) {
-                    fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
+                String fileUrl;
+                String originalName = null;
+                if (provided.startsWith("data:")) {
+                    String header = provided.substring(5, provided.indexOf(',')); // e.g., image/png;base64
+                    String contentType = header.contains(";") ? header.substring(0, header.indexOf(';')) : "application/octet-stream";
+                    String base64Part = provided.substring(provided.indexOf(',') + 1);
+                    byte[] bytes = java.util.Base64.getDecoder().decode(base64Part);
+                    String extension = switch (contentType) {
+                        case "image/png" -> ".png";
+                        case "image/jpeg" -> ".jpg";
+                        case "application/pdf" -> ".pdf";
+                        case "application/zip" -> ".zip";
+                        default -> "";
+                    };
+                    String customFilename = String.format("%s_%d_%s%s",
+                            sanitizeFilename(endedVo.title()),
+                            endedVo.id(),
+                            sanitizeFilename(endedVo.creatorName()),
+                            extension);
+                    originalName = customFilename;
+                    fileUrl = s3FileService.uploadBytes(bytes, contentType, customFilename, "study-end-attachments");
+                } else {
+                    // 이미 업로드된 S3 URL
+                    fileUrl = provided;
                 }
-                String customFilename = String.format("%s_%d_%s%s",
-                        sanitizeFilename(endedVo.title()),
-                        endedVo.id(),
-                        sanitizeFilename(endedVo.creatorName()),
-                        fileExtension);
-                String fileUrl = s3FileService.uploadFileWithCustomName(file, "study-end-attachments", customFilename);
                 ObjectNode attachment = objectMapper.createObjectNode();
-                attachment.put("name", originalFilename != null ? originalFilename : customFilename);
+                attachment.put("name", originalName != null ? originalName : "result");
                 attachment.put("url", fileUrl);
                 attachmentsArray.add(attachment);
             } catch (Exception e) {
-                log.error("Failed to upload study end attachment: {}", file.getOriginalFilename(), e);
+                log.error("Failed to handle study end attachment (string)", e);
                 throw new ApplicationException(
                     ExceptionStatus.STUDY_APPLICATION_ATTACHMENT_UPLOAD_FAILED,
-                    "스터디 종료 첨부파일 업로드에 실패했습니다: " + file.getOriginalFilename(),
+                    "스터디 종료 첨부파일 처리에 실패했습니다",
                     e
                 );
             }

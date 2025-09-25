@@ -69,4 +69,9 @@ public class StudyQueryService {
         log.info("Query: Study search completed - found {} studies", studies.getTotalElements());
         return studies;
     }
+
+    @Transactional(readOnly = true)
+    public java.util.List<org.certis.studyplatform.study.domain.vo.StudyEndSubmissionInfoVo> getEndSubmissionsInProgress() {
+        return studyDomainService.getEndSubmissionsInProgress();
+    }
 }

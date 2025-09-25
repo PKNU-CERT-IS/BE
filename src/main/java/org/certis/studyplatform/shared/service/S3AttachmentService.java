@@ -189,6 +189,46 @@ public class S3AttachmentService {
     }
 
     /**
+     * 바이트 배열을 S3에 업로드하고 URL 반환 (Base64 등에서 변환된 데이터용)
+     */
+    public String uploadBytes(byte[] bytes, String contentType, String originalFileName, String domain, Long entityId) {
+        try {
+            if (bytes == null || bytes.length == 0) {
+                throw new InfrastructureException(ExceptionStatus.S3_INFRASTRUCTURE_INVALID_FILE_TYPE);
+            }
+
+            // 파일 크기 제한: 20MB
+            int maxMb = 20;
+            long sizeMb = Math.round(bytes.length / 1024.0 / 1024.0);
+            if (sizeMb > maxMb) {
+                throw new InfrastructureException(ExceptionStatus.S3_INFRASTRUCTURE_UPLOAD_FAILED);
+            }
+
+            String extension = originalFileName != null && originalFileName.contains(".")
+                    ? originalFileName.substring(originalFileName.lastIndexOf('.'))
+                    : "";
+            String uniqueFileName = java.util.UUID.randomUUID().toString() + extension;
+
+            String s3Key = String.format("%s/%d/%s", domain, entityId, uniqueFileName);
+
+            software.amazon.awssdk.services.s3.model.PutObjectRequest putObjectRequest = software.amazon.awssdk.services.s3.model.PutObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(s3Key)
+                    .contentType(contentType)
+                    .build();
+
+            s3Client.putObject(putObjectRequest, software.amazon.awssdk.core.sync.RequestBody.fromBytes(bytes));
+
+            String s3Url = String.format("https://%s.s3.%s.amazonaws.com/%s", bucketName, region, s3Key);
+            log.info("바이트 업로드 성공: domain={}, entityId={}, s3Key={}, url={}, size={}bytes", domain, entityId, s3Key, s3Url, bytes.length);
+            return s3Url;
+        } catch (Exception e) {
+            log.error("S3 바이트 업로드 중 오류: domain={}, entityId={}, error={}", domain, entityId, e.getMessage());
+            throw new InfrastructureException(ExceptionStatus.S3_INFRASTRUCTURE_UPLOAD_FAILED);
+        }
+    }
+
+    /**
      * S3에서 파일 삭제
      */
     public void deleteFile(String s3Url) {

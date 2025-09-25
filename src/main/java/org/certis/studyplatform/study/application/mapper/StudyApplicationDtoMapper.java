@@ -5,6 +5,8 @@ import org.certis.studyplatform.study.presentation.dto.response.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Component;
+import lombok.RequiredArgsConstructor;
+import org.certis.studyplatform.shared.service.S3FileService;
 
 import java.util.Collections;
 import java.util.Objects;
@@ -19,7 +21,10 @@ import java.util.stream.Collectors;
  * Presentation Mapper에서 Application Layer로 이동됨
  */
 @Component
+@RequiredArgsConstructor
 public class StudyApplicationDtoMapper {
+
+    private final S3FileService s3FileService;
 
     /**
      * StudyVo를 StudyDetailResponseDto로 변환
@@ -124,12 +129,13 @@ public class StudyApplicationDtoMapper {
             return null;
         }
 
+        String url = normalizeUrl(vo.attachedUrl());
         return StudyAttachedResponseDto.builder()
                 .id(vo.id())
                 .name(vo.name())
                 .type(vo.type())
                 .size(vo.size())
-                .attachedUrl(vo.attachedUrl())
+                .attachedUrl(url)
                 .build();
     }
 
@@ -144,6 +150,16 @@ public class StudyApplicationDtoMapper {
         return vos.stream()
                 .map(this::toStudyAttachedResponseDto)
                 .toList();
+    }
+
+    private String normalizeUrl(String url) {
+        if (url == null || url.isEmpty()) return url;
+        if (url.startsWith("http://") || url.startsWith("https://")) return url;
+        try {
+            return s3FileService.getFileUrl(url);
+        } catch (Exception e) {
+            return url;
+        }
     }
 
     /**

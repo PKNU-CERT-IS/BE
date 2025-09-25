@@ -420,7 +420,25 @@ public class ProjectDomainService {
      */
     public org.certis.studyplatform.project.domain.vo.ProjectEndSubmissionInfoVo getEndSubmissionInfo(Long projectId) {
         return queryRepository.getEndSubmissionInfo(projectId)
-                .orElse(new org.certis.studyplatform.project.domain.vo.ProjectEndSubmissionInfoVo(projectId, null, null, null));
+                .orElse(new org.certis.studyplatform.project.domain.vo.ProjectEndSubmissionInfoVo(
+                        projectId,
+                        null, // status
+                        null, // submittedAt
+                        null, // attachmentUrl
+                        null, // category
+                        null, // subCategory
+                        null, // title
+                        null, // description
+                        null, // creatorId
+                        null, // startedAt
+                        null, // endedAt
+                        null, // currentParticipantNumber
+                        null  // maxParticipantNumber
+                ));
+    }
+
+    public java.util.List<org.certis.studyplatform.project.domain.vo.ProjectEndSubmissionInfoVo> getEndSubmissionsInProgress() {
+        return queryRepository.findEndSubmissionsInProgress();
     }
 
     /**

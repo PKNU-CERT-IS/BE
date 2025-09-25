@@ -44,6 +44,14 @@ public class S3FileService {
     }
 
     /**
+     * Base64 또는 바이트 데이터를 직접 업로드
+     */
+    public String uploadBytes(byte[] bytes, String contentType, String originalFileName, String domain) {
+        Long temporaryEntityId = System.currentTimeMillis();
+        return s3AttachmentService.uploadBytes(bytes, contentType, originalFileName, domain, temporaryEntityId);
+    }
+
+    /**
      * S3에서 파일 URL 조회/생성
      * @param fileKey 파일 키 또는 URL
      * @return 파일 URL

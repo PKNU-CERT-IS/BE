@@ -137,6 +137,11 @@ public interface StudyQueryRepository {
     Optional<StudyEndSubmissionInfoVo> getEndSubmissionInfo(Long studyId);
 
     /**
+     * 종료 제출 상태가 INPROGRESS인 스터디 목록 조회 (관리자용)
+     */
+    java.util.List<StudyEndSubmissionInfoVo> findEndSubmissionsInProgress();
+
+    /**
      * 스터디 첨부파일 조회
      *
      * @param studyId 조회할 스터디 ID

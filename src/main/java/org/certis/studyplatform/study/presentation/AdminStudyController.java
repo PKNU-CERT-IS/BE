@@ -8,7 +8,6 @@ import org.certis.studyplatform.response.GlobalResponseHandler;
 import org.certis.studyplatform.response.ResponseStatus;
 import org.certis.studyplatform.shared.security.CurrentUser;
 import org.certis.studyplatform.study.application.StudyParticipantFacadeService;
-import org.certis.studyplatform.study.application.command.StudyCommandService;
 
 import org.springframework.web.bind.annotation.PathVariable;
 import org.certis.studyplatform.study.presentation.dto.request.AdminStudyParticipantApprovalRequestDto;
@@ -112,6 +111,13 @@ public class AdminStudyController {
             @PathVariable Long studyId) {
         AdminStudyEndSubmissionResponseDto body = studyFacadeService.getAdminStudyEndSubmission(studyId);
         return GlobalResponseHandler.success(ResponseStatus.STUDY_FIND_SUCCESS, body);
+    }
+
+    @GetMapping("/end")
+    @Operation(summary = "종료 제출 대기중 목록 조회", description = "resultSubmitStatus=INPROGRESS 인 스터디들을 조회합니다")
+    public ResponseEntity<GlobalResponseHandler<java.util.List<AdminStudyEndSubmissionResponseDto>>> getPendingStudyEnds() {
+        var list = studyFacadeService.getAdminStudyEndSubmissionsInProgress();
+        return GlobalResponseHandler.success(ResponseStatus.STUDY_FIND_SUCCESS, list);
     }
 
     @PostMapping("/create/approve")

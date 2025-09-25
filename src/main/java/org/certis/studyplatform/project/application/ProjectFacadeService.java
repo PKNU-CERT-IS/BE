@@ -73,6 +73,7 @@ public class ProjectFacadeService {
     private final ProjectMeetingFacadeService projectMeetingFacadeService;
     private final S3FileService s3FileService;
     private final ProjectDomainService projectDomainService;
+    
 
     // ================================================================
     // COMMAND OPERATIONS - 상태 변경 작업
@@ -209,6 +210,8 @@ public class ProjectFacadeService {
         // VO → DTO 변환 (FacadeService에서만 수행)
         Page<ProjectSummaryResponseDto> responseDto = dtoMapper.toProjectSummaryResponseDtoPage(projects);
 
+        // Attachment enrichment moved to Application Mapper layer
+
         log.info("Facade: All projects retrieved - found {} projects", responseDto.getTotalElements());
         return responseDto;
     }
@@ -227,6 +230,8 @@ public class ProjectFacadeService {
 
         // VO → DTO 변환 (FacadeService에서만 수행)
         Page<ProjectSummaryResponseDto> responseDto = dtoMapper.toProjectSummaryResponseDtoPage(projects);
+
+        // Attachment enrichment moved to Application Mapper layer
 
         log.info("Facade: Project search completed - found {} projects", responseDto.getTotalElements());
         return responseDto;
@@ -264,6 +269,8 @@ public class ProjectFacadeService {
             // 비동기 작업 완료 대기 및 결과 반환
             Page<ProjectSummaryResponseDto> responseDto = searchFuture.join();
 
+            // Attachment enrichment moved to Application Mapper layer
+
             log.info("Facade: Advanced search completed - found {} projects", responseDto.getTotalElements());
             return responseDto;
         }
@@ -290,10 +297,10 @@ public class ProjectFacadeService {
         log.info("Facade: Ending project - ID: {}, requesterId: {}", requestDto.getProjectId(), requesterId);
 
         // Command 객체 생성
-        EndProjectCommand command = EndProjectCommand.of(requestDto.getProjectId(), requesterId, requestDto.getAttachment());
+        EndProjectCommand command = EndProjectCommand.of(requestDto.getProjectId(), requesterId, requestDto.getAttachmentUrl());
 
         // Command Service 호출 (VO 반환)
-        ProjectVo endedVo = projectCommandService.endProject(command);
+        projectCommandService.endProject(command);
 
         // 상태 확정 후 최신 데이터로 재조회하여 DTO 변환
         GetProjectByIdQuery refreshQuery = queryMapper.toGetProjectByIdQuery(requestDto.getProjectId());
@@ -328,7 +335,52 @@ public class ProjectFacadeService {
                 .status(infoVo.status())
                 .submittedAt(infoVo.submittedAt())
                 .attachment(attachment)
+                .category(infoVo.category())
+                .subCategory(infoVo.subCategory())
+                .title(infoVo.title())
+                .description(infoVo.description())
+                .creatorId(infoVo.creatorId())
+                .startedAt(infoVo.startedAt())
+                .endedAt(infoVo.endedAt())
+                .currentParticipantNumber(infoVo.currentParticipantNumber())
+                .maxParticipantNumber(infoVo.maxParticipantNumber())
                 .build();
+    }
+
+    public java.util.List<AdminProjectEndSubmissionResponseDto> getAdminProjectEndSubmissionsInProgress() {
+        var list = projectQueryService.getEndSubmissionsInProgress();
+        java.util.List<AdminProjectEndSubmissionResponseDto> result = new java.util.ArrayList<>();
+        for (var infoVo : list) {
+            ProjectAttachedResponseDto attachment = null;
+            if (infoVo.attachmentUrl() != null) {
+                var info = s3FileService.getObjectInfo(infoVo.attachmentUrl());
+                if (info != null) {
+                    attachment = ProjectAttachedResponseDto.builder()
+                            .id(null)
+                            .name(info.getName())
+                            .type(info.getContentType())
+                            .size(info.getSize() != null ? String.valueOf(info.getSize()) : null)
+                            .attachedUrl(info.getUrl())
+                            .build();
+                }
+            }
+            result.add(AdminProjectEndSubmissionResponseDto.builder()
+                    .projectId(infoVo.projectId())
+                    .status(infoVo.status())
+                    .submittedAt(infoVo.submittedAt())
+                    .attachment(attachment)
+                    .category(infoVo.category())
+                    .subCategory(infoVo.subCategory())
+                    .title(infoVo.title())
+                    .description(infoVo.description())
+                    .creatorId(infoVo.creatorId())
+                    .startedAt(infoVo.startedAt())
+                    .endedAt(infoVo.endedAt())
+                    .currentParticipantNumber(infoVo.currentParticipantNumber())
+                    .maxParticipantNumber(infoVo.maxParticipantNumber())
+                    .build());
+        }
+        return result;
     }
 
     // ================================================================

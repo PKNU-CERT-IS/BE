@@ -132,4 +132,9 @@ public interface ProjectQueryRepository {
     List<ProjectSummaryVo> findCompletedProjectsListByMember(Long memberId);
 
     java.util.Optional<org.certis.studyplatform.project.domain.vo.ProjectEndSubmissionInfoVo> getEndSubmissionInfo(Long projectId);
+
+    /**
+     * 종료 제출 상태가 INPROGRESS인 프로젝트 목록 조회 (관리자용)
+     */
+    java.util.List<org.certis.studyplatform.project.domain.vo.ProjectEndSubmissionInfoVo> findEndSubmissionsInProgress();
 }

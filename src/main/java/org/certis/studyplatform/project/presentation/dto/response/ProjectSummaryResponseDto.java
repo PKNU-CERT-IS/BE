@@ -63,6 +63,8 @@ public class ProjectSummaryResponseDto {
 
     private Integer currentParticipantNumber;
 
+    private List<ProjectAttachedResponseDto> attachments;
+
     // toString for logging
     @Override
     public String toString() {

@@ -15,7 +15,6 @@ import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.OrderField;
-import org.jooq.Record;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -26,6 +25,7 @@ import org.certis.studyplatform.project.domain.vo.ProjectEndSubmissionInfoVo;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 
 import static org.certis.generated.jooq.Tables.*;
 import static org.jooq.impl.DSL.*;
@@ -62,7 +62,21 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                                 p.ID,
                                 p.RESULT_SUBMIT_STATUS,
                                 p.RESULT_SUBMITTED_AT,
-                                p.RESULT_ATTACHED_URL
+                                p.RESULT_ATTACHED_URL,
+                                p.CATEGORY,
+                                p.SUBCATEGORY,
+                                p.TITLE,
+                                p.DESCRIPTION,
+                                p.MEMBER_ID,
+                                p.STARTED_AT,
+                                p.ENDED_AT,
+                                // current participants
+                                org.jooq.impl.DSL.select(org.jooq.impl.DSL.count())
+                                        .from(org.certis.generated.jooq.tables.ProjectParticipant.PROJECT_PARTICIPANT)
+                                        .where(org.certis.generated.jooq.tables.ProjectParticipant.PROJECT_PARTICIPANT.PROJECT_ID.eq(p.ID))
+                                        .and(org.certis.generated.jooq.tables.ProjectParticipant.PROJECT_PARTICIPANT.DELETED_AT.isNull())
+                                        .asField("current_participants"),
+                                p.MAX_PARTICIPANTS_NUMBER
                         )
                         .from(p)
                         .where(p.ID.eq(projectId))
@@ -75,9 +89,61 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                     r.get(p.ID),
                     status,
                     r.get(p.RESULT_SUBMITTED_AT),
-                    r.get(p.RESULT_ATTACHED_URL)
+                    r.get(p.RESULT_ATTACHED_URL),
+                    r.get(p.CATEGORY),
+                    r.get(p.SUBCATEGORY),
+                    r.get(p.TITLE),
+                    r.get(p.DESCRIPTION),
+                    r.get(p.MEMBER_ID),
+                    r.get(p.STARTED_AT),
+                    r.get(p.ENDED_AT),
+                    r.get("current_participants", Integer.class),
+                    r.get(p.MAX_PARTICIPANTS_NUMBER)
             );
         });
+    }
+
+    @Override
+    public java.util.List<ProjectEndSubmissionInfoVo> findEndSubmissionsInProgress() {
+        var p = PROJECT.as("p");
+        return dsl.select(
+                        p.ID,
+                        p.RESULT_SUBMIT_STATUS,
+                        p.RESULT_SUBMITTED_AT,
+                        p.RESULT_ATTACHED_URL,
+                        p.CATEGORY,
+                        p.SUBCATEGORY,
+                        p.TITLE,
+                        p.DESCRIPTION,
+                        p.MEMBER_ID,
+                        p.STARTED_AT,
+                        p.ENDED_AT,
+                        org.jooq.impl.DSL.select(org.jooq.impl.DSL.count())
+                                .from(org.certis.generated.jooq.tables.ProjectParticipant.PROJECT_PARTICIPANT)
+                                .where(org.certis.generated.jooq.tables.ProjectParticipant.PROJECT_PARTICIPANT.PROJECT_ID.eq(p.ID))
+                                .and(org.certis.generated.jooq.tables.ProjectParticipant.PROJECT_PARTICIPANT.DELETED_AT.isNull())
+                                .asField("current_participants"),
+                        p.MAX_PARTICIPANTS_NUMBER
+                )
+                .from(p)
+                .where(p.RESULT_SUBMIT_STATUS.eq(org.certis.studyplatform.shared.domain.ResultSubmitStatus.INPROGRESS.name()))
+                .and(p.DELETED_AT.isNull())
+                .orderBy(p.RESULT_SUBMITTED_AT.desc())
+                .fetch(r -> new ProjectEndSubmissionInfoVo(
+                        r.get(p.ID),
+                        org.certis.studyplatform.shared.domain.ResultSubmitStatus.valueOf(r.get(p.RESULT_SUBMIT_STATUS)),
+                        r.get(p.RESULT_SUBMITTED_AT),
+                        r.get(p.RESULT_ATTACHED_URL),
+                        r.get(p.CATEGORY),
+                        r.get(p.SUBCATEGORY),
+                        r.get(p.TITLE),
+                        r.get(p.DESCRIPTION),
+                        r.get(p.MEMBER_ID),
+                        r.get(p.STARTED_AT),
+                        r.get(p.ENDED_AT),
+                        r.get("current_participants", Integer.class),
+                        r.get(p.MAX_PARTICIPANTS_NUMBER)
+                ));
     }
 
     @Override
@@ -196,6 +262,33 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                 .offset((int) pageable.getOffset())
                 .fetch(mapper::toProjectSummaryVoFromRecord);
 
+        // 첨부파일을 각 프로젝트에 채워 넣기 (S3 URL은 상위 계층에서 normalize)
+        projectSummaries = projectSummaries.stream().map(vo -> {
+            List<org.certis.studyplatform.project.domain.vo.ProjectAttachedVo> attachments = findAttachmentsByProjectId(vo.id());
+            return org.certis.studyplatform.project.domain.vo.ProjectSummaryVo.of(
+                    vo.id(),
+                    vo.title(),
+                    vo.description(),
+                    vo.category(),
+                    vo.subcategory(),
+                    vo.startDate(),
+                    vo.endDate(),
+                    vo.projectCreatorName(),
+                    vo.projectCreatorGrade(),
+                    vo.semester(),
+                    vo.status(),
+                    vo.isParticipantable(),
+                    vo.githubUrl(),
+                    vo.externalUrl(),
+                    vo.thumbnailUrl(),
+                    vo.demoUrl(),
+                    vo.maxParticipantNumber(),
+                    vo.currentParticipantNumber(),
+                    vo.resultSubmitStatus(),
+                    attachments
+            );
+        }).toList();
+
         log.debug("jOOQ: Data query executed successfully, found {} project summaries",
                 projectSummaries.size());
 
@@ -259,6 +352,17 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                 .offset((int) pageable.getOffset())
                 .fetch(mapper::toProjectSummaryVoFromRecord);
 
+        projectSummaries = projectSummaries.stream().map(vo -> {
+            List<org.certis.studyplatform.project.domain.vo.ProjectAttachedVo> attachments = findAttachmentsByProjectId(vo.id());
+            return org.certis.studyplatform.project.domain.vo.ProjectSummaryVo.of(
+                    vo.id(), vo.title(), vo.description(), vo.category(), vo.subcategory(),
+                    vo.startDate(), vo.endDate(), vo.projectCreatorName(), vo.projectCreatorGrade(),
+                    vo.semester(), vo.status(), vo.isParticipantable(), vo.githubUrl(), vo.externalUrl(),
+                    vo.thumbnailUrl(), vo.demoUrl(), vo.maxParticipantNumber(), vo.currentParticipantNumber(),
+                    vo.resultSubmitStatus(), attachments
+            );
+        }).toList();
+
         return createSearchResult(projectSummaries, total, pageable);
     }
 
@@ -307,6 +411,17 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                 .limit(pageable.getPageSize())
                 .offset((int) pageable.getOffset())
                 .fetch(mapper::toProjectSummaryVoFromRecord);
+
+        projectSummaries = projectSummaries.stream().map(vo -> {
+            List<org.certis.studyplatform.project.domain.vo.ProjectAttachedVo> attachments = findAttachmentsByProjectId(vo.id());
+            return org.certis.studyplatform.project.domain.vo.ProjectSummaryVo.of(
+                    vo.id(), vo.title(), vo.description(), vo.category(), vo.subcategory(),
+                    vo.startDate(), vo.endDate(), vo.projectCreatorName(), vo.projectCreatorGrade(),
+                    vo.semester(), vo.status(), vo.isParticipantable(), vo.githubUrl(), vo.externalUrl(),
+                    vo.thumbnailUrl(), vo.demoUrl(), vo.maxParticipantNumber(), vo.currentParticipantNumber(),
+                    vo.resultSubmitStatus(), attachments
+            );
+        }).toList();
 
         return createSearchResult(projectSummaries, total, pageable);
     }
@@ -357,6 +472,17 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                 .limit(pageable.getPageSize())
                 .offset((int) pageable.getOffset())
                 .fetch(mapper::toProjectSummaryVoFromRecord);
+
+        projectSummaries = projectSummaries.stream().map(vo -> {
+            List<org.certis.studyplatform.project.domain.vo.ProjectAttachedVo> attachments = findAttachmentsByProjectId(vo.id());
+            return org.certis.studyplatform.project.domain.vo.ProjectSummaryVo.of(
+                    vo.id(), vo.title(), vo.description(), vo.category(), vo.subcategory(),
+                    vo.startDate(), vo.endDate(), vo.projectCreatorName(), vo.projectCreatorGrade(),
+                    vo.semester(), vo.status(), vo.isParticipantable(), vo.githubUrl(), vo.externalUrl(),
+                    vo.thumbnailUrl(), vo.demoUrl(), vo.maxParticipantNumber(), vo.currentParticipantNumber(),
+                    vo.resultSubmitStatus(), attachments
+            );
+        }).toList();
 
         return createSearchResult(projectSummaries, total, pageable);
     }
@@ -696,7 +822,8 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                             record.get(p.DEMO_URL), // demoUrl
                             record.get(p.MAX_PARTICIPANTS_NUMBER, Integer.class), // maxParticipantNumber
                             record.get("current_participants", Integer.class), // currentParticipantNumber
-                            null
+                            record.get(p.RESULT_SUBMIT_STATUS, ResultSubmitStatus.class),
+                            java.util.Collections.emptyList()
                     );
                 });
 
@@ -776,7 +903,8 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                             record.get(p.DEMO_URL), // demoUrl
                             record.get(p.MAX_PARTICIPANTS_NUMBER, Integer.class), // maxParticipantNumber
                             record.get("current_participants", Integer.class), // currentParticipantNumber
-                            null
+                            null,
+                            java.util.Collections.emptyList()
                     );
                 });
     }
@@ -961,6 +1089,34 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
             return new String[0];
         }
         return skills.toArray(new String[0]);
+    }
+
+    /**
+     * 프로젝트 첨부파일 조회 (요약 조회용)
+     */
+    private List<org.certis.studyplatform.project.domain.vo.ProjectAttachedVo> findAttachmentsByProjectId(Long projectId) {
+        var pa = PROJECT_ATTACHED.as("pa");
+        return dsl.select(
+                        pa.ID,
+                        pa.NAME,
+                        pa.TYPE,
+                        pa.SIZE,
+                        pa.ATTACHED_URL
+                )
+                .from(pa)
+                .where(pa.PROJECT_ID.eq(projectId))
+                .and(pa.DELETED_AT.isNull())
+                .orderBy(pa.CREATED_AT.asc())
+                .fetch()
+                .stream()
+                .map(record -> org.certis.studyplatform.project.domain.vo.ProjectAttachedVo.of(
+                        record.get(pa.ID),
+                        record.get(pa.NAME),
+                        record.get(pa.TYPE),
+                        record.get(pa.SIZE),
+                        record.get(pa.ATTACHED_URL)
+                ))
+                .toList();
     }
 
     /**

@@ -271,10 +271,10 @@ public class StudyFacadeService {
         log.info("Facade: Ending study - ID: {}, requesterId: {}", requestDto.getStudyId(), requesterId);
 
         // Command 객체 생성
-        EndStudyCommand command = EndStudyCommand.of(requestDto.getStudyId(), requesterId, requestDto.getAttachment());
+        EndStudyCommand command = EndStudyCommand.of(requestDto.getStudyId(), requesterId, requestDto.getAttachmentUrl());
 
         // Command Service 호출 (VO 반환)
-        StudyVo endedVo = studyCommandService.endStudy(command);
+        studyCommandService.endStudy(command);
 
         // 상태 확정 후 최신 데이터로 재조회하여 DTO 변환
         GetStudyByIdQuery refreshQuery = queryMapper.toGetStudyByIdQuery(requestDto.getStudyId());
@@ -308,7 +308,52 @@ public class StudyFacadeService {
                 .status(infoVo.status())
                 .submittedAt(infoVo.submittedAt())
                 .attachment(attachment)
+                .category(infoVo.category())
+                .subCategory(infoVo.subCategory())
+                .title(infoVo.title())
+                .description(infoVo.description())
+                .creatorId(infoVo.creatorId())
+                .startedAt(infoVo.startedAt())
+                .endedAt(infoVo.endedAt())
+                .currentParticipantNumber(infoVo.currentParticipantNumber())
+                .maxParticipantNumber(infoVo.maxParticipantNumber())
                 .build();
+    }
+
+    public java.util.List<AdminStudyEndSubmissionResponseDto> getAdminStudyEndSubmissionsInProgress() {
+        var list = studyDomainService.getEndSubmissionsInProgress();
+        java.util.List<AdminStudyEndSubmissionResponseDto> result = new java.util.ArrayList<>();
+        for (var infoVo : list) {
+            StudyAttachedResponseDto attachment = null;
+            if (infoVo.attachmentUrl() != null) {
+                var info = s3FileService.getObjectInfo(infoVo.attachmentUrl());
+                if (info != null) {
+                    attachment = StudyAttachedResponseDto.builder()
+                            .id(null)
+                            .name(info.getName())
+                            .type(info.getContentType())
+                            .size(info.getSize() != null ? String.valueOf(info.getSize()) : null)
+                            .attachedUrl(info.getUrl())
+                            .build();
+                }
+            }
+            result.add(AdminStudyEndSubmissionResponseDto.builder()
+                    .studyId(infoVo.studyId())
+                    .status(infoVo.status())
+                    .submittedAt(infoVo.submittedAt())
+                    .attachment(attachment)
+                    .category(infoVo.category())
+                    .subCategory(infoVo.subCategory())
+                    .title(infoVo.title())
+                    .description(infoVo.description())
+                    .creatorId(infoVo.creatorId())
+                    .startedAt(infoVo.startedAt())
+                    .endedAt(infoVo.endedAt())
+                    .currentParticipantNumber(infoVo.currentParticipantNumber())
+                    .maxParticipantNumber(infoVo.maxParticipantNumber())
+                    .build());
+        }
+        return result;
     }
 
     // ================================================================

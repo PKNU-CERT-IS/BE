@@ -20,7 +20,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.certis.studyplatform.study.presentation.dto.request.StudyEndRequestDto;
@@ -211,9 +210,9 @@ public class StudyController {
      * 스터디 종료
      * POST /api/v1/study/end
      */
-    @PostMapping(value = "/end", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/end")
     public ResponseEntity<GlobalResponseHandler<StudyDetailResponseDto>> endStudy(
-            @Valid @ModelAttribute StudyEndRequestDto requestDto,
+            @Valid @RequestBody StudyEndRequestDto requestDto,
             @AuthenticationPrincipal CurrentUser currentUser) {
         log.info("REST: Ending study - ID: {}, requesterId: {}", requestDto.getStudyId(), currentUser.getId());
 
