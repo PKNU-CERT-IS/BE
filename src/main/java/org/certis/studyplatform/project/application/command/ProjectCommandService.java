@@ -21,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 
 /**
@@ -92,19 +91,10 @@ public class ProjectCommandService {
         // Command 객체를 Domain Service로 전달
         ProjectVo updatedVo = projectDomainService.updateProject(command);
 
-        // 첨부파일 null이면 기존 첨부 전체 삭제 (S3 + DB)
-        if (command.attachedFiles() == null) {
-            // 기존 첨부 전체 삭제 (S3 + DB)
-            List<ProjectAttachedEntity> existing = projectAttachedJpaRepository.findByProjectId(updatedVo.id());
-            for (ProjectAttachedEntity e : existing) {
-                try {
-                    s3FileService.deleteFile(e.getAttachedUrl());
-                } catch (Exception ex) {
-                    log.warn("Failed to delete project attachment from S3 url={} projectId={}", e.getAttachedUrl(), updatedVo.id(), ex);
-                }
-            }
-            projectAttachedJpaRepository.deleteByProjectId(updatedVo.id());
-        } else if (!command.attachedFiles().isEmpty()) {
+        // 정책 변경 (Additive):
+        // - attachments == null 또는 빈 리스트 -> 아무 작업도 하지 않음 (기존 유지)
+        // - attachments 제공됨               -> 기존 보존 + 신규만 추가 저장
+        if (command.attachedFiles() != null && !command.attachedFiles().isEmpty()) {
             for (var file : command.attachedFiles()) {
                 ProjectAttachedEntity entity = ProjectAttachedEntity.builder()
                         .projectId(updatedVo.id())

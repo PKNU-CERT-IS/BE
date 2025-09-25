@@ -23,6 +23,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.certis.studyplatform.project.domain.ProjectParticipantStatus;
+import org.certis.studyplatform.shared.service.S3FileService;
 
 import java.util.Collections;
 import java.util.List;
@@ -45,6 +46,7 @@ public class ProjectMeetingFacadeService {
     private final ProjectMeetingCommandService projectMeetingCommandService;
     private final ProjectMeetingQueryService projectMeetingQueryService;
     private final ProjectParticipantQueryService projectParticipantQueryService;
+    private final S3FileService s3FileService;
 
     // ================================================================
     // PROJECT MEETING OPERATIONS - 회의록 관리
@@ -120,11 +122,21 @@ public class ProjectMeetingFacadeService {
                 .updatedAt(meetingVo.updatedAt())
                 .isEditable(meetingVo.isEditable())
                 .links(meetingVo.attachedLinks() == null ? java.util.Collections.emptyList() : meetingVo.attachedLinks().stream()
-                        .map(linkVo -> ProjectMeetingDetailResponseDto.Link.builder()
-                                .title(linkVo.name())
-                                .url(linkVo.attachedUrl())
-                                .build())
-                        .toList())
+                        .map(linkVo -> {
+                            try {
+                                var info = s3FileService.getObjectInfo(linkVo.attachedUrl());
+                                if (info != null) {
+                                    return ProjectMeetingDetailResponseDto.Link.builder()
+                                            .title(info.getName())
+                                            .url(info.getUrl())
+                                            .build();
+                                }
+                            } catch (Exception ignored) {}
+                            return ProjectMeetingDetailResponseDto.Link.builder()
+                                    .title(linkVo.name())
+                                    .url(linkVo.attachedUrl())
+                                    .build();
+                        }).toList())
                 .build();
         
         log.info("MeetingFacade: Project meeting detail retrieved successfully - ID: {}", responseDto.getId());

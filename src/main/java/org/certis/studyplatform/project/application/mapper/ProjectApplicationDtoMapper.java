@@ -12,7 +12,6 @@ import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * Project Application DTO Mapper
@@ -140,7 +139,7 @@ public class ProjectApplicationDtoMapper {
                 .participantNumber(vo.participantNumber())
                 .creatorName(vo.creatorName())
                 .isEditable(vo.isEditable())
-                .links(vo.hasLinks() ? createMockLinks(vo.safeLinkCount()) : Collections.emptyList())
+                .links(Collections.emptyList())
                 .build();
     }
 
@@ -152,15 +151,9 @@ public class ProjectApplicationDtoMapper {
             return null;
         }
 
-        // 기존 meetingAttachedUrl과 meetingAttachedTitle을 links로 변환
+        // 링크는 Facade 레이어에서 S3 메타데이터를 통해 채울 수 있도록 비워둔다
         List<ProjectMeetingSummaryResponseDto.Link> links = Collections.emptyList();
-        if (vo.meetingAttachedUrl() != null && !vo.meetingAttachedUrl().isEmpty()) {
-            links = List.of(ProjectMeetingSummaryResponseDto.Link.builder()
-                    .title(vo.meetingAttachedTitle() != null ? vo.meetingAttachedTitle() : "회의록 첨부 링크")
-                    .url(vo.meetingAttachedUrl())
-                    .build());
-        }
-
+        
         return ProjectMeetingSummaryResponseDto.builder()
                 .id(vo.id())
                 .title(vo.title())
@@ -181,22 +174,6 @@ public class ProjectApplicationDtoMapper {
 
         return vos.stream()
                 .map(this::toProjectMeetingSummaryResponseDto)
-                .toList();
-    }
-
-    /**
-     * 테스트용 링크 목록 생성
-     */
-    private List<ProjectMeetingSummaryResponseDto.Link> createMockLinks(int count) {
-        if (count <= 0) {
-            return Collections.emptyList();
-        }
-        
-        return IntStream.range(0, count)
-                .mapToObj(i -> ProjectMeetingSummaryResponseDto.Link.builder()
-                        .title("회의록 첨부 링크 " + (i + 1))
-                        .url("https://example.com/meeting-notes-" + (i + 1) + ".pdf")
-                        .build())
                 .toList();
     }
 
@@ -286,7 +263,6 @@ public class ProjectApplicationDtoMapper {
                 .id(vo.id())
                 .memberId(vo.memberId())
                 .memberName(vo.memberName())
-                .memberGrade(vo.memberGrade())
                 .status(vo.status())
                 .createdAt(vo.createdAt())
                 .build();
