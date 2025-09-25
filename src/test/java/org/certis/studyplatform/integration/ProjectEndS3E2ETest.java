@@ -138,7 +138,7 @@ class ProjectEndS3E2ETest {
         //         "Skipping: S3 bucket does not exist or is not accessible");
 
         String dataUrl = "data:text/plain;base64,SGVsbG8gd29ybGQ="; // Hello world
-        String body = "{\"projectId\":" + PROJECT_ID + ",\"attachmentUrl\":\"" + dataUrl + "\"}";
+        String body = "{\"projectId\":" + PROJECT_ID + ",\"attachment\":{\"attachedUrl\":\"" + dataUrl + "\",\"name\":\"report.pdf\",\"type\":\"application/pdf\",\"size\":\"1234\"}}";
 
         mockMvc.perform(post(USER_BASE + "/end")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -148,7 +148,7 @@ class ProjectEndS3E2ETest {
 
         // DB에서 결과 확인
         var rec = dsl.fetchOne("select result_submit_status, result_attached_url from project where id=?", PROJECT_ID);
-        assertThat(rec.get("result_submit_status", String.class)).isEqualTo("COMPLETED");
+        assertThat(rec.get("result_submit_status", String.class)).isEqualTo("INPROGRESS");
         
         String url = rec.get("result_attached_url", String.class);
         assertThat(url).isNotBlank();
@@ -176,7 +176,7 @@ class ProjectEndS3E2ETest {
         assumeTrue(bucketName != null && !bucketName.isEmpty(), "AWS_S3_BUCKET 환경변수가 설정되지 않았습니다.");
 
         String dataUrl = "data:text/plain;base64,ZG9uZQ=="; // done
-        String body = "{\"projectId\":" + PROJECT_ID + ",\"attachmentUrl\":\"" + dataUrl + "\"}";
+        String body = "{\"projectId\":" + PROJECT_ID + ",\"attachment\":{\"attachedUrl\":\"" + dataUrl + "\",\"name\":\"report.pdf\",\"type\":\"application/pdf\",\"size\":\"1234\"}}";
         mockMvc.perform(post(USER_BASE + "/end")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
@@ -186,7 +186,7 @@ class ProjectEndS3E2ETest {
         mockMvc.perform(get(USER_BASE + "/detail").param("projectId", String.valueOf(PROJECT_ID)))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.resultSubmitStatus").value("COMPLETED"));
+                .andExpect(jsonPath("$.data.resultSubmitStatus").value("INPROGRESS"));
 
         // DB에서 URL 재확인 (detail 응답에는 별도 필드로 노출되지 않음)
         var rec = dsl.fetchOne("select result_attached_url from project where id=?", PROJECT_ID);
@@ -198,7 +198,7 @@ class ProjectEndS3E2ETest {
 
     @Test
     @WithMockUser(username = "staff", roles = {"STAFF"})
-    @DisplayName("/project/end without attachmentUrl returns 400 Bad Request")
+    @DisplayName("/project/end without attachment returns 400 Bad Request")
     void end_without_file_returns_bad_request() throws Exception {
         String body = "{\"projectId\":" + PROJECT_ID + "}";
         mockMvc.perform(post(USER_BASE + "/end")
@@ -234,7 +234,7 @@ class ProjectEndS3E2ETest {
 
         String pdfBase64 = java.util.Base64.getEncoder().encodeToString(createMockPdfData());
         String dataUrl = "data:application/pdf;base64," + pdfBase64;
-        String body = "{\"projectId\":" + PROJECT_ID + ",\"attachmentUrl\":\"" + dataUrl + "\"}";
+        String body = "{\"projectId\":" + PROJECT_ID + ",\"attachment\":{\"attachedUrl\":\"" + dataUrl + "\",\"name\":\"report.pdf\",\"type\":\"application/pdf\",\"size\":\"1234\"}}";
 
         mockMvc.perform(post(USER_BASE + "/end")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -244,7 +244,7 @@ class ProjectEndS3E2ETest {
 
         // DB에서 결과 확인 (단일 URL 저장 확인)
         var rec = dsl.fetchOne("select result_submit_status, result_attached_url from project where id=?", PROJECT_ID);
-        assertThat(rec.get("result_submit_status", String.class)).isEqualTo("COMPLETED");
+        assertThat(rec.get("result_submit_status", String.class)).isEqualTo("INPROGRESS");
         
         String url = rec.get("result_attached_url", String.class);
         assertThat(url).isNotBlank();
@@ -272,7 +272,7 @@ class ProjectEndS3E2ETest {
         if (hasCredentials) {
             // 크레덴셜이 있는 경우에도 테스트를 수행하여 정상 동작 확인
             String dataUrl = "data:text/plain;base64,SGVsbG8gd29ybGQ=";
-            String body = "{\"projectId\":" + PROJECT_ID + ",\"attachmentUrl\":\"" + dataUrl + "\"}";
+            String body = "{\"projectId\":" + PROJECT_ID + ",\"attachment\":{\"attachedUrl\":\"" + dataUrl + "\",\"name\":\"report.pdf\",\"type\":\"application/pdf\",\"size\":\"1234\"}}";
             mockMvc.perform(post(USER_BASE + "/end")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(body))
@@ -287,7 +287,7 @@ class ProjectEndS3E2ETest {
         } else {
             // 크레덴셜이 없는 경우 기대 동작(에러 또는 graceful 실패) 확인
             String dataUrl = "data:text/plain;base64,SGVsbG8gd29ybGQ=";
-            String body = "{\"projectId\":" + PROJECT_ID + ",\"attachmentUrl\":\"" + dataUrl + "\"}";
+            String body = "{\"projectId\":" + PROJECT_ID + ",\"attachment\":{\"attachedUrl\":\"" + dataUrl + "\",\"name\":\"report.pdf\",\"type\":\"application/pdf\",\"size\":\"1234\"}}";
             mockMvc.perform(post(USER_BASE + "/end")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(body))

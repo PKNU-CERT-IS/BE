@@ -3,6 +3,7 @@ package org.certis.studyplatform.board.presentation;
 import org.certis.studyplatform.board.application.mapper.BoardApplicationMapper;
 import org.certis.studyplatform.board.application.object.query.SearchBoardsQuery;
 import org.certis.studyplatform.board.presentation.dto.request.BoardSearchRequestDto;
+import org.certis.studyplatform.shared.service.S3FileService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,7 +23,11 @@ class BoardSearchTest {
 
     @BeforeEach
     void setUp() {
-        mapper = new BoardApplicationMapper();
+        // Mock S3FileService for unit test
+        S3FileService mockS3FileService = org.mockito.Mockito.mock(S3FileService.class);
+        org.mockito.Mockito.when(mockS3FileService.getFileUrl(org.mockito.ArgumentMatchers.anyString()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        mapper = new BoardApplicationMapper(mockS3FileService);
     }
 
     @Test

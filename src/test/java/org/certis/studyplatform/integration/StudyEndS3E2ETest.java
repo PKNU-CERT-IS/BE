@@ -16,6 +16,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.certis.generated.jooq.Tables.*;
@@ -121,7 +122,12 @@ class StudyEndS3E2ETest {
         // Create request DTO
         var requestDto = new java.util.HashMap<String, Object>();
         requestDto.put("studyId", STUDY_ID);
-        requestDto.put("attachmentUrl", dataUrl);
+        requestDto.put("attachment", Map.of(
+                "attachedUrl", dataUrl,
+                "name", "report.pdf",
+                "type", "application/pdf",
+                "size", "1234"
+        ));
 
         if (hasCredentials) {
             mockMvc.perform(post(USER_BASE + "/end")
@@ -180,7 +186,12 @@ class StudyEndS3E2ETest {
 
             var requestDto1 = new java.util.HashMap<String, Object>();
             requestDto1.put("studyId", testStudyId);
-            requestDto1.put("attachmentUrl", dataUrl);
+            requestDto1.put("attachment", Map.of(
+                    "attachedUrl", dataUrl,
+                    "name", "report.pdf",
+                    "type", "application/pdf",
+                    "size", "1234"
+            ));
 
             mockMvc.perform(post(USER_BASE + "/end")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -195,7 +206,12 @@ class StudyEndS3E2ETest {
             // Now test with the existing S3 URL (this should fail because study is already ended)
             var requestDto2 = new java.util.HashMap<String, Object>();
             requestDto2.put("studyId", testStudyId);
-            requestDto2.put("attachmentUrl", existingS3Url);
+            requestDto2.put("attachment", Map.of(
+                    "attachedUrl", existingS3Url,
+                    "name", "report.pdf",
+                    "type", "application/pdf",
+                    "size", "1234"
+            ));
 
             mockMvc.perform(post(USER_BASE + "/end")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -203,9 +219,9 @@ class StudyEndS3E2ETest {
                     .andDo(print())
                     .andExpect(status().isUnprocessableEntity()); // Should fail because study is already ended
 
-            // Verify the study is in COMPLETED status
+            // Verify the study is in INPROGRESS status
             var rec2 = dsl.fetchOne("select result_submit_status, result_attached_url from study where id=?", testStudyId);
-            assertThat(rec2.get("result_submit_status", String.class)).isEqualTo("COMPLETED");
+            assertThat(rec2.get("result_submit_status", String.class)).isEqualTo("INPROGRESS");
             String finalUrl = rec2.get("result_attached_url", String.class);
             assertThat(finalUrl).isEqualTo(existingS3Url);
         } else {
@@ -214,7 +230,12 @@ class StudyEndS3E2ETest {
             
             var requestDto = new java.util.HashMap<String, Object>();
             requestDto.put("studyId", testStudyId);
-            requestDto.put("attachmentUrl", mockS3Url);
+            requestDto.put("attachment", Map.of(
+                    "attachedUrl", mockS3Url,
+                    "name", "report.pdf",
+                    "type", "application/pdf",
+                    "size", "1234"
+            ));
 
             mockMvc.perform(post(USER_BASE + "/end")
                             .contentType(MediaType.APPLICATION_JSON)
