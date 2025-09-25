@@ -57,8 +57,17 @@ public class S3FileService {
      * @return 파일 URL
      */
     public String getFileUrl(String fileKey) {
-        // fileKey가 이미 완전한 URL인 경우 그대로 반환
+        // fileKey가 이미 URL인 경우: S3 URL이면 presigned URL 생성, 그 외에는 그대로 반환
         if (fileKey != null && fileKey.startsWith("https://")) {
+            try {
+                String bucket = System.getProperty("AWS_S3_BUCKET", System.getenv().getOrDefault("AWS_S3_BUCKET", "test-bucket"));
+                // 일반적인 S3 URL 패턴 확인
+                if (fileKey.contains(".s3.") && fileKey.contains(bucket)) {
+                    return s3AttachmentService.generatePresignedUrl(fileKey, java.time.Duration.ofHours(1));
+                }
+            } catch (Exception ignored) {
+                // presign 실패 시 원본 URL 반환
+            }
             return fileKey;
         }
         
@@ -66,10 +75,14 @@ public class S3FileService {
         // 실제 구현에서는 presigned URL을 생성하거나 public URL을 반환
         log.info("File URL requested for key: {}", fileKey);
         
-        // 현재는 단순히 공개 URL 형식으로 변환
+        // 현재는 기본 버킷/리전으로 S3 URL 구성 후 presigned URL 반환
         if (fileKey != null && !fileKey.isEmpty()) {
-            return String.format("https://%s.s3.%s.amazonaws.com/%s", 
-                    "test-bucket", "ap-northeast-2", fileKey);
+            String s3Url = String.format("https://%s.s3.%s.amazonaws.com/%s", 
+                    System.getProperty("AWS_S3_BUCKET", System.getenv().getOrDefault("AWS_S3_BUCKET", "test-bucket")),
+                    System.getProperty("AWS_DEFAULT_REGION", System.getenv().getOrDefault("AWS_DEFAULT_REGION", "ap-northeast-2")),
+                    fileKey);
+            // Presigned URL 생성으로 접근권한 문제 방지
+            return s3AttachmentService.generatePresignedUrl(s3Url, java.time.Duration.ofHours(1));
         }
         
         return fileKey;
@@ -130,6 +143,7 @@ public class S3FileService {
      * 파일 메타데이터 조회 (이름/타입/크기/URL)
      */
     public S3ObjectInfo getObjectInfo(String s3Url) {
+        // 메타 조회는 원본 URL로 수행
         return s3AttachmentService.getObjectInfo(s3Url);
     }
 }

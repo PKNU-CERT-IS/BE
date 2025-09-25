@@ -15,6 +15,10 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -46,6 +50,7 @@ public class S3AttachmentService {
     private String secretAccessKey;
 
     private S3Client s3Client;
+    private S3Presigner s3Presigner;
 
     @PostConstruct
     public void initializeS3Client() {
@@ -64,6 +69,10 @@ public class S3AttachmentService {
             }
             
             this.s3Client = builder.build();
+            // Presigner 초기화 (자격증명은 기본 공급자 체인 사용)
+            this.s3Presigner = S3Presigner.builder()
+                    .region(Region.of(region))
+                    .build();
         } catch (Exception e) {
             log.error("S3Client 초기화 실패: {}", e.getMessage());
             throw new InfrastructureException(ExceptionStatus.S3_INFRASTRUCTURE_CONNECTION_FAILED);
@@ -75,6 +84,10 @@ public class S3AttachmentService {
         if (s3Client != null) {
             s3Client.close();
             log.info("S3Client 연결 종료");
+        }
+        if (s3Presigner != null) {
+            s3Presigner.close();
+            log.info("S3Presigner 종료");
         }
     }
 
@@ -352,6 +365,37 @@ public class S3AttachmentService {
         } catch (Exception e) {
             log.error("S3 URL에서 키 추출 실패: url={}, error={}", s3Url, e.getMessage());
             return null;
+        }
+    }
+
+    /**
+     * Presigned URL 생성 (기본 1시간 유효)
+     */
+    public String generatePresignedUrl(String s3Url, java.time.Duration duration) {
+        try {
+            if (s3Url == null || s3Url.isEmpty()) {
+                return null;
+            }
+            String s3Key = extractS3KeyFromUrl(s3Url);
+            if (s3Key == null) {
+                return s3Url; // 이미 외부 URL이면 그대로 반환
+            }
+
+            GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(s3Key)
+                    .build();
+
+            GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+                    .signatureDuration(duration != null ? duration : java.time.Duration.ofHours(1))
+                    .getObjectRequest(getObjectRequest)
+                    .build();
+
+            PresignedGetObjectRequest presigned = s3Presigner.presignGetObject(presignRequest);
+            return presigned.url().toString();
+        } catch (Exception e) {
+            log.error("Presigned URL 생성 실패: url={}, error={}", s3Url, e.getMessage());
+            return s3Url;
         }
     }
 
