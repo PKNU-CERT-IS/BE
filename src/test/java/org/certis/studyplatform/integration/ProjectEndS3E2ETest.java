@@ -18,6 +18,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.nio.charset.StandardCharsets;
 
@@ -47,7 +48,8 @@ class ProjectEndS3E2ETest {
     @Autowired
     private S3FileService s3FileService;
 
-    // ObjectMapper not needed after switching to single URL field
+    @Autowired
+    private ObjectMapper objectMapper;
 
     private static final String USER_BASE = "/api/v1/project";
     private static final Long STAFF_ID = 3L; // WithMockUser("staff") maps to 3L in tests
@@ -113,7 +115,7 @@ class ProjectEndS3E2ETest {
 
     @Test
     @WithMockUser(username = "staff", roles = {"STAFF"})
-    @DisplayName("/project/end uploads file to real S3 and stores single URL when creds exist")
+    @DisplayName("/project/end with data URL uploads to real S3 and stores URL when creds exist")
     void end_uploads_to_s3_and_stores_urls() throws Exception {
         // S3FileUploadIntegrationTest와 동일한 방식으로 자격증명 확인
         String accessKeyId = dotenv.get("AWS_ACCESS_KEY_ID");
@@ -135,12 +137,12 @@ class ProjectEndS3E2ETest {
         // Assumptions.assumeTrue(s3FileService.bucketExists(), 
         //         "Skipping: S3 bucket does not exist or is not accessible");
 
-        MockMultipartFile file1 = new MockMultipartFile("attachment", "report1.txt", 
-                MediaType.TEXT_PLAIN_VALUE, "hello world".getBytes());
+        String dataUrl = "data:text/plain;base64,SGVsbG8gd29ybGQ="; // Hello world
+        String body = "{\"projectId\":" + PROJECT_ID + ",\"attachmentUrl\":\"" + dataUrl + "\"}";
 
-        mockMvc.perform(multipart(USER_BASE + "/end")
-                        .file("attachment", file1.getBytes())
-                        .param("projectId", String.valueOf(PROJECT_ID)))
+        mockMvc.perform(post(USER_BASE + "/end")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
                 .andDo(print())
                 .andExpect(status().isOk());
 
@@ -161,7 +163,7 @@ class ProjectEndS3E2ETest {
 
     @Test
     @WithMockUser(username = "staff", roles = {"STAFF"})
-    @DisplayName("/project/end then GET detail returns status and S3 URL")
+    @DisplayName("/project/end (data URL) then GET detail returns status and S3 URL")
     void end_then_detail_returns_status_and_url() throws Exception {
         String accessKeyId = dotenv.get("AWS_ACCESS_KEY_ID");
         String secretAccessKey = dotenv.get("AWS_SECRET_ACCESS_KEY");
@@ -173,12 +175,11 @@ class ProjectEndS3E2ETest {
         assumeTrue(region != null && !region.isEmpty(), "AWS_DEFAULT_REGION 환경변수가 설정되지 않았습니다.");
         assumeTrue(bucketName != null && !bucketName.isEmpty(), "AWS_S3_BUCKET 환경변수가 설정되지 않았습니다.");
 
-        MockMultipartFile file = new MockMultipartFile("attachment", "result.txt",
-                MediaType.TEXT_PLAIN_VALUE, "done".getBytes());
-
-        mockMvc.perform(multipart(USER_BASE + "/end")
-                        .file("attachment", file.getBytes())
-                        .param("projectId", String.valueOf(PROJECT_ID)))
+        String dataUrl = "data:text/plain;base64,ZG9uZQ=="; // done
+        String body = "{\"projectId\":" + PROJECT_ID + ",\"attachmentUrl\":\"" + dataUrl + "\"}";
+        mockMvc.perform(post(USER_BASE + "/end")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
                 .andDo(print())
                 .andExpect(status().isOk());
 
@@ -197,17 +198,19 @@ class ProjectEndS3E2ETest {
 
     @Test
     @WithMockUser(username = "staff", roles = {"STAFF"})
-    @DisplayName("/project/end without file returns 400 Bad Request")
+    @DisplayName("/project/end without attachmentUrl returns 400 Bad Request")
     void end_without_file_returns_bad_request() throws Exception {
-        mockMvc.perform(multipart(USER_BASE + "/end")
-                        .param("projectId", String.valueOf(PROJECT_ID)))
+        String body = "{\"projectId\":" + PROJECT_ID + "}";
+        mockMvc.perform(post(USER_BASE + "/end")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
                 .andDo(print())
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     @WithMockUser(username = "staff", roles = {"STAFF"})
-    @DisplayName("/project/end handles multiple file types (stores first URL)")
+    @DisplayName("/project/end handles data URL types (stores URL)")
     void end_handles_multiple_file_types() throws Exception {
         // S3FileUploadIntegrationTest와 동일한 방식으로 자격증명 확인
         String accessKeyId = dotenv.get("AWS_ACCESS_KEY_ID");
@@ -229,13 +232,13 @@ class ProjectEndS3E2ETest {
         Assumptions.assumeTrue(s3FileService.bucketExists(), 
                 "Skipping: S3 bucket does not exist or is not accessible");
 
-        // 다양한 파일 타입 준비
-        MockMultipartFile pdfFile = new MockMultipartFile("attachment", "report.pdf", 
-                "application/pdf", createMockPdfData());
+        String pdfBase64 = java.util.Base64.getEncoder().encodeToString(createMockPdfData());
+        String dataUrl = "data:application/pdf;base64," + pdfBase64;
+        String body = "{\"projectId\":" + PROJECT_ID + ",\"attachmentUrl\":\"" + dataUrl + "\"}";
 
-        mockMvc.perform(multipart(USER_BASE + "/end")
-                        .file("attachment", pdfFile.getBytes())
-                        .param("projectId", String.valueOf(PROJECT_ID)))
+        mockMvc.perform(post(USER_BASE + "/end")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
                 .andDo(print())
                 .andExpect(status().isOk());
 
@@ -266,14 +269,13 @@ class ProjectEndS3E2ETest {
                 region != null && !region.isEmpty() &&
                 bucketName != null && !bucketName.isEmpty();
 
-        MockMultipartFile file1 = new MockMultipartFile("attachment", "report1.txt", 
-                MediaType.TEXT_PLAIN_VALUE, "hello world".getBytes());
-
         if (hasCredentials) {
             // 크레덴셜이 있는 경우에도 테스트를 수행하여 정상 동작 확인
-            mockMvc.perform(multipart(USER_BASE + "/end")
-                            .file("attachment", file1.getBytes())
-                            .param("projectId", String.valueOf(PROJECT_ID)))
+            String dataUrl = "data:text/plain;base64,SGVsbG8gd29ybGQ=";
+            String body = "{\"projectId\":" + PROJECT_ID + ",\"attachmentUrl\":\"" + dataUrl + "\"}";
+            mockMvc.perform(post(USER_BASE + "/end")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
                     .andDo(print())
                     .andExpect(status().isOk());
             var rec = dsl.fetchOne("select result_attached_url from project where id=?", PROJECT_ID);
@@ -284,9 +286,11 @@ class ProjectEndS3E2ETest {
             log.info("✅ AWS 자격증명 있는 환경에서의 동작 테스트 완료");
         } else {
             // 크레덴셜이 없는 경우 기대 동작(에러 또는 graceful 실패) 확인
-            mockMvc.perform(multipart(USER_BASE + "/end")
-                            .file("attachment", file1.getBytes())
-                            .param("projectId", String.valueOf(PROJECT_ID)))
+            String dataUrl = "data:text/plain;base64,SGVsbG8gd29ybGQ=";
+            String body = "{\"projectId\":" + PROJECT_ID + ",\"attachmentUrl\":\"" + dataUrl + "\"}";
+            mockMvc.perform(post(USER_BASE + "/end")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
                     .andDo(print())
                     .andExpect(status().is5xxServerError());
             log.info("✅ AWS 자격증명 없는 환경에서의 fallback 동작 테스트 완료");
@@ -387,5 +391,108 @@ class ProjectEndS3E2ETest {
         mockData[mockData.length - 1] = (byte) 0xD9;
 
         return mockData;
+    }
+
+    @Test
+    @WithMockUser(username = "staff", roles = {"STAFF"})
+    @DisplayName("Admin /end endpoint returns only INPROGRESS projects, filters out other statuses")
+    void admin_end_endpoint_filters_inprogress_projects() throws Exception {
+        // Create multiple projects with different statuses
+        Long projectId2 = 2L;
+        Long projectId3 = 3L;
+        Long projectId4 = 4L;
+
+        // Project 1: INPROGRESS (should be returned)
+        dsl.update(PROJECT)
+                .set(PROJECT.RESULT_SUBMIT_STATUS, "INPROGRESS")
+                .set(PROJECT.RESULT_SUBMITTED_AT, java.time.OffsetDateTime.now().minusHours(1))
+                .set(PROJECT.RESULT_ATTACHED_URL, "https://test-bucket.s3.ap-northeast-2.amazonaws.com/project1.txt")
+                .where(PROJECT.ID.eq(PROJECT_ID))
+                .execute();
+
+        // Project 2: INPROGRESS (should be returned)
+        dsl.insertInto(PROJECT)
+                .set(PROJECT.ID, projectId2)
+                .set(PROJECT.TITLE, "P2")
+                .set(PROJECT.DESCRIPTION, "desc2")
+                .set(PROJECT.CONTENT, "content2")
+                .set(PROJECT.CATEGORY, "CS")
+                .set(PROJECT.SUBCATEGORY, "BE")
+                .set(PROJECT.STARTED_AT, java.time.OffsetDateTime.now().plusDays(1))
+                .set(PROJECT.ENDED_AT, java.time.OffsetDateTime.now().plusDays(30))
+                .set(PROJECT.MEMBER_ID, STAFF_ID)
+                .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(PROJECT.CREATED_AT, java.time.OffsetDateTime.now())
+                .set(PROJECT.UPDATED_AT, java.time.OffsetDateTime.now())
+                .set(PROJECT.RESULT_SUBMIT_STATUS, "INPROGRESS")
+                .set(PROJECT.RESULT_SUBMITTED_AT, java.time.OffsetDateTime.now().minusMinutes(30))
+                .set(PROJECT.RESULT_ATTACHED_URL, "https://test-bucket.s3.ap-northeast-2.amazonaws.com/project2.txt")
+                .execute();
+
+        // Project 3: COMPLETED (should NOT be returned)
+        dsl.insertInto(PROJECT)
+                .set(PROJECT.ID, projectId3)
+                .set(PROJECT.TITLE, "P3")
+                .set(PROJECT.DESCRIPTION, "desc3")
+                .set(PROJECT.CONTENT, "content3")
+                .set(PROJECT.CATEGORY, "CS")
+                .set(PROJECT.SUBCATEGORY, "BE")
+                .set(PROJECT.STARTED_AT, java.time.OffsetDateTime.now().plusDays(1))
+                .set(PROJECT.ENDED_AT, java.time.OffsetDateTime.now().plusDays(30))
+                .set(PROJECT.MEMBER_ID, STAFF_ID)
+                .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(PROJECT.CREATED_AT, java.time.OffsetDateTime.now())
+                .set(PROJECT.UPDATED_AT, java.time.OffsetDateTime.now())
+                .set(PROJECT.RESULT_SUBMIT_STATUS, "COMPLETED")
+                .set(PROJECT.RESULT_SUBMITTED_AT, java.time.OffsetDateTime.now().minusDays(1))
+                .set(PROJECT.RESULT_ATTACHED_URL, "https://test-bucket.s3.ap-northeast-2.amazonaws.com/project3.txt")
+                .execute();
+
+        // Project 4: NULL status (should NOT be returned)
+        dsl.insertInto(PROJECT)
+                .set(PROJECT.ID, projectId4)
+                .set(PROJECT.TITLE, "P4")
+                .set(PROJECT.DESCRIPTION, "desc4")
+                .set(PROJECT.CONTENT, "content4")
+                .set(PROJECT.CATEGORY, "CS")
+                .set(PROJECT.SUBCATEGORY, "BE")
+                .set(PROJECT.STARTED_AT, java.time.OffsetDateTime.now().plusDays(1))
+                .set(PROJECT.ENDED_AT, java.time.OffsetDateTime.now().plusDays(30))
+                .set(PROJECT.MEMBER_ID, STAFF_ID)
+                .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(PROJECT.CREATED_AT, java.time.OffsetDateTime.now())
+                .set(PROJECT.UPDATED_AT, java.time.OffsetDateTime.now())
+                .setNull(PROJECT.RESULT_SUBMIT_STATUS)
+                .setNull(PROJECT.RESULT_SUBMITTED_AT)
+                .setNull(PROJECT.RESULT_ATTACHED_URL)
+                .execute();
+
+        // Test the admin endpoint
+        var result = mockMvc.perform(get("/api/v1/admin/project/end"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // Parse the response to verify only INPROGRESS projects are returned
+        String responseBody = result.getResponse().getContentAsString();
+        var response = objectMapper.readTree(responseBody);
+        var data = response.get("data");
+        
+        // Should return exactly 2 projects (projectId 1 and 2)
+        assertThat(data.isArray()).isTrue();
+        assertThat(data.size()).isEqualTo(2);
+        
+        // Verify the returned projects have INPROGRESS status
+        var projectIds = new java.util.HashSet<Long>();
+        for (var project : data) {
+            Long id = project.get("projectId").asLong();
+            String status = project.get("status").asText();
+            projectIds.add(id);
+            assertThat(status).isEqualTo("INPROGRESS");
+        }
+        
+        // Verify we got the correct projects
+        assertThat(projectIds).containsExactlyInAnyOrder(PROJECT_ID, projectId2);
+        assertThat(projectIds).doesNotContain(projectId3, projectId4);
     }
 }

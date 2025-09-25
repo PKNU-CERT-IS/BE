@@ -62,7 +62,16 @@ class AdminProjectControllerE2ETest {
                 projectId,
                 ResultSubmitStatus.INPROGRESS,
                 OffsetDateTime.parse("2025-09-20T10:00:00Z"),
-                s3Url
+                s3Url,
+                "CS",
+                "BE",
+                "Project Title",
+                "Project Desc",
+                999L,
+                OffsetDateTime.parse("2025-09-01T00:00:00Z"),
+                OffsetDateTime.parse("2025-10-01T00:00:00Z"),
+                4,
+                8
         );
         when(projectDomainService.getEndSubmissionInfo(anyLong())).thenReturn(infoVo);
         when(s3FileService.getObjectInfo(s3Url)).thenReturn(new S3ObjectInfo(
@@ -78,7 +87,14 @@ class AdminProjectControllerE2ETest {
                 .andExpect(jsonPath("$.data.attachment.name").value("file.pdf"))
                 .andExpect(jsonPath("$.data.attachment.type").value("application/pdf"))
                 .andExpect(jsonPath("$.data.attachment.size").value("12345"))
-                .andExpect(jsonPath("$.data.attachment.attachedUrl").value(s3Url));
+                .andExpect(jsonPath("$.data.attachment.attachedUrl").value(s3Url))
+                .andExpect(jsonPath("$.data.category").value("CS"))
+                .andExpect(jsonPath("$.data.subCategory").value("BE"))
+                .andExpect(jsonPath("$.data.title").value("Project Title"))
+                .andExpect(jsonPath("$.data.description").value("Project Desc"))
+                .andExpect(jsonPath("$.data.creatorId").value(999))
+                .andExpect(jsonPath("$.data.currentParticipantNumber").value(4))
+                .andExpect(jsonPath("$.data.maxParticipantNumber").value(8));
     }
 }
 

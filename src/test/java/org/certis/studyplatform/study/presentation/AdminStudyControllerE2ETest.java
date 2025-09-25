@@ -49,7 +49,16 @@ class AdminStudyControllerE2ETest {
                 studyId,
                 ResultSubmitStatus.INPROGRESS,
                 OffsetDateTime.parse("2025-09-20T10:00:00Z"),
-                s3Url
+                s3Url,
+                "CS",
+                "BE",
+                "Study Title",
+                "Study Desc",
+                999L,
+                OffsetDateTime.parse("2025-09-01T00:00:00Z"),
+                OffsetDateTime.parse("2025-10-01T00:00:00Z"),
+                3,
+                10
         );
         
         when(studyDomainService.getEndSubmissionInfo(anyLong())).thenReturn(infoVo);
@@ -66,7 +75,14 @@ class AdminStudyControllerE2ETest {
                 .andExpect(jsonPath("$.data.attachment.name").value("file2.pdf"))
                 .andExpect(jsonPath("$.data.attachment.type").value("application/pdf"))
                 .andExpect(jsonPath("$.data.attachment.size").value("54321"))
-                .andExpect(jsonPath("$.data.attachment.attachedUrl").value(s3Url));
+                .andExpect(jsonPath("$.data.attachment.attachedUrl").value(s3Url))
+                .andExpect(jsonPath("$.data.category").value("CS"))
+                .andExpect(jsonPath("$.data.subCategory").value("BE"))
+                .andExpect(jsonPath("$.data.title").value("Study Title"))
+                .andExpect(jsonPath("$.data.description").value("Study Desc"))
+                .andExpect(jsonPath("$.data.creatorId").value(999))
+                .andExpect(jsonPath("$.data.currentParticipantNumber").value(3))
+                .andExpect(jsonPath("$.data.maxParticipantNumber").value(10));
     }
 }
 

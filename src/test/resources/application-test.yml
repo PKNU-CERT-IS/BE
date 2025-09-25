@@ -53,6 +53,11 @@ spring:
           max-idle: 8
           min-idle: 0
 
+  # Redisson 자동 설정을 위한 표준 spring.redis 속성
+  redis:
+    host: ${embedded.redis.host:localhost}
+    port: ${embedded.redis.actual.port:6379}
+
   # 캐시 비활성화
   cache:
     type: none
