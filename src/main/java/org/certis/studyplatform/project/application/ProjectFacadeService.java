@@ -297,7 +297,8 @@ public class ProjectFacadeService {
         log.info("Facade: Ending project - ID: {}, requesterId: {}", requestDto.getProjectId(), requesterId);
 
         // Command 객체 생성
-        EndProjectCommand command = EndProjectCommand.of(requestDto.getProjectId(), requesterId, requestDto.getAttachmentUrl());
+        String attachmentUrl = requestDto.getAttachment() != null ? requestDto.getAttachment().getAttachedUrl() : null;
+        EndProjectCommand command = EndProjectCommand.of(requestDto.getProjectId(), requesterId, attachmentUrl);
 
         // Command Service 호출 (VO 반환)
         projectCommandService.endProject(command);

@@ -211,6 +211,23 @@ public class ProjectCommandService {
     public ProjectVo endProject(EndProjectCommand command) {
         log.info("Command: Ending project - ID: {}", command.projectId());
 
+        // 현재 상태 선조회하여 중복 신청 방지 (INPROGRESS/COMPLETED 차단)
+        try {
+            ProjectVo current = projectDomainService.getProjectById(new org.certis.studyplatform.project.application.object.query.GetProjectByIdQuery(command.projectId()));
+            if (current != null && current.resultSubmitStatus() != null) {
+                if (current.resultSubmitStatus().isInProgress()) {
+                    throw new ApplicationException(ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION, "이미 종료 신청이 진행 중입니다");
+                }
+                if (current.resultSubmitStatus().isCompleted()) {
+                    throw new ApplicationException(ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION, "이미 종료된 프로젝트입니다");
+                }
+            }
+        } catch (ApplicationException e) {
+            throw e;
+        } catch (Exception ignore) {
+            // 조회 실패는 뒤 단계에서 도메인에서 처리됨
+        }
+
         // Command 객체를 Domain Service로 전달 (파일명은 Domain Service에서 처리)
         ProjectVo endedVo = projectDomainService.endProject(command);
 
@@ -287,14 +304,7 @@ public class ProjectCommandService {
                 attachmentUrl
         );
 
-        // 즉시 승인 처리: 종료 상태 확정 및 endedAt 현재로 설정
-        projectJpaRepository.approveEnd(
-                endedVo.id(),
-                OffsetDateTime.now(),
-                ResultSubmitStatus.COMPLETED
-        );
-
-        log.info("Command: Project ended and approved successfully - ID: {}", endedVo.id());
+        log.info("Command: Project end submitted (awaiting approval) - ID: {}", endedVo.id());
         return endedVo;
     }
 
