@@ -202,8 +202,37 @@ public class StudyCommandService {
     public StudyVo endStudy(EndStudyCommand command) {
         log.info("Command: Ending study - ID: {}", command.studyId());
 
+        // 현재 상태 선조회하여 중복 신청 방지 (INPROGRESS/COMPLETED 차단)
+        try {
+            StudyVo current = studyDomainService.getStudyById(new org.certis.studyplatform.study.application.object.query.GetStudyByIdQuery(command.studyId()));
+            if (current != null && current.resultSubmitStatus() != null) {
+                if (current.resultSubmitStatus().isInProgress()) {
+                    throw new ApplicationException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION, "이미 종료 신청이 진행 중입니다");
+                }
+                if (current.resultSubmitStatus().isCompleted()) {
+                    throw new ApplicationException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION, "이미 종료된 스터디입니다");
+                }
+            }
+        } catch (ApplicationException e) {
+            throw e;
+        } catch (Exception ignore) {
+            // 조회 실패는 뒤 단계에서 도메인에서 처리됨
+        }
+
         // Command 객체를 Domain Service로 전달 (파일명은 Domain Service에서 처리)
         StudyVo endedVo = studyDomainService.endStudy(command);
+
+        // 이미 종료 신청 진행 중 또는 완료된 경우 중복 신청 방지
+        if (endedVo.resultSubmitStatus() != null) {
+            if (endedVo.resultSubmitStatus().isInProgress()) {
+                throw new ApplicationException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION,
+                        "이미 종료 신청이 진행 중입니다");
+            }
+            if (endedVo.resultSubmitStatus().isCompleted()) {
+                throw new ApplicationException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION,
+                        "이미 종료된 스터디입니다");
+            }
+        }
 
         // 조기 종료 시 유예기간 재조정 (실제 종료 시점은 현재 시각으로 판단)
         if (endedVo.startDate() != null) {
@@ -280,14 +309,8 @@ public class StudyCommandService {
                 ResultSubmitStatus.INPROGRESS,
                 attachmentUrl
         );
-        // 즉시 승인 처리 및 종료 시간 설정
-        studyDomainService.approveEnd(
-                endedVo.id(),
-                OffsetDateTime.now(),
-                ResultSubmitStatus.COMPLETED
-        );
 
-        log.info("Command: Study ended and approved successfully - ID: {}", endedVo.id());
+        log.info("Command: Study end submitted (awaiting approval) - ID: {}", endedVo.id());
         return endedVo;
     }
 

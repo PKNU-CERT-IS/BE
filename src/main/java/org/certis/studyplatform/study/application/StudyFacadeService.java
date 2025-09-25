@@ -271,7 +271,8 @@ public class StudyFacadeService {
         log.info("Facade: Ending study - ID: {}, requesterId: {}", requestDto.getStudyId(), requesterId);
 
         // Command 객체 생성
-        EndStudyCommand command = EndStudyCommand.of(requestDto.getStudyId(), requesterId, requestDto.getAttachmentUrl());
+        String attachmentUrl = requestDto.getAttachment() != null ? requestDto.getAttachment().getAttachedUrl() : null;
+        EndStudyCommand command = EndStudyCommand.of(requestDto.getStudyId(), requesterId, attachmentUrl);
 
         // Command Service 호출 (VO 반환)
         studyCommandService.endStudy(command);
