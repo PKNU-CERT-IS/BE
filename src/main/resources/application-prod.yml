@@ -3,9 +3,6 @@
 # ===========================================
 
 spring:
-  # 프로파일 명시적 설정
-  profiles:
-    active: prod
   config:
     activate:
       on-profile: prod
@@ -71,7 +68,8 @@ spring:
       host: ${SPRING_DATA_REDIS_HOST:redis}
       port: ${SPRING_DATA_REDIS_PORT:6379}
       password: ${SPRING_DATA_REDIS_PASSWORD:}
-      ssl: ${SPRING_DATA_REDIS_SSL:false}
+      ssl:
+        enabled: ${SPRING_DATA_REDIS_SSL_ENABLED:false}
       timeout: 10000ms
       connect-timeout: 10000ms
       database: 0
