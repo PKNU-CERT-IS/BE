@@ -23,5 +23,7 @@ public class Indexes {
     // -------------------------------------------------------------------------
 
     public static final Index IDX_PROJECT_RESULT_STATUS = Internal.createIndex(DSL.name("idx_project_result_status"), Project.PROJECT, new OrderField[] { Project.PROJECT.RESULT_SUBMIT_STATUS }, false);
+    public static final Index IDX_PROJECT_STATUS = Internal.createIndex(DSL.name("idx_project_status"), Project.PROJECT, new OrderField[] { Project.PROJECT.STATUS }, false);
     public static final Index IDX_STUDY_RESULT_STATUS = Internal.createIndex(DSL.name("idx_study_result_status"), Study.STUDY, new OrderField[] { Study.STUDY.RESULT_SUBMIT_STATUS }, false);
+    public static final Index IDX_STUDY_STATUS = Internal.createIndex(DSL.name("idx_study_status"), Study.STUDY, new OrderField[] { Study.STUDY.STATUS }, false);
 }

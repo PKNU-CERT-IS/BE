@@ -139,4 +139,10 @@ public class ProjectCommandRepositoryImpl implements ProjectCommandRepository {
     public Optional<String> getResultAttachmentUrlById(Long projectId) {
         return jpaRepository.findById(projectId).map(ProjectEntity::getResultAttachmentUrl);
     }
+
+    @Override
+    public ProjectEntity save(ProjectEntity projectEntity) {
+        log.debug("Command: Saving project entity - ID: {}", projectEntity.getId());
+        return jpaRepository.save(projectEntity);
+    }
 }

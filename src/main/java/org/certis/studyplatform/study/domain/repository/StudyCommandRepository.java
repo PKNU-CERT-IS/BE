@@ -59,6 +59,14 @@ public interface StudyCommandRepository {
     java.util.Optional<String> getResultAttachmentUrlById(Long studyId);
 
     /**
+     * 스터디 엔티티 직접 저장 (상태 업데이트용)
+     * 
+     * @param studyEntity 저장할 스터디 엔티티
+     * @return 저장된 스터디 엔티티
+     */
+    org.certis.studyplatform.study.infrastructure.persistence.entity.StudyEntity save(org.certis.studyplatform.study.infrastructure.persistence.entity.StudyEntity studyEntity);
+
+    /**
      * 스터디 첨부파일 업데이트 (전체 교체 정책)
      * attachments == null -> 기존 첨부 전체 삭제
      * attachments 비어있지 않음 -> 기존 첨부 전체 삭제 후 신규 저장

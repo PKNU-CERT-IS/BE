@@ -6,6 +6,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
+import org.certis.studyplatform.study.domain.StudyStatus;
 
 import java.time.OffsetDateTime;
 import jakarta.persistence.Column;
@@ -56,6 +57,10 @@ public class StudyEntity {
 
     @Column(nullable = false, name = "ended_at")
     private OffsetDateTime endedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, name = "status")
+    private StudyStatus status;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false, name = "created_at")

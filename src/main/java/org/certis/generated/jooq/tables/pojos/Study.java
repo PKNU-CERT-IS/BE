@@ -29,6 +29,7 @@ public class Study implements Serializable {
     private OffsetDateTime endedAt;
     private Integer maxParticipantsNumber;
     private String description;
+    private String status;
     private OffsetDateTime resultSubmittedAt;
     private String resultSubmitStatus;
     private String resultAttachedUrl;
@@ -49,6 +50,7 @@ public class Study implements Serializable {
         this.endedAt = value.endedAt;
         this.maxParticipantsNumber = value.maxParticipantsNumber;
         this.description = value.description;
+        this.status = value.status;
         this.resultSubmittedAt = value.resultSubmittedAt;
         this.resultSubmitStatus = value.resultSubmitStatus;
         this.resultAttachedUrl = value.resultAttachedUrl;
@@ -68,6 +70,7 @@ public class Study implements Serializable {
         OffsetDateTime endedAt,
         Integer maxParticipantsNumber,
         String description,
+        String status,
         OffsetDateTime resultSubmittedAt,
         String resultSubmitStatus,
         String resultAttachedUrl
@@ -85,6 +88,7 @@ public class Study implements Serializable {
         this.endedAt = endedAt;
         this.maxParticipantsNumber = maxParticipantsNumber;
         this.description = description;
+        this.status = status;
         this.resultSubmittedAt = resultSubmittedAt;
         this.resultSubmitStatus = resultSubmitStatus;
         this.resultAttachedUrl = resultAttachedUrl;
@@ -273,6 +277,20 @@ public class Study implements Serializable {
     }
 
     /**
+     * Getter for <code>public.study.status</code>.
+     */
+    public String getStatus() {
+        return this.status;
+    }
+
+    /**
+     * Setter for <code>public.study.status</code>.
+     */
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    /**
      * Getter for <code>public.study.result_submitted_at</code>.
      */
     public OffsetDateTime getResultSubmittedAt() {
@@ -401,6 +419,12 @@ public class Study implements Serializable {
         }
         else if (!this.description.equals(other.description))
             return false;
+        if (this.status == null) {
+            if (other.status != null)
+                return false;
+        }
+        else if (!this.status.equals(other.status))
+            return false;
         if (this.resultSubmittedAt == null) {
             if (other.resultSubmittedAt != null)
                 return false;
@@ -439,6 +463,7 @@ public class Study implements Serializable {
         result = prime * result + ((this.endedAt == null) ? 0 : this.endedAt.hashCode());
         result = prime * result + ((this.maxParticipantsNumber == null) ? 0 : this.maxParticipantsNumber.hashCode());
         result = prime * result + ((this.description == null) ? 0 : this.description.hashCode());
+        result = prime * result + ((this.status == null) ? 0 : this.status.hashCode());
         result = prime * result + ((this.resultSubmittedAt == null) ? 0 : this.resultSubmittedAt.hashCode());
         result = prime * result + ((this.resultSubmitStatus == null) ? 0 : this.resultSubmitStatus.hashCode());
         result = prime * result + ((this.resultAttachedUrl == null) ? 0 : this.resultAttachedUrl.hashCode());
@@ -462,6 +487,7 @@ public class Study implements Serializable {
         sb.append(", ").append(endedAt);
         sb.append(", ").append(maxParticipantsNumber);
         sb.append(", ").append(description);
+        sb.append(", ").append(status);
         sb.append(", ").append(resultSubmittedAt);
         sb.append(", ").append(resultSubmitStatus);
         sb.append(", ").append(resultAttachedUrl);

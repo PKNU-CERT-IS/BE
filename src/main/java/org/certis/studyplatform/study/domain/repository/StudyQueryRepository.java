@@ -9,7 +9,7 @@ import org.certis.studyplatform.study.domain.vo.StudyAttachedVo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -96,6 +96,22 @@ public interface StudyQueryRepository {
      * @return StudyVo
      */
     Optional<StudyVo> findById(Long studyId);
+
+    /**
+     * APPROVED 상태이면서 started_at이 지정된 시간 이전인 스터디 ID 목록 조회
+     * 
+     * @param currentTime 현재 시간
+     * @return 스터디 ID 목록
+     */
+    List<Long> findApprovedStudiesStartedBefore(OffsetDateTime currentTime);
+
+    /**
+     * 스터디 엔티티 직접 조회 (상태 업데이트용)
+     * 
+     * @param studyId 스터디 ID
+     * @return 스터디 엔티티
+     */
+    java.util.Optional<org.certis.studyplatform.study.infrastructure.persistence.entity.StudyEntity> findEntityById(Long studyId);
 
 
     /**

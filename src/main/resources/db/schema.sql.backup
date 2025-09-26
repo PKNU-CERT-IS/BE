@@ -71,6 +71,7 @@ CREATE TABLE study (
     ended_at TIMESTAMPTZ NOT NULL,
     max_participants_number INTEGER NOT NULL DEFAULT 5,
     description VARCHAR NOT NULL,
+    status VARCHAR NOT NULL DEFAULT 'READY',
     result_submitted_at TIMESTAMPTZ NULL,
     result_submit_status VARCHAR NOT NULL DEFAULT 'READY',
     result_attached_url VARCHAR NULL,
@@ -79,6 +80,8 @@ CREATE TABLE study (
 
 -- Index for admin review queries on study results
 CREATE INDEX IF NOT EXISTS idx_study_result_status ON study (result_submit_status);
+-- Index for progress status queries
+CREATE INDEX IF NOT EXISTS idx_study_status ON study (status);
 
 CREATE TABLE project (
     id BIGSERIAL PRIMARY KEY,
@@ -98,6 +101,7 @@ CREATE TABLE project (
     external_url VARCHAR,
     demo_url VARCHAR,
     thumbnail_url VARCHAR,
+    status VARCHAR NOT NULL DEFAULT 'READY',
     -- Result submission fields
     result_submitted_at TIMESTAMPTZ NULL,
     result_submit_status VARCHAR NOT NULL DEFAULT 'READY',
@@ -107,6 +111,8 @@ CREATE TABLE project (
 
 -- Index for admin review queries on project results
 CREATE INDEX IF NOT EXISTS idx_project_result_status ON project (result_submit_status);
+-- Index for progress status queries
+CREATE INDEX IF NOT EXISTS idx_project_status ON project (status);
 
 CREATE TABLE schedule (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

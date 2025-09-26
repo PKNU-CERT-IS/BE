@@ -33,6 +33,7 @@ public class Project implements Serializable {
     private String externalUrl;
     private String demoUrl;
     private String thumbnailUrl;
+    private String status;
     private OffsetDateTime resultSubmittedAt;
     private String resultSubmitStatus;
     private String resultAttachedUrl;
@@ -57,6 +58,7 @@ public class Project implements Serializable {
         this.externalUrl = value.externalUrl;
         this.demoUrl = value.demoUrl;
         this.thumbnailUrl = value.thumbnailUrl;
+        this.status = value.status;
         this.resultSubmittedAt = value.resultSubmittedAt;
         this.resultSubmitStatus = value.resultSubmitStatus;
         this.resultAttachedUrl = value.resultAttachedUrl;
@@ -80,6 +82,7 @@ public class Project implements Serializable {
         String externalUrl,
         String demoUrl,
         String thumbnailUrl,
+        String status,
         OffsetDateTime resultSubmittedAt,
         String resultSubmitStatus,
         String resultAttachedUrl
@@ -101,6 +104,7 @@ public class Project implements Serializable {
         this.externalUrl = externalUrl;
         this.demoUrl = demoUrl;
         this.thumbnailUrl = thumbnailUrl;
+        this.status = status;
         this.resultSubmittedAt = resultSubmittedAt;
         this.resultSubmitStatus = resultSubmitStatus;
         this.resultAttachedUrl = resultAttachedUrl;
@@ -345,6 +349,20 @@ public class Project implements Serializable {
     }
 
     /**
+     * Getter for <code>public.project.status</code>.
+     */
+    public String getStatus() {
+        return this.status;
+    }
+
+    /**
+     * Setter for <code>public.project.status</code>.
+     */
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    /**
      * Getter for <code>public.project.result_submitted_at</code>.
      */
     public OffsetDateTime getResultSubmittedAt() {
@@ -497,6 +515,12 @@ public class Project implements Serializable {
         }
         else if (!this.thumbnailUrl.equals(other.thumbnailUrl))
             return false;
+        if (this.status == null) {
+            if (other.status != null)
+                return false;
+        }
+        else if (!this.status.equals(other.status))
+            return false;
         if (this.resultSubmittedAt == null) {
             if (other.resultSubmittedAt != null)
                 return false;
@@ -539,6 +563,7 @@ public class Project implements Serializable {
         result = prime * result + ((this.externalUrl == null) ? 0 : this.externalUrl.hashCode());
         result = prime * result + ((this.demoUrl == null) ? 0 : this.demoUrl.hashCode());
         result = prime * result + ((this.thumbnailUrl == null) ? 0 : this.thumbnailUrl.hashCode());
+        result = prime * result + ((this.status == null) ? 0 : this.status.hashCode());
         result = prime * result + ((this.resultSubmittedAt == null) ? 0 : this.resultSubmittedAt.hashCode());
         result = prime * result + ((this.resultSubmitStatus == null) ? 0 : this.resultSubmitStatus.hashCode());
         result = prime * result + ((this.resultAttachedUrl == null) ? 0 : this.resultAttachedUrl.hashCode());
@@ -566,6 +591,7 @@ public class Project implements Serializable {
         sb.append(", ").append(externalUrl);
         sb.append(", ").append(demoUrl);
         sb.append(", ").append(thumbnailUrl);
+        sb.append(", ").append(status);
         sb.append(", ").append(resultSubmittedAt);
         sb.append(", ").append(resultSubmitStatus);
         sb.append(", ").append(resultAttachedUrl);

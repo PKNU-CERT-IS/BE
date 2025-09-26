@@ -177,4 +177,10 @@ public class StudyCommandRepositoryImpl implements StudyCommandRepository {
     public java.util.Optional<String> getResultAttachmentUrlById(Long studyId) {
         return jpaRepository.findById(studyId).map(StudyEntity::getResultAttachmentUrl);
     }
+
+    @Override
+    public StudyEntity save(StudyEntity studyEntity) {
+        log.debug("Command: Saving study entity - ID: {}", studyEntity.getId());
+        return jpaRepository.save(studyEntity);
+    }
 }

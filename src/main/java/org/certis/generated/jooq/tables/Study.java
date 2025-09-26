@@ -129,6 +129,11 @@ public class Study extends TableImpl<StudyRecord> {
     public final TableField<StudyRecord, String> DESCRIPTION = createField(DSL.name("description"), SQLDataType.VARCHAR.nullable(false), this, "");
 
     /**
+     * The column <code>public.study.status</code>.
+     */
+    public final TableField<StudyRecord, String> STATUS = createField(DSL.name("status"), SQLDataType.VARCHAR.nullable(false).defaultValue(DSL.field(DSL.raw("'READY'::character varying"), SQLDataType.VARCHAR)), this, "");
+
+    /**
      * The column <code>public.study.result_submitted_at</code>.
      */
     public final TableField<StudyRecord, OffsetDateTime> RESULT_SUBMITTED_AT = createField(DSL.name("result_submitted_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "");
@@ -212,7 +217,7 @@ public class Study extends TableImpl<StudyRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.IDX_STUDY_RESULT_STATUS);
+        return Arrays.asList(Indexes.IDX_STUDY_RESULT_STATUS, Indexes.IDX_STUDY_STATUS);
     }
 
     @Override

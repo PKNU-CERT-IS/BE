@@ -149,6 +149,11 @@ public class Project extends TableImpl<ProjectRecord> {
     public final TableField<ProjectRecord, String> THUMBNAIL_URL = createField(DSL.name("thumbnail_url"), SQLDataType.VARCHAR, this, "");
 
     /**
+     * The column <code>public.project.status</code>.
+     */
+    public final TableField<ProjectRecord, String> STATUS = createField(DSL.name("status"), SQLDataType.VARCHAR.nullable(false).defaultValue(DSL.field(DSL.raw("'READY'::character varying"), SQLDataType.VARCHAR)), this, "");
+
+    /**
      * The column <code>public.project.result_submitted_at</code>.
      */
     public final TableField<ProjectRecord, OffsetDateTime> RESULT_SUBMITTED_AT = createField(DSL.name("result_submitted_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "");
@@ -232,7 +237,7 @@ public class Project extends TableImpl<ProjectRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.IDX_PROJECT_RESULT_STATUS);
+        return Arrays.asList(Indexes.IDX_PROJECT_RESULT_STATUS, Indexes.IDX_PROJECT_STATUS);
     }
 
     @Override

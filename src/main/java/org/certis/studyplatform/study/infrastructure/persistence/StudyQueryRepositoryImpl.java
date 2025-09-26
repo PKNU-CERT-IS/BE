@@ -1057,4 +1057,59 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
         log.info("jOOQ: Found {} attachments for study ID: {}", attachments.size(), studyId);
         return attachments;
     }
+
+    @Override
+    public List<Long> findApprovedStudiesStartedBefore(OffsetDateTime currentTime) {
+        log.info("jOOQ: Finding approved studies started before {}", currentTime);
+
+        List<Long> studyIds = dsl.select(STUDY.ID)
+                .from(STUDY)
+                .where(STUDY.STATUS.eq("APPROVED"))
+                .and(STUDY.STARTED_AT.le(currentTime))
+                .and(STUDY.DELETED_AT.isNull())
+                .fetch()
+                .stream()
+                .map(record -> record.get(STUDY.ID))
+                .toList();
+
+        log.info("jOOQ: Found {} approved studies started before {}", studyIds.size(), currentTime);
+        return studyIds;
+    }
+
+    @Override
+    public Optional<org.certis.studyplatform.study.infrastructure.persistence.entity.StudyEntity> findEntityById(Long studyId) {
+        log.info("jOOQ: Finding study entity by ID - {}", studyId);
+        
+        // JPA Repository를 통해 Entity 직접 조회
+        return Optional.ofNullable(
+            dsl.selectFrom(STUDY)
+                .where(STUDY.ID.eq(studyId))
+                .and(STUDY.DELETED_AT.isNull())
+                .fetchOne()
+        ).map(record -> {
+            // Record를 StudyEntity로 변환
+            return org.certis.studyplatform.study.infrastructure.persistence.entity.StudyEntity.builder()
+                .id(record.get(STUDY.ID))
+                .memberId(record.get(STUDY.MEMBER_ID))
+                .title(record.get(STUDY.TITLE))
+                .description(record.get(STUDY.DESCRIPTION))
+                .content(record.get(STUDY.CONTENT))
+                .category(record.get(STUDY.CATEGORY))
+                .subcategory(record.get(STUDY.SUBCATEGORY))
+                .maxParticipantsNumber(record.get(STUDY.MAX_PARTICIPANTS_NUMBER))
+                .startedAt(record.get(STUDY.STARTED_AT))
+                .endedAt(record.get(STUDY.ENDED_AT))
+                .createdAt(record.get(STUDY.CREATED_AT))
+                .updatedAt(record.get(STUDY.UPDATED_AT))
+                .deletedAt(record.get(STUDY.DELETED_AT))
+                .resultSubmittedAt(record.get(STUDY.RESULT_SUBMITTED_AT))
+                .resultSubmitStatus(record.get(STUDY.RESULT_SUBMIT_STATUS) != null ? 
+                    org.certis.studyplatform.shared.domain.ResultSubmitStatus.valueOf(record.get(STUDY.RESULT_SUBMIT_STATUS)) : null)
+                .resultAttachmentUrl(record.get(STUDY.RESULT_ATTACHED_URL))
+                .status(record.get(STUDY.STATUS) != null ? 
+                    org.certis.studyplatform.study.domain.StudyStatus.valueOf(record.get(STUDY.STATUS)) : 
+                    org.certis.studyplatform.study.domain.StudyStatus.READY)
+                .build();
+        });
+    }
 }

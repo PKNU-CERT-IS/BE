@@ -55,4 +55,12 @@ public interface ProjectCommandRepository {
     void bulkSoftDeleteById(Long projectId, java.time.OffsetDateTime deletedAt);
 
     java.util.Optional<String> getResultAttachmentUrlById(Long projectId);
+
+    /**
+     * 프로젝트 엔티티 직접 저장 (상태 업데이트용)
+     * 
+     * @param projectEntity 저장할 프로젝트 엔티티
+     * @return 저장된 프로젝트 엔티티
+     */
+    org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectEntity save(org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectEntity projectEntity);
 }

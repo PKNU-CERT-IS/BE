@@ -258,45 +258,59 @@ public class ProjectRecord extends UpdatableRecordImpl<ProjectRecord> {
     }
 
     /**
+     * Setter for <code>public.project.status</code>.
+     */
+    public void setStatus(String value) {
+        set(17, value);
+    }
+
+    /**
+     * Getter for <code>public.project.status</code>.
+     */
+    public String getStatus() {
+        return (String) get(17);
+    }
+
+    /**
      * Setter for <code>public.project.result_submitted_at</code>.
      */
     public void setResultSubmittedAt(OffsetDateTime value) {
-        set(17, value);
+        set(18, value);
     }
 
     /**
      * Getter for <code>public.project.result_submitted_at</code>.
      */
     public OffsetDateTime getResultSubmittedAt() {
-        return (OffsetDateTime) get(17);
+        return (OffsetDateTime) get(18);
     }
 
     /**
      * Setter for <code>public.project.result_submit_status</code>.
      */
     public void setResultSubmitStatus(String value) {
-        set(18, value);
+        set(19, value);
     }
 
     /**
      * Getter for <code>public.project.result_submit_status</code>.
      */
     public String getResultSubmitStatus() {
-        return (String) get(18);
+        return (String) get(19);
     }
 
     /**
      * Setter for <code>public.project.result_attached_url</code>.
      */
     public void setResultAttachedUrl(String value) {
-        set(19, value);
+        set(20, value);
     }
 
     /**
      * Getter for <code>public.project.result_attached_url</code>.
      */
     public String getResultAttachedUrl() {
-        return (String) get(19);
+        return (String) get(20);
     }
 
     // -------------------------------------------------------------------------
@@ -322,7 +336,7 @@ public class ProjectRecord extends UpdatableRecordImpl<ProjectRecord> {
     /**
      * Create a detached, initialised ProjectRecord
      */
-    public ProjectRecord(Long id, Long memberId, String title, String content, OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt, String category, String subcategory, String description, OffsetDateTime startedAt, OffsetDateTime endedAt, Integer maxParticipantsNumber, String githubUrl, String externalUrl, String demoUrl, String thumbnailUrl, OffsetDateTime resultSubmittedAt, String resultSubmitStatus, String resultAttachedUrl) {
+    public ProjectRecord(Long id, Long memberId, String title, String content, OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt, String category, String subcategory, String description, OffsetDateTime startedAt, OffsetDateTime endedAt, Integer maxParticipantsNumber, String githubUrl, String externalUrl, String demoUrl, String thumbnailUrl, String status, OffsetDateTime resultSubmittedAt, String resultSubmitStatus, String resultAttachedUrl) {
         super(Project.PROJECT);
 
         setId(id);
@@ -342,6 +356,7 @@ public class ProjectRecord extends UpdatableRecordImpl<ProjectRecord> {
         setExternalUrl(externalUrl);
         setDemoUrl(demoUrl);
         setThumbnailUrl(thumbnailUrl);
+        setStatus(status);
         setResultSubmittedAt(resultSubmittedAt);
         setResultSubmitStatus(resultSubmitStatus);
         setResultAttachedUrl(resultAttachedUrl);
@@ -372,6 +387,7 @@ public class ProjectRecord extends UpdatableRecordImpl<ProjectRecord> {
             setExternalUrl(value.getExternalUrl());
             setDemoUrl(value.getDemoUrl());
             setThumbnailUrl(value.getThumbnailUrl());
+            setStatus(value.getStatus());
             setResultSubmittedAt(value.getResultSubmittedAt());
             setResultSubmitStatus(value.getResultSubmitStatus());
             setResultAttachedUrl(value.getResultAttachedUrl());

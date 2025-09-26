@@ -1135,4 +1135,63 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
         }
         return null;
     }
+
+    @Override
+    public List<Long> findApprovedProjectsStartedBefore(OffsetDateTime currentTime) {
+        log.info("jOOQ: Finding approved projects started before {}", currentTime);
+
+        List<Long> projectIds = dsl.select(PROJECT.ID)
+                .from(PROJECT)
+                .where(PROJECT.STATUS.eq("APPROVED"))
+                .and(PROJECT.STARTED_AT.le(currentTime))
+                .and(PROJECT.DELETED_AT.isNull())
+                .fetch()
+                .stream()
+                .map(record -> record.get(PROJECT.ID))
+                .toList();
+
+        log.info("jOOQ: Found {} approved projects started before {}", projectIds.size(), currentTime);
+        return projectIds;
+    }
+
+    @Override
+    public Optional<org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectEntity> findEntityById(Long projectId) {
+        log.info("jOOQ: Finding project entity by ID - {}", projectId);
+        
+        // JOOQ를 통해 Entity 직접 조회
+        return Optional.ofNullable(
+            dsl.selectFrom(PROJECT)
+                .where(PROJECT.ID.eq(projectId))
+                .and(PROJECT.DELETED_AT.isNull())
+                .fetchOne()
+        ).map(record -> {
+            // Record를 ProjectEntity로 변환
+            return org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectEntity.builder()
+                .id(record.get(PROJECT.ID))
+                .memberId(record.get(PROJECT.MEMBER_ID))
+                .title(record.get(PROJECT.TITLE))
+                .description(record.get(PROJECT.DESCRIPTION))
+                .content(record.get(PROJECT.CONTENT))
+                .category(record.get(PROJECT.CATEGORY))
+                .subcategory(record.get(PROJECT.SUBCATEGORY))
+                .maxParticipantsNumber(record.get(PROJECT.MAX_PARTICIPANTS_NUMBER))
+                .githubUrl(record.get(PROJECT.GITHUB_URL))
+                .externalUrl(record.get(PROJECT.EXTERNAL_URL))
+                .demoUrl(record.get(PROJECT.DEMO_URL))
+                .thumbnailUrl(record.get(PROJECT.THUMBNAIL_URL))
+                .startedAt(record.get(PROJECT.STARTED_AT))
+                .endedAt(record.get(PROJECT.ENDED_AT))
+                .createdAt(record.get(PROJECT.CREATED_AT))
+                .updatedAt(record.get(PROJECT.UPDATED_AT))
+                .deletedAt(record.get(PROJECT.DELETED_AT))
+                .resultSubmittedAt(record.get(PROJECT.RESULT_SUBMITTED_AT))
+                .resultSubmitStatus(record.get(PROJECT.RESULT_SUBMIT_STATUS) != null ? 
+                    org.certis.studyplatform.shared.domain.ResultSubmitStatus.valueOf(record.get(PROJECT.RESULT_SUBMIT_STATUS)) : null)
+                .resultAttachmentUrl(record.get(PROJECT.RESULT_ATTACHED_URL))
+                .status(record.get(PROJECT.STATUS) != null ? 
+                    org.certis.studyplatform.project.domain.ProjectStatus.valueOf(record.get(PROJECT.STATUS)) : 
+                    org.certis.studyplatform.project.domain.ProjectStatus.READY)
+                .build();
+        });
+    }
 }

@@ -6,6 +6,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
+import org.certis.studyplatform.project.domain.ProjectStatus;
 
 import java.time.OffsetDateTime;
 import jakarta.persistence.Column;
@@ -68,6 +69,10 @@ public class ProjectEntity {
 
     @Column(nullable = false, name = "ended_at")
     private OffsetDateTime endedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, name = "status")
+    private ProjectStatus status;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false, name = "created_at")

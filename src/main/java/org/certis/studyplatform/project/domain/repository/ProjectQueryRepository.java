@@ -7,6 +7,7 @@ import org.certis.studyplatform.project.domain.vo.ProjectSearchResultVo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -137,4 +138,20 @@ public interface ProjectQueryRepository {
      * 종료 제출 상태가 INPROGRESS인 프로젝트 목록 조회 (관리자용)
      */
     java.util.List<org.certis.studyplatform.project.domain.vo.ProjectEndSubmissionInfoVo> findEndSubmissionsInProgress();
+
+    /**
+     * APPROVED 상태이면서 started_at이 지정된 시간 이전인 프로젝트 ID 목록 조회
+     * 
+     * @param currentTime 현재 시간
+     * @return 프로젝트 ID 목록
+     */
+    List<Long> findApprovedProjectsStartedBefore(OffsetDateTime currentTime);
+
+    /**
+     * 프로젝트 엔티티 직접 조회 (상태 업데이트용)
+     * 
+     * @param projectId 프로젝트 ID
+     * @return 프로젝트 엔티티
+     */
+    java.util.Optional<org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectEntity> findEntityById(Long projectId);
 }
