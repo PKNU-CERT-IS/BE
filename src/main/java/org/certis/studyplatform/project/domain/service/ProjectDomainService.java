@@ -18,14 +18,19 @@ import org.certis.studyplatform.project.application.object.query.GetProjectByIdQ
 import org.certis.studyplatform.project.application.object.query.SearchProjectsQuery;
 import org.certis.studyplatform.project.domain.repository.ProjectCommandRepository;
 import org.certis.studyplatform.project.domain.repository.ProjectQueryRepository;
-import org.certis.studyplatform.project.domain.vo.*;
+import org.certis.studyplatform.project.domain.vo.ProjectVo;
+import org.certis.studyplatform.project.domain.vo.ProjectSummaryVo;
+import org.certis.studyplatform.project.domain.vo.ProjectSearchCriteriaVo;
+import org.certis.studyplatform.project.domain.vo.ProjectSearchResultVo;
+import org.certis.studyplatform.project.domain.vo.ProjectEndSubmissionInfoVo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
+import java.time.OffsetDateTime;
 import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 
 /**
@@ -411,16 +416,16 @@ public class ProjectDomainService {
         commandRepository.bulkSoftDeleteById(projectId, deletedAt);
     }
 
-    public java.util.Optional<String> getResultAttachmentUrlById(Long projectId) {
+    public Optional<String> getResultAttachmentUrlById(Long projectId) {
         return commandRepository.getResultAttachmentUrlById(projectId);
     }
 
     /**
      * 종료 제출 정보 조회 (계층: Domain -> QueryRepository)
      */
-    public org.certis.studyplatform.project.domain.vo.ProjectEndSubmissionInfoVo getEndSubmissionInfo(Long projectId) {
+    public ProjectEndSubmissionInfoVo getEndSubmissionInfo(Long projectId) {
         return queryRepository.getEndSubmissionInfo(projectId)
-                .orElse(new org.certis.studyplatform.project.domain.vo.ProjectEndSubmissionInfoVo(
+                .orElse(new ProjectEndSubmissionInfoVo(
                         projectId,
                         null, // status
                         null, // submittedAt
@@ -430,6 +435,8 @@ public class ProjectDomainService {
                         null, // title
                         null, // description
                         null, // creatorId
+                        null, // creatorName
+                        null, // creatorGrade
                         null, // startedAt
                         null, // endedAt
                         null, // currentParticipantNumber
@@ -437,7 +444,7 @@ public class ProjectDomainService {
                 ));
     }
 
-    public java.util.List<org.certis.studyplatform.project.domain.vo.ProjectEndSubmissionInfoVo> getEndSubmissionsInProgress() {
+    public List<ProjectEndSubmissionInfoVo> getEndSubmissionsInProgress() {
         return queryRepository.findEndSubmissionsInProgress();
     }
 

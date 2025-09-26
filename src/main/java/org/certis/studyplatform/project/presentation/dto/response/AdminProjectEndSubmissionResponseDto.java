@@ -32,6 +32,9 @@ public class AdminProjectEndSubmissionResponseDto {
     private String description;
     private Long creatorId;
 
+    private String projectCreatorName;
+    private org.certis.studyplatform.member.domain.MemberGrade projectCreatorGrade;
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private java.time.OffsetDateTime startedAt;
 

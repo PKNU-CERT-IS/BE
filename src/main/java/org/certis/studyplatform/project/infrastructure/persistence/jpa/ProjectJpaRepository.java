@@ -62,6 +62,13 @@ public interface ProjectJpaRepository extends JpaRepository<ProjectEntity, Long>
      * 프로젝트 생성 승인 - status를 APPROVED로 변경
      */
     @Modifying(clearAutomatically = true)
-    @Query("UPDATE ProjectEntity p SET p.status = 'APPROVED', p.updatedAt = :now WHERE p.id = :id AND p.deletedAt IS NULL")
+    @Query("UPDATE ProjectEntity p SET p.status = 'INPROGRESS', p.startedAt = CASE WHEN p.startedAt > :now THEN :now ELSE p.startedAt END, p.updatedAt = :now WHERE p.id = :id AND p.deletedAt IS NULL")
     int approveCreation(@Param("id") Long id, @Param("now") OffsetDateTime now);
+
+    /**
+     * Reject both end and creation: mark REJECTED and soft delete (deletedAt=now)
+     */
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE ProjectEntity p SET p.status = 'REJECTED', p.deletedAt = :now, p.updatedAt = :now WHERE p.id = :id AND p.deletedAt IS NULL")
+    int rejectCompletely(@Param("id") Long id, @Param("now") OffsetDateTime now);
 }

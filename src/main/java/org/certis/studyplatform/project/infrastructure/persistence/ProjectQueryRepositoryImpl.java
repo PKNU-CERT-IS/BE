@@ -57,6 +57,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
     @Override
     public Optional<ProjectEndSubmissionInfoVo> getEndSubmissionInfo(Long projectId) {
         var p = PROJECT.as("p");
+        var m = MEMBER.as("m");
         return java.util.Optional.ofNullable(
                 dsl.select(
                                 p.ID,
@@ -68,6 +69,8 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                                 p.TITLE,
                                 p.DESCRIPTION,
                                 p.MEMBER_ID,
+                                m.NAME,
+                                m.GRADE,
                                 p.STARTED_AT,
                                 p.ENDED_AT,
                                 // current participants
@@ -79,6 +82,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                                 p.MAX_PARTICIPANTS_NUMBER
                         )
                         .from(p)
+                        .leftJoin(m).on(p.MEMBER_ID.eq(m.ID))
                         .where(p.ID.eq(projectId))
                         .and(p.DELETED_AT.isNull())
                         .fetchOne()
@@ -95,6 +99,8 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                     r.get(p.TITLE),
                     r.get(p.DESCRIPTION),
                     r.get(p.MEMBER_ID),
+                    r.get(m.NAME),
+                    r.get(m.GRADE, org.certis.studyplatform.member.domain.MemberGrade.class),
                     r.get(p.STARTED_AT),
                     r.get(p.ENDED_AT),
                     r.get("current_participants", Integer.class),
@@ -106,6 +112,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
     @Override
     public java.util.List<ProjectEndSubmissionInfoVo> findEndSubmissionsInProgress() {
         var p = PROJECT.as("p");
+        var m = MEMBER.as("m");
         return dsl.select(
                         p.ID,
                         p.RESULT_SUBMIT_STATUS,
@@ -116,6 +123,8 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.TITLE,
                         p.DESCRIPTION,
                         p.MEMBER_ID,
+                        m.NAME,
+                        m.GRADE,
                         p.STARTED_AT,
                         p.ENDED_AT,
                         org.jooq.impl.DSL.select(org.jooq.impl.DSL.count())
@@ -126,6 +135,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.MAX_PARTICIPANTS_NUMBER
                 )
                 .from(p)
+                .leftJoin(m).on(p.MEMBER_ID.eq(m.ID))
                 .where(p.RESULT_SUBMIT_STATUS.eq(org.certis.studyplatform.shared.domain.ResultSubmitStatus.INPROGRESS.name()))
                 .and(p.DELETED_AT.isNull())
                 .orderBy(p.RESULT_SUBMITTED_AT.desc())
@@ -139,6 +149,8 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         r.get(p.TITLE),
                         r.get(p.DESCRIPTION),
                         r.get(p.MEMBER_ID),
+                        r.get(m.NAME),
+                        r.get(m.GRADE, org.certis.studyplatform.member.domain.MemberGrade.class),
                         r.get(p.STARTED_AT),
                         r.get(p.ENDED_AT),
                         r.get("current_participants", Integer.class),

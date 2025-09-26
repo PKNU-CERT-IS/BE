@@ -456,18 +456,20 @@ public class StudyDomainService {
         return queryRepository.getEndSubmissionInfo(studyId)
                 .orElse(new org.certis.studyplatform.study.domain.vo.StudyEndSubmissionInfoVo(
                         studyId,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null
+                        null, // status
+                        null, // submittedAt
+                        null, // attachmentUrl
+                        null, // category
+                        null, // subCategory
+                        null, // title
+                        null, // description
+                        null, // creatorId
+                        null, // creatorName
+                        null, // creatorGrade
+                        null, // startedAt
+                        null, // endedAt
+                        null, // currentParticipantNumber
+                        null  // maxParticipantNumber
                 ));
     }
 

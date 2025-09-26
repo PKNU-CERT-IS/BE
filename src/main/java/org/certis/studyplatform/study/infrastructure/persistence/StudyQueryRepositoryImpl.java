@@ -15,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.certis.studyplatform.member.domain.MemberGrade;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -49,6 +50,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
     @Override
     public Optional<StudyEndSubmissionInfoVo> getEndSubmissionInfo(Long studyId) {
         var s = STUDY.as("s");
+        var m = MEMBER.as("m");
         return Optional.ofNullable(
                 dsl.select(
                             s.ID,
@@ -60,6 +62,8 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                             s.TITLE,
                             s.DESCRIPTION,
                             s.MEMBER_ID,
+                            m.NAME,
+                            m.GRADE,
                             s.STARTED_AT,
                             s.ENDED_AT,
                             select(count())
@@ -71,6 +75,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                             s.MAX_PARTICIPANTS_NUMBER
                         )
                         .from(s)
+                        .leftJoin(m).on(s.MEMBER_ID.eq(m.ID))
                         .where(s.ID.eq(studyId))
                         .and(s.DELETED_AT.isNull())
                         .fetchOne()
@@ -87,6 +92,8 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                     r.get(s.TITLE),
                     r.get(s.DESCRIPTION),
                     r.get(s.MEMBER_ID),
+                    r.get(m.NAME),
+                    r.get(m.GRADE, MemberGrade.class),
                     r.get(s.STARTED_AT),
                     r.get(s.ENDED_AT),
                     r.get("current_participants", Integer.class),
@@ -433,6 +440,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
     @Override
     public java.util.List<StudyEndSubmissionInfoVo> findEndSubmissionsInProgress() {
         var s = STUDY.as("s");
+        var m = MEMBER.as("m");
         return dsl.select(
                         s.ID,
                         s.RESULT_SUBMIT_STATUS,
@@ -443,6 +451,8 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                         s.TITLE,
                         s.DESCRIPTION,
                         s.MEMBER_ID,
+                        m.NAME,
+                        m.GRADE,
                         s.STARTED_AT,
                         s.ENDED_AT,
                         select(count())
@@ -454,6 +464,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                         s.MAX_PARTICIPANTS_NUMBER
                 )
                 .from(s)
+                .leftJoin(m).on(s.MEMBER_ID.eq(m.ID))
                 .where(s.RESULT_SUBMIT_STATUS.eq(org.certis.studyplatform.shared.domain.ResultSubmitStatus.INPROGRESS.name()))
                 .and(s.DELETED_AT.isNull())
                 .orderBy(s.RESULT_SUBMITTED_AT.desc())
@@ -467,6 +478,8 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                         r.get(s.TITLE),
                         r.get(s.DESCRIPTION),
                         r.get(s.MEMBER_ID),
+                        r.get(m.NAME),
+                        r.get(m.GRADE, MemberGrade.class),
                         r.get(s.STARTED_AT),
                         r.get(s.ENDED_AT),
                         r.get("current_participants", Integer.class),

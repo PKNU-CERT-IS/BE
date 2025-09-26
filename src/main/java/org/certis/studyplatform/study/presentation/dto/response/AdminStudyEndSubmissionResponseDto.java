@@ -6,8 +6,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
-
+import org.certis.studyplatform.member.domain.MemberGrade;
 import java.time.OffsetDateTime;
+
 
 @Getter
 @Builder
@@ -31,11 +32,14 @@ public class AdminStudyEndSubmissionResponseDto {
     private String description;
     private Long creatorId;
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private java.time.OffsetDateTime startedAt;
+    private String studyCreatorName;
+    private MemberGrade studyCreatorGrade;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private java.time.OffsetDateTime endedAt;
+    private OffsetDateTime startedAt;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private OffsetDateTime endedAt;
 
     private Integer currentParticipantNumber;
     private Integer maxParticipantNumber;
