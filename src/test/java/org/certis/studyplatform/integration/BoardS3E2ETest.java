@@ -20,7 +20,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import java.util.List;
@@ -74,7 +73,6 @@ public class BoardS3E2ETest {
     @Order(1)
     @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     @DisplayName("Board create with data URL uploads to S3 and stores URL")
-    @Transactional
     void createBoard_withDataUrl_uploadsToS3AndStoresUrl() throws Exception {
         // 자격증명이 없으면 실패하므로 실제 S3 테스트 전제
         
@@ -106,7 +104,7 @@ public class BoardS3E2ETest {
                 .andExpect(jsonPath("$.message").value(ResponseStatus.BOARD_CREATE_SUCCESS.getMessage()));
 
         // Then: Verify S3 URL is stored in database
-        var record = dsl.fetchOne("SELECT ba.attached_url FROM board_attached ba WHERE ba.board_id = ?", TEST_BOARD_ID);
+        var record = dsl.fetchOne("SELECT ba.attached_url FROM board_attached ba WHERE ba.board_id = ? AND ba.deleted_at IS NULL ORDER BY ba.id DESC LIMIT 1", TEST_BOARD_ID);
         assertThat(record).isNotNull();
         String storedUrl = record.get("attached_url", String.class);
         assertThat(storedUrl).isNotBlank();
@@ -121,7 +119,6 @@ public class BoardS3E2ETest {
     @Order(2)
     @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     @DisplayName("Board detail returns presigned URL for S3 attachment")
-    @Transactional
     void getBoardDetail_returnsPresignedUrlForS3Attachment() throws Exception {
         // Given: Board with S3 attachment exists
         String s3Url = s3FileService.uploadBytes(
@@ -154,7 +151,6 @@ public class BoardS3E2ETest {
     @Order(3)
     @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     @DisplayName("Board update with data URL uploads to S3 and replaces old attachment")
-    @Transactional
     void updateBoard_withDataUrl_uploadsToS3AndReplacesOldAttachment() throws Exception {
         
         // Given: Board with existing S3 attachment
@@ -196,7 +192,7 @@ public class BoardS3E2ETest {
                 .andExpect(jsonPath("$.message").value(ResponseStatus.BOARD_UPDATE_SUCCESS.getMessage()));
 
         // Then: Verify new S3 URL is stored
-        var record = dsl.fetchOne("SELECT ba.attached_url FROM board_attached ba WHERE ba.board_id = ?", TEST_BOARD_ID);
+        var record = dsl.fetchOne("SELECT ba.attached_url FROM board_attached ba WHERE ba.board_id = ? AND ba.deleted_at IS NULL ORDER BY ba.id DESC LIMIT 1", TEST_BOARD_ID);
         assertThat(record).isNotNull();
         String newUrl = record.get("attached_url", String.class);
         assertThat(newUrl).isNotBlank();
@@ -209,7 +205,6 @@ public class BoardS3E2ETest {
     @Order(4)
     @WithMockUser(username = "admin", roles = {"ADMIN"})
     @DisplayName("Board delete removes S3 objects")
-    @Transactional
     void deleteBoard_removesS3Objects() throws Exception {
         // Given: Board with S3 attachment exists
         String s3Url = s3FileService.uploadBytes(
@@ -242,7 +237,6 @@ public class BoardS3E2ETest {
     @Order(5)
     @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     @DisplayName("Board search returns presigned URLs for attachments")
-    @Transactional
     void searchBoards_returnsPresignedUrlsForAttachments() throws Exception {
         // Given: Board with S3 attachment exists
         String s3Url = s3FileService.uploadBytes(

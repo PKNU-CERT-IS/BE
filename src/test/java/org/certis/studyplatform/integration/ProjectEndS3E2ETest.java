@@ -55,19 +55,21 @@ class ProjectEndS3E2ETest {
     private static final Long STAFF_ID = 3L; // WithMockUser("staff") maps to 3L in tests
     private static final Long PROJECT_ID = 1L;
 
-    // 환경변수 로드 - S3FileUploadDeleteE2ETest와 동일한 패턴
+
+    // .env 로드 및 시스템 프로퍼티 주입 (ProjectEndS3E2ETest와 동일 패턴)
     private static final Dotenv dotenv = Dotenv.configure()
             .directory("./")
             .ignoreIfMissing()
             .load();
 
     static {
-        // Spring Context 로딩 전에 시스템 프로퍼티로 주입
-        System.setProperty("AWS_ACCESS_KEY_ID", dotenv.get("AWS_ACCESS_KEY_ID", ""));
-        System.setProperty("AWS_SECRET_ACCESS_KEY", dotenv.get("AWS_SECRET_ACCESS_KEY", ""));
-        System.setProperty("AWS_DEFAULT_REGION", dotenv.get("AWS_DEFAULT_REGION", "ap-southeast-2"));
-        System.setProperty("AWS_S3_BUCKET", dotenv.get("AWS_S3_BUCKET", "pknucertis-bucket"));
+        System.setProperty("AWS_ACCESS_KEY_ID", dotenv.get("AWS_ACCESS_KEY_ID", System.getProperty("AWS_ACCESS_KEY_ID", "")));
+        System.setProperty("AWS_SECRET_ACCESS_KEY", dotenv.get("AWS_SECRET_ACCESS_KEY", System.getProperty("AWS_SECRET_ACCESS_KEY", "")));
+        System.setProperty("AWS_DEFAULT_REGION", dotenv.get("AWS_DEFAULT_REGION", System.getProperty("AWS_DEFAULT_REGION", "ap-southeast-2")));
+        System.setProperty("AWS_S3_BUCKET", dotenv.get("AWS_S3_BUCKET", System.getProperty("AWS_S3_BUCKET", "pknucertis-bucket")));
     }
+
+
 
     @BeforeEach
     void setUp() {
