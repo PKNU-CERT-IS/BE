@@ -44,7 +44,7 @@ public interface ProjectJpaRepository extends JpaRepository<ProjectEntity, Long>
      * Approve end submission: set status and endedAt
      */
     @Modifying(clearAutomatically = true)
-    @Query("UPDATE ProjectEntity p SET p.resultSubmitStatus = :status, p.endedAt = :endedAt, p.updatedAt = :endedAt WHERE p.id = :id AND p.deletedAt IS NULL")
+    @Query("UPDATE ProjectEntity p SET p.status = 'COMPLETED', p.resultSubmitStatus = :status, p.endedAt = :endedAt, p.updatedAt = :endedAt WHERE p.id = :id AND p.deletedAt IS NULL")
     int approveEnd(@Param("id") Long id,
                    @Param("endedAt") OffsetDateTime endedAt,
                    @Param("status") ResultSubmitStatus status);

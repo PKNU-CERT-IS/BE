@@ -116,8 +116,8 @@ class AdminProjectCreationFlowTest {
     }
 
     @Test
-    @DisplayName("관리자 종료 거절 - REJECTED 및 deleted_at 설정")
-    void reject_end_sets_rejected_and_deleted_at() throws Exception {
+    @DisplayName("관리자 종료 거절 - REJECTED 되나 deleted_at은 유지(null)")
+    void reject_end_sets_rejected_and_keeps_deleted_at_null() throws Exception {
         var admin = new org.certis.studyplatform.shared.security.CurrentUser(memberId, "admin", "admin@certis.org", "admin", "STAFF");
 
         // prepare project as if end submission is in progress
@@ -140,7 +140,7 @@ class AdminProjectCreationFlowTest {
         var row = dsl.selectFrom(PROJECT).where(PROJECT.ID.eq(projectId)).fetchOne();
         assertThat(row).isNotNull();
         assertThat(row.getStatus()).isEqualTo("REJECTED");
-        assertThat(row.getDeletedAt()).isNotNull();
+        assertThat(row.getDeletedAt()).isNull();
     }
 }
 

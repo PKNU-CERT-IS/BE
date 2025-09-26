@@ -180,8 +180,11 @@ public class BlogDomainService {
                 .orElseThrow(() -> new DomainException(ExceptionStatus.BLOG_DOMAIN_NOT_FOUND,
                         "블로그를 찾을 수 없습니다: " + query.id()));
 
-        // 참조 제목 조회 (referenceType과 referenceId 활용)
-        String referenceTitle = getReferenceTitle(blogVo.referenceType(), blogVo.referenceId());
+        // 참조 제목 조회 (referenceType과 referenceId 활용). 조회 실패 시 기존 값 유지
+        String resolvedReferenceTitle = getReferenceTitle(blogVo.referenceType(), blogVo.referenceId());
+        String referenceTitle = resolvedReferenceTitle != null
+                ? resolvedReferenceTitle
+                : (blogVo.referenceTitle() != null ? blogVo.referenceTitle() : "");
 
         // 조회수 증가 (Redis)
         if (query.viewerId() != null) {
@@ -201,7 +204,7 @@ public class BlogDomainService {
                 blogVo.category(),
                 blogVo.referenceType(),
                 blogVo.referenceId(),
-                referenceTitle, // 조회된 참조 제목
+                referenceTitle, // 조회된 참조 제목 (없으면 기존 값 유지)
                 blogVo.creatorId(),
                 blogVo.creatorName(),
                 currentViewCount,
@@ -449,13 +452,9 @@ public class BlogDomainService {
             return Map.of();
         }
 
-        // 각 ID별로 제목 조회
+        // 각 ID별로 제목 조회 (null 값은 수집 대상에서 제외하여 NPE 방지)
         return referenceIds.stream()
-                .collect(Collectors.toMap(
-                        id -> id,
-                        id -> getReferenceTitle(type, id)
-                ))
-                .entrySet().stream()
+                .map(id -> Map.entry(id, getReferenceTitle(type, id)))
                 .filter(entry -> entry.getValue() != null)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
