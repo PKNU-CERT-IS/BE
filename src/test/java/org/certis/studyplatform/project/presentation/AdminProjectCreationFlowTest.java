@@ -67,6 +67,7 @@ class AdminProjectCreationFlowTest {
                 .set(PROJECT.CATEGORY, "CS")
                 .set(PROJECT.SUBCATEGORY, "백엔드")
                 .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(PROJECT.STATUS, "READY")
                 .set(PROJECT.STARTED_AT, now.plusDays(1))
                 .set(PROJECT.ENDED_AT, now.plusDays(10))
                 .set(PROJECT.CREATED_AT, now)
@@ -87,6 +88,10 @@ class AdminProjectCreationFlowTest {
                         .param("projectId", String.valueOf(projectId)))
                 .andDo(print())
                 .andExpect(status().isOk());
+
+        var row = dsl.selectFrom(PROJECT).where(PROJECT.ID.eq(projectId)).fetchOne();
+        assertThat(row).isNotNull();
+        assertThat(row.getStatus()).isEqualTo("APPROVED");
     }
 
     @Test

@@ -938,6 +938,7 @@ class ProjectMeetingControllerTest {
                     .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
                     .set(PROJECT.STARTED_AT, now.plusDays(1))
                     .set(PROJECT.ENDED_AT, now.plusDays(30))
+                    .set(PROJECT.STATUS, "READY")
                     .set(PROJECT.CREATED_AT, now)
                     .set(PROJECT.UPDATED_AT, now)
                     .onDuplicateKeyIgnore()
@@ -951,7 +952,7 @@ class ProjectMeetingControllerTest {
                     .set(MEMBER.ROLE, "PLAYER")
                     .set(MEMBER.BIRTHDAY, now.minusYears(25))
                     .set(MEMBER.GENDER, "MALE")
-                    .set(MEMBER.GRADE, "4")
+                    .set(MEMBER.GRADE, "SENIOR")
                     .set(MEMBER.MAJOR, "컴퓨터공학과")
                     .set(MEMBER.CREATED_AT, now)
                     .set(MEMBER.UPDATED_AT, now)
@@ -965,14 +966,37 @@ class ProjectMeetingControllerTest {
                     .set(MEMBER.ROLE, "PLAYER")
                     .set(MEMBER.BIRTHDAY, now.minusYears(23))
                     .set(MEMBER.GENDER, "FEMALE")
-                    .set(MEMBER.GRADE, "3")
+                    .set(MEMBER.GRADE, "JUNIOR")
                     .set(MEMBER.MAJOR, "정보보안학과")
                     .set(MEMBER.CREATED_AT, now)
                     .set(MEMBER.UPDATED_AT, now)
                     .onDuplicateKeyIgnore()
                     .execute();
 
+            // 프로젝트 참가자 데이터 생성 (승인된 멤버로 설정)
+            dsl.insertInto(PROJECT_PARTICIPANT)
+                    .set(PROJECT_PARTICIPANT.ID, 1L)
+                    .set(PROJECT_PARTICIPANT.PROJECT_ID, TEST_PROJECT_ID)
+                    .set(PROJECT_PARTICIPANT.MEMBER_ID, TEST_MEMBER_ID)
+                    .set(PROJECT_PARTICIPANT.STATUS, "APPROVED")
+                    .set(PROJECT_PARTICIPANT.CREATED_AT, now)
+                    .set(PROJECT_PARTICIPANT.UPDATED_AT, now)
+                    .onDuplicateKeyIgnore()
+                    .execute();
+
+            dsl.insertInto(PROJECT_PARTICIPANT)
+                    .set(PROJECT_PARTICIPANT.ID, 2L)
+                    .set(PROJECT_PARTICIPANT.PROJECT_ID, TEST_PROJECT_ID)
+                    .set(PROJECT_PARTICIPANT.MEMBER_ID, TEST_MEMBER_2_ID)
+                    .set(PROJECT_PARTICIPANT.STATUS, "APPROVED")
+                    .set(PROJECT_PARTICIPANT.CREATED_AT, now)
+                    .set(PROJECT_PARTICIPANT.UPDATED_AT, now)
+                    .onDuplicateKeyIgnore()
+                    .execute();
+
         } catch (Exception e) {
+            // 테스트 데이터 설정 실패 시 예외를 다시 던져서 테스트가 실패하도록 함
+            throw new RuntimeException("테스트 데이터 설정 실패", e);
         }
     }
 
@@ -984,6 +1008,7 @@ class ProjectMeetingControllerTest {
             // 외래 키 제약으로 인해 역순으로 삭제
             dsl.execute("DELETE FROM project_meeting_link");
             dsl.deleteFrom(PROJECT_MEETING).execute();
+            dsl.deleteFrom(PROJECT_PARTICIPANT).execute();
             dsl.deleteFrom(PROJECT).execute();
             dsl.deleteFrom(MEMBER).execute();
         } catch (Exception e) {

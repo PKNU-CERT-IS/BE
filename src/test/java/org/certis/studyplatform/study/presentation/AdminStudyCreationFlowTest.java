@@ -68,6 +68,7 @@ class AdminStudyCreationFlowTest {
                 .set(STUDY.CATEGORY, "CS")
                 .set(STUDY.SUBCATEGORY, "백엔드")
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(STUDY.STATUS, "READY")
                 .set(STUDY.STARTED_AT, now.plusDays(1))
                 .set(STUDY.ENDED_AT, now.plusDays(10))
                 .set(STUDY.CREATED_AT, now)
@@ -88,6 +89,10 @@ class AdminStudyCreationFlowTest {
                         .param("studyId", String.valueOf(studyId)))
                 .andDo(print())
                 .andExpect(status().isOk());
+
+        var row = dsl.selectFrom(STUDY).where(STUDY.ID.eq(studyId)).fetchOne();
+        assertThat(row).isNotNull();
+        assertThat(row.getStatus()).isEqualTo("APPROVED");
     }
 
     @Test
