@@ -59,10 +59,10 @@ public interface ProjectJpaRepository extends JpaRepository<ProjectEntity, Long>
                   @Param("now") OffsetDateTime now);
 
     /**
-     * 프로젝트 생성 승인 - status를 APPROVED로 변경
+     * 프로젝트 생성 승인 - status를 APPROVED로 변경 (startedAt은 변경하지 않음)
      */
     @Modifying(clearAutomatically = true)
-    @Query("UPDATE ProjectEntity p SET p.status = 'INPROGRESS', p.startedAt = CASE WHEN p.startedAt > :now THEN :now ELSE p.startedAt END, p.updatedAt = :now WHERE p.id = :id AND p.deletedAt IS NULL")
+    @Query("UPDATE ProjectEntity p SET p.status = 'APPROVED', p.updatedAt = :now WHERE p.id = :id AND p.deletedAt IS NULL")
     int approveCreation(@Param("id") Long id, @Param("now") OffsetDateTime now);
 
     /**

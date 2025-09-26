@@ -50,9 +50,9 @@ public interface StudyJpaRepository extends JpaRepository<StudyEntity, Long> {
                   @Param("now") OffsetDateTime now);
 
     /**
-     * 스터디 생성 승인 - status를 APPROVED로 변경
+     * 스터디 생성 승인 - status를 APPROVED로 변경 (startedAt은 변경하지 않음)
      */
     @Modifying(clearAutomatically = true)
-    @Query("UPDATE StudyEntity s SET s.status = 'APPROVED', s.startedAt = CASE WHEN s.startedAt > :now THEN :now ELSE s.startedAt END, s.updatedAt = :now WHERE s.id = :id AND s.deletedAt IS NULL")
+    @Query("UPDATE StudyEntity s SET s.status = 'APPROVED', s.updatedAt = :now WHERE s.id = :id AND s.deletedAt IS NULL")
     int approveCreation(@Param("id") Long id, @Param("now") OffsetDateTime now);
 }

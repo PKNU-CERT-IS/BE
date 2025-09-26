@@ -340,9 +340,9 @@ public class ProjectCommandService {
     @Transactional
     public void approveProjectCreation(Long projectId, Long adminId) {
         log.info("Command: Approving project creation - projectId: {} by admin: {}", projectId, adminId);
-        // 1. 프로젝트 status를 INPROGRESS로 변경 (startedAt이 미래면 now로 당김)
-        projectJpaRepository.approveCreation(projectId, OffsetDateTime.now());
-        log.info("Command: Project status updated to INPROGRESS - projectId: {}", projectId);
+        // 1. 프로젝트 status를 APPROVED로 변경 (startedAt은 유지)
+        projectCommandRepository.approveCreation(projectId);
+        log.info("Command: Project status updated to APPROVED - projectId: {}", projectId);
         
         try {
             // 2. 프로젝트 정보 조회 후 유예기간 연장
