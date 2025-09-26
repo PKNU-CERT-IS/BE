@@ -3,6 +3,7 @@ package org.certis.studyplatform.shared.domain.service;
 import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 import org.certis.studyplatform.study.domain.StudyStatus;
 import org.certis.studyplatform.project.domain.ProjectStatus;
+import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
 
@@ -12,6 +13,7 @@ import java.time.OffsetDateTime;
  * Study와 Project의 상태 관리를 위한 도메인 서비스
  * 요청된 상태 테이블에 따라 status와 resultSubmitStatus를 계산
  */
+@Service
 public class ProgressStatusService {
 
     /**
