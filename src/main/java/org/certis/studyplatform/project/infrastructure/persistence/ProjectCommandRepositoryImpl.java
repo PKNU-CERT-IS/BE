@@ -87,7 +87,7 @@ public class ProjectCommandRepositoryImpl implements ProjectCommandRepository {
 
         try {
             // S3에 첨부파일 업로드
-            String attachmentUrl = s3FileService.uploadFile(file, "project");
+            String attachmentUrl = s3FileService.uploadFile(file, S3FileService.DomainFolders.PROJECT_ATTACHMENTS, projectId);
 
             // 첨부파일 정보를 DB에 저장
             ProjectAttachedEntity entity = ProjectAttachedEntity.builder()

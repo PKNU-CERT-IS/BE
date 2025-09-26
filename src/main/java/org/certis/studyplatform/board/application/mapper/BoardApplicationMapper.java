@@ -158,10 +158,7 @@ public class BoardApplicationMapper {
      * URL 정규화 - S3 URL을 presigned URL로 변환
      */
     private String normalizeUrl(String url) {
-        if (url == null || url.isBlank()) {
-            return url;
-        }
-        return s3FileService.getFileUrl(url);
+        return s3FileService.toPresignedUrl(url);
     }
 
     /**

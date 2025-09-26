@@ -59,7 +59,7 @@ public class ProjectApplicationDtoMapper {
                         .url(vo.externalUrl().url())
                         .build() : null)
                 .demoUrl(vo.demoUrl())
-                .thumbnailUrl(vo.thumbnailUrl())
+                .thumbnailUrl(normalizeUrl(vo.thumbnailUrl()))
                 .attachments(vo.attached() != null ? toProjectAttachedResponseDtoList(vo.attached()) : Collections.emptyList()) // VO에서 첨부파일 정보 가져오기
                 .meetingSummaries(Collections.emptyList()) // 초기값은 빈 리스트, Facade에서 추가됨
                 .maxParticipantNumber(vo.maxParticipants())
@@ -94,7 +94,7 @@ public class ProjectApplicationDtoMapper {
                 .externalUrl(vo.externalUrl() != null ? 
                     new ExternalUrlResponseDto(vo.externalUrl().title(), vo.externalUrl().url()) : null)
                 .demoUrl(vo.demoUrl())
-                .thumbnailUrl(vo.thumbnailUrl())
+                .thumbnailUrl(normalizeUrl(vo.thumbnailUrl()))
                 .maxParticipantNumber(vo.maxParticipantNumber())
                 .currentParticipantNumber(vo.currentParticipantNumber())
                 .attachments(vo.attachedVo() != null ? toProjectAttachedResponseDtoList(vo.attachedVo()) : java.util.Collections.emptyList())
@@ -133,13 +133,7 @@ public class ProjectApplicationDtoMapper {
     }
 
     private String normalizeUrl(String url) {
-        if (url == null || url.isEmpty()) return url;
-        if (url.startsWith("http://") || url.startsWith("https://")) return url;
-        try {
-            return s3FileService.getFileUrl(url);
-        } catch (Exception e) {
-            return url;
-        }
+        return s3FileService.toPresignedUrl(url);
     }
 
     /**

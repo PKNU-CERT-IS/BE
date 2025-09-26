@@ -152,7 +152,7 @@ public class BoardCommandService {
                 String contentType = meta.contains(";") ? meta.substring(0, meta.indexOf(';')) : "application/octet-stream";
                 byte[] bytes = Base64.getDecoder().decode(base64Part.getBytes(StandardCharsets.UTF_8));
                 String originalName = attachment.name() != null ? attachment.name() : "board.bin";
-                String s3Url = s3FileService.uploadBytes(bytes, contentType, originalName, "board-attachments");
+                String s3Url = s3FileService.uploadBytes(bytes, contentType, originalName, S3FileService.DomainFolders.BOARD_ATTACHMENTS, System.currentTimeMillis());
                 return AttachmentCommand.of(attachment.id(), attachment.name(), attachment.type(), attachment.size(), s3Url);
             } catch (Exception e) {
                 throw new ApplicationException(ExceptionStatus.S3_INFRASTRUCTURE_UPLOAD_FAILED);

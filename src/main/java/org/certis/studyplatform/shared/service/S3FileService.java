@@ -5,11 +5,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+import java.util.ArrayList;
+
 /**
- * S3 파일 서비스 - 도메인 서비스용 간소화된 인터페이스
+ * 통합 S3 파일 서비스
  * 
+ * 모든 도메인(Board, Study, Project 등)에서 S3를 사용하는 부분을 통합 관리
+ * 조회 시 모든 URL 필드에 대해 자동으로 Presigned URL 적용
  * S3AttachmentService를 래핑하여 도메인 서비스에서 사용하기 쉬운 인터페이스 제공
- * 각 도메인별로 고유한 entityId가 없는 경우를 위한 간소화된 업로드 지원
  */
 @Service
 @RequiredArgsConstructor
@@ -25,9 +29,20 @@ public class S3FileService {
      * @return S3 URL
      */
     public String uploadFile(MultipartFile file, String domain) {
-        // 임시 entityId로 0을 사용 (실제 구현시에는 적절한 ID 생성 로직 필요)
-        Long temporaryEntityId = System.currentTimeMillis(); // 고유성을 위해 타임스탬프 사용
+        // 임시 entityId로 타임스탬프 사용 (고유성 보장)
+        Long temporaryEntityId = System.currentTimeMillis();
         return s3AttachmentService.uploadFile(file, domain, temporaryEntityId);
+    }
+
+    /**
+     * 파일을 S3에 업로드하고 URL 반환 (엔티티 ID 지정)
+     * @param file 업로드할 파일
+     * @param domain 도메인 폴더명
+     * @param entityId 엔티티 ID
+     * @return S3 URL
+     */
+    public String uploadFile(MultipartFile file, String domain, Long entityId) {
+        return s3AttachmentService.uploadFile(file, domain, entityId);
     }
 
     /**
@@ -52,40 +67,85 @@ public class S3FileService {
     }
 
     /**
-     * S3에서 파일 URL 조회/생성
+     * Base64 또는 바이트 데이터를 직접 업로드 (엔티티 ID 지정)
+     */
+    public String uploadBytes(byte[] bytes, String contentType, String originalFileName, String domain, Long entityId) {
+        return s3AttachmentService.uploadBytes(bytes, contentType, originalFileName, domain, entityId);
+    }
+
+    /**
+     * 여러 파일을 일괄 업로드
+     * @param files 업로드할 파일 리스트
+     * @param domain 도메인 폴더명
+     * @param entityId 엔티티 ID
+     * @return 업로드된 URL 리스트
+     */
+    public List<String> uploadFiles(List<MultipartFile> files, String domain, Long entityId) {
+        if (files == null || files.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<String> uploadedUrls = new ArrayList<>();
+        
+        for (MultipartFile file : files) {
+            if (!file.isEmpty()) {
+                try {
+                    String fileUrl = uploadFile(file, domain, entityId);
+                    uploadedUrls.add(fileUrl);
+                    log.info("File uploaded successfully: domain={}, entityId={}, url={}", domain, entityId, fileUrl);
+                } catch (Exception e) {
+                    log.error("Failed to upload file: domain={}, entityId={}, filename={}", domain, entityId, file.getOriginalFilename(), e);
+                    // 이미 업로드된 파일들 정리
+                    cleanupUploadedFiles(uploadedUrls);
+                    throw new RuntimeException("파일 업로드에 실패했습니다: " + file.getOriginalFilename(), e);
+                }
+            }
+        }
+        
+        return uploadedUrls;
+    }
+
+    /**
+     * S3에서 파일 URL 조회/생성 (Presigned URL 자동 적용)
      * @param fileKey 파일 키 또는 URL
-     * @return 파일 URL
+     * @return Presigned URL (S3 URL인 경우) 또는 원본 URL (외부 URL인 경우)
      */
     public String getFileUrl(String fileKey) {
-        // fileKey가 이미 URL인 경우: S3 URL이면 presigned URL 생성, 그 외에는 그대로 반환
-        if (fileKey != null && fileKey.startsWith("https://")) {
-            try {
-                String bucket = System.getProperty("AWS_S3_BUCKET", System.getenv().getOrDefault("AWS_S3_BUCKET", "test-bucket"));
-                // 일반적인 S3 URL 패턴 확인
-                if (fileKey.contains(".s3.") && fileKey.contains(bucket)) {
-                    return s3AttachmentService.generatePresignedUrl(fileKey, java.time.Duration.ofHours(1));
-                }
-            } catch (Exception ignored) {
-                // presign 실패 시 원본 URL 반환
-            }
-            return fileKey;
+        return toPresignedUrl(fileKey);
+    }
+
+    /**
+     * URL을 Presigned URL로 변환 (조회 시 사용)
+     * 모든 도메인의 URL 필드에 대해 자동으로 Presigned URL 적용
+     * @param url 원본 URL
+     * @return Presigned URL (S3 URL인 경우) 또는 원본 URL (외부 URL인 경우)
+     */
+    public String toPresignedUrl(String url) {
+        if (url == null || url.isEmpty()) {
+            return url;
         }
         
-        // fileKey가 S3 키인 경우 URL로 변환
-        // 실제 구현에서는 presigned URL을 생성하거나 public URL을 반환
-        log.info("File URL requested for key: {}", fileKey);
-        
-        // 현재는 기본 버킷/리전으로 S3 URL 구성 후 presigned URL 반환
-        if (fileKey != null && !fileKey.isEmpty()) {
-            String s3Url = String.format("https://%s.s3.%s.amazonaws.com/%s", 
-                    System.getProperty("AWS_S3_BUCKET", System.getenv().getOrDefault("AWS_S3_BUCKET", "test-bucket")),
-                    System.getProperty("AWS_DEFAULT_REGION", System.getenv().getOrDefault("AWS_DEFAULT_REGION", "ap-northeast-2")),
-                    fileKey);
-            // Presigned URL 생성으로 접근권한 문제 방지
-            return s3AttachmentService.generatePresignedUrl(s3Url, java.time.Duration.ofHours(1));
+        try {
+            return s3AttachmentService.generatePresignedUrl(url, java.time.Duration.ofHours(1));
+        } catch (Exception e) {
+            log.warn("Failed to generate presigned URL for: {}, returning original URL", url, e);
+            return url;
+        }
+    }
+
+    /**
+     * URL 리스트를 Presigned URL 리스트로 변환
+     * @param urls 원본 URL 리스트
+     * @return Presigned URL 리스트
+     */
+    public List<String> toPresignedUrls(List<String> urls) {
+        if (urls == null || urls.isEmpty()) {
+            return urls;
         }
         
-        return fileKey;
+        return urls.stream()
+                .map(this::toPresignedUrl)
+                .toList();
     }
 
     /**
@@ -145,5 +205,44 @@ public class S3FileService {
     public S3ObjectInfo getObjectInfo(String s3Url) {
         // 메타 조회는 원본 URL로 수행
         return s3AttachmentService.getObjectInfo(s3Url);
+    }
+
+    /**
+     * 업로드된 파일들 정리 (업로드 실패 시)
+     * @param uploadedUrls 정리할 URL 리스트
+     */
+    private void cleanupUploadedFiles(List<String> uploadedUrls) {
+        for (String url : uploadedUrls) {
+            try {
+                deleteFile(url);
+                log.info("Cleaned up uploaded file: {}", url);
+            } catch (Exception e) {
+                log.warn("Failed to cleanup uploaded file: {}", url, e);
+            }
+        }
+    }
+
+    /**
+     * 도메인별 표준 폴더명 생성
+     * @param domain 도메인명
+     * @param type 첨부파일 타입
+     * @return 표준 폴더명
+     */
+    public String getDomainFolder(String domain, String type) {
+        return domain.toLowerCase() + "-" + type.toLowerCase();
+    }
+
+    /**
+     * 일반적인 도메인 폴더명들
+     */
+    public static class DomainFolders {
+        public static final String BOARD_ATTACHMENTS = "board-attachments";
+        public static final String STUDY_ATTACHMENTS = "study-attachments";
+        public static final String PROJECT_ATTACHMENTS = "project-attachments";
+        public static final String PROJECT_THUMBNAILS = "project-thumbnails";
+        public static final String STUDY_END_ATTACHMENTS = "study-end-attachments";
+        public static final String PROJECT_END_ATTACHMENTS = "project-end-attachments";
+        public static final String SCHEDULE_ATTACHMENTS = "schedule-attachments";
+        public static final String BLOG_ATTACHMENTS = "blog-attachments";
     }
 }

@@ -70,7 +70,7 @@ public class StudyCommandService {
                         String base64Part = parts.length == 2 ? parts[1] : parts[0];
                         byte[] bytes = java.util.Base64.getDecoder().decode(base64Part);
                         String contentType = mapAttachedTypeToContentType(fileCmd.type());
-                        finalUrl = s3FileService.uploadBytes(bytes, contentType, fileCmd.name(), "study");
+                        finalUrl = s3FileService.uploadBytes(bytes, contentType, fileCmd.name(), S3FileService.DomainFolders.STUDY_ATTACHMENTS, System.currentTimeMillis());
                     } catch (Exception e) {
                         log.error("S3 upload failed for study attachment: {}", fileCmd.name(), e);
                         throw new ApplicationException(
@@ -153,7 +153,7 @@ public class StudyCommandService {
                         String base64Part = parts.length == 2 ? parts[1] : parts[0];
                         byte[] bytes = java.util.Base64.getDecoder().decode(base64Part);
                         String contentType = mapAttachedTypeToContentType(fileCmd.type());
-                        finalUrl = s3FileService.uploadBytes(bytes, contentType, fileCmd.name(), "study");
+                        finalUrl = s3FileService.uploadBytes(bytes, contentType, fileCmd.name(), S3FileService.DomainFolders.STUDY_ATTACHMENTS, System.currentTimeMillis());
                     } catch (Exception e) {
                         log.error("S3 upload failed for study attachment(update): {}", fileCmd.name(), e);
                         throw new ApplicationException(
@@ -280,7 +280,7 @@ public class StudyCommandService {
                             sanitizeFilename(endedVo.creatorName()),
                             extension);
                     originalName = customFilename;
-                    fileUrl = s3FileService.uploadBytes(bytes, contentType, customFilename, "study-end-attachments");
+                    fileUrl = s3FileService.uploadBytes(bytes, contentType, customFilename, S3FileService.DomainFolders.STUDY_END_ATTACHMENTS, endedVo.id());
                 } else {
                     // 이미 업로드된 S3 URL
                     fileUrl = provided;

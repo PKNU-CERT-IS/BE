@@ -36,19 +36,6 @@ public class StudyApplicationDtoMapper {
         }
 
         String thumbnailUrl = null;
-        if (vo.attached() != null) {
-            thumbnailUrl = vo.attached().stream()
-                    .filter(a -> a.type() != null && (
-                            a.type().toLowerCase().startsWith("image/") ||
-                            a.type().equalsIgnoreCase("png") ||
-                            a.type().equalsIgnoreCase("jpg") ||
-                            a.type().equalsIgnoreCase("jpeg")
-                    ))
-                    .map(StudyAttachedVo::attachedUrl)
-                    .filter(Objects::nonNull)
-                    .findFirst()
-                    .orElse(null);
-        }
 
         return StudyDetailResponseDto.builder()
                 .id(vo.id())
@@ -97,6 +84,7 @@ public class StudyApplicationDtoMapper {
                     .map(StudyAttachedVo::attachedUrl)
                     .filter(Objects::nonNull)
                     .findFirst()
+                    .map(this::normalizeUrl)
                     .orElse(null);
         }
 
@@ -153,13 +141,7 @@ public class StudyApplicationDtoMapper {
     }
 
     private String normalizeUrl(String url) {
-        if (url == null || url.isEmpty()) return url;
-        if (url.startsWith("http://") || url.startsWith("https://")) return url;
-        try {
-            return s3FileService.getFileUrl(url);
-        } catch (Exception e) {
-            return url;
-        }
+        return s3FileService.toPresignedUrl(url);
     }
 
     /**

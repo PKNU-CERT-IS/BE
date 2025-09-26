@@ -71,7 +71,7 @@ public class ProjectCommandService {
                         String base64Part = parts.length == 2 ? parts[1] : parts[0];
                         byte[] bytes = Base64.getDecoder().decode(base64Part);
                         String contentType = mapAttachedTypeToContentType(fileCmd.type());
-                        finalUrl = s3FileService.uploadBytes(bytes, contentType, fileCmd.name(), "project");
+                        finalUrl = s3FileService.uploadBytes(bytes, contentType, fileCmd.name(), S3FileService.DomainFolders.PROJECT_ATTACHMENTS, System.currentTimeMillis());
                     } catch (Exception e) {
                         log.error("S3 upload failed for project attachment: {}", fileCmd.name(), e);
                         throw new ApplicationException(
@@ -132,7 +132,7 @@ public class ProjectCommandService {
                         String base64Part = parts.length == 2 ? parts[1] : parts[0];
                         byte[] bytes = Base64.getDecoder().decode(base64Part);
                         String contentType = mapAttachedTypeToContentType(fileCmd.type());
-                        finalUrl = s3FileService.uploadBytes(bytes, contentType, fileCmd.name(), "project");
+                        finalUrl = s3FileService.uploadBytes(bytes, contentType, fileCmd.name(), S3FileService.DomainFolders.PROJECT_ATTACHMENTS, System.currentTimeMillis());
                     } catch (Exception e) {
                         log.error("S3 upload failed for project attachment(update): {}", fileCmd.name(), e);
                         throw new ApplicationException(
@@ -283,7 +283,7 @@ public class ProjectCommandService {
                             endedVo.id(),
                             sanitizeFilename(endedVo.creatorName()),
                             extension);
-                    attachmentUrl = s3FileService.uploadBytes(bytes, contentType, customFilename, "project-end-attachments");
+                    attachmentUrl = s3FileService.uploadBytes(bytes, contentType, customFilename, S3FileService.DomainFolders.PROJECT_END_ATTACHMENTS, endedVo.id());
                 } else {
                     attachmentUrl = provided;
                 }
