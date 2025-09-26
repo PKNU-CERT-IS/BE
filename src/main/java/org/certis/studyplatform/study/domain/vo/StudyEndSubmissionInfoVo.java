@@ -2,12 +2,14 @@ package org.certis.studyplatform.study.domain.vo;
 
 import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 import org.certis.studyplatform.member.domain.MemberGrade;
+import org.certis.studyplatform.study.domain.StudyStatus;
 
 import java.time.OffsetDateTime;
 
 public record StudyEndSubmissionInfoVo(
         Long studyId,
-        ResultSubmitStatus status,
+        StudyStatus status,
+        ResultSubmitStatus resultSubmitStatus,
         OffsetDateTime submittedAt,
         String attachmentUrl,
         // additional context for admin list/detail

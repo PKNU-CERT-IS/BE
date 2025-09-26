@@ -1,5 +1,6 @@
 package org.certis.studyplatform.project.presentation;
 
+import org.certis.studyplatform.project.domain.ProjectStatus;
 import org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectEntity;
 import org.certis.studyplatform.project.infrastructure.persistence.jpa.ProjectJpaRepository;
 import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
@@ -61,6 +62,7 @@ class AdminProjectControllerE2ETest {
         // mock domain service to provide status/submittedAt/url to facade
         ProjectEndSubmissionInfoVo infoVo = new ProjectEndSubmissionInfoVo(
                 projectId,
+                ProjectStatus.INPROGRESS,
                 ResultSubmitStatus.INPROGRESS,
                 OffsetDateTime.parse("2025-09-20T10:00:00Z"),
                 s3Url,

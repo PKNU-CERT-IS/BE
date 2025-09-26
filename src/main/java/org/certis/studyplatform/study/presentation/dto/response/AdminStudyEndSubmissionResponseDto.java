@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 import org.certis.studyplatform.member.domain.MemberGrade;
 import java.time.OffsetDateTime;
+import org.certis.studyplatform.study.domain.StudyStatus;
 
 
 @Getter
@@ -18,7 +19,9 @@ public class AdminStudyEndSubmissionResponseDto {
 
     private Long studyId;
 
-    private ResultSubmitStatus status;
+    private StudyStatus status;
+
+    private ResultSubmitStatus resultSubmitStatus;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private OffsetDateTime submittedAt;

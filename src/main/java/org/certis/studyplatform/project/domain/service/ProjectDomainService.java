@@ -427,7 +427,8 @@ public class ProjectDomainService {
         return queryRepository.getEndSubmissionInfo(projectId)
                 .orElse(new ProjectEndSubmissionInfoVo(
                         projectId,
-                        null, // status
+                        null, // status (ProjectStatus)
+                        null, // resultSubmitStatus
                         null, // submittedAt
                         null, // attachmentUrl
                         null, // category

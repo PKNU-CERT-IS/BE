@@ -92,7 +92,11 @@ public class ProjectInfrastructureMapper {
         }
 
         OffsetDateTime endedAt = entity.getEndedAt();
-        
+        // 우선순위: Entity에 저장된 명시적 status가 있으면 그것을 우선 사용
+        String resolvedStatus = entity.getStatus() != null
+                ? entity.getStatus().name()
+                : calculateStatusString(entity.getStartedAt(), endedAt, entity.getDeletedAt(), entity.getResultSubmitStatus());
+
         return ProjectVo.of(
                 entity.getId(),
                 entity.getTitle(),
@@ -106,7 +110,7 @@ public class ProjectInfrastructureMapper {
                 null, // creatorName은 별도 조회 필요
                 null, // creatorGrade는 별도 조회 필요
                 calculateSemester(endedAt), // semester 계산
-                calculateStatusString(entity.getStartedAt(), endedAt, entity.getDeletedAt(), entity.getResultSubmitStatus()), // status 계산
+                resolvedStatus, // status 계산 (APPROVED 등 명시 상태 우선)
                 entity.getResultSubmitStatus(),
                 entity.getGithubUrl(),
                 externalUrlVo,
@@ -175,6 +179,9 @@ public class ProjectInfrastructureMapper {
             submitStatus = ResultSubmitStatus.READY;
         }
         
+        String calculatedStatus = calculateStatusString(record.get(PROJECT.STARTED_AT), endedAt, deletedAt, submitStatus);
+        String resolvedStatusFromRecord = resolveStatusFromRecord(record, calculatedStatus);
+
         return ProjectVo.of(
                 record.get(PROJECT.ID),
                 record.get(PROJECT.TITLE),
@@ -188,7 +195,7 @@ public class ProjectInfrastructureMapper {
                 record.get(MEMBER.NAME), // JOIN된 creatorName
                 record.get(MEMBER.GRADE, String.class), // JOIN된 creatorGrade
                 calculateSemester(endedAt), // semester 계산
-                calculateStatusString(record.get(PROJECT.STARTED_AT), endedAt, deletedAt, submitStatus), // status 계산
+                resolvedStatusFromRecord, // status 계산 (DB status 우선)
                 submitStatus,
                 record.get(PROJECT.GITHUB_URL), // githubUrl은 별도 관리
                 externalUrlVo,
@@ -220,6 +227,7 @@ public class ProjectInfrastructureMapper {
                 record.get(PROJECT.DELETED_AT),
                 record.get("result_submit_status", ResultSubmitStatus.class)
         );
+        status = resolveStatusFromRecord(record, status);
 
         // 참여 가능 여부 계산
         boolean isParticipantable = determineParticipantable(
@@ -326,6 +334,9 @@ public class ProjectInfrastructureMapper {
             submitStatus = ResultSubmitStatus.READY;
         }
         
+        String calculatedStatus2 = calculateStatusString(firstRecord.get(PROJECT.STARTED_AT), endedAt, deletedAt, submitStatus);
+        String resolvedStatusFromRecord2 = resolveStatusFromRecord(firstRecord, calculatedStatus2);
+
         return ProjectVo.of(
                 firstRecord.get(PROJECT.ID),
                 firstRecord.get(PROJECT.TITLE),
@@ -339,7 +350,7 @@ public class ProjectInfrastructureMapper {
                 firstRecord.get(MEMBER.NAME), // JOIN된 creatorName
                 firstRecord.get(MEMBER.GRADE, String.class), // JOIN된 creatorGrade
                 calculateSemester(endedAt), // semester 계산
-                calculateStatusString(firstRecord.get(PROJECT.STARTED_AT), endedAt, deletedAt, submitStatus), // status 계산
+                resolvedStatusFromRecord2, // status 계산 (DB status 우선)
                 submitStatus,
                 firstRecord.get(PROJECT.GITHUB_URL), // githubUrl은 별도 관리
                 externalUrlVo,
@@ -400,6 +411,9 @@ public class ProjectInfrastructureMapper {
             submitStatus = ResultSubmitStatus.READY;
         }
         
+        String calculatedStatus3 = calculateStatusString(record.get(PROJECT.STARTED_AT), endedAt, deletedAt, submitStatus);
+        String resolvedStatusFromRecord3 = resolveStatusFromRecord(record, calculatedStatus3);
+
         return ProjectVo.of(
                 record.get(PROJECT.ID),
                 record.get(PROJECT.TITLE),
@@ -413,7 +427,7 @@ public class ProjectInfrastructureMapper {
                 record.get(MEMBER.NAME), // JOIN된 creatorName
                 record.get(MEMBER.GRADE, String.class), // JOIN된 creatorGrade
                 calculateSemester(endedAt), // semester 계산
-                calculateStatusString(record.get(PROJECT.STARTED_AT), endedAt, deletedAt, submitStatus), // status 계산
+                resolvedStatusFromRecord3, // status 계산 (DB status 우선)
                 submitStatus,
                 record.get(PROJECT.GITHUB_URL), // githubUrl은 별도 관리
                 externalUrlVo,
@@ -500,6 +514,26 @@ public class ProjectInfrastructureMapper {
             return ProjectStatus.INPROGRESS.name();
         }
         return ProjectStatus.INPROGRESS.name();
+    }
+
+    /**
+     * Record에 DB의 명시적 status 컬럼이 포함되어 있으면 그 값을 우선 사용한다.
+     * 없거나 비어있으면 계산된 상태 문자열을 반환한다.
+     */
+    private String resolveStatusFromRecord(Record record, String calculatedFallback) {
+        if (record == null) {
+            return calculatedFallback;
+        }
+        try {
+            if (record.field("status") != null) {
+                String dbStatus = record.get("status", String.class);
+                if (dbStatus != null && !dbStatus.isBlank()) {
+                    return dbStatus.trim().toUpperCase();
+                }
+            }
+        } catch (Exception ignore) {
+        }
+        return calculatedFallback;
     }
 
     /**

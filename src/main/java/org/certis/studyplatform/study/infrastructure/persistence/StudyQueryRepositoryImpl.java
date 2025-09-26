@@ -54,6 +54,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
         return Optional.ofNullable(
                 dsl.select(
                             s.ID,
+                            s.STATUS.as("status"),
                             s.RESULT_SUBMIT_STATUS,
                             s.RESULT_SUBMITTED_AT,
                             s.RESULT_ATTACHED_URL,
@@ -80,11 +81,13 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                         .and(s.DELETED_AT.isNull())
                         .fetchOne()
         ).map(r -> {
-            String statusString = r.get(s.RESULT_SUBMIT_STATUS);
-            ResultSubmitStatus status = statusString != null ? ResultSubmitStatus.valueOf(statusString) : null;
+            String resultSubmitStatusString = r.get(s.RESULT_SUBMIT_STATUS);
+            ResultSubmitStatus resultSubmitStatus = resultSubmitStatusString != null ? ResultSubmitStatus.valueOf(resultSubmitStatusString) : null;
+            org.certis.studyplatform.study.domain.StudyStatus studyStatus = r.get("status", org.certis.studyplatform.study.domain.StudyStatus.class);
             return new StudyEndSubmissionInfoVo(
                     r.get(s.ID),
-                    status,
+                    studyStatus,
+                    resultSubmitStatus,
                     r.get(s.RESULT_SUBMITTED_AT),
                     r.get(s.RESULT_ATTACHED_URL),
                     r.get(s.CATEGORY),
@@ -113,6 +116,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
         Optional<StudyVo> result = Optional.of(
                         dsl.select(
                                         s.ID,
+                                        s.STATUS.as("status"),
                                         s.MEMBER_ID,
                                         m.NAME.as("creator_name"),
                                         m.GRADE.as("creator_grade"),
@@ -188,6 +192,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
         List<StudySummaryVo> studySummaries = Optional.of(
                         dsl.select(
                                         s.ID,
+                                        s.STATUS.as("status"),
                                         s.TITLE,
                                         s.DESCRIPTION,
                                         s.CATEGORY,
@@ -268,6 +273,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
         List<StudySummaryVo> studySummaries = Optional.of(
                         dsl.select(
                                         s.ID,
+                                        s.STATUS.as("status"),
                                         s.TITLE,
                                         s.DESCRIPTION,
                                         s.CATEGORY,
@@ -331,6 +337,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
         List<StudySummaryVo> studySummaries = Optional.of(
                         dsl.select(
                                         s.ID,
+                                        s.STATUS.as("status"),
                                         s.TITLE,
                                         s.DESCRIPTION,
                                         s.CATEGORY,
@@ -396,6 +403,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
         List<StudySummaryVo> studySummaries = Optional.of(
                         dsl.select(
                                         s.ID,
+                                        s.STATUS.as("status"),
                                         s.TITLE,
                                         s.DESCRIPTION,
                                         s.CATEGORY,
@@ -443,6 +451,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
         var m = MEMBER.as("m");
         return dsl.select(
                         s.ID,
+                        s.STATUS.as("status"),
                         s.RESULT_SUBMIT_STATUS,
                         s.RESULT_SUBMITTED_AT,
                         s.RESULT_ATTACHED_URL,
@@ -470,6 +479,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                 .orderBy(s.RESULT_SUBMITTED_AT.desc())
                 .fetch(r -> new StudyEndSubmissionInfoVo(
                         r.get(s.ID),
+                        r.get("status", org.certis.studyplatform.study.domain.StudyStatus.class),
                         org.certis.studyplatform.shared.domain.ResultSubmitStatus.valueOf(r.get(s.RESULT_SUBMIT_STATUS)),
                         r.get(s.RESULT_SUBMITTED_AT),
                         r.get(s.RESULT_ATTACHED_URL),
@@ -646,6 +656,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
         List<StudySummaryVo> studies = Optional.of(
                         dsl.select(
                                         s.ID,
+                                        s.STATUS.as("status"),
                                         s.TITLE,
                                         s.DESCRIPTION,
                                         s.CATEGORY,
@@ -699,6 +710,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
         return Optional.of(
                         dsl.select(
                                         s.ID,
+                                        s.STATUS.as("status"),
                                         s.TITLE,
                                         s.DESCRIPTION,
                                         s.CATEGORY,
@@ -783,6 +795,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
         Optional<StudyVo> result = Optional.of(
                         dsl.select(
                                         s.ID,
+                                        s.STATUS.as("status"),
                                         s.TITLE,
                                         s.DESCRIPTION,
                                         s.CONTENT,
@@ -836,6 +849,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
         Optional<StudyVo> result = Optional.of(
                         dsl.select(
                                         s.ID,
+                                        s.STATUS.as("status"),
                                         s.TITLE,
                                         s.DESCRIPTION,
                                         s.CONTENT,

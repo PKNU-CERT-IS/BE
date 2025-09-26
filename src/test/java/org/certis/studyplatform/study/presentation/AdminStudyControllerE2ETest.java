@@ -4,6 +4,7 @@ import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.study.application.StudyFacadeService;
 import org.certis.studyplatform.study.application.StudyParticipantFacadeService;
+import org.certis.studyplatform.study.domain.StudyStatus;
 import org.certis.studyplatform.study.presentation.dto.response.AdminStudyEndSubmissionResponseDto;
 import org.certis.studyplatform.study.presentation.dto.response.StudyAttachedResponseDto;
 import org.junit.jupiter.api.DisplayName;
@@ -52,7 +53,7 @@ class AdminStudyControllerE2ETest {
         
         AdminStudyEndSubmissionResponseDto dto = AdminStudyEndSubmissionResponseDto.builder()
                 .studyId(studyId)
-                .status(ResultSubmitStatus.INPROGRESS)
+                .status(StudyStatus.INPROGRESS)
                 .submittedAt(OffsetDateTime.parse("2025-09-20T10:00:00Z"))
                 .attachment(StudyAttachedResponseDto.builder()
                         .name("file2.pdf")

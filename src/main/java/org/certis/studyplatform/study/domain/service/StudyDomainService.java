@@ -456,7 +456,8 @@ public class StudyDomainService {
         return queryRepository.getEndSubmissionInfo(studyId)
                 .orElse(new org.certis.studyplatform.study.domain.vo.StudyEndSubmissionInfoVo(
                         studyId,
-                        null, // status
+                        null, // status (StudyStatus)
+                        null, // resultSubmitStatus
                         null, // submittedAt
                         null, // attachmentUrl
                         null, // category

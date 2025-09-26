@@ -61,6 +61,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
         return java.util.Optional.ofNullable(
                 dsl.select(
                                 p.ID,
+                                p.STATUS.as("status"),
                                 p.RESULT_SUBMIT_STATUS,
                                 p.RESULT_SUBMITTED_AT,
                                 p.RESULT_ATTACHED_URL,
@@ -87,11 +88,13 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         .and(p.DELETED_AT.isNull())
                         .fetchOne()
         ).map(r -> {
-            String statusString = r.get(p.RESULT_SUBMIT_STATUS);
-            org.certis.studyplatform.shared.domain.ResultSubmitStatus status = statusString != null ? org.certis.studyplatform.shared.domain.ResultSubmitStatus.valueOf(statusString) : null;
+            String resultSubmitStatusString = r.get(p.RESULT_SUBMIT_STATUS);
+            org.certis.studyplatform.shared.domain.ResultSubmitStatus resultSubmitStatus = resultSubmitStatusString != null ? org.certis.studyplatform.shared.domain.ResultSubmitStatus.valueOf(resultSubmitStatusString) : null;
+            org.certis.studyplatform.project.domain.ProjectStatus projectStatus = r.get("status", org.certis.studyplatform.project.domain.ProjectStatus.class);
             return new org.certis.studyplatform.project.domain.vo.ProjectEndSubmissionInfoVo(
                     r.get(p.ID),
-                    status,
+                    projectStatus,
+                    resultSubmitStatus,
                     r.get(p.RESULT_SUBMITTED_AT),
                     r.get(p.RESULT_ATTACHED_URL),
                     r.get(p.CATEGORY),
@@ -115,6 +118,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
         var m = MEMBER.as("m");
         return dsl.select(
                         p.ID,
+                        p.STATUS.as("status"),
                         p.RESULT_SUBMIT_STATUS,
                         p.RESULT_SUBMITTED_AT,
                         p.RESULT_ATTACHED_URL,
@@ -141,6 +145,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                 .orderBy(p.RESULT_SUBMITTED_AT.desc())
                 .fetch(r -> new ProjectEndSubmissionInfoVo(
                         r.get(p.ID),
+                        r.get("status", org.certis.studyplatform.project.domain.ProjectStatus.class),
                         org.certis.studyplatform.shared.domain.ResultSubmitStatus.valueOf(r.get(p.RESULT_SUBMIT_STATUS)),
                         r.get(p.RESULT_SUBMITTED_AT),
                         r.get(p.RESULT_ATTACHED_URL),
@@ -177,6 +182,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                                         p.CONTENT,
                                         p.CATEGORY,
                                         p.SUBCATEGORY,
+                                        p.STATUS.as("status"),
                                         p.THUMBNAIL_URL,
                                         p.GITHUB_URL,
                                         p.EXTERNAL_URL,
@@ -250,6 +256,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.DESCRIPTION,
                         p.CATEGORY,
                         p.SUBCATEGORY,
+                        p.STATUS.as("status"),
                         p.THUMBNAIL_URL,
                         p.GITHUB_URL,
                         p.EXTERNAL_URL,
@@ -463,6 +470,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.DESCRIPTION,
                         p.CATEGORY,
                         p.SUBCATEGORY,
+                        p.STATUS.as("status"),
                         p.THUMBNAIL_URL,
                         p.GITHUB_URL,
                         p.EXTERNAL_URL,
@@ -526,6 +534,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.DESCRIPTION,
                         p.CATEGORY,
                         p.SUBCATEGORY,
+                        p.STATUS.as("status"),
                         p.THUMBNAIL_URL,
                         p.GITHUB_URL,
                         p.EXTERNAL_URL,
