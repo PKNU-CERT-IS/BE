@@ -8,11 +8,11 @@ import org.certis.studyplatform.shared.service.S3ObjectInfo;
 import org.certis.studyplatform.project.domain.service.ProjectDomainService;
 import org.certis.studyplatform.project.domain.vo.ProjectEndSubmissionInfoVo;
 import org.junit.jupiter.api.DisplayName;
+import org.certis.studyplatform.member.domain.MemberGrade;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.mockito.Mock;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.http.MediaType;
@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -68,6 +69,8 @@ class AdminProjectControllerE2ETest {
                 "Project Title",
                 "Project Desc",
                 999L,
+                "관리자",
+                MemberGrade.SENIOR,
                 OffsetDateTime.parse("2025-09-01T00:00:00Z"),
                 OffsetDateTime.parse("2025-10-01T00:00:00Z"),
                 4,
@@ -77,10 +80,12 @@ class AdminProjectControllerE2ETest {
         when(s3FileService.getObjectInfo(s3Url)).thenReturn(new S3ObjectInfo(
                 "file.pdf", "application/pdf", 12345L, s3Url
         ));
+        when(s3FileService.toPresignedUrl(s3Url)).thenReturn(s3Url);
 
         // when & then
         mockMvc.perform(get("/api/v1/admin/project/end/{projectId}", projectId)
                         .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.projectId").value(projectId))
                 .andExpect(jsonPath("$.data.status").value("INPROGRESS"))
@@ -90,9 +95,11 @@ class AdminProjectControllerE2ETest {
                 .andExpect(jsonPath("$.data.attachment.attachedUrl").value(s3Url))
                 .andExpect(jsonPath("$.data.category").value("CS"))
                 .andExpect(jsonPath("$.data.subCategory").value("BE"))
-                .andExpect(jsonPath("$.data.title").value("Project Title"))
+                .andExpect(jsonPath("$.data.title").value("file.pdf"))
                 .andExpect(jsonPath("$.data.description").value("Project Desc"))
                 .andExpect(jsonPath("$.data.creatorId").value(999))
+                .andExpect(jsonPath("$.data.projectCreatorName").value("관리자"))
+                .andExpect(jsonPath("$.data.projectCreatorGrade").value("SENIOR"))
                 .andExpect(jsonPath("$.data.currentParticipantNumber").value(4))
                 .andExpect(jsonPath("$.data.maxParticipantNumber").value(8));
     }

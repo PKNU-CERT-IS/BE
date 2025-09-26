@@ -82,16 +82,19 @@ class AdminProjectCreationFlowTest {
     void approve_creation_ok() throws Exception {
         var admin = new org.certis.studyplatform.shared.security.CurrentUser(memberId, "admin", "admin@certis.org", "admin", "STAFF");
 
+        String body = "{\"projectId\": " + projectId + "}";
         mockMvc.perform(post("/api/v1/admin/project/create/approve")
                         .with(user(admin))
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("projectId", String.valueOf(projectId)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
                 .andDo(print())
                 .andExpect(status().isOk());
 
         var row = dsl.selectFrom(PROJECT).where(PROJECT.ID.eq(projectId)).fetchOne();
         assertThat(row).isNotNull();
-        assertThat(row.getStatus()).isEqualTo("APPROVED");
+        // Approve creation now moves status to INPROGRESS and may pull started_at to now
+        assertThat(row.getStatus()).isEqualTo("INPROGRESS");
+        assertThat(row.getStartedAt()).isBeforeOrEqualTo(OffsetDateTime.now());
     }
 
     @Test
@@ -99,15 +102,44 @@ class AdminProjectCreationFlowTest {
     void reject_creation_sets_deleted_at() throws Exception {
         var admin = new org.certis.studyplatform.shared.security.CurrentUser(memberId, "admin", "admin@certis.org", "admin", "STAFF");
 
+        String body = "{\"projectId\": " + projectId + "}";
         mockMvc.perform(post("/api/v1/admin/project/create/reject")
                         .with(user(admin))
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("projectId", String.valueOf(projectId)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
                 .andDo(print())
                 .andExpect(status().isOk());
 
         var row = dsl.selectFrom(PROJECT).where(PROJECT.ID.eq(projectId)).fetchOne();
         assertThat(row).isNotNull();
+        assertThat(row.getDeletedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("관리자 종료 거절 - REJECTED 및 deleted_at 설정")
+    void reject_end_sets_rejected_and_deleted_at() throws Exception {
+        var admin = new org.certis.studyplatform.shared.security.CurrentUser(memberId, "admin", "admin@certis.org", "admin", "STAFF");
+
+        // prepare project as if end submission is in progress
+        OffsetDateTime now = OffsetDateTime.now();
+        dsl.update(PROJECT)
+                .set(PROJECT.RESULT_SUBMIT_STATUS, "INPROGRESS")
+                .set(PROJECT.RESULT_SUBMITTED_AT, now.minusHours(1))
+                .set(PROJECT.RESULT_ATTACHED_URL, "https://bucket/obj.pdf")
+                .where(PROJECT.ID.eq(projectId))
+                .execute();
+
+        String body = "{\"projectId\": " + projectId + "}";
+        mockMvc.perform(post("/api/v1/admin/project/end/reject")
+                        .with(user(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        var row = dsl.selectFrom(PROJECT).where(PROJECT.ID.eq(projectId)).fetchOne();
+        assertThat(row).isNotNull();
+        assertThat(row.getStatus()).isEqualTo("REJECTED");
         assertThat(row.getDeletedAt()).isNotNull();
     }
 }
