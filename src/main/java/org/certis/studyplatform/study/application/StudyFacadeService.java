@@ -300,7 +300,7 @@ public class StudyFacadeService {
                         .name(info.getName())
                         .type(info.getContentType())
                         .size(info.getSize() != null ? String.valueOf(info.getSize()) : null)
-                        .attachedUrl(info.getUrl())
+                        .attachedUrl(s3FileService.toPresignedUrl(info.getUrl()))
                         .build();
             }
         }
@@ -334,7 +334,7 @@ public class StudyFacadeService {
                             .name(info.getName())
                             .type(info.getContentType())
                             .size(info.getSize() != null ? String.valueOf(info.getSize()) : null)
-                            .attachedUrl(info.getUrl())
+                            .attachedUrl(s3FileService.toPresignedUrl(info.getUrl()))
                             .build();
                 }
             }

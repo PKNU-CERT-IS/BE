@@ -234,7 +234,7 @@ public class StudyMeetingFacadeService {
                         if (info != null) {
                             return StudyMeetingSummaryResponseDto.Link.builder()
                                     .title(info.getName())
-                                    .url(info.getUrl())
+                                    .url(s3FileService.toPresignedUrl(info.getUrl()))
                                     .build();
                         }
                     } catch (Exception ignored) {}

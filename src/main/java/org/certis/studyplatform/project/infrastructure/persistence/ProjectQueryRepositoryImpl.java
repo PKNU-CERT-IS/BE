@@ -639,8 +639,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
         var m = MEMBER.as("m");
         var pa = PROJECT_ATTACHED.as("pa");
 
-        Optional<ProjectVo> result = Optional.of(
-                dsl.select(
+        List<org.jooq.Record> records = dsl.select(
                         p.ID,
                         p.TITLE,
                         p.DESCRIPTION,
@@ -678,12 +677,17 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                 .leftJoin(m).on(p.MEMBER_ID.eq(m.ID))
                 .leftJoin(pa).on(p.ID.eq(pa.PROJECT_ID).and(pa.DELETED_AT.isNull()))
                 .where(p.ID.eq(projectId))
-                .fetch()
-        ).filter(records -> !records.isEmpty())
-                .map(records -> mapper.toProjectVoFromRecordsWithAttachments(records));
+                .and(p.DELETED_AT.isNull())
+                .fetch();
 
+        if (records.isEmpty()) {
+            log.warn("jOOQ: Project not found - ID: {}", projectId);
+            return Optional.empty();
+        }
+
+        ProjectVo result = mapper.toProjectVoFromRecordsWithAttachments(records);
         log.info("jOOQ: Project VO found - ID: {}", projectId);
-        return result;
+        return Optional.of(result);
     }
 
     public Optional<ProjectVo> findByIdAndDeletedAtIsNull(Long projectId) {

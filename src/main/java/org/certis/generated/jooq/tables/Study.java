@@ -9,7 +9,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-import org.certis.generated.jooq.Indexes;
 import org.certis.generated.jooq.Keys;
 import org.certis.generated.jooq.Public;
 import org.certis.generated.jooq.tables.Blog.BlogPath;
@@ -22,7 +21,6 @@ import org.jooq.Condition;
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Identity;
-import org.jooq.Index;
 import org.jooq.InverseForeignKey;
 import org.jooq.Name;
 import org.jooq.Path;
@@ -81,7 +79,7 @@ public class Study extends TableImpl<StudyRecord> {
     /**
      * The column <code>public.study.content</code>.
      */
-    public final TableField<StudyRecord, String> CONTENT = createField(DSL.name("content"), SQLDataType.VARCHAR.nullable(false), this, "");
+    public final TableField<StudyRecord, String> CONTENT = createField(DSL.name("content"), SQLDataType.CLOB.nullable(false), this, "");
 
     /**
      * The column <code>public.study.category</code>.
@@ -129,24 +127,24 @@ public class Study extends TableImpl<StudyRecord> {
     public final TableField<StudyRecord, String> DESCRIPTION = createField(DSL.name("description"), SQLDataType.VARCHAR.nullable(false), this, "");
 
     /**
-     * The column <code>public.study.status</code>.
-     */
-    public final TableField<StudyRecord, String> STATUS = createField(DSL.name("status"), SQLDataType.VARCHAR.nullable(false).defaultValue(DSL.field(DSL.raw("'READY'::character varying"), SQLDataType.VARCHAR)), this, "");
-
-    /**
      * The column <code>public.study.result_submitted_at</code>.
      */
     public final TableField<StudyRecord, OffsetDateTime> RESULT_SUBMITTED_AT = createField(DSL.name("result_submitted_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "");
 
     /**
-     * The column <code>public.study.result_submit_status</code>.
-     */
-    public final TableField<StudyRecord, String> RESULT_SUBMIT_STATUS = createField(DSL.name("result_submit_status"), SQLDataType.VARCHAR.nullable(false).defaultValue(DSL.field(DSL.raw("'READY'::character varying"), SQLDataType.VARCHAR)), this, "");
-
-    /**
      * The column <code>public.study.result_attached_url</code>.
      */
     public final TableField<StudyRecord, String> RESULT_ATTACHED_URL = createField(DSL.name("result_attached_url"), SQLDataType.VARCHAR, this, "");
+
+    /**
+     * The column <code>public.study.result_submit_status</code>.
+     */
+    public final TableField<StudyRecord, String> RESULT_SUBMIT_STATUS = createField(DSL.name("result_submit_status"), SQLDataType.VARCHAR(20).defaultValue(DSL.field(DSL.raw("'READY'::character varying"), SQLDataType.VARCHAR)), this, "");
+
+    /**
+     * The column <code>public.study.status</code>.
+     */
+    public final TableField<StudyRecord, String> STATUS = createField(DSL.name("status"), SQLDataType.VARCHAR(20).nullable(false).defaultValue(DSL.field(DSL.raw("'READY'::character varying"), SQLDataType.VARCHAR)), this, "");
 
     private Study(Name alias, Table<StudyRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
@@ -213,11 +211,6 @@ public class Study extends TableImpl<StudyRecord> {
     @Override
     public Schema getSchema() {
         return aliased() ? null : Public.PUBLIC;
-    }
-
-    @Override
-    public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.IDX_STUDY_RESULT_STATUS, Indexes.IDX_STUDY_STATUS);
     }
 
     @Override

@@ -43,7 +43,7 @@ public class ProjectEntity {
     @Column(nullable = false)
     private String content;
 
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false)
     private String category;
 
     @Column(nullable = false)
@@ -72,7 +72,8 @@ public class ProjectEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, name = "status")
-    private ProjectStatus status;
+    @Builder.Default
+    private ProjectStatus status = ProjectStatus.READY;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false, name = "created_at")
@@ -91,7 +92,8 @@ public class ProjectEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "result_submit_status")
-    private ResultSubmitStatus resultSubmitStatus;
+    @Builder.Default
+    private ResultSubmitStatus resultSubmitStatus = ResultSubmitStatus.READY;
 
     // Single URL for result attachment
     @Column(name = "result_attached_url")

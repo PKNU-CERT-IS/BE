@@ -63,4 +63,11 @@ public interface ProjectCommandRepository {
      * @return 저장된 프로젝트 엔티티
      */
     org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectEntity save(org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectEntity projectEntity);
+
+    /**
+     * 프로젝트 생성 승인 - status를 APPROVED로 변경
+     * 
+     * @param projectId 승인할 프로젝트 ID
+     */
+    void approveCreation(Long projectId);
 }

@@ -43,10 +43,10 @@ public class StudyEntity {
     @Column(nullable = false)
     private String content;
 
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false)
     private String category;
 
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false)
     private String subcategory;
 
     @Column(nullable = false, name = "max_participants_number")
@@ -60,7 +60,8 @@ public class StudyEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, name = "status")
-    private StudyStatus status;
+    @Builder.Default
+    private StudyStatus status = StudyStatus.READY;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false, name = "created_at")
@@ -79,7 +80,8 @@ public class StudyEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "result_submit_status")
-    private ResultSubmitStatus resultSubmitStatus;
+    @Builder.Default
+    private ResultSubmitStatus resultSubmitStatus = ResultSubmitStatus.READY;
 
     // Single URL for result attachment
     @Column(name = "result_attached_url")

@@ -295,7 +295,7 @@ public class ProjectMeetingFacadeService {
                         if (info != null) {
                             return ProjectMeetingSummaryResponseDto.Link.builder()
                                     .title(info.getName())
-                                    .url(info.getUrl())
+                                    .url(s3FileService.toPresignedUrl(info.getUrl()))
                                     .build();
                         }
                     } catch (Exception ignored) {}

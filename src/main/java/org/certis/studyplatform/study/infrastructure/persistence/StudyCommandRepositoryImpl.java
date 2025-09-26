@@ -8,6 +8,8 @@ import org.certis.studyplatform.study.infrastructure.mapper.StudyInfrastructureM
 import org.certis.studyplatform.study.infrastructure.persistence.entity.StudyEntity;
 import org.certis.studyplatform.study.infrastructure.persistence.jpa.StudyJpaRepository;
 import org.certis.studyplatform.study.infrastructure.persistence.jpa.StudyAttachedJpaRepository;
+import org.certis.studyplatform.exception.InfrastructureException;
+import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.study.infrastructure.persistence.entity.StudyAttachedEntity;
 import org.certis.studyplatform.shared.service.S3FileService;
 import org.certis.studyplatform.study.application.object.command.CreateStudyAttachedCommand;
@@ -182,5 +184,16 @@ public class StudyCommandRepositoryImpl implements StudyCommandRepository {
     public StudyEntity save(StudyEntity studyEntity) {
         log.debug("Command: Saving study entity - ID: {}", studyEntity.getId());
         return jpaRepository.save(studyEntity);
+    }
+
+    @Override
+    public void approveCreation(Long studyId) {
+        log.debug("Command: Approving study creation - ID: {}", studyId);
+        int affectedRows = jpaRepository.approveCreation(studyId, OffsetDateTime.now());
+        if (affectedRows == 0) {
+            throw new InfrastructureException(ExceptionStatus.STUDY_INFRASTRUCTURE_NOT_FOUND,
+                    "스터디를 찾을 수 없습니다: " + studyId);
+        }
+        log.debug("Command: Study creation approved successfully - ID: {}", studyId);
     }
 }

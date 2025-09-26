@@ -8,6 +8,7 @@ import org.certis.studyplatform.member.application.GracePeriodService;
 import org.certis.studyplatform.study.domain.service.StudyDomainService;
 import org.certis.studyplatform.study.domain.service.StudyParticipantDomainService;
 import org.certis.studyplatform.study.domain.repository.StudyQueryRepository;
+import org.certis.studyplatform.study.domain.repository.StudyCommandRepository;
 import org.certis.studyplatform.study.domain.vo.StudyVo;
 import org.certis.studyplatform.study.application.object.command.CreateStudyCommand;
 import org.certis.studyplatform.study.application.object.command.CreateStudyAttachedCommand;
@@ -42,6 +43,7 @@ public class StudyCommandService {
     private final StudyDomainService studyDomainService;
     private final StudyParticipantDomainService studyParticipantDomainService;
     private final StudyQueryRepository studyQueryRepository;
+    private final StudyCommandRepository studyCommandRepository;
     private final S3FileService s3FileService;
     private final GracePeriodService gracePeriodService;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -335,16 +337,22 @@ public class StudyCommandService {
     }
 
     /**
-     * 스터디 생성 승인: 유예기간 연장만 수행 (상태 계산은 조회 시 동적 반영)
+     * 스터디 생성 승인: status를 APPROVED로 변경하고 유예기간 연장
      */
     @Transactional
     public void approveStudyCreation(Long studyId, Long adminId) {
         log.info("Command: Approving study creation - studyId: {} by admin: {}", studyId, adminId);
+        
+        // 1. 스터디 status를 APPROVED로 변경
+        studyCommandRepository.approveCreation(studyId);
+        log.info("Command: Study status updated to APPROVED - studyId: {}", studyId);
+        
         try {
-            // Domain Service를 통해 스터디 정보 조회 후 유예기간 연장
+            // 2. Domain Service를 통해 스터디 정보 조회 후 유예기간 연장
             StudyVo studyVo = studyDomainService.getStudyById(new org.certis.studyplatform.study.application.object.query.GetStudyByIdQuery(studyId));
             gracePeriodService.extendGracePeriodForApprovedStudy(
                     studyVo.id(), studyVo.startDate(), studyVo.endDate());
+            log.info("Command: Grace period extended for approved study - studyId: {}", studyId);
         } catch (Exception e) {
             log.warn("Failed to extend grace period on study creation approve - studyId: {}", studyId, e);
         }

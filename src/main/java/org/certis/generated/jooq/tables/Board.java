@@ -76,9 +76,10 @@ public class Board extends TableImpl<BoardRecord> {
     public final TableField<BoardRecord, String> TITLE = createField(DSL.name("title"), SQLDataType.VARCHAR.nullable(false), this, "");
 
     /**
-     * The column <code>public.board.content</code>.
+     * The column <code>public.board.content</code>. Board post content -
+     * supports large text content
      */
-    public final TableField<BoardRecord, String> CONTENT = createField(DSL.name("content"), SQLDataType.VARCHAR.nullable(false), this, "");
+    public final TableField<BoardRecord, String> CONTENT = createField(DSL.name("content"), SQLDataType.CLOB.nullable(false), this, "Board post content - supports large text content");
 
     /**
      * The column <code>public.board.category</code>.
@@ -101,9 +102,9 @@ public class Board extends TableImpl<BoardRecord> {
     public final TableField<BoardRecord, OffsetDateTime> DELETED_AT = createField(DSL.name("deleted_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "");
 
     /**
-     * The column <code>public.board.description</code>.
+     * The column <code>public.board.description</code>. Board post description
      */
-    public final TableField<BoardRecord, String> DESCRIPTION = createField(DSL.name("description"), SQLDataType.VARCHAR.nullable(false), this, "");
+    public final TableField<BoardRecord, String> DESCRIPTION = createField(DSL.name("description"), SQLDataType.VARCHAR.nullable(false), this, "Board post description");
 
     private Board(Name alias, Table<BoardRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);

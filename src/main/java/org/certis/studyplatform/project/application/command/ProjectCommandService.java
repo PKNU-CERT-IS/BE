@@ -11,6 +11,7 @@ import org.certis.studyplatform.project.application.object.command.UpdateProject
 import org.certis.studyplatform.member.application.GracePeriodService;
 import org.certis.studyplatform.project.domain.service.ProjectDomainService;
 import org.certis.studyplatform.project.domain.service.ProjectParticipantDomainService;
+import org.certis.studyplatform.project.domain.repository.ProjectCommandRepository;
 import org.certis.studyplatform.project.domain.vo.*;
 import org.certis.studyplatform.shared.service.S3FileService;
 import org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectAttachedEntity;
@@ -40,6 +41,7 @@ public class ProjectCommandService {
 
     private final ProjectDomainService projectDomainService;
     private final ProjectParticipantDomainService projectParticipantDomainService;
+    private final ProjectCommandRepository projectCommandRepository;
     private final S3FileService s3FileService;
     private final GracePeriodService gracePeriodService;
     private final ProjectAttachedJpaRepository projectAttachedJpaRepository;
@@ -330,19 +332,30 @@ public class ProjectCommandService {
     }
 
     /**
-     * 프로젝트 생성 승인: 유예기간 연장만 수행 (상태 계산은 조회 시 동적 반영)
+     * 프로젝트 생성 승인: status를 APPROVED로 변경하고 유예기간 연장
      */
     @Transactional
     public void approveProjectCreation(Long projectId, Long adminId) {
         log.info("Command: Approving project creation - projectId: {} by admin: {}", projectId, adminId);
-        projectJpaRepository.findById(projectId).ifPresent(entity -> {
-            try {
-                gracePeriodService.extendGracePeriodForApprovedProject(
-                        entity.getId(), entity.getStartedAt(), entity.getEndedAt());
-            } catch (Exception e) {
-                log.warn("Failed to extend grace period on project creation approve - projectId: {}", projectId, e);
-            }
-        });
+        
+        // 1. 프로젝트 status를 APPROVED로 변경
+        projectCommandRepository.approveCreation(projectId);
+        log.info("Command: Project status updated to APPROVED - projectId: {}", projectId);
+        
+        try {
+            // 2. 프로젝트 정보 조회 후 유예기간 연장
+            projectJpaRepository.findById(projectId).ifPresent(entity -> {
+                try {
+                    gracePeriodService.extendGracePeriodForApprovedProject(
+                            entity.getId(), entity.getStartedAt(), entity.getEndedAt());
+                    log.info("Command: Grace period extended for approved project - projectId: {}", projectId);
+                } catch (Exception e) {
+                    log.warn("Failed to extend grace period on project creation approve - projectId: {}", projectId, e);
+                }
+            });
+        } catch (Exception e) {
+            log.warn("Failed to process project creation approve - projectId: {}", projectId, e);
+        }
     }
 
     /**

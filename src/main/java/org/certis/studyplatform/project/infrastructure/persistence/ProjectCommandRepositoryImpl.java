@@ -145,4 +145,14 @@ public class ProjectCommandRepositoryImpl implements ProjectCommandRepository {
         log.debug("Command: Saving project entity - ID: {}", projectEntity.getId());
         return jpaRepository.save(projectEntity);
     }
+
+    @Override
+    public void approveCreation(Long projectId) {
+        log.debug("Command: Approving project creation - ID: {}", projectId);
+        int affectedRows = jpaRepository.approveCreation(projectId, OffsetDateTime.now());
+        if (affectedRows == 0) {
+            throw new IllegalArgumentException("Project not found with ID: " + projectId);
+        }
+        log.debug("Command: Project creation approved successfully - ID: {}", projectId);
+    }
 }

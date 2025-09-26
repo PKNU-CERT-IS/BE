@@ -64,11 +64,6 @@ public class StudyMeetingLink extends TableImpl<StudyMeetingLinkRecord> {
     public final TableField<StudyMeetingLinkRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.nullable(false).identity(true), this, "");
 
     /**
-     * The column <code>public.study_meeting_link.meeting_id</code>.
-     */
-    public final TableField<StudyMeetingLinkRecord, Long> MEETING_ID = createField(DSL.name("meeting_id"), SQLDataType.BIGINT.nullable(false), this, "");
-
-    /**
      * The column <code>public.study_meeting_link.member_id</code>.
      */
     public final TableField<StudyMeetingLinkRecord, Long> MEMBER_ID = createField(DSL.name("member_id"), SQLDataType.BIGINT.nullable(false), this, "");
@@ -97,6 +92,11 @@ public class StudyMeetingLink extends TableImpl<StudyMeetingLinkRecord> {
      * The column <code>public.study_meeting_link.deleted_at</code>.
      */
     public final TableField<StudyMeetingLinkRecord, OffsetDateTime> DELETED_AT = createField(DSL.name("deleted_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "");
+
+    /**
+     * The column <code>public.study_meeting_link.meeting_id</code>.
+     */
+    public final TableField<StudyMeetingLinkRecord, Long> MEETING_ID = createField(DSL.name("meeting_id"), SQLDataType.BIGINT.nullable(false), this, "");
 
     private StudyMeetingLink(Name alias, Table<StudyMeetingLinkRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
