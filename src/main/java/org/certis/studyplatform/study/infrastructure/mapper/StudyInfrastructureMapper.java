@@ -57,8 +57,8 @@ public class StudyInfrastructureMapper {
                 .maxParticipantsNumber(vo.maxParticipants())
                 .startedAt(vo.startDate())
                 .endedAt(vo.endDate())
-                // 기본 상태값 설정 (NOT NULL 제약 대응)
-                .resultSubmitStatus(ResultSubmitStatus.READY)
+                .status(vo.status() != null ? StudyStatus.valueOf(vo.status()) : StudyStatus.READY)
+                .resultSubmitStatus(vo.resultSubmitStatus() != null ? vo.resultSubmitStatus() : ResultSubmitStatus.READY)
                 .build();
     }
 
@@ -71,10 +71,8 @@ public class StudyInfrastructureMapper {
             return null;
         }
 
-        // 우선순위: Entity에 저장된 명시적 status가 있으면 그것을 우선 사용
-        String resolvedStatus = entity.getStatus() != null
-                ? entity.getStatus().name()
-                : calculateStatusString(entity.getStartedAt(), entity.getEndedAt(), entity.getDeletedAt(), entity.getResultSubmitStatus());
+        // Entity에 저장된 상태를 그대로 사용 (계산하지 않음)
+        String resolvedStatus = entity.getStatus() != null ? entity.getStatus().name() : StudyStatus.READY.name();
 
         return StudyVo.of(
                 entity.getId(),
@@ -158,8 +156,8 @@ public class StudyInfrastructureMapper {
             submitStatus = ResultSubmitStatus.READY;
         }
         
-        String calculatedStatus = calculateStatusString(firstRecord.get("started_at", OffsetDateTime.class), endedAt, deletedAt, submitStatus);
-        String resolvedStatusFromRecord = resolveStatusFromRecord(firstRecord, calculatedStatus);
+        // DB에 저장된 상태를 그대로 사용 (계산하지 않음)
+        String resolvedStatusFromRecord = resolveStatusFromRecord(firstRecord, null);
 
         return new StudyVo(
                 firstRecord.get("id", Long.class),
@@ -221,8 +219,8 @@ public class StudyInfrastructureMapper {
             submitStatus = ResultSubmitStatus.READY;
         }
         
-        String calculatedStatus2 = calculateStatusString(firstRecord.get("started_at", OffsetDateTime.class), endedAt, deletedAt, submitStatus);
-        String resolvedStatusFromRecord2 = resolveStatusFromRecord(firstRecord, calculatedStatus2);
+        // DB에 저장된 상태를 그대로 사용 (계산하지 않음)
+        String resolvedStatusFromRecord2 = resolveStatusFromRecord(firstRecord, null);
 
         return new StudyVo(
                 firstRecord.get("id", Long.class),
@@ -305,8 +303,8 @@ public class StudyInfrastructureMapper {
             submitStatus = ResultSubmitStatus.READY;
         }
 
-        String calculatedStatus3 = calculateStatusString(firstRecord.get("started_at", OffsetDateTime.class), endedAt, deletedAt, submitStatus);
-        String resolvedStatusFromRecord3 = resolveStatusFromRecord(firstRecord, calculatedStatus3);
+        // DB에 저장된 상태를 그대로 사용 (계산하지 않음)
+        String resolvedStatusFromRecord3 = resolveStatusFromRecord(firstRecord, null);
 
         return StudySummaryVo.of(
                 studyId,

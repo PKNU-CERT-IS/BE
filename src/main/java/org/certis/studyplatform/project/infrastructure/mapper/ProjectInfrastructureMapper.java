@@ -58,8 +58,8 @@ public class ProjectInfrastructureMapper {
                 .thumbnailUrl(vo.thumbnailUrl())
                 .startedAt(vo.startDate()) // startDate → startedAt
                 .endedAt(vo.endDate()) // endDate → endedAt
-                // 기본 상태값 설정 (NOT NULL 제약 대응)
-                .resultSubmitStatus(ResultSubmitStatus.READY)
+                .status(vo.status() != null ? ProjectStatus.valueOf(vo.status()) : ProjectStatus.READY)
+                .resultSubmitStatus(vo.resultSubmitStatus() != null ? vo.resultSubmitStatus() : ResultSubmitStatus.READY)
                 .build();
     }
 
@@ -92,10 +92,8 @@ public class ProjectInfrastructureMapper {
         }
 
         OffsetDateTime endedAt = entity.getEndedAt();
-        // 우선순위: Entity에 저장된 명시적 status가 있으면 그것을 우선 사용
-        String resolvedStatus = entity.getStatus() != null
-                ? entity.getStatus().name()
-                : calculateStatusString(entity.getStartedAt(), endedAt, entity.getDeletedAt(), entity.getResultSubmitStatus());
+        // Entity에 저장된 상태를 그대로 사용 (계산하지 않음)
+        String resolvedStatus = entity.getStatus() != null ? entity.getStatus().name() : ProjectStatus.READY.name();
 
         return ProjectVo.of(
                 entity.getId(),
@@ -179,8 +177,8 @@ public class ProjectInfrastructureMapper {
             submitStatus = ResultSubmitStatus.READY;
         }
         
-        String calculatedStatus = calculateStatusString(record.get(PROJECT.STARTED_AT), endedAt, deletedAt, submitStatus);
-        String resolvedStatusFromRecord = resolveStatusFromRecord(record, calculatedStatus);
+        // DB에 저장된 상태를 그대로 사용 (계산하지 않음)
+        String resolvedStatusFromRecord = resolveStatusFromRecord(record, null);
 
         return ProjectVo.of(
                 record.get(PROJECT.ID),
@@ -220,13 +218,8 @@ public class ProjectInfrastructureMapper {
             return null;
         }
 
-        // 동적 상태 계산
-        String status = calculateStatusString(
-                record.get(PROJECT.STARTED_AT),
-                record.get(PROJECT.ENDED_AT),
-                record.get(PROJECT.DELETED_AT),
-                record.get("result_submit_status", ResultSubmitStatus.class)
-        );
+        // DB에 저장된 상태를 그대로 사용 (계산하지 않음)
+        String status = resolveStatusFromRecord(record, null);
         status = resolveStatusFromRecord(record, status);
 
         // 참여 가능 여부 계산
@@ -334,8 +327,8 @@ public class ProjectInfrastructureMapper {
             submitStatus = ResultSubmitStatus.READY;
         }
         
-        String calculatedStatus2 = calculateStatusString(firstRecord.get(PROJECT.STARTED_AT), endedAt, deletedAt, submitStatus);
-        String resolvedStatusFromRecord2 = resolveStatusFromRecord(firstRecord, calculatedStatus2);
+        // DB에 저장된 상태를 그대로 사용 (계산하지 않음)
+        String resolvedStatusFromRecord2 = resolveStatusFromRecord(firstRecord, null);
 
         return ProjectVo.of(
                 firstRecord.get(PROJECT.ID),
@@ -411,8 +404,8 @@ public class ProjectInfrastructureMapper {
             submitStatus = ResultSubmitStatus.READY;
         }
         
-        String calculatedStatus3 = calculateStatusString(record.get(PROJECT.STARTED_AT), endedAt, deletedAt, submitStatus);
-        String resolvedStatusFromRecord3 = resolveStatusFromRecord(record, calculatedStatus3);
+        // DB에 저장된 상태를 그대로 사용 (계산하지 않음)
+        String resolvedStatusFromRecord3 = resolveStatusFromRecord(record, null);
 
         return ProjectVo.of(
                 record.get(PROJECT.ID),

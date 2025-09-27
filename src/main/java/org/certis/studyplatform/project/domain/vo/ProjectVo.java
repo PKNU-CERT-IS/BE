@@ -196,11 +196,14 @@ public record ProjectVo(
             String thumbnailUrl,
             Integer maxParticipants
     ) {
+        // status가 null인 경우 startDate와 endDate를 기준으로 계산
+        String resolvedStatus = status != null ? status : calculateStatusWithStartDate(startDate, endDate);
+        
         return new ProjectVo(
                 null, // id는 null (새 생성)
                 title, description, content, category, subCategory,
-                startDate, endDate, creatorId, creatorName, creatorGrade, semester, status,
-                null,
+                startDate, endDate, creatorId, creatorName, creatorGrade, semester, resolvedStatus,
+                ResultSubmitStatus.READY, // 새로 생성된 프로젝트는 READY
                 githubUrl, externalUrl, demoUrl, thumbnailUrl, maxParticipants, 0, // 초기 참가자는 0명
                 true, // 새로 생성된 프로젝트는 참여 가능
                 Collections.emptyList(), // attached
@@ -236,10 +239,7 @@ public record ProjectVo(
         OffsetDateTime newStartDate = startDate != null ? startDate : existing.startDate();
         OffsetDateTime newEndDate = endDate != null ? endDate : existing.endDate();
         
-        // 상태 재계산 - 기존 상태를 고려하여 적절한 상태 유지
-        StatusAndResultSubmitStatus statusAndResult = calculateStatusAndResultSubmitStatus(
-            newStartDate, newEndDate, existing.status(), existing.resultSubmitStatus());
-        
+        // 기존 상태를 그대로 유지 (재계산하지 않음)
         return new ProjectVo(
                 existing.id(),
                 title != null ? title : existing.title(),
@@ -253,8 +253,8 @@ public record ProjectVo(
                 existing.creatorName(),
                 existing.creatorGrade(),
                 existing.semester(),
-                statusAndResult.status(), // status 재계산 (startedAt 고려)
-                statusAndResult.resultSubmitStatus(), // resultSubmitStatus 재계산
+                existing.status(), // 기존 상태 유지 (재계산하지 않음)
+                existing.resultSubmitStatus(), // 기존 resultSubmitStatus 유지
                 githubUrl != null ? githubUrl : existing.githubUrl(),
                 externalUrl != null ? externalUrl : existing.externalUrl(),
                 demoUrl != null ? demoUrl : existing.demoUrl(),
@@ -313,6 +313,30 @@ public record ProjectVo(
         
         // 그 외의 경우 기존 상태 유지
         return new StatusAndResultSubmitStatus(currentStatus, currentResultSubmitStatus);
+    }
+
+    /**
+     * startedAt과 endedAt을 고려하여 상태 계산 (새로 생성할 때 사용)
+     */
+    private static String calculateStatusWithStartDate(OffsetDateTime startDate, OffsetDateTime endDate) {
+        if (startDate == null || endDate == null) {
+            return ProjectStatus.READY.name();
+        }
+        
+        OffsetDateTime now = OffsetDateTime.now();
+        
+        // 아직 시작하지 않았으면 READY
+        if (now.isBefore(startDate)) {
+            return ProjectStatus.READY.name();
+        }
+        
+        // 종료되었으면 COMPLETED
+        if (now.isAfter(endDate) || now.isEqual(endDate)) {
+            return ProjectStatus.COMPLETED.name();
+        }
+        
+        // 시작했지만 아직 종료되지 않았으면 INPROGRESS
+        return ProjectStatus.INPROGRESS.name();
     }
 
     /**

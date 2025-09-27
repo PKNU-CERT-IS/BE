@@ -79,7 +79,7 @@ public class StudyEntity {
     private OffsetDateTime resultSubmittedAt;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "result_submit_status")
+    @Column(name = "result_submit_status", nullable = false)
     @Builder.Default
     private ResultSubmitStatus resultSubmitStatus = ResultSubmitStatus.READY;
 

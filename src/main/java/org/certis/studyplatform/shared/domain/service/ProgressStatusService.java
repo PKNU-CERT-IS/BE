@@ -34,11 +34,17 @@ public class ProgressStatusService {
             OffsetDateTime currentTime) {
         
         // 시간 기반 상태 업데이트
-        if (currentTime.isAfter(startedAt) && currentStatus == StudyStatus.APPROVED) {
+        // APPROVED 상태에서 시작 시간이 지났고 아직 종료 시간이 안 지났으면 INPROGRESS
+        if (currentStatus == StudyStatus.APPROVED && 
+            currentTime.isAfter(startedAt) && 
+            (endedAt == null || currentTime.isBefore(endedAt))) {
             return new ProgressStatusResult(StudyStatus.INPROGRESS, currentResultSubmitStatus);
         }
         
-        if (currentTime.isAfter(endedAt) && currentStatus == StudyStatus.INPROGRESS) {
+        // INPROGRESS 상태에서 종료 시간이 지났으면 COMPLETED
+        if (currentStatus == StudyStatus.INPROGRESS && 
+            endedAt != null && 
+            currentTime.isAfter(endedAt)) {
             return new ProgressStatusResult(StudyStatus.COMPLETED, ResultSubmitStatus.READY);
         }
         
@@ -63,11 +69,17 @@ public class ProgressStatusService {
             OffsetDateTime currentTime) {
         
         // 시간 기반 상태 업데이트
-        if (currentTime.isAfter(startedAt) && currentStatus == ProjectStatus.APPROVED) {
+        // APPROVED 상태에서 시작 시간이 지났고 아직 종료 시간이 안 지났으면 INPROGRESS
+        if (currentStatus == ProjectStatus.APPROVED && 
+            currentTime.isAfter(startedAt) && 
+            (endedAt == null || currentTime.isBefore(endedAt))) {
             return new ProgressStatusResult(ProjectStatus.INPROGRESS, currentResultSubmitStatus);
         }
         
-        if (currentTime.isAfter(endedAt) && currentStatus == ProjectStatus.INPROGRESS) {
+        // INPROGRESS 상태에서 종료 시간이 지났으면 COMPLETED
+        if (currentStatus == ProjectStatus.INPROGRESS && 
+            endedAt != null && 
+            currentTime.isAfter(endedAt)) {
             return new ProgressStatusResult(ProjectStatus.COMPLETED, ResultSubmitStatus.READY);
         }
         
