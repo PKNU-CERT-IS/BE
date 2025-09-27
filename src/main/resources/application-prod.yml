@@ -93,36 +93,17 @@ spring:
 redisson:
   config: |
     singleServerConfig:
-      address: "rediss://${SPRING_DATA_REDIS_HOST}"
+      address: "rediss://${SPRING_DATA_REDIS_HOST}:${SPRING_DATA_REDIS_PORT:6379}"
       database: 0
       connectionPoolSize: 20
       connectionMinimumIdleSize: 5
-      connectTimeout: 30000
-      timeout: 30000
+      connectTimeout: 10000
+      timeout: 10000
       retryAttempts: 3
       retryInterval: 1500
       keepAlive: true
       tcpNoDelay: true
-
-  # 캐시 설정
-  cache:
-    type: redis
-    redis:
-      time-to-live: 600000
-
-  # Spring Security 운영 설정
-  security:
-    user:
-      name: ${SECURITY_USER_NAME}
-      password: ${SECURITY_USER_PASSWORD}
-      roles: ${SECURITY_USER_ROLES:ADMIN}
-
-  # 개발 도구 비활성화
-  devtools:
-    restart:
-      enabled: false
-    livereload:
-      enabled: false
+      sslEnableEndpointIdentification: true
 
 # 운영환경 로깅 설정
 logging:
@@ -188,7 +169,7 @@ app:
     refresh-token-expiry: 86400000
 
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:https://your-domain.com}
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:https://cert-is.com}
 
   file:
     upload-dir: ${FILE_UPLOAD_DIR:/app/uploads}
