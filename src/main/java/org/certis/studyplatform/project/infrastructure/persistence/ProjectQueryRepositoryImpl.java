@@ -1002,9 +1002,10 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
             log.debug("jOOQ: Added subcategory condition: {}", criteria.subCategory());
         }
 
-        // 프로젝트 상태 필터 (동적 계산된 상태 기준)
+        // 프로젝트 상태 필터 (상태 매핑 로직 적용)
         if (criteria.status() != null && !criteria.status().trim().isEmpty()) {
-            Condition statusCondition = buildStatusCondition(criteria.status());
+            String upperStatus = criteria.status().toUpperCase();
+            Condition statusCondition = buildProjectStatusCondition(upperStatus, p);
             if (statusCondition != null) {
                 conditions = conditions.and(statusCondition);
                 log.debug("jOOQ: Added status condition for: {}", criteria.status());
@@ -1013,6 +1014,25 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
 
         log.debug("jOOQ: Final conditions built: {}", conditions);
         return conditions;
+    }
+
+    /**
+     * 프로젝트 상태 조건 구성 (상태 매핑 로직 적용)
+     * READY → READY, APPROVED
+     * INPROGRESS → INPROGRESS
+     * COMPLETED → COMPLETED
+     */
+    private Condition buildProjectStatusCondition(String status, org.jooq.Table<?> p) {
+        var pTable = PROJECT.as("p");
+        return switch (status) {
+            case "READY" -> pTable.STATUS.in("READY", "APPROVED");
+            case "INPROGRESS" -> pTable.STATUS.eq("INPROGRESS");
+            case "COMPLETED" -> pTable.STATUS.eq("COMPLETED");
+            default -> {
+                log.warn("jOOQ: Unknown project status: {}", status);
+                yield null;
+            }
+        };
     }
 
     /**

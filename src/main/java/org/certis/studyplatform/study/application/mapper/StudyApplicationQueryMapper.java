@@ -50,7 +50,7 @@ public class StudyApplicationQueryMapper {
             dto.getCategory(),
             dto.getSubcategory(),
             dto.getSemester(),
-            dto.getStatus(),
+            dto.getStudyStatus() != null ? dto.getStudyStatus().name() : null,
             pageable
         );
     }
@@ -65,7 +65,7 @@ public class StudyApplicationQueryMapper {
             dto.getCategory(),
             dto.getSubcategory(),
             dto.getSemester(),
-            dto.getStatus(),
+            dto.getStudyStatus() != null ? dto.getStudyStatus().name() : null,
             defaultPageable
         );
     }

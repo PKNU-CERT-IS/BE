@@ -150,9 +150,9 @@ public class ProjectController {
             @Valid @ModelAttribute ProjectAdvancedSearchRequestDto searchRequest,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
-        log.info("REST: Unified project search - keyword: {}, semester: {}, category: {}, subcategory: {}, status: {}, page: {}, size: {}",
+        log.info("REST: Unified project search - keyword: {}, semester: {}, category: {}, subcategory: {}, projectStatus: {}, page: {}, size: {}",
                 searchRequest.getKeyword(), searchRequest.getSemester(), searchRequest.getCategory(),
-                searchRequest.getSubcategory(), searchRequest.getStatus(),
+                searchRequest.getSubcategory(), searchRequest.getProjectStatus(),
                 pageable.getPageNumber(), pageable.getPageSize());
 
         // 통합 고급 검색 Facade Service 호출

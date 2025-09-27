@@ -212,7 +212,20 @@ public record StudyVo(
                                      OffsetDateTime startDate,
                                      OffsetDateTime endDate,
                                      Integer maxParticipants) {
+        // startDate 변경 시 상태 검증
+        if (startDate != null && !startDate.equals(existing.startDate())) {
+            StudyStatus currentStatus = StudyStatus.fromStatusString(existing.status());
+            if (!currentStatus.isReady()) {
+                throw new DomainException(ExceptionStatus.STUDY_DOMAIN_INVALID_STATUS,
+                        "스터디가 READY 상태가 아닐 때는 시작일을 변경할 수 없습니다. 현재 상태: " + currentStatus.getDescription());
+            }
+        }
+        
+        OffsetDateTime newStartDate = startDate != null ? startDate : existing.startDate();
         OffsetDateTime newEndDate = endDate != null ? endDate : existing.endDate();
+        
+        // startedAt이 현재 시각보다 나중인 경우 APPROVED로 초기화
+        StatusAndResultSubmitStatus statusAndResult = calculateStatusAndResultSubmitStatus(newStartDate, newEndDate);
         
         return new StudyVo(
                 existing.id(),
@@ -221,7 +234,7 @@ public record StudyVo(
                 content != null ? content : existing.content(),
                 category != null ? category : existing.category(),
                 subCategory != null ? subCategory : existing.subCategory(),
-                startDate != null ? startDate : existing.startDate(),
+                newStartDate,
                 newEndDate,
                 existing.createdAt(), // 기존 createdAt 유지
                 OffsetDateTime.now(), // updatedAt은 현재 시간으로 갱신
@@ -229,8 +242,8 @@ public record StudyVo(
                 existing.creatorName(),
                 existing.creatorGrade(), // 기존 creatorGrade 유지
                 calculateSemester(newEndDate), // semester 재계산
-                calculateStatus(newEndDate), // status 재계산
-                existing.resultSubmitStatus(),
+                statusAndResult.status(), // status 재계산 (startedAt 고려)
+                statusAndResult.resultSubmitStatus(), // resultSubmitStatus 재계산
                 maxParticipants != null ? maxParticipants : existing.maxParticipants(),
                 existing.currentParticipants(),
                 existing.isParticipantable(), // 기존 참여 가능 여부 유지
@@ -307,5 +320,34 @@ public record StudyVo(
         OffsetDateTime now = OffsetDateTime.now();
         return endedAt.isBefore(now) ? StudyStatus.COMPLETED.name() : StudyStatus.INPROGRESS.name();
     }
+
+    /**
+     * startedAt과 endedAt을 기준으로 status와 resultSubmitStatus 계산
+     * startedAt이 현재 시각보다 나중인 경우 APPROVED로 초기화
+     */
+    private static StatusAndResultSubmitStatus calculateStatusAndResultSubmitStatus(
+            OffsetDateTime startedAt, OffsetDateTime endedAt) {
+        OffsetDateTime now = OffsetDateTime.now();
+        
+        // startedAt이 현재 시각보다 나중인 경우 APPROVED로 초기화
+        if (startedAt != null && startedAt.isAfter(now)) {
+            return new StatusAndResultSubmitStatus(
+                StudyStatus.APPROVED.name(), 
+                ResultSubmitStatus.READY
+            );
+        }
+        
+        // endedAt이 현재 시간보다 지났으면 COMPLETED, 아니면 INPROGRESS
+        String status = (endedAt != null && endedAt.isBefore(now)) 
+            ? StudyStatus.COMPLETED.name() 
+            : StudyStatus.INPROGRESS.name();
+            
+        return new StatusAndResultSubmitStatus(status, ResultSubmitStatus.READY);
+    }
+
+    /**
+     * Status와 ResultSubmitStatus를 함께 반환하는 레코드
+     */
+    private record StatusAndResultSubmitStatus(String status, ResultSubmitStatus resultSubmitStatus) {}
 
 }

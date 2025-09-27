@@ -49,7 +49,7 @@ public enum ExceptionStatus {
     AUTH_INFRASTRUCTURE_JWT_TOKEN_INVALID_SIGNATURE(HttpStatus.UNAUTHORIZED, "JWT 토큰 서명이 유효하지 않습니다"),
     AUTH_INFRASTRUCTURE_JWT_TOKEN_MISSING_CLAIMS(HttpStatus.UNAUTHORIZED, "JWT 토큰에 필수 정보가 없습니다"),
     AUTH_INFRASTRUCTURE_JWT_TOKEN_PARSE_ERROR(HttpStatus.UNAUTHORIZED, "JWT 토큰 파싱 중 오류가 발생했습니다"),
-    AUTH_INFRASTRUCTURE_JWT_FILTER_PROCESSING_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "JWT 필터 처리 중 예상치 못한 오류가 발생했습니다"),
+    AUTH_INFRASTRUCTURE_JWT_FILTER_PROCESSING_ERROR(HttpStatus.UNAUTHORIZED, "JWT 필터 처리 중 예상치 못한 오류가 발생했습니다"),
 
     // Auth - Infrastructure Layer (Redis 관련)
     AUTH_INFRASTRUCTURE_REDIS_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Redis 저장소 처리 중 오류가 발생했습니다"),

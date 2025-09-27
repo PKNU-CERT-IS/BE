@@ -247,9 +247,9 @@ public class ProjectFacadeService {
      */
     public Page<ProjectSummaryResponseDto> searchProjectsAdvanced(
             ProjectAdvancedSearchRequestDto requestDto, Pageable pageable) {
-        log.info("Facade: Advanced searching projects - keyword: {}, semester: {}, category: {}, subcategory: {}, status: {}",
+        log.info("Facade: Advanced searching projects - keyword: {}, semester: {}, category: {}, subcategory: {}, projectStatus: {}",
                 requestDto.getKeyword(), requestDto.getSemester(), requestDto.getCategory(),
-                requestDto.getSubcategory(), requestDto.getStatus());
+                requestDto.getSubcategory(), requestDto.getProjectStatus());
 
         // DTO → Query Object 변환 (CPU-bound 작업이므로 비동기 처리 불필요)
         SearchProjectsQuery query = queryMapper.toSearchProjectsQuery(requestDto, pageable);

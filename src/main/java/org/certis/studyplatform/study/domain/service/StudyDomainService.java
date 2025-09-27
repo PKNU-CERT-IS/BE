@@ -18,6 +18,7 @@ import org.certis.studyplatform.study.application.object.query.GetStudyByIdQuery
 import org.certis.studyplatform.study.application.object.query.SearchStudiesQuery;
 import org.certis.studyplatform.study.domain.repository.StudyCommandRepository;
 import org.certis.studyplatform.study.domain.repository.StudyQueryRepository;
+import org.certis.studyplatform.study.domain.StudyStatus;
 import org.certis.studyplatform.study.domain.vo.StudySearchCriteriaVo;
 import org.certis.studyplatform.study.domain.vo.StudySearchResultVo;
 import org.certis.studyplatform.study.domain.vo.StudySummaryVo;
@@ -236,6 +237,11 @@ public class StudyDomainService {
         log.info("Domain: Searching studies from query - keyword: {}, category: {}, semester: {}, status: {}",
                 query.keyword(), query.category(), query.semester(), query.status());
 
+        // studyStatus 필드명 검증
+        if (query.status() != null && !query.status().trim().isEmpty()) {
+            validateStudyStatusField(query.status());
+        }
+
         // Query를 StudySearchCriteria로 변환 (고급 검색 필드 포함)
         StudySearchCriteriaVo criteria = StudySearchCriteriaVo.ofAdvanced(
                 query.keyword(),
@@ -252,6 +258,20 @@ public class StudyDomainService {
 
         log.info("Domain: Found {} studies by advanced criteria", studyPage.getTotalElements());
         return studyPage;
+    }
+
+    /**
+     * studyStatus 필드명 검증
+     * studyStatus가 아니면 에러를 발생시킴
+     */
+    private void validateStudyStatusField(String status) {
+        // 실제로는 status 값이 유효한 StudyStatus 값인지 검증
+        try {
+            StudyStatus.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid study status value. Expected one of [READY, INPROGRESS, COMPLETED] but got: " + status);
+        }
+        log.debug("Domain: Study status field validation passed for: {}", status);
     }
 
     /**

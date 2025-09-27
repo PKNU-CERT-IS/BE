@@ -25,6 +25,7 @@ import java.time.OffsetDateTime;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.certis.generated.jooq.Tables.*;
+import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -290,7 +291,7 @@ class StudyControllerTest {
         mockMvc.perform(get("/api/v1/study/search")
                         .param("keyword", "개발")
                         .param("category", "웹 개발")
-                        .param("status", "READY")
+                        .param("studyStatus", "READY")
                         .param("page", "0")
                         .param("size", "10"))
                 .andDo(print())
@@ -449,6 +450,7 @@ class StudyControllerTest {
                 .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
                 .set(STUDY.CATEGORY, "웹 개발")
                 .set(STUDY.SUBCATEGORY, "풀스택")
+                .set(STUDY.STATUS, "READY")
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 5)
                 .set(STUDY.STARTED_AT, now.plusDays(1))
                 .set(STUDY.ENDED_AT, now.plusDays(30))
@@ -485,6 +487,7 @@ class StudyControllerTest {
                     .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
                     .set(STUDY.CATEGORY, "웹 개발")
                     .set(STUDY.SUBCATEGORY, "풀스택")
+                    .set(STUDY.STATUS, "READY")
                     .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                     .set(STUDY.STARTED_AT, now.plusDays(i))
                     .set(STUDY.ENDED_AT, now.plusDays(30 + i))
@@ -523,6 +526,7 @@ class StudyControllerTest {
                 .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
                 .set(STUDY.CATEGORY, "웹 개발")
                 .set(STUDY.SUBCATEGORY, "풀스택")
+                .set(STUDY.STATUS, "READY")
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 5)
                 .set(STUDY.STARTED_AT, now.plusDays(1))
                 .set(STUDY.ENDED_AT, now.plusDays(30))
@@ -558,6 +562,7 @@ class StudyControllerTest {
                     .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
                     .set(STUDY.CATEGORY, "웹 개발")
                     .set(STUDY.SUBCATEGORY, "풀스택")
+                    .set(STUDY.STATUS, "READY")
                     .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                     .set(STUDY.STARTED_AT, now.plusDays(i))
                     .set(STUDY.ENDED_AT, now.plusDays(30 + i))
@@ -667,6 +672,7 @@ class StudyControllerTest {
                 .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
                 .set(STUDY.CATEGORY, "웹 개발")
                 .set(STUDY.SUBCATEGORY, "풀스택")
+                .set(STUDY.STATUS, "READY")
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                 .set(STUDY.STARTED_AT, now.plusDays(1))
                 .set(STUDY.ENDED_AT, now.plusDays(30))
@@ -690,6 +696,7 @@ class StudyControllerTest {
                     .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
                     .set(STUDY.CATEGORY, "웹 개발")
                     .set(STUDY.SUBCATEGORY, "풀스택")
+                    .set(STUDY.STATUS, "READY")
                     .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                     .set(STUDY.STARTED_AT, now.plusDays(i))
                     .set(STUDY.ENDED_AT, now.plusDays(30 + i))
@@ -714,6 +721,7 @@ class StudyControllerTest {
                     .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
                     .set(STUDY.CATEGORY, "웹 개발")
                     .set(STUDY.SUBCATEGORY, "풀스택")
+                    .set(STUDY.STATUS, "READY")
                     .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                     .set(STUDY.STARTED_AT, now.plusDays(i))
                     .set(STUDY.ENDED_AT, now.plusDays(30 + i))
@@ -871,12 +879,12 @@ class StudyControllerTest {
                 .set(STUDY.CONTENT, "새로운 필드들이 올바르게 저장되는지 테스트")
                 .set(STUDY.CATEGORY, "CS")
                 .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.STATUS, "READY")
                 .set(STUDY.STARTED_AT, OffsetDateTime.now().plusDays(1))
                 .set(STUDY.ENDED_AT, OffsetDateTime.now().plusDays(30))
                 .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                 // .set(STUDY.CURRENT_PARTICIPANTS, 0) // CURRENT_PARTICIPANTS 필드가 없음
-                // .set(STUDY.STATUS, "RECRUITING") // STATUS 필드가 없음
                 // .set(STUDY.SEMESTER, "2024-1") // SEMESTER 필드가 없음
                 .set(STUDY.CREATED_AT, OffsetDateTime.now())
                 .set(STUDY.UPDATED_AT, OffsetDateTime.now())
@@ -914,6 +922,7 @@ class StudyControllerTest {
                 .set(STUDY.MEMBER_ID, 1L)
                 .set(STUDY.CATEGORY, "CS")
                 .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.STATUS, "READY")
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                 .set(STUDY.STARTED_AT, now.minusDays(1)) // 1일 전 시작
                 .set(STUDY.ENDED_AT, now.plusDays(30))   // 30일 후 종료
@@ -947,6 +956,7 @@ class StudyControllerTest {
                 .set(STUDY.MEMBER_ID, 1L)
                 .set(STUDY.CATEGORY, "CS")
                 .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.STATUS, "READY")
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                 .set(STUDY.STARTED_AT, now.minusDays(1)) // 1일 전 시작
                 .set(STUDY.ENDED_AT, now.plusDays(30))   // 30일 후 종료
@@ -981,6 +991,7 @@ class StudyControllerTest {
                 .set(STUDY.MEMBER_ID, 1L)
                 .set(STUDY.CATEGORY, "CS")
                 .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.STATUS, "READY")
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                 .set(STUDY.STARTED_AT, now.minusDays(10)) // 10일 전 시작
                 .set(STUDY.ENDED_AT, now.minusDays(1))    // 1일 전 종료
@@ -1048,6 +1059,7 @@ class StudyControllerTest {
                 .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
                 .set(STUDY.CATEGORY, "CS")
                 .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.STATUS, "READY")
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                 .set(STUDY.STARTED_AT, now.plusDays(5))
                 .set(STUDY.ENDED_AT, now.plusDays(35))
@@ -1064,6 +1076,7 @@ class StudyControllerTest {
                 .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
                 .set(STUDY.CATEGORY, "CS")
                 .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.STATUS, "READY")
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                 .set(STUDY.STARTED_AT, now.minusDays(1))
                 .set(STUDY.ENDED_AT, now.plusDays(20))
@@ -1080,6 +1093,7 @@ class StudyControllerTest {
                 .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
                 .set(STUDY.CATEGORY, "CS")
                 .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.STATUS, "READY")
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                 .set(STUDY.STARTED_AT, now.minusDays(10))
                 .set(STUDY.ENDED_AT, now.minusDays(1))
@@ -1087,9 +1101,9 @@ class StudyControllerTest {
                 .set(STUDY.UPDATED_AT, now)
                 .execute();
 
-        // When & Then: READY 필터
+        // When & Then: READY 필터 (studyStatus 파라미터 사용)
         mockMvc.perform(get("/api/v1/study/search")
-                        .param("status", "READY")
+                        .param("studyStatus", "READY")
                         .param("page", "0")
                         .param("size", "10"))
                 .andDo(print())
@@ -1099,9 +1113,9 @@ class StudyControllerTest {
                 .andExpect(jsonPath("$.data.content[0].id").value(101L))
                 .andExpect(jsonPath("$.data.content[0].status").value("READY"));
 
-        // When & Then: INPROGRESS 필터
+        // When & Then: INPROGRESS 필터 (studyStatus 파라미터 사용)
         mockMvc.perform(get("/api/v1/study/search")
-                        .param("status", "INPROGRESS")
+                        .param("studyStatus", "INPROGRESS")
                         .param("page", "0")
                         .param("size", "10"))
                 .andDo(print())
@@ -1111,9 +1125,9 @@ class StudyControllerTest {
                 .andExpect(jsonPath("$.data.content[0].id").value(102L))
                 .andExpect(jsonPath("$.data.content[0].status").value("INPROGRESS"));
 
-        // When & Then: COMPLETED 필터
+        // When & Then: COMPLETED 필터 (studyStatus 파라미터 사용)
         mockMvc.perform(get("/api/v1/study/search")
-                        .param("status", "COMPLETED")
+                        .param("studyStatus", "COMPLETED")
                         .param("page", "0")
                         .param("size", "10"))
                 .andDo(print())
@@ -1146,5 +1160,151 @@ class StudyControllerTest {
                 .andExpect(jsonPath("$.data.content[0].currentParticipantNumber").exists()) // 참가자 수 필드 존재
                 .andExpect(jsonPath("$.data.content[0].maxParticipantNumber").exists()) // 최대 참가자 수 필드 존재
                 .andExpect(jsonPath("$.data.content[0].attachments").isArray()); // 첨부파일 배열 필드 존재
+    }
+
+    @Test
+    @Order(107)
+    @DisplayName("✅ 스터디 고급 검색 - 상태 매핑 로직 테스트 (READY → READY, APPROVED / INPROGRESS → INPROGRESS)")
+    void should_filter_by_status_mapping_logic() throws Exception {
+        // Given: 다양한 상태의 스터디 생성
+        OffsetDateTime now = OffsetDateTime.now();
+
+        // READY 상태 스터디
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, 201L)
+                .set(STUDY.TITLE, "READY 스터디")
+                .set(STUDY.DESCRIPTION, "준비중 스터디")
+                .set(STUDY.CONTENT, "내용")
+                .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY.CATEGORY, "CS")
+                .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.STATUS, "READY")
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(STUDY.STARTED_AT, now.plusDays(5))
+                .set(STUDY.ENDED_AT, now.plusDays(35))
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .execute();
+
+        // APPROVED 상태 스터디 (READY 필터에서 포함되어야 함)
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, 202L)
+                .set(STUDY.TITLE, "APPROVED 스터디")
+                .set(STUDY.DESCRIPTION, "승인된 스터디")
+                .set(STUDY.CONTENT, "내용")
+                .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY.CATEGORY, "CS")
+                .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.STATUS, "APPROVED")
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(STUDY.STARTED_AT, now.minusDays(1))
+                .set(STUDY.ENDED_AT, now.plusDays(20))
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .execute();
+
+        // INPROGRESS 상태 스터디 (INPROGRESS 필터에서만 포함되어야 함)
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, 203L)
+                .set(STUDY.TITLE, "INPROGRESS 스터디")
+                .set(STUDY.DESCRIPTION, "진행중 스터디")
+                .set(STUDY.CONTENT, "내용")
+                .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY.CATEGORY, "CS")
+                .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.STATUS, "INPROGRESS")
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(STUDY.STARTED_AT, now.minusDays(1))
+                .set(STUDY.ENDED_AT, now.plusDays(20))
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .execute();
+
+        // COMPLETED 상태 스터디
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, 204L)
+                .set(STUDY.TITLE, "COMPLETED 스터디")
+                .set(STUDY.DESCRIPTION, "완료 스터디")
+                .set(STUDY.CONTENT, "내용")
+                .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY.CATEGORY, "CS")
+                .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.STATUS, "COMPLETED")
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(STUDY.STARTED_AT, now.minusDays(10))
+                .set(STUDY.ENDED_AT, now.minusDays(1))
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .execute();
+
+        // When & Then: READY 필터 - READY와 APPROVED 상태 모두 반환
+        mockMvc.perform(get("/api/v1/study/search")
+                        .param("studyStatus", "READY")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content.length()").value(2))
+                .andExpect(jsonPath("$.data.content[0].status").value(anyOf(is("READY"), is("APPROVED"))))
+                .andExpect(jsonPath("$.data.content[1].status").value(anyOf(is("READY"), is("APPROVED"))));
+
+        // When & Then: INPROGRESS 필터 - INPROGRESS 상태만 반환
+        mockMvc.perform(get("/api/v1/study/search")
+                        .param("studyStatus", "INPROGRESS")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content.length()").value(1))
+                .andExpect(jsonPath("$.data.content[0].id").value(203L))
+                .andExpect(jsonPath("$.data.content[0].status").value("INPROGRESS"));
+
+        // When & Then: COMPLETED 필터 - COMPLETED 상태만 반환
+        mockMvc.perform(get("/api/v1/study/search")
+                        .param("studyStatus", "COMPLETED")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content.length()").value(1))
+                .andExpect(jsonPath("$.data.content[0].id").value(204L))
+                .andExpect(jsonPath("$.data.content[0].status").value("COMPLETED"));
+    }
+
+    @Test
+    @Order(108)
+    @DisplayName("❌ 스터디 고급 검색 - 잘못된 필드명 사용 시 에러 발생")
+    void should_throw_error_when_using_wrong_field_name() throws Exception {
+        // Given: 테스트 데이터 생성
+        createMultipleStudiesInDatabase();
+
+        // When & Then: 잘못된 필드명 'status' 사용 시 에러 발생
+        mockMvc.perform(get("/api/v1/study/search")
+                        .param("status", "READY")  // 잘못된 필드명
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(containsString("Invalid status parameter")));
+    }
+
+    @Test
+    @Order(109)
+    @DisplayName("✅ 스터디 고급 검색 - studyStatus 필드명 사용 시 정상 동작")
+    void should_work_correctly_with_correct_field_name() throws Exception {
+        // Given: 테스트 데이터 생성
+        createMultipleStudiesInDatabase();
+
+        // When & Then: 올바른 필드명 'studyStatus' 사용 시 정상 동작
+        mockMvc.perform(get("/api/v1/study/search")
+                        .param("studyStatus", "READY")  // 올바른 필드명
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray());
     }
 }

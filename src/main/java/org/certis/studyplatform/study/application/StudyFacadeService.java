@@ -215,9 +215,9 @@ public class StudyFacadeService {
      */
     public Page<StudySummaryResponseDto> searchStudiesAdvanced(
             StudyAdvancedSearchRequestDto requestDto, Pageable pageable) {
-        log.info("Facade: Advanced searching studies - keyword: {}, category: {}, subcategory: {}, semester: {}, status: {}",
+        log.info("Facade: Advanced searching studies - keyword: {}, category: {}, subcategory: {}, semester: {}, studyStatus: {}",
                 requestDto.getKeyword(),requestDto.getCategory(),
-                requestDto.getSubcategory(), requestDto.getSemester(), requestDto.getStatus());
+                requestDto.getSubcategory(), requestDto.getSemester(), requestDto.getStudyStatus());
 
         // DTO → Query Object 변환 (CPU-bound 작업이므로 비동기 처리 불필요)
         SearchStudiesQuery query = queryMapper.toSearchStudiesQuery(requestDto, pageable);

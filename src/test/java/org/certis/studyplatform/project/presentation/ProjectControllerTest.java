@@ -21,6 +21,7 @@ import java.time.OffsetDateTime;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.certis.generated.jooq.Tables.*;
+import static org.hamcrest.Matchers.*;
 import org.certis.studyplatform.response.ResponseStatus;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -651,6 +652,7 @@ class ProjectControllerTest {
                 .set(PROJECT.MEMBER_ID, TEST_MEMBER_ID)
                 .set(PROJECT.CATEGORY, TEST_PROJECT_CATEGORY)
                 .set(PROJECT.SUBCATEGORY, TEST_PROJECT_SUBCATEGORY)
+                .set(PROJECT.STATUS, "READY")
                 .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
                 .set(PROJECT.STARTED_AT, now.plusDays(1))
                 .set(PROJECT.ENDED_AT, now.plusDays(30))
@@ -1012,6 +1014,7 @@ class ProjectControllerTest {
                 .set(PROJECT.MEMBER_ID, 1L)
                 .set(PROJECT.CATEGORY, "웹 개발")
                 .set(PROJECT.SUBCATEGORY, "풀스택")
+                .set(PROJECT.STATUS, "READY")
                 .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
                 .set(PROJECT.STARTED_AT, now.minusDays(1)) // 1일 전 시작
                 .set(PROJECT.ENDED_AT, now.plusDays(30))   // 30일 후 종료
@@ -1047,6 +1050,7 @@ class ProjectControllerTest {
                 .set(PROJECT.MEMBER_ID, 1L)
                 .set(PROJECT.CATEGORY, "웹 개발")
                 .set(PROJECT.SUBCATEGORY, "풀스택")
+                .set(PROJECT.STATUS, "READY")
                 .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
                 .set(PROJECT.STARTED_AT, now.minusDays(1)) // 1일 전 시작
                 .set(PROJECT.ENDED_AT, now.plusDays(30))   // 30일 후 종료
@@ -1110,6 +1114,7 @@ class ProjectControllerTest {
                 .set(PROJECT.MEMBER_ID, 1L)
                 .set(PROJECT.CATEGORY, "웹 개발")
                 .set(PROJECT.SUBCATEGORY, "풀스택")
+                .set(PROJECT.STATUS, "READY")
                 .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
                 .set(PROJECT.STARTED_AT, now.plusDays(10)) // 10일 후 시작
                 .set(PROJECT.ENDED_AT, now.plusDays(40))   // 40일 후 종료
@@ -1141,6 +1146,7 @@ class ProjectControllerTest {
                 .set(PROJECT.MEMBER_ID, TEST_MEMBER_ID)
                 .set(PROJECT.CATEGORY, TEST_PROJECT_CATEGORY)
                 .set(PROJECT.SUBCATEGORY, TEST_PROJECT_SUBCATEGORY)
+                .set(PROJECT.STATUS, "READY")
                 .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
                 .set(PROJECT.STARTED_AT, now.plusDays(1))
                 .set(PROJECT.ENDED_AT, now.plusDays(30))
@@ -1167,5 +1173,151 @@ class ProjectControllerTest {
                 .andExpect(jsonPath("$.data.attachments").isArray())
                 .andExpect(jsonPath("$.data.attachments.length()").value(1))
                 .andExpect(jsonPath("$.data.attachments[0].attachedUrl").value("https://s3.example.com/spec.pdf"));
+    }
+
+    @Test
+    @Order(8)
+    @DisplayName("✅ 프로젝트 고급 검색 - 상태 매핑 로직 테스트 (READY → READY, APPROVED / INPROGRESS → INPROGRESS)")
+    void should_filter_by_status_mapping_logic() throws Exception {
+        // Given: 다양한 상태의 프로젝트 생성
+        OffsetDateTime now = OffsetDateTime.now();
+
+        // READY 상태 프로젝트
+        dsl.insertInto(PROJECT)
+                .set(PROJECT.ID, 301L)
+                .set(PROJECT.TITLE, "READY 프로젝트")
+                .set(PROJECT.DESCRIPTION, "준비중 프로젝트")
+                .set(PROJECT.CONTENT, "내용")
+                .set(PROJECT.MEMBER_ID, TEST_MEMBER_ID)
+                .set(PROJECT.CATEGORY, "CS")
+                .set(PROJECT.SUBCATEGORY, "백엔드")
+                .set(PROJECT.STATUS, "READY")
+                .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(PROJECT.STARTED_AT, now.plusDays(5))
+                .set(PROJECT.ENDED_AT, now.plusDays(35))
+                .set(PROJECT.CREATED_AT, now)
+                .set(PROJECT.UPDATED_AT, now)
+                .execute();
+
+        // APPROVED 상태 프로젝트 (READY 필터에서 포함되어야 함)
+        dsl.insertInto(PROJECT)
+                .set(PROJECT.ID, 302L)
+                .set(PROJECT.TITLE, "APPROVED 프로젝트")
+                .set(PROJECT.DESCRIPTION, "승인된 프로젝트")
+                .set(PROJECT.CONTENT, "내용")
+                .set(PROJECT.MEMBER_ID, TEST_MEMBER_ID)
+                .set(PROJECT.CATEGORY, "CS")
+                .set(PROJECT.SUBCATEGORY, "백엔드")
+                .set(PROJECT.STATUS, "APPROVED")
+                .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(PROJECT.STARTED_AT, now.plusDays(1))  // 미래 시간으로 설정하여 스케줄러가 상태를 변경하지 않도록 함
+                .set(PROJECT.ENDED_AT, now.plusDays(20))
+                .set(PROJECT.CREATED_AT, now)
+                .set(PROJECT.UPDATED_AT, now)
+                .execute();
+
+        // INPROGRESS 상태 프로젝트 (INPROGRESS 필터에서만 포함되어야 함)
+        dsl.insertInto(PROJECT)
+                .set(PROJECT.ID, 303L)
+                .set(PROJECT.TITLE, "INPROGRESS 프로젝트")
+                .set(PROJECT.DESCRIPTION, "진행중 프로젝트")
+                .set(PROJECT.CONTENT, "내용")
+                .set(PROJECT.MEMBER_ID, TEST_MEMBER_ID)
+                .set(PROJECT.CATEGORY, "CS")
+                .set(PROJECT.SUBCATEGORY, "백엔드")
+                .set(PROJECT.STATUS, "INPROGRESS")
+                .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(PROJECT.STARTED_AT, now.minusDays(1))
+                .set(PROJECT.ENDED_AT, now.plusDays(20))
+                .set(PROJECT.CREATED_AT, now)
+                .set(PROJECT.UPDATED_AT, now)
+                .execute();
+
+        // COMPLETED 상태 프로젝트
+        dsl.insertInto(PROJECT)
+                .set(PROJECT.ID, 304L)
+                .set(PROJECT.TITLE, "COMPLETED 프로젝트")
+                .set(PROJECT.DESCRIPTION, "완료 프로젝트")
+                .set(PROJECT.CONTENT, "내용")
+                .set(PROJECT.MEMBER_ID, TEST_MEMBER_ID)
+                .set(PROJECT.CATEGORY, "CS")
+                .set(PROJECT.SUBCATEGORY, "백엔드")
+                .set(PROJECT.STATUS, "COMPLETED")
+                .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(PROJECT.STARTED_AT, now.minusDays(10))
+                .set(PROJECT.ENDED_AT, now.minusDays(1))
+                .set(PROJECT.CREATED_AT, now)
+                .set(PROJECT.UPDATED_AT, now)
+                .execute();
+
+        // When & Then: READY 필터 - READY와 APPROVED 상태 모두 반환
+        mockMvc.perform(get("/api/v1/project/search")
+                        .param("projectStatus", "READY")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content.length()").value(2))
+                .andExpect(jsonPath("$.data.content[0].status").value(anyOf(is("READY"), is("APPROVED"))))
+                .andExpect(jsonPath("$.data.content[1].status").value(anyOf(is("READY"), is("APPROVED"))));
+
+        // When & Then: INPROGRESS 필터 - INPROGRESS 상태만 반환
+        mockMvc.perform(get("/api/v1/project/search")
+                        .param("projectStatus", "INPROGRESS")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content.length()").value(1))
+                .andExpect(jsonPath("$.data.content[0].id").value(303L))
+                .andExpect(jsonPath("$.data.content[0].status").value("INPROGRESS"));
+
+        // When & Then: COMPLETED 필터 - COMPLETED 상태만 반환
+        mockMvc.perform(get("/api/v1/project/search")
+                        .param("projectStatus", "COMPLETED")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content.length()").value(1))
+                .andExpect(jsonPath("$.data.content[0].id").value(304L))
+                .andExpect(jsonPath("$.data.content[0].status").value("COMPLETED"));
+    }
+
+    @Test
+    @Order(9)
+    @DisplayName("❌ 프로젝트 고급 검색 - 잘못된 필드명 사용 시 에러 발생")
+    void should_throw_error_when_using_wrong_field_name() throws Exception {
+        // Given: 테스트 데이터 생성
+        createSearchableProjectsInDatabase();
+
+        // When & Then: 잘못된 필드명 'status' 사용 시 에러 발생
+        mockMvc.perform(get("/api/v1/project/search")
+                        .param("status", "READY")  // 잘못된 필드명
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(containsString("Invalid status parameter")));
+    }
+
+    @Test
+    @Order(10)
+    @DisplayName("✅ 프로젝트 고급 검색 - projectStatus 필드명 사용 시 정상 동작")
+    void should_work_correctly_with_correct_field_name() throws Exception {
+        // Given: 테스트 데이터 생성
+        createSearchableProjectsInDatabase();
+
+        // When & Then: 올바른 필드명 'projectStatus' 사용 시 정상 동작
+        mockMvc.perform(get("/api/v1/project/search")
+                        .param("projectStatus", "READY")  // 올바른 필드명
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray());
     }
 }

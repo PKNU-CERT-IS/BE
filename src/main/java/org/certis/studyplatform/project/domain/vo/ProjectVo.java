@@ -2,6 +2,7 @@ package org.certis.studyplatform.project.domain.vo;
 
 import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
+import org.certis.studyplatform.project.domain.ProjectStatus;
 import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 
 import java.time.OffsetDateTime;
@@ -223,6 +224,21 @@ public record ProjectVo(
                                        String demoUrl,
                                        String thumbnailUrl,
                                        Integer maxParticipants) {
+        // startDate 변경 시 상태 검증
+        if (startDate != null && !startDate.equals(existing.startDate())) {
+            ProjectStatus currentStatus = ProjectStatus.fromStatusString(existing.status());
+            if (!currentStatus.isReady()) {
+                throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_STATUS,
+                        "프로젝트가 READY 상태가 아닐 때는 시작일을 변경할 수 없습니다. 현재 상태: " + currentStatus.getDescription());
+            }
+        }
+        
+        OffsetDateTime newStartDate = startDate != null ? startDate : existing.startDate();
+        OffsetDateTime newEndDate = endDate != null ? endDate : existing.endDate();
+        
+        // startedAt이 현재 시각보다 나중인 경우 APPROVED로 초기화
+        StatusAndResultSubmitStatus statusAndResult = calculateStatusAndResultSubmitStatus(newStartDate, newEndDate);
+        
         return new ProjectVo(
                 existing.id(),
                 title != null ? title : existing.title(),
@@ -230,14 +246,14 @@ public record ProjectVo(
                 content != null ? content : existing.content(),
                 category != null ? category : existing.category(),
                 subCategory != null ? subCategory : existing.subCategory(),
-                startDate != null ? startDate : existing.startDate(),
-                endDate != null ? endDate : existing.endDate(),
+                newStartDate,
+                newEndDate,
                 existing.creatorId(),
                 existing.creatorName(),
                 existing.creatorGrade(),
                 existing.semester(),
-                existing.status(),
-                existing.resultSubmitStatus(),
+                statusAndResult.status(), // status 재계산 (startedAt 고려)
+                statusAndResult.resultSubmitStatus(), // resultSubmitStatus 재계산
                 githubUrl != null ? githubUrl : existing.githubUrl(),
                 externalUrl != null ? externalUrl : existing.externalUrl(),
                 demoUrl != null ? demoUrl : existing.demoUrl(),
@@ -249,6 +265,35 @@ public record ProjectVo(
                 existing.meetingSummaryVos()
         );
     }
+
+    /**
+     * startedAt과 endedAt을 기준으로 status와 resultSubmitStatus 계산
+     * startedAt이 현재 시각보다 나중인 경우 APPROVED로 초기화
+     */
+    private static StatusAndResultSubmitStatus calculateStatusAndResultSubmitStatus(
+            OffsetDateTime startedAt, OffsetDateTime endedAt) {
+        OffsetDateTime now = OffsetDateTime.now();
+        
+        // startedAt이 현재 시각보다 나중인 경우 APPROVED로 초기화
+        if (startedAt != null && startedAt.isAfter(now)) {
+            return new StatusAndResultSubmitStatus(
+                ProjectStatus.APPROVED.name(), 
+                ResultSubmitStatus.READY
+            );
+        }
+        
+        // endedAt이 현재 시간보다 지났으면 COMPLETED, 아니면 INPROGRESS
+        String status = (endedAt != null && endedAt.isBefore(now)) 
+            ? ProjectStatus.COMPLETED.name() 
+            : ProjectStatus.INPROGRESS.name();
+            
+        return new StatusAndResultSubmitStatus(status, ResultSubmitStatus.READY);
+    }
+
+    /**
+     * Status와 ResultSubmitStatus를 함께 반환하는 레코드
+     */
+    private record StatusAndResultSubmitStatus(String status, ResultSubmitStatus resultSubmitStatus) {}
 
     /**
      * Backward-compatible auxiliary constructor to support legacy tests using new ProjectVo(...)

@@ -16,6 +16,7 @@ import org.certis.studyplatform.project.application.object.query.GetAllProjectsQ
 import org.certis.studyplatform.project.application.object.query.GetCompletedProjectsByMemberQuery;
 import org.certis.studyplatform.project.application.object.query.GetProjectByIdQuery;
 import org.certis.studyplatform.project.application.object.query.SearchProjectsQuery;
+import org.certis.studyplatform.project.domain.ProjectStatus;
 import org.certis.studyplatform.project.domain.repository.ProjectCommandRepository;
 import org.certis.studyplatform.project.domain.repository.ProjectQueryRepository;
 import org.certis.studyplatform.project.domain.vo.ProjectVo;
@@ -219,6 +220,11 @@ public class ProjectDomainService {
         log.info("Domain: Searching projects from query - keyword: {}, semester: {}, category: {}, status: {}",
                 query.keyword(), query.semester(), query.category(), query.status());
 
+        // projectStatus 필드명 검증
+        if (query.status() != null && !query.status().trim().isEmpty()) {
+            validateProjectStatusField(query.status());
+        }
+
         // Query를 ProjectSearchCriteria로 변환 (고급 검색 필드 포함)
         ProjectSearchCriteriaVo criteria = ProjectSearchCriteriaVo.ofAdvanced(
                 query.keyword(),
@@ -236,6 +242,20 @@ public class ProjectDomainService {
 
         log.info("Domain: Found {} projects by advanced criteria", projectPage.getTotalElements());
         return projectPage;
+    }
+
+    /**
+     * projectStatus 필드명 검증
+     * projectStatus가 아니면 에러를 발생시킴
+     */
+    private void validateProjectStatusField(String status) {
+        // 실제로는 status 값이 유효한 ProjectStatus 값인지 검증
+        try {
+            ProjectStatus.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid project status value. Expected one of [READY, INPROGRESS, COMPLETED] but got: " + status);
+        }
+        log.debug("Domain: Project status field validation passed for: {}", status);
     }
 
     /**

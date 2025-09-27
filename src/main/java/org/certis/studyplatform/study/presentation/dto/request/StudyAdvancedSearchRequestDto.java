@@ -44,9 +44,9 @@ public class StudyAdvancedSearchRequestDto {
     private String semester;
 
     /**
-     * 상태 필터 (Ready, InProgress, Completed)
+     * 스터디 상태 필터 (Ready, InProgress, Completed)
      */
-    private StudyStatus status;
+    private StudyStatus studyStatus;
 
     /**
      * 페이지 번호 (기본값 0)
@@ -68,7 +68,7 @@ public class StudyAdvancedSearchRequestDto {
                (category == null || category.trim().isEmpty()) &&
                (subcategory == null || subcategory.trim().isEmpty()) &&
                (semester == null || semester.trim().isEmpty()) &&
-               (status == null);
+               (studyStatus == null);
     }
 
     /**
@@ -76,6 +76,13 @@ public class StudyAdvancedSearchRequestDto {
      */
     public boolean hasKeyword() {
         return keyword != null && !keyword.trim().isEmpty();
+    }
+
+    /**
+     * 스터디 상태 필터가 설정되어 있는지 확인
+     */
+    public boolean hasStudyStatus() {
+        return studyStatus != null;
     }
 
     /**
@@ -99,20 +106,13 @@ public class StudyAdvancedSearchRequestDto {
         return semester != null && !semester.trim().isEmpty();
     }
 
-    /**
-     * 상태 필터가 설정되어 있는지 확인
-     */
-    public boolean hasStatus() {
-        return status != null;
-    }
-
     @Override
     public String toString() {
         return "StudyAdvancedSearchRequestDto{" +
                "keyword='" + keyword + '\'' +
                ", category='" + category + '\'' +
                ", subcategory='" + subcategory + '\'' +
-               ", status='" + status + '\'' +
+               ", studyStatus='" + studyStatus + '\'' +
                '}';
     }
 } 

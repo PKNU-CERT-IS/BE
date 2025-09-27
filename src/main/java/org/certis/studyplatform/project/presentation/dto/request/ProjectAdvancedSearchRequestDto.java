@@ -43,11 +43,11 @@ public class ProjectAdvancedSearchRequestDto {
     private String subcategory;
 
     /**
-     * 상태 필터 (Ready, InProgress, Completed)
+     * 프로젝트 상태 필터 (Ready, InProgress, Completed)
      */
     @Pattern(regexp = "^(Ready|InProgress|Completed|READY|INPROGRESS|COMPLETED)$", 
-             message = "상태는 Ready, InProgress, Completed 중 하나여야 합니다")
-    private String status;
+             message = "프로젝트 상태는 Ready, InProgress, Completed 중 하나여야 합니다")
+    private String projectStatus;
 
     /**
      * 페이지 번호 (기본값 0)
@@ -69,7 +69,7 @@ public class ProjectAdvancedSearchRequestDto {
                (semester == null || semester.trim().isEmpty()) &&
                (category == null || category.trim().isEmpty()) &&
                (subcategory == null || subcategory.trim().isEmpty()) &&
-               (status == null || status.trim().isEmpty());
+               (projectStatus == null || projectStatus.trim().isEmpty());
     }
 
     /**
@@ -101,10 +101,10 @@ public class ProjectAdvancedSearchRequestDto {
     }
 
     /**
-     * 상태 필터가 설정되어 있는지 확인
+     * 프로젝트 상태 필터가 설정되어 있는지 확인
      */
-    public boolean hasStatus() {
-        return status != null && !status.trim().isEmpty();
+    public boolean hasProjectStatus() {
+        return projectStatus != null && !projectStatus.trim().isEmpty();
     }
 
     @Override
@@ -114,7 +114,7 @@ public class ProjectAdvancedSearchRequestDto {
                ", semester='" + semester + '\'' +
                ", category='" + category + '\'' +
                ", subcategory='" + subcategory + '\'' +
-               ", status='" + status + '\'' +
+               ", projectStatus='" + projectStatus + '\'' +
                '}';
     }
 } 

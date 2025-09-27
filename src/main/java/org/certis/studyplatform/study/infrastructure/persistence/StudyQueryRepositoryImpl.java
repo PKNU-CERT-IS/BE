@@ -949,36 +949,37 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
             }
         }
 
-        // 상태 필터 (StudyStatus 기반 검색 - started_at, ended_at 기반)
-        if (criteria.status() != null) {
-            OffsetDateTime now = OffsetDateTime.now();
-            switch (criteria.status()) {
-                case READY -> {
-                    // 시작 전: started_at이 현재 시간보다 미래
-                    conditions = conditions.and(s.STARTED_AT.greaterThan(now));
-                    log.debug("jOOQ: Added READY status condition (started_at > now)");
-                }
-                case INPROGRESS -> {
-                    // 진행 중: started_at <= now < ended_at
-                    conditions = conditions.and(s.STARTED_AT.lessOrEqual(now))
-                            .and(s.ENDED_AT.greaterThan(now));
-                    log.debug("jOOQ: Added INPROGRESS status condition (started_at <= now < ended_at)");
-                }
-                case COMPLETED -> {
-                    // 완료: ended_at <= now
-                    conditions = conditions.and(s.ENDED_AT.lessOrEqual(now));
-                    log.debug("jOOQ: Added COMPLETED status condition (ended_at <= now)");
-                }
-                case REJECTED -> {
-                    // 거절됨: deleted_at이 null이 아님 (삭제된 스터디)
-                    conditions = conditions.and(s.DELETED_AT.isNotNull());
-                    log.debug("jOOQ: Added REJECTED status condition (deleted_at is not null)");
-                }
+        // 상태 필터 (상태 매핑 로직 적용)
+        if (criteria.status() != null && !criteria.status().trim().isEmpty()) {
+            String upperStatus = criteria.status().toUpperCase();
+            Condition statusCondition = buildStudyStatusCondition(upperStatus, s);
+            if (statusCondition != null) {
+                conditions = conditions.and(statusCondition);
+                log.debug("jOOQ: Added status condition for: {}", criteria.status());
             }
         }
 
         log.debug("jOOQ: Final conditions built: {}", conditions);
         return conditions;
+    }
+
+    /**
+     * 스터디 상태 조건 구성 (상태 매핑 로직 적용)
+     * READY → READY, APPROVED
+     * INPROGRESS → INPROGRESS
+     * COMPLETED → COMPLETED
+     */
+    private Condition buildStudyStatusCondition(String status, org.jooq.Table<?> s) {
+        var sTable = STUDY.as("s");
+        return switch (status) {
+            case "READY" -> sTable.STATUS.in("READY", "APPROVED");
+            case "INPROGRESS" -> sTable.STATUS.eq("INPROGRESS");
+            case "COMPLETED" -> sTable.STATUS.eq("COMPLETED");
+            default -> {
+                log.warn("jOOQ: Unknown study status: {}", status);
+                yield null;
+            }
+        };
     }
 
 

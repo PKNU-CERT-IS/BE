@@ -153,9 +153,9 @@ public class StudyController {
             @Valid @ModelAttribute StudyAdvancedSearchRequestDto searchRequest,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
-        log.info("REST: Unified study search - keyword: {}, category: {}, subcategory: {}, semester: {}, status: {}, page: {}, size: {}",
+        log.info("REST: Unified study search - keyword: {}, category: {}, subcategory: {}, semester: {}, studyStatus: {}, page: {}, size: {}",
                 searchRequest.getKeyword(),  searchRequest.getCategory(),
-                searchRequest.getSubcategory(), searchRequest.getSemester(), searchRequest.getStatus(),
+                searchRequest.getSubcategory(), searchRequest.getSemester(), searchRequest.getStudyStatus(),
                 pageable.getPageNumber(), pageable.getPageSize());
 
         // 통합 고급 검색 Facade Service 호출

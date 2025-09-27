@@ -1,6 +1,5 @@
 package org.certis.studyplatform.study.application.object.query;
 
-import org.certis.studyplatform.study.domain.vo.StudyStatus;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
@@ -16,7 +15,7 @@ public record SearchStudiesQuery(
     String category,
     String subCategory,
     String semester,
-    StudyStatus status,
+    String status,
     Pageable pageable
 ) {
     public static SearchStudiesQuery of(
@@ -24,7 +23,7 @@ public record SearchStudiesQuery(
         String category,
         String subCategory,
         String semester,
-        StudyStatus status,
+        String status,
         Pageable pageable
     ) {
         return new SearchStudiesQuery(keyword, category, subCategory, semester, status, pageable);
@@ -42,7 +41,7 @@ public record SearchStudiesQuery(
         String category,
         String subcategory,
         String semester,
-        StudyStatus status,
+        String status,
         Pageable pageable
     ) {
         return new SearchStudiesQuery(keyword, category, subcategory, semester, status, pageable);
