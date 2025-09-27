@@ -7,11 +7,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.shared.security.CurrentUser;
-import org.certis.studyplatform.exception.ExceptionStatus;
-import org.certis.studyplatform.exception.InfrastructureException;
 import org.certis.studyplatform.member.domain.MemberRole;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
@@ -20,7 +17,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 
@@ -55,8 +51,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
         catch (Exception e){
-            log.error("JWT 필터 처리 중 예외 발생: {}", e.getMessage(), e);
-            throw new InfrastructureException(ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_FILTER_PROCESSING_ERROR);
+            log.warn("JWT 인증 실패: {}", e.getMessage());
+            // JWT 인증 실패 시 401 응답을 위해 AuthenticationException을 던짐
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"인증이 필요합니다\"}");
+            return;
         }
         filterChain.doFilter(request,response);
     }
@@ -110,6 +110,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private boolean shouldSkipFilter(HttpServletRequest request){
+        String requestURI = request.getRequestURI();
+        
+        // 잘못된 API 경로 체크 (커스텀 로직)
+        if (isInvalidApiPath(requestURI)) {
+            return true; // 잘못된 경로는 필터를 건너뛰어 404 처리되도록 함
+        }
+        
         final List<String> excludedPaths = Arrays.asList(
                 // 인증 관련
                 "/api/v1/member/**",
@@ -177,5 +184,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         return excludedPaths.stream()
                 .anyMatch(pattern -> pathMatcher.match(pattern, path));
+    }
+    
+    /**
+     * 잘못된 API 경로인지 확인
+     * /api/로 시작하지만 /api/v1/이 아닌 모든 경로를 잘못된 경로로 간주
+     */
+    private boolean isInvalidApiPath(String requestURI) {
+        // /api/로 시작하는지 확인
+        if (!requestURI.startsWith("/api/")) {
+            return false;
+        }
+        
+        // /api/v1/로 시작하는 경우는 유효한 API
+        if (requestURI.startsWith("/api/v1/")) {
+            return false;
+        }
+        
+        // /api/로 시작하지만 /api/v1/이 아닌 모든 경로는 잘못된 경로
+        return true;
     }
 }
