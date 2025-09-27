@@ -662,6 +662,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
 
         List<org.jooq.Record> records = dsl.select(
                         p.ID,
+                        p.STATUS.as("status"),
                         p.TITLE,
                         p.DESCRIPTION,
                         p.CONTENT,
@@ -721,6 +722,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
         Optional<ProjectVo> result = Optional.of(
                 dsl.select(
                         p.ID,
+                        p.STATUS.as("status"),
                         p.TITLE,
                         p.DESCRIPTION,
                         p.CONTENT,

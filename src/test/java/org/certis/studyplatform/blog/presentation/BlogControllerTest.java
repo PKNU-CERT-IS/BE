@@ -10,12 +10,14 @@ import org.certis.studyplatform.config.TestWebMvcConfig;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
@@ -85,6 +87,12 @@ class BlogControllerTest {
         @Primary
         BlogRedisRepository blogRedisRepository() {
             return org.mockito.Mockito.mock(BlogRedisRepository.class);
+        }
+        
+        @Bean
+        @Qualifier("redisStringTemplate")
+        RedisTemplate<String, String> mockRedisStringTemplate() {
+            return org.mockito.Mockito.mock(RedisTemplate.class);
         }
     }
 
@@ -892,6 +900,24 @@ class BlogControllerTest {
      */
     private void createPublicAndPrivateBlogs() {
         OffsetDateTime now = OffsetDateTime.now();
+        
+        // 참조할 스터디 데이터 먼저 생성
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, TEST_STUDY_ID)
+                .set(STUDY.TITLE, "테스트 스터디")
+                .set(STUDY.DESCRIPTION, "테스트용 스터디 설명")
+                .set(STUDY.CONTENT, "테스트용 스터디 내용")
+                .set(STUDY.CATEGORY, "웹 개발")
+                .set(STUDY.SUBCATEGORY, "Spring Boot")
+                .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(STUDY.STATUS, "APPROVED")
+                .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
+                .set(STUDY.STARTED_AT, now)
+                .set(STUDY.ENDED_AT, now.plusDays(7))
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .execute();
         
         // 공개 블로그 생성
         dsl.insertInto(BLOG)
