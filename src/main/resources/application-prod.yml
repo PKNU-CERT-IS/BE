@@ -70,16 +70,42 @@ spring:
       password: ${SPRING_DATA_REDIS_PASSWORD:}
       ssl:
         enabled: ${SPRING_DATA_REDIS_SSL_ENABLED:false}
-      timeout: 10000ms
-      connect-timeout: 10000ms
+      timeout: 30000ms
+      connect-timeout: 30000ms
       database: 0
       lettuce:
         pool:
-          max-active: 10
-          max-wait: -1ms
+          max-active: 20
+          max-wait: 10000ms
           max-idle: 10
-          min-idle: 2
-        shutdown-timeout: 200ms
+          min-idle: 5
+        shutdown-timeout: 5000ms
+
+  # Redisson 설정 - ElastiCache 호환
+  redis:
+    host: ${SPRING_DATA_REDIS_HOST:redis}
+    port: ${SPRING_DATA_REDIS_PORT:6379}
+    password: ${SPRING_DATA_REDIS_PASSWORD:}
+    ssl: ${SPRING_DATA_REDIS_SSL_ENABLED:false}
+    timeout: 30000
+    connect-timeout: 30000
+    database: 0
+
+# Redisson 설정 - ElastiCache 최적화
+redisson:
+  config: |
+    singleServerConfig:
+      address: "redis://${SPRING_DATA_REDIS_HOST:redis}:${SPRING_DATA_REDIS_PORT:6379}"
+      password: ${SPRING_DATA_REDIS_PASSWORD:}
+      database: 0
+      connectionPoolSize: 20
+      connectionMinimumIdleSize: 5
+      connectTimeout: 30000
+      timeout: 30000
+      retryAttempts: 3
+      retryInterval: 1500
+      keepAlive: true
+      tcpNoDelay: true
 
   # 캐시 설정
   cache:
@@ -111,6 +137,11 @@ logging:
     org.flywaydb: INFO
     com.zaxxer.hikari: INFO
     io.lettuce.core: INFO
+    # Redis connection debugging
+    org.springframework.data.redis: INFO
+    org.springframework.data.redis.connection: INFO
+    org.redisson: INFO
+    org.redisson.connection: INFO
   file:
     name: ${LOG_FILE:/var/log/cert-is/application.log}
     max-size: 100MB
