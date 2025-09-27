@@ -89,7 +89,7 @@ public class Blog extends TableImpl<BlogRecord> {
     /**
      * The column <code>public.blog.content</code>.
      */
-    public final TableField<BlogRecord, String> CONTENT = createField(DSL.name("content"), SQLDataType.VARCHAR.nullable(false), this, "");
+    public final TableField<BlogRecord, String> CONTENT = createField(DSL.name("content"), SQLDataType.CLOB.nullable(false), this, "");
 
     /**
      * The column <code>public.blog.category</code>.

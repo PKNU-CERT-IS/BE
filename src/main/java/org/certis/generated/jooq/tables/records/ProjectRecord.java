@@ -230,30 +230,30 @@ public class ProjectRecord extends UpdatableRecordImpl<ProjectRecord> {
     }
 
     /**
-     * Setter for <code>public.project.demo_url</code>.
-     */
-    public void setDemoUrl(String value) {
-        set(15, value);
-    }
-
-    /**
-     * Getter for <code>public.project.demo_url</code>.
-     */
-    public String getDemoUrl() {
-        return (String) get(15);
-    }
-
-    /**
      * Setter for <code>public.project.thumbnail_url</code>.
      */
     public void setThumbnailUrl(String value) {
-        set(16, value);
+        set(15, value);
     }
 
     /**
      * Getter for <code>public.project.thumbnail_url</code>.
      */
     public String getThumbnailUrl() {
+        return (String) get(15);
+    }
+
+    /**
+     * Setter for <code>public.project.demo_url</code>. 프로젝트 데모 URL
+     */
+    public void setDemoUrl(String value) {
+        set(16, value);
+    }
+
+    /**
+     * Getter for <code>public.project.demo_url</code>. 프로젝트 데모 URL
+     */
+    public String getDemoUrl() {
         return (String) get(16);
     }
 
@@ -272,31 +272,45 @@ public class ProjectRecord extends UpdatableRecordImpl<ProjectRecord> {
     }
 
     /**
-     * Setter for <code>public.project.result_submit_status</code>.
-     */
-    public void setResultSubmitStatus(String value) {
-        set(18, value);
-    }
-
-    /**
-     * Getter for <code>public.project.result_submit_status</code>.
-     */
-    public String getResultSubmitStatus() {
-        return (String) get(18);
-    }
-
-    /**
      * Setter for <code>public.project.result_attached_url</code>.
      */
     public void setResultAttachedUrl(String value) {
-        set(19, value);
+        set(18, value);
     }
 
     /**
      * Getter for <code>public.project.result_attached_url</code>.
      */
     public String getResultAttachedUrl() {
+        return (String) get(18);
+    }
+
+    /**
+     * Setter for <code>public.project.result_submit_status</code>.
+     */
+    public void setResultSubmitStatus(String value) {
+        set(19, value);
+    }
+
+    /**
+     * Getter for <code>public.project.result_submit_status</code>.
+     */
+    public String getResultSubmitStatus() {
         return (String) get(19);
+    }
+
+    /**
+     * Setter for <code>public.project.status</code>.
+     */
+    public void setStatus(String value) {
+        set(20, value);
+    }
+
+    /**
+     * Getter for <code>public.project.status</code>.
+     */
+    public String getStatus() {
+        return (String) get(20);
     }
 
     // -------------------------------------------------------------------------
@@ -322,7 +336,7 @@ public class ProjectRecord extends UpdatableRecordImpl<ProjectRecord> {
     /**
      * Create a detached, initialised ProjectRecord
      */
-    public ProjectRecord(Long id, Long memberId, String title, String content, OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt, String category, String subcategory, String description, OffsetDateTime startedAt, OffsetDateTime endedAt, Integer maxParticipantsNumber, String githubUrl, String externalUrl, String demoUrl, String thumbnailUrl, OffsetDateTime resultSubmittedAt, String resultSubmitStatus, String resultAttachedUrl) {
+    public ProjectRecord(Long id, Long memberId, String title, String content, OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt, String category, String subcategory, String description, OffsetDateTime startedAt, OffsetDateTime endedAt, Integer maxParticipantsNumber, String githubUrl, String externalUrl, String thumbnailUrl, String demoUrl, OffsetDateTime resultSubmittedAt, String resultAttachedUrl, String resultSubmitStatus, String status) {
         super(Project.PROJECT);
 
         setId(id);
@@ -340,11 +354,12 @@ public class ProjectRecord extends UpdatableRecordImpl<ProjectRecord> {
         setMaxParticipantsNumber(maxParticipantsNumber);
         setGithubUrl(githubUrl);
         setExternalUrl(externalUrl);
-        setDemoUrl(demoUrl);
         setThumbnailUrl(thumbnailUrl);
+        setDemoUrl(demoUrl);
         setResultSubmittedAt(resultSubmittedAt);
-        setResultSubmitStatus(resultSubmitStatus);
         setResultAttachedUrl(resultAttachedUrl);
+        setResultSubmitStatus(resultSubmitStatus);
+        setStatus(status);
         resetTouchedOnNotNull();
     }
 
@@ -370,11 +385,12 @@ public class ProjectRecord extends UpdatableRecordImpl<ProjectRecord> {
             setMaxParticipantsNumber(value.getMaxParticipantsNumber());
             setGithubUrl(value.getGithubUrl());
             setExternalUrl(value.getExternalUrl());
-            setDemoUrl(value.getDemoUrl());
             setThumbnailUrl(value.getThumbnailUrl());
+            setDemoUrl(value.getDemoUrl());
             setResultSubmittedAt(value.getResultSubmittedAt());
-            setResultSubmitStatus(value.getResultSubmitStatus());
             setResultAttachedUrl(value.getResultAttachedUrl());
+            setResultSubmitStatus(value.getResultSubmitStatus());
+            setStatus(value.getStatus());
             resetTouchedOnNotNull();
         }
     }

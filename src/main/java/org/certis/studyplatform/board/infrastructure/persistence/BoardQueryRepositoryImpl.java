@@ -97,10 +97,30 @@ public class BoardQueryRepositoryImpl implements BoardQueryRepository {
                 baseQuery = baseQuery.and(field("b.category").eq(searchVo.category()));
             }
 
-            long totalCount = dsl.selectCount()
-                    .from(baseQuery)
-                    .fetchOne(0, Long.class);
+            // Count 쿼리 - 별도로 구성
+            SelectConditionStep<?> countQuery = dsl.selectCount()
+                    .from(table("board").as("b"))
+                    .leftJoin(table("member").as("m"))
+                    .on(field("b.member_id").eq(field("m.id")))
+                    .where(field("b.deleted_at").isNull())
+                    .and(field("m.deleted_at").isNull());
 
+            // 검색 조건을 count 쿼리에 적용
+            if (searchVo.search() != null && !searchVo.search().trim().isEmpty()) {
+                String searchKeyword = "%" + searchVo.search().trim() + "%";
+                countQuery = countQuery.and(
+                        field("b.title").likeIgnoreCase(searchKeyword)
+                                .or(field("b.description").likeIgnoreCase(searchKeyword))
+                );
+            }
+
+            if (searchVo.category() != null && !searchVo.category().trim().isEmpty() && !"ALL".equals(searchVo.category().trim().toUpperCase())) {
+                countQuery = countQuery.and(field("b.category").eq(searchVo.category()));
+            }
+
+            long totalCount = countQuery.fetchOne(0, Long.class);
+
+            // 데이터 조회 쿼리
             var records = baseQuery
                     .orderBy(field("b.updated_at").desc())
                     .limit(searchVo.size())

@@ -108,7 +108,8 @@ public class StudyMeetingDomainService {
         StudyMeetingUpdatedVo updatedVo = studyMeetingCommandRepository.update(updatedMeetingVo);
 
         if (command.links() != null) {
-            studyMeetingLinkCommandRepository.deleteByStudyId(existingMeeting.studyId());
+            // 링크 전체 교체: 해당 회의(meetingId)의 기존 링크 모두 삭제 후, 전달된 링크를 전부 추가
+            studyMeetingLinkCommandRepository.deleteByMeetingId(existingMeeting.id());
 
             if (!command.links().isEmpty()) {
                 for (var link : command.links()) {

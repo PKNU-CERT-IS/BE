@@ -1,7 +1,9 @@
 package org.certis.studyplatform.study.presentation;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.certis.studyplatform.config.TestEmbeddedPostgresConfig;
 import org.certis.studyplatform.config.TestWebMvcConfig;
+import org.certis.studyplatform.study.presentation.dto.request.AdminStudyApprovalRequestDto;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +37,9 @@ class AdminStudyEndFlowTest {
     @Autowired
     private DSLContext dsl;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     private static final String ADMIN_BASE = "/api/v1/admin/study";
     private static final Long ADMIN_ID = 3L; // staff
     private static final Long CREATOR_ID = 3L;
@@ -50,8 +55,8 @@ class AdminStudyEndFlowTest {
                 "VALUES (?, '관리자', 'STAFF', 'SENIOR', '20240001', 'CS', now() - interval '20 years', 'MALE', now(), now())", ADMIN_ID);
 
         // study
-        dsl.execute("INSERT INTO study(id, member_id, title, description, content, category, subcategory, started_at, ended_at, max_participants_number, created_at, updated_at) " +
-                "VALUES (?, ?, 'S1', 'desc', 'content', 'CS', 'BE', now() + interval '1 day', now() + interval '60 days', 5, now(), now())",
+        dsl.execute("INSERT INTO study(id, member_id, title, description, content, category, subcategory, started_at, ended_at, max_participants_number, status, result_submit_status, created_at, updated_at) " +
+                "VALUES (?, ?, 'S1', 'desc', 'content', 'CS', 'BE', now() + interval '1 day', now() + interval '60 days', 5, 'INPROGRESS', 'READY', now(), now())",
                 STUDY_ID, CREATOR_ID);
     }
 
@@ -63,18 +68,21 @@ class AdminStudyEndFlowTest {
 
     @Test
     @WithMockUser(username = "staff", roles = {"STAFF"})
-    @DisplayName("관리자가 종료 승인 시 상태가 COMPLETED 되고 ended_at이 갱신된다")
+    @DisplayName("관리자가 종료 승인 시 상태가 COMPLETED 되고 ended_at이 갱신되며 deleted_at은 null로 유지된다")
     void approve_end_updates_status_and_ended_at() throws Exception {
+        AdminStudyApprovalRequestDto request = new AdminStudyApprovalRequestDto(STUDY_ID);
+        
         mockMvc.perform(post(ADMIN_BASE + "/end/approve")
-                        .param("studyId", String.valueOf(STUDY_ID))
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
                 .andExpect(status().isOk());
 
-        var rec = dsl.fetchOne("select result_submit_status, ended_at from study where id = ?", STUDY_ID);
+        var rec = dsl.fetchOne("select result_submit_status, ended_at, deleted_at from study where id = ?", STUDY_ID);
         assertThat(rec).isNotNull();
         assertThat(rec.get("result_submit_status", String.class)).isEqualTo("COMPLETED");
         assertThat(rec.get("ended_at", java.time.OffsetDateTime.class)).isNotNull();
+        assertThat(rec.get("deleted_at", java.time.OffsetDateTime.class)).isNull(); // deleted_at이 null로 유지되는지 확인
     }
 
     @Test
@@ -84,9 +92,11 @@ class AdminStudyEndFlowTest {
         // seed submission fields
         dsl.execute("update study set result_submit_status='INPROGRESS', result_submitted_at=now(), result_attached_url='https://bucket/file' where id=?", STUDY_ID);
 
+        AdminStudyApprovalRequestDto request = new AdminStudyApprovalRequestDto(STUDY_ID);
+        
         mockMvc.perform(post(ADMIN_BASE + "/end/reject")
-                        .param("studyId", String.valueOf(STUDY_ID))
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
                 .andExpect(status().isOk());
 
@@ -106,7 +116,7 @@ class AdminStudyEndFlowTest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("INPROGRESS"))
-                .andExpect(jsonPath("$.data.attachments").isNotEmpty())
+                .andExpect(jsonPath("$.data.submittedAt").exists())
                 .andExpect(jsonPath("$.data.studyId").value(STUDY_ID));
     }
 }

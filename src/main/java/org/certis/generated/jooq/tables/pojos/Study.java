@@ -30,8 +30,9 @@ public class Study implements Serializable {
     private Integer maxParticipantsNumber;
     private String description;
     private OffsetDateTime resultSubmittedAt;
-    private String resultSubmitStatus;
     private String resultAttachedUrl;
+    private String resultSubmitStatus;
+    private String status;
 
     public Study() {}
 
@@ -50,8 +51,9 @@ public class Study implements Serializable {
         this.maxParticipantsNumber = value.maxParticipantsNumber;
         this.description = value.description;
         this.resultSubmittedAt = value.resultSubmittedAt;
-        this.resultSubmitStatus = value.resultSubmitStatus;
         this.resultAttachedUrl = value.resultAttachedUrl;
+        this.resultSubmitStatus = value.resultSubmitStatus;
+        this.status = value.status;
     }
 
     public Study(
@@ -69,8 +71,9 @@ public class Study implements Serializable {
         Integer maxParticipantsNumber,
         String description,
         OffsetDateTime resultSubmittedAt,
+        String resultAttachedUrl,
         String resultSubmitStatus,
-        String resultAttachedUrl
+        String status
     ) {
         this.id = id;
         this.memberId = memberId;
@@ -86,8 +89,9 @@ public class Study implements Serializable {
         this.maxParticipantsNumber = maxParticipantsNumber;
         this.description = description;
         this.resultSubmittedAt = resultSubmittedAt;
-        this.resultSubmitStatus = resultSubmitStatus;
         this.resultAttachedUrl = resultAttachedUrl;
+        this.resultSubmitStatus = resultSubmitStatus;
+        this.status = status;
     }
 
     /**
@@ -287,6 +291,20 @@ public class Study implements Serializable {
     }
 
     /**
+     * Getter for <code>public.study.result_attached_url</code>.
+     */
+    public String getResultAttachedUrl() {
+        return this.resultAttachedUrl;
+    }
+
+    /**
+     * Setter for <code>public.study.result_attached_url</code>.
+     */
+    public void setResultAttachedUrl(String resultAttachedUrl) {
+        this.resultAttachedUrl = resultAttachedUrl;
+    }
+
+    /**
      * Getter for <code>public.study.result_submit_status</code>.
      */
     public String getResultSubmitStatus() {
@@ -301,17 +319,17 @@ public class Study implements Serializable {
     }
 
     /**
-     * Getter for <code>public.study.result_attached_url</code>.
+     * Getter for <code>public.study.status</code>.
      */
-    public String getResultAttachedUrl() {
-        return this.resultAttachedUrl;
+    public String getStatus() {
+        return this.status;
     }
 
     /**
-     * Setter for <code>public.study.result_attached_url</code>.
+     * Setter for <code>public.study.status</code>.
      */
-    public void setResultAttachedUrl(String resultAttachedUrl) {
-        this.resultAttachedUrl = resultAttachedUrl;
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     @Override
@@ -407,17 +425,23 @@ public class Study implements Serializable {
         }
         else if (!this.resultSubmittedAt.equals(other.resultSubmittedAt))
             return false;
+        if (this.resultAttachedUrl == null) {
+            if (other.resultAttachedUrl != null)
+                return false;
+        }
+        else if (!this.resultAttachedUrl.equals(other.resultAttachedUrl))
+            return false;
         if (this.resultSubmitStatus == null) {
             if (other.resultSubmitStatus != null)
                 return false;
         }
         else if (!this.resultSubmitStatus.equals(other.resultSubmitStatus))
             return false;
-        if (this.resultAttachedUrl == null) {
-            if (other.resultAttachedUrl != null)
+        if (this.status == null) {
+            if (other.status != null)
                 return false;
         }
-        else if (!this.resultAttachedUrl.equals(other.resultAttachedUrl))
+        else if (!this.status.equals(other.status))
             return false;
         return true;
     }
@@ -440,8 +464,9 @@ public class Study implements Serializable {
         result = prime * result + ((this.maxParticipantsNumber == null) ? 0 : this.maxParticipantsNumber.hashCode());
         result = prime * result + ((this.description == null) ? 0 : this.description.hashCode());
         result = prime * result + ((this.resultSubmittedAt == null) ? 0 : this.resultSubmittedAt.hashCode());
-        result = prime * result + ((this.resultSubmitStatus == null) ? 0 : this.resultSubmitStatus.hashCode());
         result = prime * result + ((this.resultAttachedUrl == null) ? 0 : this.resultAttachedUrl.hashCode());
+        result = prime * result + ((this.resultSubmitStatus == null) ? 0 : this.resultSubmitStatus.hashCode());
+        result = prime * result + ((this.status == null) ? 0 : this.status.hashCode());
         return result;
     }
 
@@ -463,8 +488,9 @@ public class Study implements Serializable {
         sb.append(", ").append(maxParticipantsNumber);
         sb.append(", ").append(description);
         sb.append(", ").append(resultSubmittedAt);
-        sb.append(", ").append(resultSubmitStatus);
         sb.append(", ").append(resultAttachedUrl);
+        sb.append(", ").append(resultSubmitStatus);
+        sb.append(", ").append(status);
 
         sb.append(")");
         return sb.toString();

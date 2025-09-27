@@ -13,7 +13,7 @@ public record StudySearchCriteriaVo(
         String category,
         String subCategory,
         String semester,
-        StudyStatus status
+        String status
 ) {
     /**
      * 고급 검색용 팩토리 메소드
@@ -30,7 +30,7 @@ public record StudySearchCriteriaVo(
             String category,
             String subCategory,
             String semester,
-            StudyStatus status
+            String status
     ) {
         return new StudySearchCriteriaVo(
                 keyword,

@@ -8,12 +8,16 @@ import org.certis.studyplatform.study.infrastructure.mapper.StudyInfrastructureM
 import org.certis.studyplatform.study.infrastructure.persistence.entity.StudyEntity;
 import org.certis.studyplatform.study.infrastructure.persistence.jpa.StudyJpaRepository;
 import org.certis.studyplatform.study.infrastructure.persistence.jpa.StudyAttachedJpaRepository;
+import org.certis.studyplatform.exception.InfrastructureException;
+import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.study.infrastructure.persistence.entity.StudyAttachedEntity;
 import org.certis.studyplatform.shared.service.S3FileService;
+import org.certis.studyplatform.study.application.object.command.CreateStudyAttachedCommand;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 import java.time.OffsetDateTime;
 
 /**
@@ -105,5 +109,91 @@ public class StudyCommandRepositoryImpl implements StudyCommandRepository {
             log.error("Error uploading study attachment for study ID {}, member ID {}: {}", studyId, memberId, e.getMessage());
             throw new RuntimeException("Failed to upload study attachment", e);
         }
+    }
+
+    @Override
+    public void updateStudyAttachments(Long studyId, Long requesterId, java.util.List<CreateStudyAttachedCommand> attachments) {
+        // 정책: attachments == null -> 변경 없음, attachments 제공됨(빈 포함) -> 기존 전체 삭제(S3 포함) 후 신규로 덮어쓰기
+        if (attachments == null) {
+            return;
+        }
+
+        // 기존 첨부 전체 삭제 (소프트 딜리트) + S3 원본 삭제
+        var existing = studyAttachedJpaRepository.findByStudyId(studyId);
+        if (!existing.isEmpty()) {
+            for (StudyAttachedEntity entity : existing) {
+                try {
+                    s3FileService.deleteFile(entity.getAttachedUrl());
+                } catch (Exception ex) {
+                    log.warn("S3 delete failed for study attachment url={} (studyId={})", entity.getAttachedUrl(), studyId, ex);
+                }
+            }
+            studyAttachedJpaRepository.deleteAll(existing);
+        }
+
+        // 빈 리스트면 여기서 종료 (완전 삭제 상태 유지)
+        if (attachments.isEmpty()) {
+            return;
+        }
+
+        // 신규 첨부 저장 (덮어쓰기)
+        for (var file : attachments) {
+            StudyAttachedEntity entity = StudyAttachedEntity.builder()
+                    .studyId(studyId)
+                    .memberId(requesterId)
+                    .attachedUrl(file.url())
+                    .name(file.name())
+                    .type(file.type() != null ? file.type().name() : null)
+                    .size(file.size() != null ? String.valueOf(file.size()) : "0")
+                    .createdAt(java.time.OffsetDateTime.now())
+                    .build();
+            studyAttachedJpaRepository.save(entity);
+        }
+    }
+
+    @Override
+    public void updateResultSubmission(Long studyId, OffsetDateTime submittedAt,
+                                       ResultSubmitStatus status,
+                                       String attachmentUrl) {
+        jpaRepository.updateResultSubmission(studyId, submittedAt, status, attachmentUrl);
+    }
+
+    @Override
+    public void approveEnd(Long studyId, OffsetDateTime endedAt,
+                           ResultSubmitStatus status) {
+        jpaRepository.approveEnd(studyId, endedAt, status);
+    }
+
+    @Override
+    public void rejectEnd(Long studyId, ResultSubmitStatus status,
+                          OffsetDateTime now) {
+        jpaRepository.rejectEnd(studyId, status, now);
+    }
+
+    @Override
+    public void bulkSoftDeleteById(Long studyId, OffsetDateTime deletedAt) {
+        jpaRepository.bulkSoftDeleteById(studyId, deletedAt);
+    }
+
+    @Override
+    public java.util.Optional<String> getResultAttachmentUrlById(Long studyId) {
+        return jpaRepository.findById(studyId).map(StudyEntity::getResultAttachmentUrl);
+    }
+
+    @Override
+    public StudyEntity save(StudyEntity studyEntity) {
+        log.debug("Command: Saving study entity - ID: {}", studyEntity.getId());
+        return jpaRepository.save(studyEntity);
+    }
+
+    @Override
+    public void approveCreation(Long studyId) {
+        log.debug("Command: Approving study creation - ID: {}", studyId);
+        int affectedRows = jpaRepository.approveCreation(studyId, OffsetDateTime.now());
+        if (affectedRows == 0) {
+            throw new InfrastructureException(ExceptionStatus.STUDY_INFRASTRUCTURE_NOT_FOUND,
+                    "스터디를 찾을 수 없습니다: " + studyId);
+        }
+        log.debug("Command: Study creation approved successfully - ID: {}", studyId);
     }
 }

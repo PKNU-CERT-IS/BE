@@ -29,6 +29,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import org.certis.studyplatform.shared.service.S3FileService;
+import org.certis.studyplatform.study.domain.service.StudyDomainService;
+
+import org.certis.studyplatform.study.presentation.dto.response.AdminStudyEndSubmissionResponseDto;
+import org.certis.studyplatform.study.presentation.dto.response.StudyAttachedResponseDto;
+
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -53,10 +59,12 @@ public class StudyFacadeService {
     private final StudyApplicationCommandMapper commandMapper;
     private final StudyApplicationQueryMapper queryMapper;
     private final StudyApplicationDtoMapper dtoMapper;
+    private final StudyDomainService studyDomainService;
 
     @Qualifier("virtualThreadTaskExecutor")
     private final Executor virtualThreadExecutor;
     private final StudyMeetingQueryService studyMeetingQueryService;
+    private final S3FileService s3FileService;
 
     // ================================================================
     // COMMAND OPERATIONS - 상태 변경 작업
@@ -207,9 +215,9 @@ public class StudyFacadeService {
      */
     public Page<StudySummaryResponseDto> searchStudiesAdvanced(
             StudyAdvancedSearchRequestDto requestDto, Pageable pageable) {
-        log.info("Facade: Advanced searching studies - keyword: {}, category: {}, subcategory: {}, semester: {}, status: {}",
+        log.info("Facade: Advanced searching studies - keyword: {}, category: {}, subcategory: {}, semester: {}, studyStatus: {}",
                 requestDto.getKeyword(),requestDto.getCategory(),
-                requestDto.getSubcategory(), requestDto.getSemester(), requestDto.getStatus());
+                requestDto.getSubcategory(), requestDto.getSemester(), requestDto.getStudyStatus());
 
         // DTO → Query Object 변환 (CPU-bound 작업이므로 비동기 처리 불필요)
         SearchStudiesQuery query = queryMapper.toSearchStudiesQuery(requestDto, pageable);
@@ -259,22 +267,120 @@ public class StudyFacadeService {
     /**
      * 스터디 종료 (DTO 반환)
      */
-    public StudyDetailResponseDto endStudy(Long studyId, Long requesterId, List<MultipartFile> files) {
-        log.info("Facade: Ending study - ID: {}, requesterId: {}", studyId, requesterId);
+    public StudyDetailResponseDto endStudy(StudyEndRequestDto requestDto, Long requesterId) {
+        log.info("Facade: Ending study - ID: {}, requesterId: {}", requestDto.getStudyId(), requesterId);
 
         // Command 객체 생성
-        EndStudyCommand command = EndStudyCommand.of(studyId, requesterId, files);
+        String attachmentUrl = requestDto.getAttachment() != null ? requestDto.getAttachment().getAttachedUrl() : null;
+        EndStudyCommand command = EndStudyCommand.of(requestDto.getStudyId(), requesterId, attachmentUrl);
 
         // Command Service 호출 (VO 반환)
-        StudyVo endedVo = studyCommandService.endStudy(command);
+        studyCommandService.endStudy(command);
 
         // 상태 확정 후 최신 데이터로 재조회하여 DTO 변환
-        GetStudyByIdQuery refreshQuery = queryMapper.toGetStudyByIdQuery(studyId);
+        GetStudyByIdQuery refreshQuery = queryMapper.toGetStudyByIdQuery(requestDto.getStudyId());
         StudyVo refreshed = studyQueryService.getStudyById(refreshQuery);
         StudyDetailResponseDto responseDto = dtoMapper.toStudyDetailResponseDto(refreshed);
 
         log.info("Facade: Study ended successfully - ID: {}", refreshed.id());
         return responseDto;
+    }
+
+    /**
+     * Admin: 스터디 종료 제출 조회 (S3 메타 포함)
+     */
+    public AdminStudyEndSubmissionResponseDto getAdminStudyEndSubmission(Long studyId) {
+        var infoVo = studyDomainService.getEndSubmissionInfo(studyId);
+        StudyAttachedResponseDto attachment = null;
+        if (infoVo.attachmentUrl() != null) {
+            var info = s3FileService.getObjectInfo(infoVo.attachmentUrl());
+            if (info != null) {
+                attachment = StudyAttachedResponseDto.builder()
+                        .id(null)
+                        .name(info.getName())
+                        .type(info.getContentType())
+                        .size(info.getSize() != null ? String.valueOf(info.getSize()) : null)
+                        .attachedUrl(s3FileService.toPresignedUrl(info.getUrl()))
+                        .build();
+            }
+        }
+        return AdminStudyEndSubmissionResponseDto.builder()
+                .studyId(studyId)
+                .status(infoVo.status())
+                .resultSubmitStatus(infoVo.resultSubmitStatus())
+                .submittedAt(infoVo.submittedAt())
+                .attachment(attachment)
+                .category(infoVo.category())
+                .subCategory(infoVo.subCategory())
+                .title(infoVo.title())
+                .description(infoVo.description())
+                .creatorId(infoVo.creatorId())
+                .studyCreatorName(infoVo.creatorName())
+                .studyCreatorGrade(infoVo.creatorGrade())
+                .startedAt(infoVo.startedAt())
+                .endedAt(infoVo.endedAt())
+                .currentParticipantNumber(infoVo.currentParticipantNumber())
+                .maxParticipantNumber(infoVo.maxParticipantNumber())
+                .build();
+    }
+
+    public java.util.List<AdminStudyEndSubmissionResponseDto> getAdminStudyEndSubmissionsInProgress() {
+        var list = studyDomainService.getEndSubmissionsInProgress();
+        java.util.List<AdminStudyEndSubmissionResponseDto> result = new java.util.ArrayList<>();
+        for (var infoVo : list) {
+            StudyAttachedResponseDto attachment = null;
+            if (infoVo.attachmentUrl() != null) {
+                var info = s3FileService.getObjectInfo(infoVo.attachmentUrl());
+                if (info != null) {
+                    attachment = StudyAttachedResponseDto.builder()
+                            .id(null)
+                            .name(info.getName())
+                            .type(info.getContentType())
+                            .size(info.getSize() != null ? String.valueOf(info.getSize()) : null)
+                            .attachedUrl(s3FileService.toPresignedUrl(info.getUrl()))
+                            .build();
+                }
+            }
+            result.add(AdminStudyEndSubmissionResponseDto.builder()
+                    .studyId(infoVo.studyId())
+                    .status(infoVo.status())
+                    .resultSubmitStatus(infoVo.resultSubmitStatus())
+                    .submittedAt(infoVo.submittedAt())
+                    .attachment(attachment)
+                    .category(infoVo.category())
+                    .subCategory(infoVo.subCategory())
+                    .title(infoVo.title())
+                    .description(infoVo.description())
+                    .creatorId(infoVo.creatorId())
+                    .studyCreatorName(infoVo.creatorName())
+                    .studyCreatorGrade(infoVo.creatorGrade())
+                    .startedAt(infoVo.startedAt())
+                    .endedAt(infoVo.endedAt())
+                    .currentParticipantNumber(infoVo.currentParticipantNumber())
+                    .maxParticipantNumber(infoVo.maxParticipantNumber())
+                    .build());
+        }
+        return result;
+    }
+
+    // ================================================================
+    // ADMIN COMMAND OPERATIONS (delegate to command service)
+    // ================================================================
+
+    public void approveStudyEnd(Long studyId, Long adminId) {
+        studyCommandService.approveStudyEnd(studyId, adminId);
+    }
+
+    public void rejectStudyEnd(Long studyId, Long adminId) {
+        studyCommandService.rejectStudyEnd(studyId, adminId);
+    }
+
+    public void approveStudyCreation(Long studyId, Long adminId) {
+        studyCommandService.approveStudyCreation(studyId, adminId);
+    }
+
+    public void rejectStudyCreation(Long studyId, Long adminId) {
+        studyCommandService.rejectStudyCreation(studyId, adminId);
     }
 
 

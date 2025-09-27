@@ -360,4 +360,29 @@ public class MemberCommandRepositoryImpl implements MemberCommandRepository {
             throw e;
         }
     }
+
+    @Override
+    @Transactional
+    public void createPenalty(MemberIdVo memberId) {
+        log.info("Infrastructure: Creating penalty record for memberId={}", memberId.value());
+
+        try {
+            // 신규 회원의 패널티 레코드 생성 (초기값: 0점)
+            MemberPenaltyEntity penaltyEntity = MemberPenaltyEntity.builder()
+                    .memberId(memberId.value())
+                    .penaltyPoint(0)
+                    .penaltiedAt(OffsetDateTime.now())
+                    .updatedAt(OffsetDateTime.now())
+                    .build();
+
+            memberPenaltyJpaRepository.save(penaltyEntity);
+
+            log.info("✅ Infrastructure: Penalty record created successfully for memberId={}", memberId.value());
+        } catch (Exception e) {
+            log.error("❌ Infrastructure: Failed to create penalty record for memberId={}, error: {}", 
+                    memberId.value(), e.getMessage(), e);
+            throw new InfrastructureException(ExceptionStatus.MEMBER_INFRASTRUCTURE_DATABASE_ERROR,
+                    "패널티 레코드 생성 중 오류가 발생했습니다: " + e.getMessage(), e);
+        }
+    }
 }

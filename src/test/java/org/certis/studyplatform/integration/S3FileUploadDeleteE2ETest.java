@@ -128,6 +128,7 @@ class S3FileUploadDeleteE2ETest {
                 .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
                 .set(PROJECT.STARTED_AT, now.plusDays(1))
                 .set(PROJECT.ENDED_AT, now.plusDays(30))
+                .set(PROJECT.STATUS, "READY")
                 .set(PROJECT.CREATED_AT, now)
                 .set(PROJECT.UPDATED_AT, now)
                 .execute();
@@ -144,6 +145,7 @@ class S3FileUploadDeleteE2ETest {
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 5)
                 .set(STUDY.STARTED_AT, now.plusDays(1))
                 .set(STUDY.ENDED_AT, now.plusDays(30))
+                .set(STUDY.STATUS, "READY")
                 .set(STUDY.CREATED_AT, now)
                 .set(STUDY.UPDATED_AT, now)
                 .execute();
@@ -244,7 +246,7 @@ class S3FileUploadDeleteE2ETest {
                 .andExpect(jsonPath("$.data.attachments").isArray())
                 .andExpect(jsonPath("$.data.attachments[0].attachedUrl").value(uploadedUrl));
 
-        // When: 프로젝트 첨부파일을 null로 업데이트하여 삭제
+        // When: 프로젝트 첨부파일을 null로 업데이트 (이제는 보존 정책)
         String deleteJson = "{" +
                 "\"projectId\":" + TEST_PROJECT_ID + "," +
                 "\"attachments\":null}";
@@ -255,11 +257,11 @@ class S3FileUploadDeleteE2ETest {
                 .andDo(print())
                 .andExpect(status().isOk());
 
-        // Then: S3에서 파일이 삭제되었는지 확인
-        Thread.sleep(1000); // 삭제 처리 대기
+        // Then: S3 파일은 유지되어야 함
+        Thread.sleep(1000); // 처리 대기
         boolean fileExists = checkS3FileExists(accessKeyId, secretAccessKey, region, bucket, key);
-        assertThat(fileExists).isFalse();
-        log.info("프로젝트 첨부파일 삭제 확인 완료: {}", uploadedUrl);
+        assertThat(fileExists).isTrue();
+        log.info("프로젝트 첨부파일 null 업데이트 후 보존 확인: {}", uploadedUrl);
     }
 
     @Test
@@ -302,7 +304,7 @@ class S3FileUploadDeleteE2ETest {
                 .andExpect(jsonPath("$.data.attachments").isArray())
                 .andExpect(jsonPath("$.data.attachments[0].attachedUrl").value(uploadedUrl));
 
-        // When: 스터디 첨부파일을 null로 업데이트하여 삭제
+        // When: 스터디 첨부파일을 null로 업데이트 (이제는 보존 정책)
         String deleteJson = "{" +
                 "\"studyId\":" + TEST_STUDY_ID + "," +
                 "\"attachments\":null}";
@@ -313,11 +315,11 @@ class S3FileUploadDeleteE2ETest {
                 .andDo(print())
                 .andExpect(status().isOk());
 
-        // Then: S3에서 파일이 삭제되었는지 확인
-        Thread.sleep(1000); // 삭제 처리 대기
+        // Then: S3 파일은 유지되어야 함
+        Thread.sleep(1000); // 처리 대기
         boolean fileExists = checkS3FileExists(accessKeyId, secretAccessKey, region, bucket, key);
-        assertThat(fileExists).isFalse();
-        log.info("스터디 첨부파일 삭제 확인 완료: {}", uploadedUrl);
+        assertThat(fileExists).isTrue();
+        log.info("스터디 첨부파일 null 업데이트 후 보존 확인: {}", uploadedUrl);
     }
 
     // S3 업로드 헬퍼 메서드 (성공하는 테스트와 동일한 패턴)

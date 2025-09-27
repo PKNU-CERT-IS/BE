@@ -15,6 +15,10 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -46,6 +50,7 @@ public class S3AttachmentService {
     private String secretAccessKey;
 
     private S3Client s3Client;
+    private S3Presigner s3Presigner;
 
     @PostConstruct
     public void initializeS3Client() {
@@ -64,6 +69,10 @@ public class S3AttachmentService {
             }
             
             this.s3Client = builder.build();
+            // Presigner 초기화 (자격증명은 기본 공급자 체인 사용)
+            this.s3Presigner = S3Presigner.builder()
+                    .region(Region.of(region))
+                    .build();
         } catch (Exception e) {
             log.error("S3Client 초기화 실패: {}", e.getMessage());
             throw new InfrastructureException(ExceptionStatus.S3_INFRASTRUCTURE_CONNECTION_FAILED);
@@ -75,6 +84,10 @@ public class S3AttachmentService {
         if (s3Client != null) {
             s3Client.close();
             log.info("S3Client 연결 종료");
+        }
+        if (s3Presigner != null) {
+            s3Presigner.close();
+            log.info("S3Presigner 종료");
         }
     }
 
@@ -189,6 +202,46 @@ public class S3AttachmentService {
     }
 
     /**
+     * 바이트 배열을 S3에 업로드하고 URL 반환 (Base64 등에서 변환된 데이터용)
+     */
+    public String uploadBytes(byte[] bytes, String contentType, String originalFileName, String domain, Long entityId) {
+        try {
+            if (bytes == null || bytes.length == 0) {
+                throw new InfrastructureException(ExceptionStatus.S3_INFRASTRUCTURE_INVALID_FILE_TYPE);
+            }
+
+            // 파일 크기 제한: 20MB
+            int maxMb = 20;
+            long sizeMb = Math.round(bytes.length / 1024.0 / 1024.0);
+            if (sizeMb > maxMb) {
+                throw new InfrastructureException(ExceptionStatus.S3_INFRASTRUCTURE_UPLOAD_FAILED);
+            }
+
+            String extension = originalFileName != null && originalFileName.contains(".")
+                    ? originalFileName.substring(originalFileName.lastIndexOf('.'))
+                    : "";
+            String uniqueFileName = java.util.UUID.randomUUID().toString() + extension;
+
+            String s3Key = String.format("%s/%d/%s", domain, entityId, uniqueFileName);
+
+            software.amazon.awssdk.services.s3.model.PutObjectRequest putObjectRequest = software.amazon.awssdk.services.s3.model.PutObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(s3Key)
+                    .contentType(contentType)
+                    .build();
+
+            s3Client.putObject(putObjectRequest, software.amazon.awssdk.core.sync.RequestBody.fromBytes(bytes));
+
+            String s3Url = String.format("https://%s.s3.%s.amazonaws.com/%s", bucketName, region, s3Key);
+            log.info("바이트 업로드 성공: domain={}, entityId={}, s3Key={}, url={}, size={}bytes", domain, entityId, s3Key, s3Url, bytes.length);
+            return s3Url;
+        } catch (Exception e) {
+            log.error("S3 바이트 업로드 중 오류: domain={}, entityId={}, error={}", domain, entityId, e.getMessage());
+            throw new InfrastructureException(ExceptionStatus.S3_INFRASTRUCTURE_UPLOAD_FAILED);
+        }
+    }
+
+    /**
      * S3에서 파일 삭제
      */
     public void deleteFile(String s3Url) {
@@ -261,6 +314,39 @@ public class S3AttachmentService {
     }
 
     /**
+     * 객체 메타데이터 조회
+     */
+    public S3ObjectInfo getObjectInfo(String s3Url) {
+        try {
+            if (s3Url == null || s3Url.isEmpty()) {
+                return null;
+            }
+
+            String s3Key = extractS3KeyFromUrl(s3Url);
+            if (s3Key == null) {
+                return null;
+            }
+
+            HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(s3Key)
+                    .build();
+
+            var head = s3Client.headObject(headObjectRequest);
+
+            String contentType = head.contentType();
+            Long contentLength = head.contentLength();
+            String name = s3Key.contains("/") ? s3Key.substring(s3Key.lastIndexOf('/') + 1) : s3Key;
+
+            return new S3ObjectInfo(name, contentType, contentLength, s3Url);
+
+        } catch (Exception e) {
+            log.error("S3 객체 메타데이터 조회 실패: url={}, error={}", s3Url, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
      * S3 URL에서 키 추출
      */
     private String extractS3KeyFromUrl(String s3Url) {
@@ -279,6 +365,37 @@ public class S3AttachmentService {
         } catch (Exception e) {
             log.error("S3 URL에서 키 추출 실패: url={}, error={}", s3Url, e.getMessage());
             return null;
+        }
+    }
+
+    /**
+     * Presigned URL 생성 (기본 1시간 유효)
+     */
+    public String generatePresignedUrl(String s3Url, java.time.Duration duration) {
+        try {
+            if (s3Url == null || s3Url.isEmpty()) {
+                return null;
+            }
+            String s3Key = extractS3KeyFromUrl(s3Url);
+            if (s3Key == null) {
+                return s3Url; // 이미 외부 URL이면 그대로 반환
+            }
+
+            GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(s3Key)
+                    .build();
+
+            GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+                    .signatureDuration(duration != null ? duration : java.time.Duration.ofHours(1))
+                    .getObjectRequest(getObjectRequest)
+                    .build();
+
+            PresignedGetObjectRequest presigned = s3Presigner.presignGetObject(presignRequest);
+            return presigned.url().toString();
+        } catch (Exception e) {
+            log.error("Presigned URL 생성 실패: url={}, error={}", s3Url, e.getMessage());
+            return s3Url;
         }
     }
 

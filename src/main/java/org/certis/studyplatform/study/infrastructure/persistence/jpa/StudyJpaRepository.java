@@ -38,7 +38,7 @@ public interface StudyJpaRepository extends JpaRepository<StudyEntity, Long> {
                                @Param("attachmentUrl") String attachmentUrl);
 
     @Modifying(clearAutomatically = true)
-    @Query("UPDATE StudyEntity s SET s.resultSubmitStatus = :status, s.endedAt = :endedAt, s.updatedAt = :endedAt WHERE s.id = :id AND s.deletedAt IS NULL")
+    @Query("UPDATE StudyEntity s SET s.status = 'COMPLETED', s.resultSubmitStatus = :status, s.endedAt = :endedAt, s.updatedAt = :endedAt, s.deletedAt = NULL WHERE s.id = :id AND s.deletedAt IS NULL")
     int approveEnd(@Param("id") Long id,
                    @Param("endedAt") OffsetDateTime endedAt,
                    @Param("status") ResultSubmitStatus status);
@@ -48,4 +48,11 @@ public interface StudyJpaRepository extends JpaRepository<StudyEntity, Long> {
     int rejectEnd(@Param("id") Long id,
                   @Param("status") ResultSubmitStatus status,
                   @Param("now") OffsetDateTime now);
+
+    /**
+     * 스터디 생성 승인 - status를 APPROVED로 변경 (startedAt은 변경하지 않음)
+     */
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE StudyEntity s SET s.status = 'APPROVED', s.updatedAt = :now WHERE s.id = :id AND s.deletedAt IS NULL")
+    int approveCreation(@Param("id") Long id, @Param("now") OffsetDateTime now);
 }

@@ -8,7 +8,6 @@ import org.certis.studyplatform.member.application.object.query.GetMemberByIdQue
 import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.service.MemberDomainService;
 import org.certis.studyplatform.member.domain.vo.MemberVo;
-import org.certis.studyplatform.member.infrastructure.persistence.MemberQueryRepositoryImpl;
 import org.certis.studyplatform.project.application.object.command.CreateProjectCommand;
 import org.certis.studyplatform.project.application.object.command.DeleteProjectCommand;
 import org.certis.studyplatform.project.application.object.command.EndProjectCommand;
@@ -17,16 +16,23 @@ import org.certis.studyplatform.project.application.object.query.GetAllProjectsQ
 import org.certis.studyplatform.project.application.object.query.GetCompletedProjectsByMemberQuery;
 import org.certis.studyplatform.project.application.object.query.GetProjectByIdQuery;
 import org.certis.studyplatform.project.application.object.query.SearchProjectsQuery;
+import org.certis.studyplatform.project.domain.ProjectStatus;
 import org.certis.studyplatform.project.domain.repository.ProjectCommandRepository;
 import org.certis.studyplatform.project.domain.repository.ProjectQueryRepository;
-import org.certis.studyplatform.project.domain.vo.*;
+import org.certis.studyplatform.project.domain.vo.ProjectVo;
+import org.certis.studyplatform.project.domain.vo.ProjectSummaryVo;
+import org.certis.studyplatform.project.domain.vo.ProjectSearchCriteriaVo;
+import org.certis.studyplatform.project.domain.vo.ProjectSearchResultVo;
+import org.certis.studyplatform.project.domain.vo.ProjectEndSubmissionInfoVo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
+import java.time.OffsetDateTime;
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 
 /**
  * Project Domain Service
@@ -214,6 +220,11 @@ public class ProjectDomainService {
         log.info("Domain: Searching projects from query - keyword: {}, semester: {}, category: {}, status: {}",
                 query.keyword(), query.semester(), query.category(), query.status());
 
+        // projectStatus 필드명 검증
+        if (query.status() != null && !query.status().trim().isEmpty()) {
+            validateProjectStatusField(query.status());
+        }
+
         // Query를 ProjectSearchCriteria로 변환 (고급 검색 필드 포함)
         ProjectSearchCriteriaVo criteria = ProjectSearchCriteriaVo.ofAdvanced(
                 query.keyword(),
@@ -231,6 +242,20 @@ public class ProjectDomainService {
 
         log.info("Domain: Found {} projects by advanced criteria", projectPage.getTotalElements());
         return projectPage;
+    }
+
+    /**
+     * projectStatus 필드명 검증
+     * projectStatus가 아니면 에러를 발생시킴
+     */
+    private void validateProjectStatusField(String status) {
+        // 실제로는 status 값이 유효한 ProjectStatus 값인지 검증
+        try {
+            ProjectStatus.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid project status value. Expected one of [READY, INPROGRESS, COMPLETED] but got: " + status);
+        }
+        log.debug("Domain: Project status field validation passed for: {}", status);
     }
 
     /**
@@ -388,6 +413,60 @@ public class ProjectDomainService {
         // 제출 단계: 종료는 승인 시 처리. 여기서는 변경 없이 반환.
         log.info("Domain: Project end submission initiated - ID: {}", existingProject.id());
         return existingProject;
+    }
+
+    // ===== Commands previously in CommandService moved behind command repository =====
+    public void updateResultSubmission(Long projectId, OffsetDateTime submittedAt,
+                                       ResultSubmitStatus status,
+                                       String attachmentUrl) {
+        commandRepository.updateResultSubmission(projectId, submittedAt, status, attachmentUrl);
+    }
+
+    public void approveEnd(Long projectId, OffsetDateTime endedAt,
+                           ResultSubmitStatus status) {
+        commandRepository.approveEnd(projectId, endedAt, status);
+    }
+
+    public void rejectEnd(Long projectId, ResultSubmitStatus status,
+                          OffsetDateTime now) {
+        commandRepository.rejectEnd(projectId, status, now);
+    }
+
+    public void bulkSoftDeleteById(Long projectId, OffsetDateTime deletedAt) {
+        commandRepository.bulkSoftDeleteById(projectId, deletedAt);
+    }
+
+    public Optional<String> getResultAttachmentUrlById(Long projectId) {
+        return commandRepository.getResultAttachmentUrlById(projectId);
+    }
+
+    /**
+     * 종료 제출 정보 조회 (계층: Domain -> QueryRepository)
+     */
+    public ProjectEndSubmissionInfoVo getEndSubmissionInfo(Long projectId) {
+        return queryRepository.getEndSubmissionInfo(projectId)
+                .orElse(new ProjectEndSubmissionInfoVo(
+                        projectId,
+                        null, // status (ProjectStatus)
+                        null, // resultSubmitStatus
+                        null, // submittedAt
+                        null, // attachmentUrl
+                        null, // category
+                        null, // subCategory
+                        null, // title
+                        null, // description
+                        null, // creatorId
+                        null, // creatorName
+                        null, // creatorGrade
+                        null, // startedAt
+                        null, // endedAt
+                        null, // currentParticipantNumber
+                        null  // maxParticipantNumber
+                ));
+    }
+
+    public List<ProjectEndSubmissionInfoVo> getEndSubmissionsInProgress() {
+        return queryRepository.findEndSubmissionsInProgress();
     }
 
     /**

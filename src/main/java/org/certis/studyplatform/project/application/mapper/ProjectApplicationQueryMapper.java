@@ -76,7 +76,7 @@ public class ProjectApplicationQueryMapper {
             dto.getSemester(),
             dto.getCategory(),
             dto.getSubcategory(),
-            dto.getStatus(),
+            dto.getProjectStatus(),
             pageable
         );
     }
@@ -91,7 +91,7 @@ public class ProjectApplicationQueryMapper {
             dto.getSemester(),
             dto.getCategory(),
             dto.getSubcategory(),
-            dto.getStatus(),
+            dto.getProjectStatus(),
             defaultPageable
         );
     }

@@ -34,10 +34,10 @@ public class StudyMeetingLinkEntity {
     @Column(nullable = false, name = "member_id")
     private Long memberId;
 
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false, name = "attached_url", length = 500)
+    @Column(nullable = false, name = "attached_url")
     private String attachedUrl;
 
     @CreationTimestamp

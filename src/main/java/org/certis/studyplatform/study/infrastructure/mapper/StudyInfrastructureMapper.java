@@ -11,6 +11,7 @@ import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -56,6 +57,8 @@ public class StudyInfrastructureMapper {
                 .maxParticipantsNumber(vo.maxParticipants())
                 .startedAt(vo.startDate())
                 .endedAt(vo.endDate())
+                .status(vo.status() != null ? StudyStatus.valueOf(vo.status()) : StudyStatus.READY)
+                .resultSubmitStatus(vo.resultSubmitStatus() != null ? vo.resultSubmitStatus() : ResultSubmitStatus.READY)
                 .build();
     }
 
@@ -67,6 +70,9 @@ public class StudyInfrastructureMapper {
         if (entity == null) {
             return null;
         }
+
+        // Entity에 저장된 상태를 그대로 사용 (계산하지 않음)
+        String resolvedStatus = entity.getStatus() != null ? entity.getStatus().name() : StudyStatus.READY.name();
 
         return StudyVo.of(
                 entity.getId(),
@@ -83,7 +89,7 @@ public class StudyInfrastructureMapper {
                 null, // creatorName은 별도 조회 필요
                 null, // creatorGrade는 별도 조회 필요
                 calculateSemester(entity.getEndedAt()), // semester 계산
-                calculateStatusString(entity.getStartedAt(), entity.getEndedAt(), entity.getDeletedAt(), entity.getResultSubmitStatus()), // status 계산
+                resolvedStatus, // status 계산 (APPROVED 등 명시 상태 우선)
                 entity.getResultSubmitStatus(),
                 entity.getMaxParticipantsNumber(),
                 0, // currentParticipants는 별도 계산 필요
@@ -143,10 +149,16 @@ public class StudyInfrastructureMapper {
         OffsetDateTime deletedAt = firstRecord.field("deleted_at") != null
                 ? firstRecord.get("deleted_at", OffsetDateTime.class)
                 : null;
-        org.certis.studyplatform.shared.domain.ResultSubmitStatus submitStatus = firstRecord.field("result_submit_status") != null
-                ? firstRecord.get("result_submit_status", org.certis.studyplatform.shared.domain.ResultSubmitStatus.class)
+        ResultSubmitStatus submitStatus = firstRecord.field("result_submit_status") != null
+                ? firstRecord.get("result_submit_status", ResultSubmitStatus.class)
                 : null;
+        if (submitStatus == null) {
+            submitStatus = ResultSubmitStatus.READY;
+        }
         
+        // DB에 저장된 상태를 그대로 사용 (계산하지 않음)
+        String resolvedStatusFromRecord = resolveStatusFromRecord(firstRecord, null);
+
         return new StudyVo(
                 firstRecord.get("id", Long.class),
                 firstRecord.get("title", String.class),
@@ -162,7 +174,7 @@ public class StudyInfrastructureMapper {
                 firstRecord.get("creator_name", String.class),
                 safeParseMemberGrade(firstRecord.get("creator_grade", String.class)),
                 calculateSemester(endedAt), // semester 계산
-                calculateStatusString(firstRecord.get("started_at", OffsetDateTime.class), endedAt, deletedAt, submitStatus), // status 계산
+                resolvedStatusFromRecord, // status 계산 (DB status 우선)
                 submitStatus,
                 firstRecord.get("max_participants_number", Integer.class),
                 firstRecord.get("current_participants", Integer.class),
@@ -199,10 +211,17 @@ public class StudyInfrastructureMapper {
         OffsetDateTime deletedAt = firstRecord.field("deleted_at") != null
                 ? firstRecord.get("deleted_at", OffsetDateTime.class)
                 : null;
-        org.certis.studyplatform.shared.domain.ResultSubmitStatus submitStatus = firstRecord.field("result_submit_status") != null
-                ? firstRecord.get("result_submit_status", org.certis.studyplatform.shared.domain.ResultSubmitStatus.class)
-                : null;
+        ResultSubmitStatus submitStatus;
+        if (firstRecord.field("result_submit_status") != null) {
+            String statusString = firstRecord.get("result_submit_status", String.class);
+            submitStatus = statusString != null ? ResultSubmitStatus.valueOf(statusString) : ResultSubmitStatus.READY;
+        } else {
+            submitStatus = ResultSubmitStatus.READY;
+        }
         
+        // DB에 저장된 상태를 그대로 사용 (계산하지 않음)
+        String resolvedStatusFromRecord2 = resolveStatusFromRecord(firstRecord, null);
+
         return new StudyVo(
                 firstRecord.get("id", Long.class),
                 firstRecord.get("title", String.class),
@@ -218,7 +237,7 @@ public class StudyInfrastructureMapper {
                 firstRecord.get("creator_name", String.class),
                 safeParseMemberGrade(firstRecord.get("creator_grade", String.class)),
                 calculateSemester(endedAt), // semester 계산
-                calculateStatusString(firstRecord.get("started_at", OffsetDateTime.class), endedAt, deletedAt, submitStatus), // status 계산
+                resolvedStatusFromRecord2, // status 계산 (DB status 우선)
                 submitStatus,
                 firstRecord.get("max_participants_number", Integer.class),
                 firstRecord.get("current_participants", Integer.class),
@@ -279,9 +298,13 @@ public class StudyInfrastructureMapper {
         OffsetDateTime deletedAt = firstRecord.field("deleted_at") != null
                 ? firstRecord.get("deleted_at", OffsetDateTime.class)
                 : null;
-        org.certis.studyplatform.shared.domain.ResultSubmitStatus submitStatus = firstRecord.field("result_submit_status") != null
-                ? firstRecord.get("result_submit_status", org.certis.studyplatform.shared.domain.ResultSubmitStatus.class)
-                : null;
+        ResultSubmitStatus submitStatus = firstRecord.get("result_submit_status", ResultSubmitStatus.class);
+        if (submitStatus == null) {
+            submitStatus = ResultSubmitStatus.READY;
+        }
+
+        // DB에 저장된 상태를 그대로 사용 (계산하지 않음)
+        String resolvedStatusFromRecord3 = resolveStatusFromRecord(firstRecord, null);
 
         return StudySummaryVo.of(
                 studyId,
@@ -294,11 +317,12 @@ public class StudyInfrastructureMapper {
                 firstRecord.get("creator_name", String.class),
                 memberGrade,
                 calculateSemester(endedAt), // semester 계산
-                calculateStatusString(firstRecord.get("started_at", OffsetDateTime.class), endedAt, deletedAt, submitStatus), // status 계산
+                resolvedStatusFromRecord3, // status 계산 (DB status 우선)
                 isParticipantable,
                 attachedVos,
                 firstRecord.get("max_participants_number", Integer.class),
-                firstRecord.get("current_participants", Integer.class)
+                firstRecord.get("current_participants", Integer.class),
+                submitStatus
         );
     }
 
@@ -497,7 +521,7 @@ public class StudyInfrastructureMapper {
      */
     private String calculateStatusString(OffsetDateTime startDate, OffsetDateTime endDate,
                                          OffsetDateTime deletedAt,
-                                         org.certis.studyplatform.shared.domain.ResultSubmitStatus resultSubmitStatus) {
+                                         ResultSubmitStatus resultSubmitStatus) {
         if (deletedAt != null) {
             return StudyStatus.REJECTED.name();
         }
@@ -505,7 +529,7 @@ public class StudyInfrastructureMapper {
         OffsetDateTime now = OffsetDateTime.now();
 
         // 종료 승인 또는 종료 시간이 현재와 같거나 이전이면 완료 처리
-        if (resultSubmitStatus == org.certis.studyplatform.shared.domain.ResultSubmitStatus.COMPLETED) {
+        if (resultSubmitStatus == ResultSubmitStatus.COMPLETED) {
             return StudyStatus.COMPLETED.name();
         }
         if (endDate != null && (now.isAfter(endDate) || now.isEqual(endDate))) {
@@ -523,5 +547,27 @@ public class StudyInfrastructureMapper {
             return StudyStatus.INPROGRESS.name();
         }
         return StudyStatus.INPROGRESS.name();
+    }
+
+    /**
+     * Record에 DB의 명시적 status 컬럼이 포함되어 있으면 그 값을 우선 사용한다.
+     * 없거나 비어있으면 계산된 상태 문자열을 반환한다.
+     */
+    private String resolveStatusFromRecord(Record record, String calculatedFallback) {
+        if (record == null) {
+            return calculatedFallback;
+        }
+        try {
+            // jOOQ로 선택된 컬럼명이 소문자 "status" 또는 별칭 없이 포함될 수 있음
+            if (record.field("status") != null) {
+                String dbStatus = record.get("status", String.class);
+                if (dbStatus != null && !dbStatus.isBlank()) {
+                    return dbStatus.trim().toUpperCase();
+                }
+            }
+        } catch (Exception ignore) {
+            // 안전하게 계산 값으로 폴백
+        }
+        return calculatedFallback;
     }
 }

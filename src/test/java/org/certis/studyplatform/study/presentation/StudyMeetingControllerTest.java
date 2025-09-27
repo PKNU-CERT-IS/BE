@@ -26,6 +26,10 @@ import static org.certis.generated.jooq.Tables.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.certis.studyplatform.shared.service.S3FileService;
+import static org.mockito.Mockito.when;
+import org.certis.studyplatform.shared.service.S3ObjectInfo;
 
 /**
  * StudyMeetingController 완전 새로운 통합 테스트
@@ -56,6 +60,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("🚀 StudyMeetingController 새로운 통합 테스트")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class StudyMeetingControllerTest {
+    @MockBean
+    private S3FileService s3FileService;
 
     @Autowired
     private MockMvc mockMvc;
@@ -118,6 +124,56 @@ class StudyMeetingControllerTest {
         // Then: 데이터베이스에 회의록이 정상적으로 저장되었는지 검증
         verifyMeetingCreatedInDatabase(request);
         
+    }
+
+    @Test
+    @Order(25)
+    @DisplayName("🔁 스터디 회의록 링크 교체 및 S3 메타 반영")
+    void updateStudyMeeting_ReplacesLinks_AndReturnsS3EnrichedLinks() throws Exception {
+        // Given: 회의록 생성 및 초기 링크 2개
+        StudyMeetingCreateRequestDto create = createValidMeetingRequest();
+        create.setStudyId(TEST_STUDY_ID);
+        create.setLinks(List.of(
+            new LinkDto("old-1", "https://bucket.s3.ap-northeast-2.amazonaws.com/study-end-attachments/1/old1.pdf"),
+            new LinkDto("old-2", "https://bucket.s3.ap-northeast-2.amazonaws.com/study-end-attachments/1/old2.pdf")
+        ));
+
+        mockMvc.perform(post("/api/v1/study/meeting/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(create)))
+                .andExpect(status().isCreated());
+
+        // When: 링크를 1개로 교체하여 수정
+        StudyMeetingUpdateRequestDto update = new StudyMeetingUpdateRequestDto();
+        update.setMeetingId(1L);
+        update.setTitle("회의록 수정");
+        update.setContent("내용 수정");
+        update.setParticipantNumber(3);
+        String newUrl = "https://bucket.s3.ap-northeast-2.amazonaws.com/study-end-attachments/1/new.pdf";
+        update.setLinks(List.of(new LinkDto("new-title", newUrl)));
+
+        // Mock S3 metadata
+        when(s3FileService.getObjectInfo(newUrl))
+                .thenReturn(new S3ObjectInfo("new.pdf", "application/pdf", 123L, newUrl));
+
+        mockMvc.perform(put("/api/v1/study/meeting/edit")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(update)))
+                .andExpect(status().isOk());
+
+        // Then: DB에는 교체된 1개 링크만 존재
+        var remaining = dsl.fetch("select count(*) as c from study_meeting_link where meeting_id = ? and deleted_at is null", 1L);
+        assertThat(remaining.get(0).get("c", Integer.class)).isEqualTo(1);
+
+        // And: 상세 조회 시 S3 메타에서 가져온 name/url이 노출
+        var res = mockMvc.perform(get("/api/v1/study/meeting/detail").param("meetingId", "1"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
+
+        var json = objectMapper.readTree(res.getResponse().getContentAsString());
+        assertThat(json.at("/data/links/0/title").asText()).isEqualTo("new.pdf");
+        assertThat(json.at("/data/links/0/url").asText()).isEqualTo(newUrl);
     }
 
     @Test

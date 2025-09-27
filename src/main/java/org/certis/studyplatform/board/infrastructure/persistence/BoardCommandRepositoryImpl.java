@@ -109,6 +109,20 @@ public class BoardCommandRepositoryImpl implements BoardCommandRepository {
         log.info("🗑️ Infrastructure: Starting board deletion - ID: {}", boardIdVo.value());
 
         try {
+            // 1. 첨부파일 S3 삭제
+            List<BoardAttachedEntity> attachments = boardAttachedJpaRepository.findByBoardIdAndDeletedAtIsNull(boardIdVo.value());
+            if (!attachments.isEmpty()) {
+                for (BoardAttachedEntity attachment : attachments) {
+                    try {
+                        s3FileService.deleteFile(attachment.getAttachedUrl());
+                        log.debug("🗑️ S3 file deleted: {}", attachment.getAttachedUrl());
+                    } catch (Exception ex) {
+                        log.warn("S3 delete failed for attachment url={} (boardId={})", attachment.getAttachedUrl(), boardIdVo.value(), ex);
+                    }
+                }
+            }
+
+            // 2. DB 소프트 삭제
             boardJpaRepository.deleteById(boardIdVo.value());
             boardAttachedJpaRepository.softDeleteByBoardId(boardIdVo.value());
             log.debug("🗑️ Attachments deleted for board: {}", boardIdVo.value());

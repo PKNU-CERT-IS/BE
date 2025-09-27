@@ -2,13 +2,12 @@ package org.certis.studyplatform.integration;
 
 import org.certis.studyplatform.config.TestEmbeddedPostgresConfig;
 import org.certis.studyplatform.member.application.GracePeriodService;
-import org.certis.studyplatform.member.domain.repository.query.MemberQueryRepository;
-import org.certis.studyplatform.member.domain.vo.MemberIdVo;
-import org.certis.studyplatform.member.domain.vo.MemberVo;
 import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.project.application.command.ProjectCommandService;
 import org.certis.studyplatform.project.domain.ProjectParticipantStatus;
+import org.certis.studyplatform.project.domain.ProjectStatus;
 import org.certis.studyplatform.study.domain.StudyParticipantStatus;
+import org.certis.studyplatform.study.domain.StudyStatus;
 import org.certis.studyplatform.project.application.object.command.EndProjectCommand;
 import org.certis.studyplatform.project.domain.vo.ProjectVo;
 import org.certis.studyplatform.study.application.command.StudyCommandService;
@@ -30,8 +29,6 @@ import static org.certis.generated.jooq.tables.ProjectParticipant.PROJECT_PARTIC
 import static org.certis.generated.jooq.tables.StudyParticipant.STUDY_PARTICIPANT;
 
 import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -51,9 +48,6 @@ class GracePeriodAdjustmentIntegrationTest {
     
     @Autowired
     private StudyCommandService studyCommandService;
-    
-    @Autowired
-    private MemberQueryRepository memberQueryRepository;
     
     @Autowired
     private DSLContext dsl;
@@ -105,6 +99,7 @@ class GracePeriodAdjustmentIntegrationTest {
                 .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
                 .set(PROJECT.STARTED_AT, now.minusWeeks(2))
                 .set(PROJECT.ENDED_AT, now.plusWeeks(2))
+                .set(PROJECT.STATUS, ProjectStatus.READY.name())
                 .set(PROJECT.CREATED_AT, now)
                 .set(PROJECT.UPDATED_AT, now)
                 .execute();
@@ -121,6 +116,7 @@ class GracePeriodAdjustmentIntegrationTest {
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 5)
                 .set(STUDY.STARTED_AT, now.minusWeeks(2))
                 .set(STUDY.ENDED_AT, now.plusWeeks(2))
+                .set(STUDY.STATUS, StudyStatus.READY.name())
                 .set(STUDY.CREATED_AT, now)
                 .set(STUDY.UPDATED_AT, now)
                 .execute();
@@ -156,16 +152,6 @@ class GracePeriodAdjustmentIntegrationTest {
                 .fetchOne(MEMBER.GRACE_PERIOD);
     }
     
-    /**
-     * 멤버의 유예기간을 업데이트하는 헬퍼 메서드
-     */
-    private void updateMemberGracePeriod(Long memberId, OffsetDateTime newGracePeriod) {
-        dsl.update(MEMBER)
-                .set(MEMBER.GRACE_PERIOD, newGracePeriod)
-                .set(MEMBER.UPDATED_AT, OffsetDateTime.now())
-                .where(MEMBER.ID.eq(memberId))
-                .execute();
-    }
 
     @Test
     @DisplayName("프로젝트 조기 종료 시 유예기간 재조정 통합 테스트")
@@ -176,15 +162,12 @@ class GracePeriodAdjustmentIntegrationTest {
         Long studyId = 1L;
         setupTestData(memberId, projectId, studyId);
         
-        OffsetDateTime startDate = now.minusWeeks(1); // 1주 전 시작
-        OffsetDateTime earlyEndDate = now; // 1주만 진행하고 조기 종료 (원래는 4주 예정)
-        
         // 조기 종료 전 유예기간 확인
         OffsetDateTime originalGracePeriod = getMemberGracePeriod(memberId);
         assertThat(originalGracePeriod).isNotNull();
         
         // 프로젝트 종료 명령 생성
-        EndProjectCommand command = EndProjectCommand.of(projectId, memberId, List.of());
+        EndProjectCommand command = EndProjectCommand.of(projectId, memberId, null);
 
         // When
         ProjectVo endedProject = projectCommandService.endProject(command);
@@ -217,15 +200,12 @@ class GracePeriodAdjustmentIntegrationTest {
         Long studyId = 2L;
         setupTestData(memberId, projectId, studyId);
         
-        OffsetDateTime startDate = now.minusWeeks(1); // 1주 전 시작
-        OffsetDateTime earlyEndDate = now; // 1주만 진행하고 조기 종료 (원래는 4주 예정)
-        
         // 조기 종료 전 유예기간 확인
         OffsetDateTime originalGracePeriod = getMemberGracePeriod(memberId);
         assertThat(originalGracePeriod).isNotNull();
         
         // 스터디 종료 명령 생성
-        EndStudyCommand command = EndStudyCommand.of(studyId, memberId, List.of());
+        EndStudyCommand command = EndStudyCommand.of(studyId, memberId, null);
 
         // When
         StudyVo endedStudy = studyCommandService.endStudy(command);
@@ -253,7 +233,6 @@ class GracePeriodAdjustmentIntegrationTest {
         // Given - 독립적인 테스트 데이터 설정
         Long memberId = 3L;
         Long projectId = 3L;
-        Long studyId = 3L;
         
         // 멤버만 생성 (정상 종료용 프로젝트는 별도로 생성)
         dsl.insertInto(MEMBER)
@@ -290,6 +269,7 @@ class GracePeriodAdjustmentIntegrationTest {
                 .set(PROJECT.ENDED_AT, normalEndDate)
                 .set(PROJECT.MEMBER_ID, memberId)
                 .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(PROJECT.STATUS, ProjectStatus.READY.name())
                 .set(PROJECT.CREATED_AT, now)
                 .set(PROJECT.UPDATED_AT, now)
                 .execute();
@@ -308,7 +288,7 @@ class GracePeriodAdjustmentIntegrationTest {
         assertThat(originalGracePeriod).isNotNull();
         
         // 프로젝트 종료 명령 생성
-        EndProjectCommand command = EndProjectCommand.of(projectId, memberId, List.of());
+        EndProjectCommand command = EndProjectCommand.of(projectId, memberId, null);
 
         // When
         ProjectVo endedProject = projectCommandService.endProject(command);

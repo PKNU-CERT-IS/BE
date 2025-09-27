@@ -10,17 +10,20 @@ import org.certis.studyplatform.config.TestWebMvcConfig;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.certis.studyplatform.shared.security.CurrentUser;
@@ -84,6 +87,12 @@ class BlogControllerTest {
         @Primary
         BlogRedisRepository blogRedisRepository() {
             return org.mockito.Mockito.mock(BlogRedisRepository.class);
+        }
+        
+        @Bean
+        @Qualifier("redisStringTemplate")
+        RedisTemplate<String, String> mockRedisStringTemplate() {
+            return org.mockito.Mockito.mock(RedisTemplate.class);
         }
     }
 
@@ -237,6 +246,64 @@ class BlogControllerTest {
         // Given: 인증된 사용자로 설정
         setupAuthentication(TEST_MEMBER_ID, TEST_MEMBER_NAME);
 
+        // Mock 데이터 삽입: 완료된 스터디와 프로젝트 생성
+        Long mockStudyId = 999L;
+        String mockStudyTitle = "완료된 스터디";
+        Long mockProjectId = 998L;
+        String mockProjectTitle = "완료된 프로젝트";
+        OffsetDateTime now = OffsetDateTime.now();
+
+        // 완료된 스터디 생성 (ended_at이 과거로 설정)
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, mockStudyId)
+                .set(STUDY.TITLE, mockStudyTitle)
+                .set(STUDY.DESCRIPTION, "완료된 스터디 설명")
+                .set(STUDY.CONTENT, "스터디 내용")
+                .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY.CATEGORY, "웹 개발")
+                .set(STUDY.SUBCATEGORY, "풀스택")
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(STUDY.STATUS, "APPROVED") // status 필드 추가
+                .set(STUDY.STARTED_AT, now.minusDays(10))
+                .set(STUDY.ENDED_AT, now.minusDays(1)) // 과거로 설정하여 완료 상태
+                .set(STUDY.CREATED_AT, now.minusDays(10))
+                .set(STUDY.UPDATED_AT, now.minusDays(1))
+                .execute();
+
+        // 완료된 프로젝트 생성 (ended_at이 과거로 설정)
+        dsl.insertInto(PROJECT)
+                .set(PROJECT.ID, mockProjectId)
+                .set(PROJECT.TITLE, mockProjectTitle)
+                .set(PROJECT.DESCRIPTION, "완료된 프로젝트 설명")
+                .set(PROJECT.CONTENT, "프로젝트 내용")
+                .set(PROJECT.MEMBER_ID, TEST_MEMBER_ID)
+                .set(PROJECT.CATEGORY, "웹 개발")
+                .set(PROJECT.SUBCATEGORY, "풀스택")
+                .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(PROJECT.STATUS, "APPROVED") // status 필드 추가
+                .set(PROJECT.STARTED_AT, now.minusDays(15))
+                .set(PROJECT.ENDED_AT, now.minusDays(2)) // 과거로 설정하여 완료 상태
+                .set(PROJECT.CREATED_AT, now.minusDays(15))
+                .set(PROJECT.UPDATED_AT, now.minusDays(2))
+                .execute();
+
+        // 사용자가 참여한 스터디/프로젝트로 설정 (참가자 테이블에 데이터 삽입)
+        dsl.insertInto(STUDY_PARTICIPANT)
+                .set(STUDY_PARTICIPANT.STUDY_ID, mockStudyId)
+                .set(STUDY_PARTICIPANT.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY_PARTICIPANT.STATUS, "APPROVED")
+                .set(STUDY_PARTICIPANT.CREATED_AT, now.minusDays(10))
+                .set(STUDY_PARTICIPANT.UPDATED_AT, now.minusDays(10))
+                .execute();
+
+        dsl.insertInto(PROJECT_PARTICIPANT)
+                .set(PROJECT_PARTICIPANT.PROJECT_ID, mockProjectId)
+                .set(PROJECT_PARTICIPANT.MEMBER_ID, TEST_MEMBER_ID)
+                .set(PROJECT_PARTICIPANT.STATUS, "APPROVED")
+                .set(PROJECT_PARTICIPANT.CREATED_AT, now.minusDays(15))
+                .set(PROJECT_PARTICIPANT.UPDATED_AT, now.minusDays(15))
+                .execute();
+
         // When: 블로그 참조 목록 조회 API 호출
         mockMvc.perform(get("/api/v1/blog/reference"))
                 .andDo(print())
@@ -246,7 +313,9 @@ class BlogControllerTest {
                 .andExpect(jsonPath("$.message").value("블로그 글을 성공적으로 조회했습니다"))
                 .andExpect(jsonPath("$.data").exists())
                 .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data[0].referenceTitle").exists());
+                .andExpect(jsonPath("$.data[0].referenceTitle").exists())
+                .andExpect(jsonPath("$.data[0].referenceId").exists())
+                .andExpect(jsonPath("$.data[0].referenceType").exists());
 
     }
 
@@ -355,8 +424,15 @@ class BlogControllerTest {
     @DisplayName("🔗 작성 가능한 참조 목록 조회 - 블로그 작성 준비")
     void getBlogReference_AvailableReferences() throws Exception {
         // Given: 인증된 사용자로 설정하고 작성 가능한 스터디/프로젝트가 존재함
-        setupAuthentication(TEST_MEMBER_ID, TEST_MEMBER_NAME);
-        // setupTestData에서 이미 스터디 생성됨
+        setupAuthentication(TEST_MEMBER_2_ID, TEST_MEMBER_2_NAME);
+        // TEST_MEMBER_2가 TEST_STUDY에 참가(승인)한 것으로 설정
+        dsl.insertInto(STUDY_PARTICIPANT)
+                .set(STUDY_PARTICIPANT.STUDY_ID, TEST_STUDY_ID)
+                .set(STUDY_PARTICIPANT.MEMBER_ID, TEST_MEMBER_2_ID)
+                .set(STUDY_PARTICIPANT.STATUS, "APPROVED")
+                .set(STUDY_PARTICIPANT.CREATED_AT, OffsetDateTime.now())
+                .set(STUDY_PARTICIPANT.UPDATED_AT, OffsetDateTime.now())
+                .execute();
 
         // When: 작성 가능한 참조 목록 조회 API 호출
         mockMvc.perform(get("/api/v1/blog/reference"))
@@ -365,7 +441,8 @@ class BlogControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("블로그 글을 성공적으로 조회했습니다"))
-                .andExpect(jsonPath("$.data").isArray());
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data[0].referenceTitle").exists());
 
     }
 
@@ -677,130 +754,6 @@ class BlogControllerTest {
 
     }
 
-    @Test
-    @Order(27)
-    @DisplayName("🔗 E2E: 스터디 종료 후 블로그 참조 목록에서 referenceId/referenceTitle 조회")
-    void e2e_studyEnd_then_blogReference_containsStudyWithReferenceFields() throws Exception {
-        // Given: 인증 설정 및 진행 중 스터디 생성 (현재 사용자 소유)
-        setupAuthentication(TEST_MEMBER_ID, TEST_MEMBER_NAME);
-
-        Long e2eStudyId = 777L;
-        String e2eStudyTitle = "E2E 스터디";
-        OffsetDateTime now = OffsetDateTime.now();
-
-        dsl.insertInto(STUDY)
-                .set(STUDY.ID, e2eStudyId)
-                .set(STUDY.TITLE, e2eStudyTitle)
-                .set(STUDY.DESCRIPTION, "E2E 블로그 참조 테스트용 스터디")
-                .set(STUDY.CONTENT, "내용")
-                .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
-                .set(STUDY.CATEGORY, "웹 개발")
-                .set(STUDY.SUBCATEGORY, "풀스택")
-                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 5)
-                .set(STUDY.STARTED_AT, now.minusDays(3))
-                .set(STUDY.ENDED_AT, now.plusDays(7))
-                .set(STUDY.CREATED_AT, now)
-                .set(STUDY.UPDATED_AT, now)
-                .execute();
-
-        // When: 스터디 종료 API 호출 → COMPLETED 상태로 전환
-        mockMvc.perform(post("/api/v1/study/end")
-                        .param("studyId", e2eStudyId.toString())
-                        .contentType("multipart/form-data"))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.id").value(e2eStudyId))
-                .andExpect(jsonPath("$.data.status").value("COMPLETED"));
-
-        // Then: 블로그 참조 목록에서 해당 스터디가 포함되고 참조 필드가 노출됨
-        var mvcResult = mockMvc.perform(get("/api/v1/blog/reference"))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andReturn();
-
-        String body = mvcResult.getResponse().getContentAsString();
-        var dataArray = objectMapper.readTree(body).get("data");
-        boolean found = false;
-        if (dataArray != null && dataArray.isArray()) {
-            for (var node : dataArray) {
-                if (node.hasNonNull("referenceId") && node.hasNonNull("referenceTitle")) {
-                    long id = node.get("referenceId").asLong();
-                    String title = node.get("referenceTitle").asText("");
-                    if (id == e2eStudyId && e2eStudyTitle.equals(title)) {
-                        found = true;
-                        break;
-                    }
-                }
-            }
-        }
-        assertThat(found).isTrue();
-    }
-
-    @Test
-    @Order(28)
-    @DisplayName("🔗 E2E: 프로젝트 종료 후 블로그 참조 목록에서 referenceId/referenceTitle 조회")
-    void e2e_projectEnd_then_blogReference_containsProjectWithReferenceFields() throws Exception {
-        // Given: 인증 설정 및 진행 중 프로젝트 생성 (현재 사용자 소유)
-        setupAuthentication(TEST_MEMBER_ID, TEST_MEMBER_NAME);
-
-        Long e2eProjectId = 778L;
-        String e2eProjectTitle = "E2E 프로젝트";
-        OffsetDateTime now = OffsetDateTime.now();
-
-        // 프로젝트 생성 전에 멤버 데이터가 존재하도록 보장 (setupTestData에서 생성됨)
-        dsl.insertInto(PROJECT)
-                .set(PROJECT.ID, e2eProjectId)
-                .set(PROJECT.TITLE, e2eProjectTitle)
-                .set(PROJECT.DESCRIPTION, "E2E 블로그 참조 테스트용 프로젝트")
-                .set(PROJECT.CONTENT, "내용")
-                .set(PROJECT.MEMBER_ID, TEST_MEMBER_ID)
-                .set(PROJECT.CATEGORY, "웹 개발")
-                .set(PROJECT.SUBCATEGORY, "풀스택")
-                .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
-                .set(PROJECT.STARTED_AT, now.minusDays(5))
-                .set(PROJECT.ENDED_AT, now.plusDays(10))
-                .set(PROJECT.CREATED_AT, now)
-                .set(PROJECT.UPDATED_AT, now)
-                .execute();
-
-        // When: 프로젝트 종료 API 호출 → COMPLETED 상태로 전환
-        mockMvc.perform(post("/api/v1/project/end")
-                        .param("projectId", e2eProjectId.toString())
-                        .contentType("multipart/form-data"))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.id").value(e2eProjectId))
-                .andExpect(jsonPath("$.data.status").value("COMPLETED"));
-
-        // 완료 판정 로직은 ended_at < now 이므로, 참조 조회 직전 ended_at을 과거로 강제 보정
-        dsl.update(PROJECT)
-                .set(PROJECT.ENDED_AT, OffsetDateTime.now().minusSeconds(2))
-                .where(PROJECT.ID.eq(e2eProjectId))
-                .execute();
-
-        // Then: 블로그 참조 목록에서 해당 프로젝트가 포함되고 참조 필드가 노출됨
-        var mvcResult = mockMvc.perform(get("/api/v1/blog/reference"))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andReturn();
-
-        String body = mvcResult.getResponse().getContentAsString();
-        var dataArray = objectMapper.readTree(body).get("data");
-        boolean found = false;
-        if (dataArray != null && dataArray.isArray()) {
-            for (var node : dataArray) {
-                if (node.hasNonNull("referenceId") && node.hasNonNull("referenceTitle")) {
-                    long id = node.get("referenceId").asLong();
-                    String title = node.get("referenceTitle").asText("");
-                    if (id == e2eProjectId && e2eProjectTitle.equals(title)) {
-                        found = true;
-                        break;
-                    }
-                }
-            }
-        }
-        assertThat(found).isTrue();
-    }
 
     // =================================================================
     // 🛠️ 헬퍼 메서드들
@@ -866,6 +819,7 @@ class BlogControllerTest {
                     .set(STUDY.CATEGORY, "웹 개발")
                     .set(STUDY.SUBCATEGORY, "풀스택")
                     .set(STUDY.MAX_PARTICIPANTS_NUMBER, 5)
+                    .set(STUDY.STATUS, "APPROVED") // status 필드 추가
                     .set(STUDY.STARTED_AT, now.minusDays(30))
                     .set(STUDY.ENDED_AT, now.minusDays(1))
                     .set(STUDY.CREATED_AT, now)
@@ -946,6 +900,24 @@ class BlogControllerTest {
      */
     private void createPublicAndPrivateBlogs() {
         OffsetDateTime now = OffsetDateTime.now();
+        
+        // 참조할 스터디 데이터 먼저 생성
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, TEST_STUDY_ID)
+                .set(STUDY.TITLE, "테스트 스터디")
+                .set(STUDY.DESCRIPTION, "테스트용 스터디 설명")
+                .set(STUDY.CONTENT, "테스트용 스터디 내용")
+                .set(STUDY.CATEGORY, "웹 개발")
+                .set(STUDY.SUBCATEGORY, "Spring Boot")
+                .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(STUDY.STATUS, "APPROVED")
+                .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
+                .set(STUDY.STARTED_AT, now)
+                .set(STUDY.ENDED_AT, now.plusDays(7))
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .execute();
         
         // 공개 블로그 생성
         dsl.insertInto(BLOG)

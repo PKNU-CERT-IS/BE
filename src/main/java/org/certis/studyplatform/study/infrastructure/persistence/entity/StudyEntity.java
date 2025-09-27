@@ -6,6 +6,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
+import org.certis.studyplatform.study.domain.StudyStatus;
 
 import java.time.OffsetDateTime;
 import jakarta.persistence.Column;
@@ -42,10 +43,10 @@ public class StudyEntity {
     @Column(nullable = false)
     private String content;
 
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false)
     private String category;
 
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false)
     private String subcategory;
 
     @Column(nullable = false, name = "max_participants_number")
@@ -56,6 +57,11 @@ public class StudyEntity {
 
     @Column(nullable = false, name = "ended_at")
     private OffsetDateTime endedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, name = "status")
+    @Builder.Default
+    private StudyStatus status = StudyStatus.READY;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false, name = "created_at")
@@ -73,8 +79,9 @@ public class StudyEntity {
     private OffsetDateTime resultSubmittedAt;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "result_submit_status")
-    private ResultSubmitStatus resultSubmitStatus;
+    @Column(name = "result_submit_status", nullable = false)
+    @Builder.Default
+    private ResultSubmitStatus resultSubmitStatus = ResultSubmitStatus.READY;
 
     // Single URL for result attachment
     @Column(name = "result_attached_url")

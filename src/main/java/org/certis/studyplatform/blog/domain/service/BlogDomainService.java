@@ -29,12 +29,15 @@ import org.certis.studyplatform.study.domain.vo.StudyVo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+
 import org.springframework.stereotype.Service;
+
+import org.certis.studyplatform.study.domain.repository.StudyParticipantQueryRepository;
+import org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Blog Domain Service
@@ -60,6 +63,8 @@ public class BlogDomainService {
     private final StudyDomainService studyDomainService;
     private final ProjectDomainService projectDomainService;
     private final BlogViewDomainService blogViewDomainService;
+    private final StudyParticipantQueryRepository studyParticipantQueryRepository;
+    private final ProjectParticipantQueryRepository projectParticipantQueryRepository;
 
     // ================================================================
     // COMMAND OPERATIONS
@@ -174,8 +179,11 @@ public class BlogDomainService {
                 .orElseThrow(() -> new DomainException(ExceptionStatus.BLOG_DOMAIN_NOT_FOUND,
                         "블로그를 찾을 수 없습니다: " + query.id()));
 
-        // 참조 제목 조회 (referenceType과 referenceId 활용)
-        String referenceTitle = getReferenceTitle(blogVo.referenceType(), blogVo.referenceId());
+        // 참조 제목 조회 (referenceType과 referenceId 활용). 조회 실패 시 기존 값 유지
+        String resolvedReferenceTitle = getReferenceTitle(blogVo.referenceType(), blogVo.referenceId());
+        String referenceTitle = resolvedReferenceTitle != null
+                ? resolvedReferenceTitle
+                : (blogVo.referenceTitle() != null ? blogVo.referenceTitle() : "");
 
         // 조회수 증가 (Redis)
         if (query.viewerId() != null) {
@@ -195,7 +203,7 @@ public class BlogDomainService {
                 blogVo.category(),
                 blogVo.referenceType(),
                 blogVo.referenceId(),
-                referenceTitle, // 조회된 참조 제목
+                referenceTitle, // 조회된 참조 제목 (없으면 기존 값 유지)
                 blogVo.creatorId(),
                 blogVo.creatorName(),
                 currentViewCount,
@@ -300,6 +308,70 @@ public class BlogDomainService {
     }
 
 
+    /**
+     * 특정 멤버가 참여(승인)한 Study/Project를 참조 대상으로 조회
+     */
+    public List<BlogEnableReferenceVo> getBlogReferenceByParticipatedMember(Long memberId) {
+        log.info("Domain: Getting blog reference list for participated items by member - {}", memberId);
+
+        List<BlogEnableReferenceVo> referenceList = new ArrayList<>();
+
+        try {
+            // 참여한 Study 목록 조회 (APPROVED 상태만)
+            var studyParticipants = studyParticipantQueryRepository
+                    .findByMemberId(memberId, Pageable.unpaged())
+                    .getContent();
+
+            List<BlogEnableReferenceVo> studyReferences = studyParticipants.stream()
+                    .filter(p -> p.status() == org.certis.studyplatform.study.domain.StudyParticipantStatus.APPROVED)
+                    .map(p -> BlogEnableReferenceVo.of(
+                            ArticleReferenceType.STUDY,
+                            p.studyId(),
+                            p.studyTitle()
+                    ))
+                    .toList();
+
+            // 참여한 Project 목록 조회 (APPROVED 상태만)
+            var projectParticipants = projectParticipantQueryRepository
+                    .findByMemberId(memberId, Pageable.unpaged())
+                    .getContent();
+
+            List<BlogEnableReferenceVo> projectReferences = projectParticipants.stream()
+                    .filter(p -> p.status() == org.certis.studyplatform.project.domain.ProjectParticipantStatus.APPROVED)
+                    .map(p -> BlogEnableReferenceVo.of(
+                            ArticleReferenceType.PROJECT,
+                            p.projectId(),
+                            p.projectTitle()
+                    ))
+                    .toList();
+
+            referenceList.addAll(studyReferences);
+            referenceList.addAll(projectReferences);
+
+            // 중복 제거 및 정렬 (type, title)
+            referenceList = referenceList.stream()
+                    .distinct()
+                    .sorted((a, b) -> {
+                        int typeComparison = a.referenceType().compareTo(b.referenceType());
+                        if (typeComparison != 0) {
+                            return typeComparison;
+                        }
+                        return a.title().compareTo(b.title());
+                    })
+                    .toList();
+
+            log.info("Domain: Participated member's blog reference list retrieved - Member: {}, Studies+Projects: {}",
+                    memberId, referenceList.size());
+
+            return referenceList;
+
+        } catch (Exception e) {
+            log.error("Domain: Error retrieving participated blog reference list for member: {}", memberId, e);
+            return List.of();
+        }
+    }
+
+
 
     // ================================================================
     // PRIVATE HELPER METHODS
@@ -379,15 +451,18 @@ public class BlogDomainService {
             return Map.of();
         }
 
-        // 각 ID별로 제목 조회
-        return referenceIds.stream()
-                .collect(Collectors.toMap(
-                        id -> id,
-                        id -> getReferenceTitle(type, id)
-                ))
-                .entrySet().stream()
-                .filter(entry -> entry.getValue() != null)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        // 각 ID별로 제목 조회 (null 값은 제외) - 안전한 수집 방식 사용
+        Map<Long, String> result = new java.util.HashMap<>();
+        for (Long id : referenceIds) {
+            try {
+                String title = getReferenceTitle(type, id);
+                if (title != null) {
+                    result.put(id, title);
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return result;
     }
 
     /**

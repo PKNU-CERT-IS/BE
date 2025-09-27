@@ -7,6 +7,7 @@ import org.certis.studyplatform.project.infrastructure.persistence.entity.Projec
 import org.jooq.Record;
 import org.springframework.stereotype.Component;
 
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 import java.time.OffsetDateTime;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -57,6 +58,8 @@ public class ProjectInfrastructureMapper {
                 .thumbnailUrl(vo.thumbnailUrl())
                 .startedAt(vo.startDate()) // startDate → startedAt
                 .endedAt(vo.endDate()) // endDate → endedAt
+                .status(vo.status() != null ? ProjectStatus.valueOf(vo.status()) : ProjectStatus.READY)
+                .resultSubmitStatus(vo.resultSubmitStatus() != null ? vo.resultSubmitStatus() : ResultSubmitStatus.READY)
                 .build();
     }
 
@@ -89,7 +92,9 @@ public class ProjectInfrastructureMapper {
         }
 
         OffsetDateTime endedAt = entity.getEndedAt();
-        
+        // Entity에 저장된 상태를 그대로 사용 (계산하지 않음)
+        String resolvedStatus = entity.getStatus() != null ? entity.getStatus().name() : ProjectStatus.READY.name();
+
         return ProjectVo.of(
                 entity.getId(),
                 entity.getTitle(),
@@ -103,7 +108,7 @@ public class ProjectInfrastructureMapper {
                 null, // creatorName은 별도 조회 필요
                 null, // creatorGrade는 별도 조회 필요
                 calculateSemester(endedAt), // semester 계산
-                calculateStatusString(entity.getStartedAt(), endedAt, entity.getDeletedAt(), entity.getResultSubmitStatus()), // status 계산
+                resolvedStatus, // status 계산 (APPROVED 등 명시 상태 우선)
                 entity.getResultSubmitStatus(),
                 entity.getGithubUrl(),
                 externalUrlVo,
@@ -167,8 +172,14 @@ public class ProjectInfrastructureMapper {
 
         OffsetDateTime endedAt = record.get(PROJECT.ENDED_AT);
         OffsetDateTime deletedAt = record.get(PROJECT.DELETED_AT);
-        org.certis.studyplatform.shared.domain.ResultSubmitStatus submitStatus = record.get("result_submit_status", org.certis.studyplatform.shared.domain.ResultSubmitStatus.class);
+        ResultSubmitStatus submitStatus = record.get("result_submit_status", ResultSubmitStatus.class);
+        if (submitStatus == null) {
+            submitStatus = ResultSubmitStatus.READY;
+        }
         
+        // DB에 저장된 상태를 그대로 사용 (계산하지 않음)
+        String resolvedStatusFromRecord = resolveStatusFromRecord(record, null);
+
         return ProjectVo.of(
                 record.get(PROJECT.ID),
                 record.get(PROJECT.TITLE),
@@ -182,7 +193,7 @@ public class ProjectInfrastructureMapper {
                 record.get(MEMBER.NAME), // JOIN된 creatorName
                 record.get(MEMBER.GRADE, String.class), // JOIN된 creatorGrade
                 calculateSemester(endedAt), // semester 계산
-                calculateStatusString(record.get(PROJECT.STARTED_AT), endedAt, deletedAt, submitStatus), // status 계산
+                resolvedStatusFromRecord, // status 계산 (DB status 우선)
                 submitStatus,
                 record.get(PROJECT.GITHUB_URL), // githubUrl은 별도 관리
                 externalUrlVo,
@@ -207,13 +218,9 @@ public class ProjectInfrastructureMapper {
             return null;
         }
 
-        // 동적 상태 계산
-        String status = calculateStatusString(
-                record.get(PROJECT.STARTED_AT),
-                record.get(PROJECT.ENDED_AT),
-                record.get(PROJECT.DELETED_AT),
-                record.get("result_submit_status", org.certis.studyplatform.shared.domain.ResultSubmitStatus.class)
-        );
+        // DB에 저장된 상태를 그대로 사용 (계산하지 않음)
+        String status = resolveStatusFromRecord(record, null);
+        status = resolveStatusFromRecord(record, status);
 
         // 참여 가능 여부 계산
         boolean isParticipantable = determineParticipantable(
@@ -258,7 +265,9 @@ public class ProjectInfrastructureMapper {
                 record.get(PROJECT.THUMBNAIL_URL),
                 record.get(PROJECT.DEMO_URL), // demoUrl
                 record.get(PROJECT.MAX_PARTICIPANTS_NUMBER), // maxParticipantNumber
-                record.get("current_participants", Integer.class) // currentParticipantNumber
+                record.get("current_participants", Integer.class), // currentParticipantNumber
+                record.get("result_submit_status", ResultSubmitStatus.class),
+                java.util.Collections.emptyList()
         );
     }
 
@@ -313,8 +322,14 @@ public class ProjectInfrastructureMapper {
 
         OffsetDateTime endedAt = firstRecord.get(PROJECT.ENDED_AT);
         OffsetDateTime deletedAt = firstRecord.get(PROJECT.DELETED_AT);
-        org.certis.studyplatform.shared.domain.ResultSubmitStatus submitStatus = firstRecord.get("result_submit_status", org.certis.studyplatform.shared.domain.ResultSubmitStatus.class);
+        ResultSubmitStatus submitStatus = firstRecord.get("result_submit_status", ResultSubmitStatus.class);
+        if (submitStatus == null) {
+            submitStatus = ResultSubmitStatus.READY;
+        }
         
+        // DB에 저장된 상태를 그대로 사용 (계산하지 않음)
+        String resolvedStatusFromRecord2 = resolveStatusFromRecord(firstRecord, null);
+
         return ProjectVo.of(
                 firstRecord.get(PROJECT.ID),
                 firstRecord.get(PROJECT.TITLE),
@@ -328,7 +343,7 @@ public class ProjectInfrastructureMapper {
                 firstRecord.get(MEMBER.NAME), // JOIN된 creatorName
                 firstRecord.get(MEMBER.GRADE, String.class), // JOIN된 creatorGrade
                 calculateSemester(endedAt), // semester 계산
-                calculateStatusString(firstRecord.get(PROJECT.STARTED_AT), endedAt, deletedAt, submitStatus), // status 계산
+                resolvedStatusFromRecord2, // status 계산 (DB status 우선)
                 submitStatus,
                 firstRecord.get(PROJECT.GITHUB_URL), // githubUrl은 별도 관리
                 externalUrlVo,
@@ -384,8 +399,14 @@ public class ProjectInfrastructureMapper {
 
         OffsetDateTime endedAt = record.get(PROJECT.ENDED_AT);
         OffsetDateTime deletedAt = record.get(PROJECT.DELETED_AT);
-        org.certis.studyplatform.shared.domain.ResultSubmitStatus submitStatus = record.get("result_submit_status", org.certis.studyplatform.shared.domain.ResultSubmitStatus.class);
+        ResultSubmitStatus submitStatus = record.get("result_submit_status", ResultSubmitStatus.class);
+        if (submitStatus == null) {
+            submitStatus = ResultSubmitStatus.READY;
+        }
         
+        // DB에 저장된 상태를 그대로 사용 (계산하지 않음)
+        String resolvedStatusFromRecord3 = resolveStatusFromRecord(record, null);
+
         return ProjectVo.of(
                 record.get(PROJECT.ID),
                 record.get(PROJECT.TITLE),
@@ -399,7 +420,7 @@ public class ProjectInfrastructureMapper {
                 record.get(MEMBER.NAME), // JOIN된 creatorName
                 record.get(MEMBER.GRADE, String.class), // JOIN된 creatorGrade
                 calculateSemester(endedAt), // semester 계산
-                calculateStatusString(record.get(PROJECT.STARTED_AT), endedAt, deletedAt, submitStatus), // status 계산
+                resolvedStatusFromRecord3, // status 계산 (DB status 우선)
                 submitStatus,
                 record.get(PROJECT.GITHUB_URL), // githubUrl은 별도 관리
                 externalUrlVo,
@@ -464,13 +485,13 @@ public class ProjectInfrastructureMapper {
      */
     private String calculateStatusString(OffsetDateTime startDate, OffsetDateTime endDate,
                                          OffsetDateTime deletedAt,
-                                         org.certis.studyplatform.shared.domain.ResultSubmitStatus resultSubmitStatus) {
+                                         ResultSubmitStatus resultSubmitStatus) {
         if (deletedAt != null) {
             return ProjectStatus.REJECTED.name();
         }
         OffsetDateTime now = OffsetDateTime.now();
         // 종료 승인 또는 종료 시간이 현재와 같거나 이전이면 완료 처리
-        if (resultSubmitStatus == org.certis.studyplatform.shared.domain.ResultSubmitStatus.COMPLETED) {
+        if (resultSubmitStatus == ResultSubmitStatus.COMPLETED) {
             return ProjectStatus.COMPLETED.name();
         }
         if (endDate != null && (now.isAfter(endDate) || now.isEqual(endDate))) {
@@ -486,6 +507,26 @@ public class ProjectInfrastructureMapper {
             return ProjectStatus.INPROGRESS.name();
         }
         return ProjectStatus.INPROGRESS.name();
+    }
+
+    /**
+     * Record에 DB의 명시적 status 컬럼이 포함되어 있으면 그 값을 우선 사용한다.
+     * 없거나 비어있으면 계산된 상태 문자열을 반환한다.
+     */
+    private String resolveStatusFromRecord(Record record, String calculatedFallback) {
+        if (record == null) {
+            return calculatedFallback;
+        }
+        try {
+            if (record.field("status") != null) {
+                String dbStatus = record.get("status", String.class);
+                if (dbStatus != null && !dbStatus.isBlank()) {
+                    return dbStatus.trim().toUpperCase();
+                }
+            }
+        } catch (Exception ignore) {
+        }
+        return calculatedFallback;
     }
 
     /**

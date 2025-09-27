@@ -2,9 +2,7 @@ package org.certis.studyplatform.project.application.object.command;
 
 import lombok.Builder;
 import lombok.Getter;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
 
 /**
  * End Project Command
@@ -18,13 +16,13 @@ public class EndProjectCommand {
     
     private final Long projectId;
     private final Long requesterId;
-    private final List<MultipartFile> files;
+    private final String attachmentUrl;
     
-    public static EndProjectCommand of(Long projectId, Long requesterId, List<MultipartFile> files) {
+    public static EndProjectCommand of(Long projectId, Long requesterId, String attachmentUrl) {
         return EndProjectCommand.builder()
                 .projectId(projectId)
                 .requesterId(requesterId)
-                .files(files)
+                .attachmentUrl(attachmentUrl)
                 .build();
     }
     
@@ -36,7 +34,7 @@ public class EndProjectCommand {
         return requesterId;
     }
     
-    public List<MultipartFile> files() {
-        return files;
+    public String attachment() {
+        return attachmentUrl;
     }
 }

@@ -18,6 +18,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
+
 /**
  * Project Command Repository Implementation
  *
@@ -85,7 +87,7 @@ public class ProjectCommandRepositoryImpl implements ProjectCommandRepository {
 
         try {
             // S3에 첨부파일 업로드
-            String attachmentUrl = s3FileService.uploadFile(file, "project");
+            String attachmentUrl = s3FileService.uploadFile(file, S3FileService.DomainFolders.PROJECT_ATTACHMENTS, projectId);
 
             // 첨부파일 정보를 DB에 저장
             ProjectAttachedEntity entity = ProjectAttachedEntity.builder()
@@ -107,5 +109,50 @@ public class ProjectCommandRepositoryImpl implements ProjectCommandRepository {
             log.error("Error uploading project attachment for project ID {}, member ID {}: {}", projectId, memberId, e.getMessage());
             throw new RuntimeException("Failed to upload project attachment", e);
         }
+    }
+
+    @Override
+    public void updateResultSubmission(Long projectId, OffsetDateTime submittedAt,
+                                       ResultSubmitStatus status,
+                                       String attachmentUrl) {
+        jpaRepository.updateResultSubmission(projectId, submittedAt, status, attachmentUrl);
+    }
+
+    @Override
+    public void approveEnd(Long projectId, OffsetDateTime endedAt,
+                           ResultSubmitStatus status) {
+        jpaRepository.approveEnd(projectId, endedAt, status);
+    }
+
+    @Override
+    public void rejectEnd(Long projectId, ResultSubmitStatus status,
+                          OffsetDateTime now) {
+        jpaRepository.rejectEnd(projectId, status, now);
+    }
+
+    @Override
+    public void bulkSoftDeleteById(Long projectId, OffsetDateTime deletedAt) {
+        jpaRepository.bulkSoftDeleteById(projectId, deletedAt);
+    }
+
+    @Override
+    public Optional<String> getResultAttachmentUrlById(Long projectId) {
+        return jpaRepository.findById(projectId).map(ProjectEntity::getResultAttachmentUrl);
+    }
+
+    @Override
+    public ProjectEntity save(ProjectEntity projectEntity) {
+        log.debug("Command: Saving project entity - ID: {}", projectEntity.getId());
+        return jpaRepository.save(projectEntity);
+    }
+
+    @Override
+    public void approveCreation(Long projectId) {
+        log.debug("Command: Approving project creation - ID: {}", projectId);
+        int affectedRows = jpaRepository.approveCreation(projectId, OffsetDateTime.now());
+        if (affectedRows == 0) {
+            throw new IllegalArgumentException("Project not found with ID: " + projectId);
+        }
+        log.debug("Command: Project creation approved successfully - ID: {}", projectId);
     }
 }

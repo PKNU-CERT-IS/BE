@@ -2,18 +2,21 @@ package org.certis.studyplatform.study.application.command;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.certis.studyplatform.exception.ApplicationException;
+import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.member.application.GracePeriodService;
 import org.certis.studyplatform.study.domain.service.StudyDomainService;
 import org.certis.studyplatform.study.domain.service.StudyParticipantDomainService;
+import org.certis.studyplatform.study.domain.repository.StudyQueryRepository;
+import org.certis.studyplatform.study.domain.repository.StudyCommandRepository;
 import org.certis.studyplatform.study.domain.vo.StudyVo;
 import org.certis.studyplatform.study.application.object.command.CreateStudyCommand;
+import org.certis.studyplatform.study.application.object.command.CreateStudyAttachedCommand;
 import org.certis.studyplatform.study.application.object.command.DeleteStudyCommand;
 import org.certis.studyplatform.study.application.object.command.EndStudyCommand;
 import org.certis.studyplatform.study.application.object.command.UpdateStudyCommand;
 import org.certis.studyplatform.shared.service.S3FileService;
-import org.certis.studyplatform.study.infrastructure.persistence.entity.StudyAttachedEntity;
-import org.certis.studyplatform.study.infrastructure.persistence.jpa.StudyAttachedJpaRepository;
-import org.certis.studyplatform.study.infrastructure.persistence.jpa.StudyJpaRepository;
+ 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -39,10 +42,10 @@ public class StudyCommandService {
 
     private final StudyDomainService studyDomainService;
     private final StudyParticipantDomainService studyParticipantDomainService;
+    private final StudyQueryRepository studyQueryRepository;
+    private final StudyCommandRepository studyCommandRepository;
     private final S3FileService s3FileService;
     private final GracePeriodService gracePeriodService;
-    private final StudyAttachedJpaRepository studyAttachedJpaRepository;
-    private final StudyJpaRepository studyJpaRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
@@ -57,28 +60,80 @@ public class StudyCommandService {
     public StudyVo createStudy(CreateStudyCommand command) {
         log.info("Command: Creating study - {}", command.title());
 
-        // Command 객체를 Domain Service로 전달
-        StudyVo createdVo = studyDomainService.createStudy(command);
-
-        // 첨부파일 저장 (생성 시 첨부가 포함된 경우)
+        // 1) 첨부파일을 S3에 먼저 업로드 (data URL이면 업로드, 아니면 기존 URL 사용)
+        java.util.List<CreateStudyAttachedCommand> processed = null;
         if (command.attachedFiles() != null && !command.attachedFiles().isEmpty()) {
-            for (var file : command.attachedFiles()) {
-                StudyAttachedEntity entity = StudyAttachedEntity.builder()
-                        .studyId(createdVo.id())
-                        .memberId(command.creatorId())
-                        .attachedUrl(file.url())
-                        .name(file.name())
-                        .type(file.type() != null ? file.type().name() : null)
-                        .size(file.size() != null ? String.valueOf(file.size()) : "0")
-                        .build();
-                studyAttachedJpaRepository.save(entity);
+            processed = new java.util.ArrayList<>();
+            for (var fileCmd : command.attachedFiles()) {
+                String finalUrl = fileCmd.url();
+                if (finalUrl != null && finalUrl.startsWith("data:")) {
+                    try {
+                        String[] parts = finalUrl.split(",", 2);
+                        String base64Part = parts.length == 2 ? parts[1] : parts[0];
+                        byte[] bytes = java.util.Base64.getDecoder().decode(base64Part);
+                        String contentType = mapAttachedTypeToContentType(fileCmd.type());
+                        finalUrl = s3FileService.uploadBytes(bytes, contentType, fileCmd.name(), S3FileService.DomainFolders.STUDY_ATTACHMENTS, System.currentTimeMillis());
+                    } catch (Exception e) {
+                        log.error("S3 upload failed for study attachment: {}", fileCmd.name(), e);
+                        throw new ApplicationException(
+                                ExceptionStatus.STUDY_APPLICATION_ATTACHMENT_UPLOAD_FAILED,
+                                "스터디 첨부파일 업로드에 실패했습니다: " + fileCmd.name(), e);
+                    }
+                }
+                if (finalUrl == null || finalUrl.isEmpty()) {
+                    throw new ApplicationException(
+                            ExceptionStatus.STUDY_APPLICATION_ATTACHMENT_UPLOAD_FAILED,
+                            "attachments[].attachedUrl 이 누락되었습니다. data: URL 또는 사전 업로드된 S3 URL을 보내주세요: " + fileCmd.name());
+                }
+                processed.add(CreateStudyAttachedCommand.of(fileCmd.name(), fileCmd.type(), fileCmd.size(), finalUrl));
             }
         }
 
+        // 2) 첨부가 반영된 새로운 Command 생성
+        CreateStudyCommand finalCommand = CreateStudyCommand.of(
+                command.title(),
+                command.description(),
+                command.content(),
+                command.category(),
+                command.subCategory(),
+                command.startDate(),
+                command.endDate(),
+                command.githubUrl(),
+                command.externalUrl(),
+                command.thumbnailUrl(),
+                processed,
+                command.maxParticipants(),
+                command.creatorId()
+        );
+
+        // 3) 도메인 서비스 호출 (생성)
+        StudyVo createdVo = studyDomainService.createStudy(finalCommand);
+
         studyParticipantDomainService.registerStudyCreatorAsParticipant(createdVo.id(), command.creatorId());
+
+        // 4) 첨부파일 정보 저장 (DB)
+        if (processed != null && !processed.isEmpty()) {
+            studyDomainService.updateStudyAttachments(createdVo.id(), command.creatorId(), processed);
+        }
 
         log.info("Command: Study created successfully - ID: {}", createdVo.id());
         return createdVo;
+    }
+
+    private String mapAttachedTypeToContentType(org.certis.studyplatform.shared.type.AttachedType type) {
+        if (type == null) return "application/octet-stream";
+        return switch (type) {
+            case PDF -> "application/pdf";
+            case HWP -> "application/x-hwp";
+            case WORD -> "application/msword";
+            case PPT -> "application/vnd.ms-powerpoint";
+            case PPTX -> "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+            case EXCEL -> "application/vnd.ms-excel";
+            case TEXT -> "text/plain";
+            case PNG -> "image/png";
+            case JPEG, JPG -> "image/jpeg";
+            case ZIP -> "application/zip";
+        };
     }
 
     /**
@@ -88,33 +143,41 @@ public class StudyCommandService {
     public StudyVo updateStudy(UpdateStudyCommand command) {
         log.info("Command: Updating study - ID: {}", command.id());
 
-        // Command 객체를 Domain Service로 전달
+        // 1) 첨부파일 사전 처리 (data URL -> S3 업로드)
+        java.util.List<CreateStudyAttachedCommand> processed = null;
+        if (command.attachedFiles() != null) {
+            processed = new java.util.ArrayList<>();
+            for (var fileCmd : command.attachedFiles()) {
+                String finalUrl = fileCmd.url();
+                if (finalUrl != null && finalUrl.startsWith("data:")) {
+                    try {
+                        String[] parts = finalUrl.split(",", 2);
+                        String base64Part = parts.length == 2 ? parts[1] : parts[0];
+                        byte[] bytes = java.util.Base64.getDecoder().decode(base64Part);
+                        String contentType = mapAttachedTypeToContentType(fileCmd.type());
+                        finalUrl = s3FileService.uploadBytes(bytes, contentType, fileCmd.name(), S3FileService.DomainFolders.STUDY_ATTACHMENTS, System.currentTimeMillis());
+                    } catch (Exception e) {
+                        log.error("S3 upload failed for study attachment(update): {}", fileCmd.name(), e);
+                        throw new ApplicationException(
+                                ExceptionStatus.STUDY_APPLICATION_ATTACHMENT_UPLOAD_FAILED,
+                                "스터디 첨부파일 업로드에 실패했습니다: " + fileCmd.name(), e);
+                    }
+                }
+                if (finalUrl == null || finalUrl.isEmpty()) {
+                    throw new ApplicationException(
+                            ExceptionStatus.STUDY_APPLICATION_ATTACHMENT_UPLOAD_FAILED,
+                            "attachments[].attachedUrl 이 누락되었습니다. data: URL 또는 사전 업로드된 S3 URL을 보내주세요: " + fileCmd.name());
+                }
+                processed.add(CreateStudyAttachedCommand.of(fileCmd.name(), fileCmd.type(), fileCmd.size(), finalUrl));
+            }
+        }
+
+        // 2) 도메인 서비스로 업데이트 수행
         StudyVo updatedVo = studyDomainService.updateStudy(command);
 
-        // 첨부파일 null이면 기존 첨부 전체 삭제 (S3 + DB)
-        if (command.attachedFiles() == null) {
-            // 기존 첨부 전체 삭제 (S3 + DB)
-            java.util.List<StudyAttachedEntity> existing = studyAttachedJpaRepository.findByStudyId(updatedVo.id());
-            for (StudyAttachedEntity e : existing) {
-                try {
-                    s3FileService.deleteFile(e.getAttachedUrl());
-                } catch (Exception ex) {
-                    log.warn("Failed to delete study attachment from S3 url={} studyId={}", e.getAttachedUrl(), updatedVo.id(), ex);
-                }
-            }
-            studyAttachedJpaRepository.deleteByStudyId(updatedVo.id());
-        } else if (!command.attachedFiles().isEmpty()) {
-            for (var file : command.attachedFiles()) {
-                StudyAttachedEntity entity = StudyAttachedEntity.builder()
-                        .studyId(updatedVo.id())
-                        .memberId(command.requesterId())
-                        .attachedUrl(file.url())
-                        .name(file.name())
-                        .type(file.type() != null ? file.type().name() : null)
-                        .size(file.size() != null ? String.valueOf(file.size()) : "0")
-                        .build();
-                studyAttachedJpaRepository.save(entity);
-            }
+        // 3) 첨부파일 덮어쓰기 (Infra 정책에 따라 전체 교체)
+        if (processed != null) {
+            studyDomainService.updateStudyAttachments(updatedVo.id(), command.requesterId(), processed);
         }
 
         log.info("Command: Study updated successfully - ID: {}", updatedVo.id());
@@ -141,8 +204,37 @@ public class StudyCommandService {
     public StudyVo endStudy(EndStudyCommand command) {
         log.info("Command: Ending study - ID: {}", command.studyId());
 
+        // 현재 상태 선조회하여 중복 신청 방지 (INPROGRESS/COMPLETED 차단)
+        try {
+            StudyVo current = studyDomainService.getStudyById(new org.certis.studyplatform.study.application.object.query.GetStudyByIdQuery(command.studyId()));
+            if (current != null && current.resultSubmitStatus() != null) {
+                if (current.resultSubmitStatus().isInProgress()) {
+                    throw new ApplicationException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION, "이미 종료 신청이 진행 중입니다");
+                }
+                if (current.resultSubmitStatus().isCompleted()) {
+                    throw new ApplicationException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION, "이미 종료된 스터디입니다");
+                }
+            }
+        } catch (ApplicationException e) {
+            throw e;
+        } catch (Exception ignore) {
+            // 조회 실패는 뒤 단계에서 도메인에서 처리됨
+        }
+
         // Command 객체를 Domain Service로 전달 (파일명은 Domain Service에서 처리)
         StudyVo endedVo = studyDomainService.endStudy(command);
+
+        // 이미 종료 신청 진행 중 또는 완료된 경우 중복 신청 방지
+        if (endedVo.resultSubmitStatus() != null) {
+            if (endedVo.resultSubmitStatus().isInProgress()) {
+                throw new ApplicationException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION,
+                        "이미 종료 신청이 진행 중입니다");
+            }
+            if (endedVo.resultSubmitStatus().isCompleted()) {
+                throw new ApplicationException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION,
+                        "이미 종료된 스터디입니다");
+            }
+        }
 
         // 조기 종료 시 유예기간 재조정 (실제 종료 시점은 현재 시각으로 판단)
         if (endedVo.startDate() != null) {
@@ -167,30 +259,45 @@ public class StudyCommandService {
 
         // 파일 업로드 후 첨부 JSON 생성 및 제출 상태 갱신
         ArrayNode attachmentsArray = objectMapper.createArrayNode();
-        if (command.files() != null && !command.files().isEmpty()) {
-            for (MultipartFile file : command.files()) {
-                if (file != null && !file.isEmpty()) {
-                    try {
-                        String originalFilename = file.getOriginalFilename();
-                        String fileExtension = "";
-                        if (originalFilename != null && originalFilename.contains(".")) {
-                            fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
-                        }
-                        String customFilename = String.format("%s_%d_%s%s",
-                                sanitizeFilename(endedVo.title()),
-                                endedVo.id(),
-                                sanitizeFilename(endedVo.creatorName()),
-                                fileExtension);
-                        String fileUrl = s3FileService.uploadFileWithCustomName(file, "study-end-attachments", customFilename);
-                        ObjectNode attachment = objectMapper.createObjectNode();
-                        attachment.put("name", originalFilename != null ? originalFilename : customFilename);
-                        attachment.put("url", fileUrl);
-                        attachmentsArray.add(attachment);
-                    } catch (Exception e) {
-                        log.error("Failed to upload study end attachment: {}", file.getOriginalFilename(), e);
-                        throw new RuntimeException("스터디 종료 첨부파일 업로드에 실패했습니다: " + file.getOriginalFilename(), e);
-                    }
+        if (command.attachment() != null && !command.attachment().isBlank()) {
+            String provided = command.attachment();
+            try {
+                String fileUrl;
+                String originalName = null;
+                if (provided.startsWith("data:")) {
+                    String header = provided.substring(5, provided.indexOf(',')); // e.g., image/png;base64
+                    String contentType = header.contains(";") ? header.substring(0, header.indexOf(';')) : "application/octet-stream";
+                    String base64Part = provided.substring(provided.indexOf(',') + 1);
+                    byte[] bytes = java.util.Base64.getDecoder().decode(base64Part);
+                    String extension = switch (contentType) {
+                        case "image/png" -> ".png";
+                        case "image/jpeg" -> ".jpg";
+                        case "application/pdf" -> ".pdf";
+                        case "application/zip" -> ".zip";
+                        default -> "";
+                    };
+                    String customFilename = String.format("%s_%d_%s%s",
+                            sanitizeFilename(endedVo.title()),
+                            endedVo.id(),
+                            sanitizeFilename(endedVo.creatorName()),
+                            extension);
+                    originalName = customFilename;
+                    fileUrl = s3FileService.uploadBytes(bytes, contentType, customFilename, S3FileService.DomainFolders.STUDY_END_ATTACHMENTS, endedVo.id());
+                } else {
+                    // 이미 업로드된 S3 URL
+                    fileUrl = provided;
                 }
+                ObjectNode attachment = objectMapper.createObjectNode();
+                attachment.put("name", originalName != null ? originalName : "result");
+                attachment.put("url", fileUrl);
+                attachmentsArray.add(attachment);
+            } catch (Exception e) {
+                log.error("Failed to handle study end attachment (string)", e);
+                throw new ApplicationException(
+                    ExceptionStatus.STUDY_APPLICATION_ATTACHMENT_UPLOAD_FAILED,
+                    "스터디 종료 첨부파일 처리에 실패했습니다",
+                    e
+                );
             }
         }
 
@@ -198,58 +305,57 @@ public class StudyCommandService {
         if (attachmentsArray.size() > 0) {
             attachmentUrl = attachmentsArray.get(0).get("url").asText(null);
         }
-        studyJpaRepository.updateResultSubmission(
+        studyDomainService.updateResultSubmission(
                 endedVo.id(),
                 OffsetDateTime.now(),
                 ResultSubmitStatus.INPROGRESS,
                 attachmentUrl
         );
-        // 즉시 승인 처리 및 종료 시간 설정
-        studyJpaRepository.approveEnd(
-                endedVo.id(),
-                OffsetDateTime.now(),
-                ResultSubmitStatus.COMPLETED
-        );
 
-        log.info("Command: Study ended and approved successfully - ID: {}", endedVo.id());
+        log.info("Command: Study end submitted (awaiting approval) - ID: {}", endedVo.id());
         return endedVo;
     }
 
     @Transactional
     public void approveStudyEnd(Long studyId, Long adminId) {
         log.info("Command: Approving study end - studyId: {} by admin: {}", studyId, adminId);
-        studyJpaRepository.approveEnd(studyId, OffsetDateTime.now(), ResultSubmitStatus.COMPLETED);
+        studyDomainService.approveEnd(studyId, OffsetDateTime.now(), ResultSubmitStatus.COMPLETED);
     }
 
     @Transactional
     public void rejectStudyEnd(Long studyId, Long adminId) {
         log.info("Command: Rejecting study end - studyId: {} by admin: {}", studyId, adminId);
         // 현재 첨부 읽어 삭제
-        studyJpaRepository.findById(studyId).ifPresent(entity -> {
-            String url = entity.getResultAttachmentUrl();
+        studyDomainService.getResultAttachmentUrlById(studyId).ifPresent(url -> {
             if (url != null && !url.isEmpty()) {
                 try { s3FileService.deleteFile(url); } catch (Exception ex) {
                     log.warn("Failed to delete S3 file on reject: {}", url, ex);
                 }
             }
         });
-        studyJpaRepository.rejectEnd(studyId, ResultSubmitStatus.REJECTED, OffsetDateTime.now());
+        studyDomainService.rejectEnd(studyId, ResultSubmitStatus.REJECTED, OffsetDateTime.now());
     }
 
     /**
-     * 스터디 생성 승인: 유예기간 연장만 수행 (상태 계산은 조회 시 동적 반영)
+     * 스터디 생성 승인: status를 APPROVED로 변경하고 유예기간 연장
      */
     @Transactional
     public void approveStudyCreation(Long studyId, Long adminId) {
         log.info("Command: Approving study creation - studyId: {} by admin: {}", studyId, adminId);
-        studyJpaRepository.findById(studyId).ifPresent(entity -> {
-            try {
-                gracePeriodService.extendGracePeriodForApprovedStudy(
-                        entity.getId(), entity.getStartedAt(), entity.getEndedAt());
-            } catch (Exception e) {
-                log.warn("Failed to extend grace period on study creation approve - studyId: {}", studyId, e);
-            }
-        });
+        
+        // 1. 스터디 status를 APPROVED로 변경
+        studyCommandRepository.approveCreation(studyId);
+        log.info("Command: Study status updated to APPROVED - studyId: {}", studyId);
+        
+        try {
+            // 2. Domain Service를 통해 스터디 정보 조회 후 유예기간 연장
+            StudyVo studyVo = studyDomainService.getStudyById(new org.certis.studyplatform.study.application.object.query.GetStudyByIdQuery(studyId));
+            gracePeriodService.extendGracePeriodForApprovedStudy(
+                    studyVo.id(), studyVo.startDate(), studyVo.endDate());
+            log.info("Command: Grace period extended for approved study - studyId: {}", studyId);
+        } catch (Exception e) {
+            log.warn("Failed to extend grace period on study creation approve - studyId: {}", studyId, e);
+        }
     }
 
     /**
@@ -258,7 +364,7 @@ public class StudyCommandService {
     @Transactional
     public void rejectStudyCreation(Long studyId, Long adminId) {
         log.info("Command: Rejecting study creation - studyId: {} by admin: {}", studyId, adminId);
-        studyJpaRepository.bulkSoftDeleteById(studyId, OffsetDateTime.now());
+        studyDomainService.bulkSoftDeleteById(studyId, OffsetDateTime.now());
     }
 
     /**

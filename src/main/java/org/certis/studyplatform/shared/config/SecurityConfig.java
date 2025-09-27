@@ -18,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
+import org.certis.studyplatform.shared.config.InvalidApiPathMatcher;
 
 @Configuration
 @EnableWebSecurity
@@ -46,6 +47,8 @@ public class SecurityConfig {
                 )
                 // 경로별 권한 설정
                 .authorizeHttpRequests(auths -> auths
+                        // 잘못된 API 경로들 (커스텀 matcher 사용) - 먼저 처리
+                        .requestMatchers(new InvalidApiPathMatcher()).permitAll()
                         // 인증이 필요하지 않은 경로
                         .requestMatchers(
                                 "/api/v1/member/**",

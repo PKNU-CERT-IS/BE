@@ -20,6 +20,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.certis.studyplatform.shared.service.S3FileService;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -48,10 +49,13 @@ class ProjectMeetingFacadeServiceTest {
 
     private ProjectMeetingFacadeService projectMeetingFacadeService;
 
+    @Mock
+    private S3FileService s3FileService;
+
     @BeforeEach
     void setUp() {
         projectMeetingFacadeService = new ProjectMeetingFacadeService(
-            projectMeetingCommandService, projectMeetingQueryService, projectParticipantQueryService);
+            projectMeetingCommandService, projectMeetingQueryService, projectParticipantQueryService, s3FileService);
     }
 
     @Test

@@ -144,6 +144,15 @@ public class MemberDomainService {
         );
         memberContactCommandRepository.createContact(contactVo);
 
+        // ================================================================
+        // STEP 5: Member Penalty 생성 (신규 회원가입 시)
+        // 신규 회원의 패널티 레코드를 0점으로 초기화하여 생성
+        // ================================================================
+
+        log.debug("🎯 Creating penalty record for new member...");
+        memberCommandRepository.createPenalty(createdMember.id());
+        log.debug("✅ Penalty record created successfully");
+
         return createdMember;
     }
 

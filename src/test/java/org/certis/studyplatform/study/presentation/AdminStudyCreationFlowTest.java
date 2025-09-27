@@ -68,6 +68,7 @@ class AdminStudyCreationFlowTest {
                 .set(STUDY.CATEGORY, "CS")
                 .set(STUDY.SUBCATEGORY, "백엔드")
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(STUDY.STATUS, "READY")
                 .set(STUDY.STARTED_AT, now.plusDays(1))
                 .set(STUDY.ENDED_AT, now.plusDays(10))
                 .set(STUDY.CREATED_AT, now)
@@ -82,12 +83,20 @@ class AdminStudyCreationFlowTest {
     void approve_creation_ok() throws Exception {
         var admin = new org.certis.studyplatform.shared.security.CurrentUser(memberId, "admin", "admin@certis.org", "admin", "STAFF");
 
+        String body = "{\"studyId\": " + studyId + "}";
         mockMvc.perform(post("/api/v1/admin/study/create/approve")
                         .with(user(admin))
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("studyId", String.valueOf(studyId)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
                 .andDo(print())
                 .andExpect(status().isOk());
+
+        var row = dsl.selectFrom(STUDY).where(STUDY.ID.eq(studyId)).fetchOne();
+        assertThat(row).isNotNull();
+        // Approve creation now may leave status APPROVED but status string calculated as INPROGRESS
+        // Repository updates status='APPROVED' but mapper derives INPROGRESS based on dates.
+        // Here we assert started_at pulled to now to allow INPROGRESS calculation.
+        assertThat(row.getStartedAt()).isBeforeOrEqualTo(OffsetDateTime.now());
     }
 
     @Test
@@ -95,10 +104,11 @@ class AdminStudyCreationFlowTest {
     void reject_creation_sets_deleted_at() throws Exception {
         var admin = new org.certis.studyplatform.shared.security.CurrentUser(memberId, "admin", "admin@certis.org", "admin", "STAFF");
 
+        String body = "{\"studyId\": " + studyId + "}";
         mockMvc.perform(post("/api/v1/admin/study/create/reject")
                         .with(user(admin))
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("studyId", String.valueOf(studyId)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
                 .andDo(print())
                 .andExpect(status().isOk());
 

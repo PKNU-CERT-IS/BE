@@ -8,7 +8,6 @@ import org.certis.studyplatform.study.application.StudyFacadeService;
 import org.certis.studyplatform.study.presentation.dto.request.StudyCreateRequestDto;
 import org.certis.studyplatform.study.presentation.dto.request.StudyDeleteRequestDto;
 import org.certis.studyplatform.study.presentation.dto.request.StudyDetailRequestDto;
-import org.certis.studyplatform.study.presentation.dto.request.StudyEndRequestDto;
 import org.certis.studyplatform.study.presentation.dto.request.StudyUpdateRequestDto;
 import org.certis.studyplatform.study.presentation.dto.request.StudyAdvancedSearchRequestDto;
 import org.certis.studyplatform.study.presentation.dto.response.StudyDetailResponseDto;
@@ -23,6 +22,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.certis.studyplatform.study.presentation.dto.request.StudyEndRequestDto;
 
 import java.util.List;
 
@@ -153,9 +153,9 @@ public class StudyController {
             @Valid @ModelAttribute StudyAdvancedSearchRequestDto searchRequest,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
-        log.info("REST: Unified study search - keyword: {}, category: {}, subcategory: {}, semester: {}, status: {}, page: {}, size: {}",
+        log.info("REST: Unified study search - keyword: {}, category: {}, subcategory: {}, semester: {}, studyStatus: {}, page: {}, size: {}",
                 searchRequest.getKeyword(),  searchRequest.getCategory(),
-                searchRequest.getSubcategory(), searchRequest.getSemester(), searchRequest.getStatus(),
+                searchRequest.getSubcategory(), searchRequest.getSemester(), searchRequest.getStudyStatus(),
                 pageable.getPageNumber(), pageable.getPageSize());
 
         // 통합 고급 검색 Facade Service 호출
@@ -210,17 +210,16 @@ public class StudyController {
      * 스터디 종료
      * POST /api/v1/study/end
      */
-    @PostMapping("/end")
+    @PostMapping(value = "/end")
     public ResponseEntity<GlobalResponseHandler<StudyDetailResponseDto>> endStudy(
-            @Valid @ModelAttribute StudyEndRequestDto request,
+            @Valid @RequestBody StudyEndRequestDto requestDto,
             @AuthenticationPrincipal CurrentUser currentUser) {
-        log.info("REST: Ending study - ID: {}, requesterId: {}", request.getStudyId(), currentUser.getId());
+        log.info("REST: Ending study - ID: {}, requesterId: {}", requestDto.getStudyId(), currentUser.getId());
 
         // Facade Service 호출 (VO → DTO 변환 포함)
         StudyDetailResponseDto endedStudy = studyFacadeService.endStudy(
-                request.getStudyId(),
-                currentUser.getId(),
-                request.getFiles()
+                requestDto,
+                currentUser.getId()
         );
 
         log.info("REST: Study ended successfully - ID: {}", endedStudy.getId());

@@ -1,5 +1,7 @@
 package org.certis.studyplatform.project.application;
 
+import org.certis.studyplatform.project.presentation.dto.request.ProjectEndRequestDto;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.project.application.command.ProjectCommandService;
@@ -34,6 +36,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import org.certis.studyplatform.shared.service.S3FileService;
+import org.certis.studyplatform.project.domain.service.ProjectDomainService;
+
+import org.certis.studyplatform.project.presentation.dto.response.AdminProjectEndSubmissionResponseDto;
+import org.certis.studyplatform.project.presentation.dto.response.ProjectAttachedResponseDto;
+
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -63,6 +71,9 @@ public class ProjectFacadeService {
     private final Executor virtualThreadExecutor;
     private final ProjectMeetingQueryService projectMeetingQueryService;
     private final ProjectMeetingFacadeService projectMeetingFacadeService;
+    private final S3FileService s3FileService;
+    private final ProjectDomainService projectDomainService;
+    
 
     // ================================================================
     // COMMAND OPERATIONS - 상태 변경 작업
@@ -199,6 +210,8 @@ public class ProjectFacadeService {
         // VO → DTO 변환 (FacadeService에서만 수행)
         Page<ProjectSummaryResponseDto> responseDto = dtoMapper.toProjectSummaryResponseDtoPage(projects);
 
+        // Attachment enrichment moved to Application Mapper layer
+
         log.info("Facade: All projects retrieved - found {} projects", responseDto.getTotalElements());
         return responseDto;
     }
@@ -218,6 +231,8 @@ public class ProjectFacadeService {
         // VO → DTO 변환 (FacadeService에서만 수행)
         Page<ProjectSummaryResponseDto> responseDto = dtoMapper.toProjectSummaryResponseDtoPage(projects);
 
+        // Attachment enrichment moved to Application Mapper layer
+
         log.info("Facade: Project search completed - found {} projects", responseDto.getTotalElements());
         return responseDto;
     }
@@ -232,9 +247,9 @@ public class ProjectFacadeService {
      */
     public Page<ProjectSummaryResponseDto> searchProjectsAdvanced(
             ProjectAdvancedSearchRequestDto requestDto, Pageable pageable) {
-        log.info("Facade: Advanced searching projects - keyword: {}, semester: {}, category: {}, subcategory: {}, status: {}",
+        log.info("Facade: Advanced searching projects - keyword: {}, semester: {}, category: {}, subcategory: {}, projectStatus: {}",
                 requestDto.getKeyword(), requestDto.getSemester(), requestDto.getCategory(),
-                requestDto.getSubcategory(), requestDto.getStatus());
+                requestDto.getSubcategory(), requestDto.getProjectStatus());
 
         // DTO → Query Object 변환 (CPU-bound 작업이므로 비동기 처리 불필요)
         SearchProjectsQuery query = queryMapper.toSearchProjectsQuery(requestDto, pageable);
@@ -253,6 +268,8 @@ public class ProjectFacadeService {
 
             // 비동기 작업 완료 대기 및 결과 반환
             Page<ProjectSummaryResponseDto> responseDto = searchFuture.join();
+
+            // Attachment enrichment moved to Application Mapper layer
 
             log.info("Facade: Advanced search completed - found {} projects", responseDto.getTotalElements());
             return responseDto;
@@ -276,22 +293,121 @@ public class ProjectFacadeService {
     /**
      * 프로젝트 종료 (DTO 반환)
      */
-    public ProjectDetailResponseDto endProject(Long projectId, Long requesterId, List<MultipartFile> files) {
-        log.info("Facade: Ending project - ID: {}, requesterId: {}", projectId, requesterId);
+    public ProjectDetailResponseDto endProject(ProjectEndRequestDto requestDto, Long requesterId) {
+        log.info("Facade: Ending project - ID: {}, requesterId: {}", requestDto.getProjectId(), requesterId);
 
         // Command 객체 생성
-        EndProjectCommand command = EndProjectCommand.of(projectId, requesterId, files);
+        String attachmentUrl = requestDto.getAttachment() != null ? requestDto.getAttachment().getAttachedUrl() : null;
+        EndProjectCommand command = EndProjectCommand.of(requestDto.getProjectId(), requesterId, attachmentUrl);
 
         // Command Service 호출 (VO 반환)
-        ProjectVo endedVo = projectCommandService.endProject(command);
+        projectCommandService.endProject(command);
 
         // 상태 확정 후 최신 데이터로 재조회하여 DTO 변환
-        GetProjectByIdQuery refreshQuery = queryMapper.toGetProjectByIdQuery(projectId);
+        GetProjectByIdQuery refreshQuery = queryMapper.toGetProjectByIdQuery(requestDto.getProjectId());
         ProjectVo refreshed = projectQueryService.getProjectById(refreshQuery);
         ProjectDetailResponseDto responseDto = dtoMapper.toProjectDetailResponseDto(refreshed);
 
         log.info("Facade: Project ended successfully - ID: {}", refreshed.id());
         return responseDto;
+    }
+
+    /**
+     * Admin: 프로젝트 종료 제출 조회 (S3 메타 포함)
+     */
+    public AdminProjectEndSubmissionResponseDto getAdminProjectEndSubmission(Long projectId) {
+        var infoVo = projectDomainService.getEndSubmissionInfo(projectId);
+
+        ProjectAttachedResponseDto attachment = null;
+        if (infoVo.attachmentUrl() != null) {
+            var info = s3FileService.getObjectInfo(infoVo.attachmentUrl());
+            if (info != null) {
+                attachment = ProjectAttachedResponseDto.builder()
+                        .id(null)
+                        .name(info.getName())
+                        .type(info.getContentType())
+                        .size(info.getSize() != null ? String.valueOf(info.getSize()) : null)
+                        .attachedUrl(s3FileService.toPresignedUrl(info.getUrl()))
+                        .build();
+            }
+        }
+        return AdminProjectEndSubmissionResponseDto.builder()
+                .projectId(projectId)
+                .status(infoVo.status())
+                .resultSubmitStatus(infoVo.resultSubmitStatus())
+                .submittedAt(infoVo.submittedAt())
+                .attachment(attachment)
+                .category(infoVo.category())
+                .subCategory(infoVo.subCategory())
+                .title(infoVo.title())
+                .description(infoVo.description())
+                .creatorId(infoVo.creatorId())
+                .projectCreatorName(infoVo.creatorName())
+                .projectCreatorGrade(infoVo.creatorGrade())
+                .startedAt(infoVo.startedAt())
+                .endedAt(infoVo.endedAt())
+                .currentParticipantNumber(infoVo.currentParticipantNumber())
+                .maxParticipantNumber(infoVo.maxParticipantNumber())
+                .build();
+    }
+
+    public java.util.List<AdminProjectEndSubmissionResponseDto> getAdminProjectEndSubmissionsInProgress() {
+        var list = projectQueryService.getEndSubmissionsInProgress();
+        java.util.List<AdminProjectEndSubmissionResponseDto> result = new java.util.ArrayList<>();
+        for (var infoVo : list) {
+            ProjectAttachedResponseDto attachment = null;
+            if (infoVo.attachmentUrl() != null) {
+                var info = s3FileService.getObjectInfo(infoVo.attachmentUrl());
+                if (info != null) {
+                    attachment = ProjectAttachedResponseDto.builder()
+                            .id(null)
+                            .name(info.getName())
+                            .type(info.getContentType())
+                            .size(info.getSize() != null ? String.valueOf(info.getSize()) : null)
+                            .attachedUrl(s3FileService.toPresignedUrl(info.getUrl()))
+                            .build();
+                }
+            }
+            result.add(AdminProjectEndSubmissionResponseDto.builder()
+                    .projectId(infoVo.projectId())
+                    .status(infoVo.status())
+                    .resultSubmitStatus(infoVo.resultSubmitStatus())
+                    .submittedAt(infoVo.submittedAt())
+                    .attachment(attachment)
+                    .category(infoVo.category())
+                    .subCategory(infoVo.subCategory())
+                    .title(infoVo.title())
+                    .description(infoVo.description())
+                    .creatorId(infoVo.creatorId())
+                    .projectCreatorName(infoVo.creatorName())
+                    .projectCreatorGrade(infoVo.creatorGrade())
+                    .startedAt(infoVo.startedAt())
+                    .endedAt(infoVo.endedAt())
+                    .currentParticipantNumber(infoVo.currentParticipantNumber())
+                    .maxParticipantNumber(infoVo.maxParticipantNumber())
+                    .build());
+        }
+        return result;
+    }
+
+    // ================================================================
+    // ADMIN COMMAND OPERATIONS (delegate to command service)
+    // ================================================================
+
+    public void approveProjectEnd(Long projectId, Long adminId) {
+        projectCommandService.approveProjectEnd(projectId, adminId);
+    }
+
+    public void rejectProjectEnd(Long projectId, Long adminId) {
+        projectCommandService.rejectProjectEnd(projectId, adminId);
+    }
+
+    public void approveProjectCreation(Long projectId, Long adminId) {
+        projectCommandService.approveProjectCreation(projectId, adminId);
+    }
+
+    public void rejectProjectCreation(Long projectId, Long adminId) {
+        projectCommandService.rejectProjectCreation(projectId, adminId);
     }
 
 }

@@ -27,6 +27,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.certis.studyplatform.shared.service.S3FileService;
+import static org.mockito.Mockito.when;
+import org.certis.studyplatform.shared.service.S3ObjectInfo;
 
 /**
  * ProjectMeetingController 완전 새로운 통합 테스트
@@ -57,6 +61,8 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 @DisplayName("🚀 ProjectMeetingController 새로운 통합 테스트")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ProjectMeetingControllerTest {
+    @MockBean
+    private S3FileService s3FileService;
 
 
 
@@ -124,6 +130,56 @@ class ProjectMeetingControllerTest {
         // Then: 데이터베이스에 회의록이 정상적으로 저장되었는지 검증
         verifyMeetingCreatedInDatabase(request);
         
+    }
+
+    @Test
+    @Order(35)
+    @DisplayName("🔁 프로젝트 회의록 링크 교체 및 S3 메타 반영")
+    void updateProjectMeeting_ReplacesLinks_AndReturnsS3EnrichedLinks() throws Exception {
+        // Given: 회의록 생성 및 초기 링크 2개
+        ProjectMeetingCreateRequestDto create = createValidMeetingRequest();
+        create.setProjectId(TEST_PROJECT_ID);
+        create.setLinks(List.of(
+            new LinkDto("old-1", "https://bucket.s3.ap-northeast-2.amazonaws.com/project-end-attachments/1/old1.pdf"),
+            new LinkDto("old-2", "https://bucket.s3.ap-northeast-2.amazonaws.com/project-end-attachments/1/old2.pdf")
+        ));
+
+        mockMvc.perform(post("/api/v1/project/meeting/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(create)))
+                .andExpect(status().isCreated());
+
+        // When: 링크를 1개로 교체하여 수정
+        ProjectMeetingUpdateRequestDto update = new ProjectMeetingUpdateRequestDto();
+        update.setMeetingId(1L);
+        update.setTitle("회의록 수정");
+        update.setContent("내용 수정");
+        update.setParticipantNumber(3);
+        String newUrl = "https://bucket.s3.ap-northeast-2.amazonaws.com/project-end-attachments/1/new.pdf";
+        update.setLinks(List.of(new LinkDto("new-title", newUrl)));
+
+        // Mock S3 metadata
+        when(s3FileService.getObjectInfo(newUrl))
+                .thenReturn(new S3ObjectInfo("new.pdf", "application/pdf", 123L, newUrl));
+
+        mockMvc.perform(put("/api/v1/project/meeting/edit")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(update)))
+                .andExpect(status().isOk());
+
+        // Then: DB에는 교체된 1개 링크만 존재
+        var remaining = dsl.fetch("select count(*) as c from project_meeting_link where meeting_id = ? and deleted_at is null", 1L);
+        assertThat(remaining.get(0).get("c", Integer.class)).isEqualTo(1);
+
+        // And: 상세 조회 시 S3 메타에서 가져온 name/url이 노출
+        var res = mockMvc.perform(get("/api/v1/project/meeting/detail").param("meetingId", "1"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
+
+        var json = objectMapper.readTree(res.getResponse().getContentAsString());
+        assertThat(json.at("/data/links/0/title").asText()).isEqualTo("new.pdf");
+        assertThat(json.at("/data/links/0/url").asText()).isEqualTo(newUrl);
     }
 
     @Test
@@ -882,6 +938,7 @@ class ProjectMeetingControllerTest {
                     .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
                     .set(PROJECT.STARTED_AT, now.plusDays(1))
                     .set(PROJECT.ENDED_AT, now.plusDays(30))
+                    .set(PROJECT.STATUS, "READY")
                     .set(PROJECT.CREATED_AT, now)
                     .set(PROJECT.UPDATED_AT, now)
                     .onDuplicateKeyIgnore()
@@ -895,7 +952,7 @@ class ProjectMeetingControllerTest {
                     .set(MEMBER.ROLE, "PLAYER")
                     .set(MEMBER.BIRTHDAY, now.minusYears(25))
                     .set(MEMBER.GENDER, "MALE")
-                    .set(MEMBER.GRADE, "4")
+                    .set(MEMBER.GRADE, "SENIOR")
                     .set(MEMBER.MAJOR, "컴퓨터공학과")
                     .set(MEMBER.CREATED_AT, now)
                     .set(MEMBER.UPDATED_AT, now)
@@ -909,14 +966,37 @@ class ProjectMeetingControllerTest {
                     .set(MEMBER.ROLE, "PLAYER")
                     .set(MEMBER.BIRTHDAY, now.minusYears(23))
                     .set(MEMBER.GENDER, "FEMALE")
-                    .set(MEMBER.GRADE, "3")
+                    .set(MEMBER.GRADE, "JUNIOR")
                     .set(MEMBER.MAJOR, "정보보안학과")
                     .set(MEMBER.CREATED_AT, now)
                     .set(MEMBER.UPDATED_AT, now)
                     .onDuplicateKeyIgnore()
                     .execute();
 
+            // 프로젝트 참가자 데이터 생성 (승인된 멤버로 설정)
+            dsl.insertInto(PROJECT_PARTICIPANT)
+                    .set(PROJECT_PARTICIPANT.ID, 1L)
+                    .set(PROJECT_PARTICIPANT.PROJECT_ID, TEST_PROJECT_ID)
+                    .set(PROJECT_PARTICIPANT.MEMBER_ID, TEST_MEMBER_ID)
+                    .set(PROJECT_PARTICIPANT.STATUS, "APPROVED")
+                    .set(PROJECT_PARTICIPANT.CREATED_AT, now)
+                    .set(PROJECT_PARTICIPANT.UPDATED_AT, now)
+                    .onDuplicateKeyIgnore()
+                    .execute();
+
+            dsl.insertInto(PROJECT_PARTICIPANT)
+                    .set(PROJECT_PARTICIPANT.ID, 2L)
+                    .set(PROJECT_PARTICIPANT.PROJECT_ID, TEST_PROJECT_ID)
+                    .set(PROJECT_PARTICIPANT.MEMBER_ID, TEST_MEMBER_2_ID)
+                    .set(PROJECT_PARTICIPANT.STATUS, "APPROVED")
+                    .set(PROJECT_PARTICIPANT.CREATED_AT, now)
+                    .set(PROJECT_PARTICIPANT.UPDATED_AT, now)
+                    .onDuplicateKeyIgnore()
+                    .execute();
+
         } catch (Exception e) {
+            // 테스트 데이터 설정 실패 시 예외를 다시 던져서 테스트가 실패하도록 함
+            throw new RuntimeException("테스트 데이터 설정 실패", e);
         }
     }
 
@@ -928,6 +1008,7 @@ class ProjectMeetingControllerTest {
             // 외래 키 제약으로 인해 역순으로 삭제
             dsl.execute("DELETE FROM project_meeting_link");
             dsl.deleteFrom(PROJECT_MEETING).execute();
+            dsl.deleteFrom(PROJECT_PARTICIPANT).execute();
             dsl.deleteFrom(PROJECT).execute();
             dsl.deleteFrom(MEMBER).execute();
         } catch (Exception e) {

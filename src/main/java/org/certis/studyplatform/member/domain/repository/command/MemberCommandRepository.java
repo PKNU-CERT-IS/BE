@@ -97,4 +97,11 @@ public interface MemberCommandRepository {
     void updatePenalty(MemberIdVo memberIdVo, PenaltyPointsVo penaltyPointsVo);
 
     void updateGracePeriod(MemberIdVo memberIdVo, GracePeriodVo gracePeriodVo);
+
+    /**
+     * 회원 패널티 생성 (신규 회원가입 시)
+     *
+     * @param memberId 회원 ID
+     */
+    void createPenalty(MemberIdVo memberId);
 }

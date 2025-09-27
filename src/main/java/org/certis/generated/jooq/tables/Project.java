@@ -9,7 +9,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-import org.certis.generated.jooq.Indexes;
 import org.certis.generated.jooq.Keys;
 import org.certis.generated.jooq.Public;
 import org.certis.generated.jooq.tables.Blog.BlogPath;
@@ -22,7 +21,6 @@ import org.jooq.Condition;
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Identity;
-import org.jooq.Index;
 import org.jooq.InverseForeignKey;
 import org.jooq.Name;
 import org.jooq.Path;
@@ -81,7 +79,7 @@ public class Project extends TableImpl<ProjectRecord> {
     /**
      * The column <code>public.project.content</code>.
      */
-    public final TableField<ProjectRecord, String> CONTENT = createField(DSL.name("content"), SQLDataType.VARCHAR.nullable(false), this, "");
+    public final TableField<ProjectRecord, String> CONTENT = createField(DSL.name("content"), SQLDataType.CLOB.nullable(false), this, "");
 
     /**
      * The column <code>public.project.created_at</code>.
@@ -139,14 +137,14 @@ public class Project extends TableImpl<ProjectRecord> {
     public final TableField<ProjectRecord, String> EXTERNAL_URL = createField(DSL.name("external_url"), SQLDataType.VARCHAR, this, "");
 
     /**
-     * The column <code>public.project.demo_url</code>.
-     */
-    public final TableField<ProjectRecord, String> DEMO_URL = createField(DSL.name("demo_url"), SQLDataType.VARCHAR, this, "");
-
-    /**
      * The column <code>public.project.thumbnail_url</code>.
      */
     public final TableField<ProjectRecord, String> THUMBNAIL_URL = createField(DSL.name("thumbnail_url"), SQLDataType.VARCHAR, this, "");
+
+    /**
+     * The column <code>public.project.demo_url</code>. 프로젝트 데모 URL
+     */
+    public final TableField<ProjectRecord, String> DEMO_URL = createField(DSL.name("demo_url"), SQLDataType.VARCHAR, this, "프로젝트 데모 URL");
 
     /**
      * The column <code>public.project.result_submitted_at</code>.
@@ -154,14 +152,19 @@ public class Project extends TableImpl<ProjectRecord> {
     public final TableField<ProjectRecord, OffsetDateTime> RESULT_SUBMITTED_AT = createField(DSL.name("result_submitted_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "");
 
     /**
-     * The column <code>public.project.result_submit_status</code>.
-     */
-    public final TableField<ProjectRecord, String> RESULT_SUBMIT_STATUS = createField(DSL.name("result_submit_status"), SQLDataType.VARCHAR.nullable(false).defaultValue(DSL.field(DSL.raw("'READY'::character varying"), SQLDataType.VARCHAR)), this, "");
-
-    /**
      * The column <code>public.project.result_attached_url</code>.
      */
     public final TableField<ProjectRecord, String> RESULT_ATTACHED_URL = createField(DSL.name("result_attached_url"), SQLDataType.VARCHAR, this, "");
+
+    /**
+     * The column <code>public.project.result_submit_status</code>.
+     */
+    public final TableField<ProjectRecord, String> RESULT_SUBMIT_STATUS = createField(DSL.name("result_submit_status"), SQLDataType.VARCHAR(20).defaultValue(DSL.field(DSL.raw("'READY'::character varying"), SQLDataType.VARCHAR)), this, "");
+
+    /**
+     * The column <code>public.project.status</code>.
+     */
+    public final TableField<ProjectRecord, String> STATUS = createField(DSL.name("status"), SQLDataType.VARCHAR(20).nullable(false).defaultValue(DSL.field(DSL.raw("'READY'::character varying"), SQLDataType.VARCHAR)), this, "");
 
     private Project(Name alias, Table<ProjectRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
@@ -228,11 +231,6 @@ public class Project extends TableImpl<ProjectRecord> {
     @Override
     public Schema getSchema() {
         return aliased() ? null : Public.PUBLIC;
-    }
-
-    @Override
-    public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.IDX_PROJECT_RESULT_STATUS);
     }
 
     @Override
