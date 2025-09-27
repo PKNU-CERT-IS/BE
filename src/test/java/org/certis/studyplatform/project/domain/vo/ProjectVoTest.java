@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
 import java.util.Collections;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -451,5 +450,81 @@ class ProjectVoTest {
             Collections.emptyList(),
             Collections.emptyList()
         );
+    }
+
+    @Test
+    @DisplayName("updateFrom - 기존 상태가 APPROVED인 경우 상태 유지")
+    void updateFrom_whenExistingStatusIsApproved_shouldMaintainStatus() {
+        // Given
+        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime pastStartDate = now.minusDays(1); // 과거 시작일
+        OffsetDateTime futureEndDate = now.plusDays(10); // 미래 종료일
+        
+        // APPROVED 상태인 프로젝트
+        ProjectVo existingProject = createTestProjectVo(
+            "APPROVED", 
+            ResultSubmitStatus.READY,
+            pastStartDate,
+            futureEndDate
+        );
+
+        // When - 제목만 변경
+        ProjectVo updatedProject = ProjectVo.updateFrom(
+            existingProject,
+            "Updated Title",
+            null, // description은 변경하지 않음
+            null, // content는 변경하지 않음
+            null, // category는 변경하지 않음
+            null, // subCategory는 변경하지 않음
+            null, // startDate는 변경하지 않음
+            null, // endDate는 변경하지 않음
+            null, // githubUrl은 변경하지 않음
+            null, // externalUrl은 변경하지 않음
+            null, // demoUrl은 변경하지 않음
+            null, // thumbnailUrl은 변경하지 않음
+            null  // maxParticipants는 변경하지 않음
+        );
+
+        // Then - 상태가 유지되어야 함
+        assertThat(updatedProject.status()).isEqualTo("APPROVED");
+        assertThat(updatedProject.title()).isEqualTo("Updated Title");
+    }
+
+    @Test
+    @DisplayName("updateFrom - 기존 상태가 INPROGRESS인 경우 상태 유지")
+    void updateFrom_whenExistingStatusIsInProgress_shouldMaintainStatus() {
+        // Given
+        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime pastStartDate = now.minusDays(1); // 과거 시작일
+        OffsetDateTime futureEndDate = now.plusDays(10); // 미래 종료일
+        
+        // INPROGRESS 상태인 프로젝트
+        ProjectVo existingProject = createTestProjectVo(
+            "INPROGRESS", 
+            ResultSubmitStatus.READY,
+            pastStartDate,
+            futureEndDate
+        );
+
+        // When - 제목만 변경
+        ProjectVo updatedProject = ProjectVo.updateFrom(
+            existingProject,
+            "Updated Title",
+            null, // description은 변경하지 않음
+            null, // content는 변경하지 않음
+            null, // category는 변경하지 않음
+            null, // subCategory는 변경하지 않음
+            null, // startDate는 변경하지 않음
+            null, // endDate는 변경하지 않음
+            null, // githubUrl은 변경하지 않음
+            null, // externalUrl은 변경하지 않음
+            null, // demoUrl은 변경하지 않음
+            null, // thumbnailUrl은 변경하지 않음
+            null  // maxParticipants는 변경하지 않음
+        );
+
+        // Then - 상태가 유지되어야 함
+        assertThat(updatedProject.status()).isEqualTo("INPROGRESS");
+        assertThat(updatedProject.title()).isEqualTo("Updated Title");
     }
 }

@@ -306,8 +306,13 @@ public record ProjectVo(
             return new StatusAndResultSubmitStatus(currentStatus, currentResultSubmitStatus);
         }
         
-        // READY 상태인 경우에만 INPROGRESS로 변경
-        return new StatusAndResultSubmitStatus(ProjectStatus.INPROGRESS.name(), currentResultSubmitStatus);
+        // 기존 상태가 READY인 경우에만 INPROGRESS로 변경
+        if (existingStatus.isReady()) {
+            return new StatusAndResultSubmitStatus(ProjectStatus.INPROGRESS.name(), currentResultSubmitStatus);
+        }
+        
+        // 그 외의 경우 기존 상태 유지
+        return new StatusAndResultSubmitStatus(currentStatus, currentResultSubmitStatus);
     }
 
     /**

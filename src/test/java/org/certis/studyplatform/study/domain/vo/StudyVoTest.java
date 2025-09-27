@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
 import java.util.Collections;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -411,5 +410,73 @@ class StudyVoTest {
             Collections.emptyList(),
             Collections.emptyList()
         );
+    }
+
+    @Test
+    @DisplayName("updateFrom - 기존 상태가 APPROVED인 경우 상태 유지")
+    void updateFrom_whenExistingStatusIsApproved_shouldMaintainStatus() {
+        // Given
+        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime pastStartDate = now.minusDays(1); // 과거 시작일
+        OffsetDateTime futureEndDate = now.plusDays(10); // 미래 종료일
+        
+        // APPROVED 상태인 스터디
+        StudyVo existingStudy = createTestStudyVo(
+            "APPROVED", 
+            ResultSubmitStatus.READY,
+            pastStartDate,
+            futureEndDate
+        );
+
+        // When - 제목만 변경
+        StudyVo updatedStudy = StudyVo.updateFrom(
+            existingStudy,
+            "Updated Title",
+            null, // description은 변경하지 않음
+            null, // content는 변경하지 않음
+            null, // category는 변경하지 않음
+            null, // subCategory는 변경하지 않음
+            null, // startDate는 변경하지 않음
+            null, // endDate는 변경하지 않음
+            null  // maxParticipants는 변경하지 않음
+        );
+
+        // Then - 상태가 유지되어야 함
+        assertThat(updatedStudy.status()).isEqualTo("APPROVED");
+        assertThat(updatedStudy.title()).isEqualTo("Updated Title");
+    }
+
+    @Test
+    @DisplayName("updateFrom - 기존 상태가 INPROGRESS인 경우 상태 유지")
+    void updateFrom_whenExistingStatusIsInProgress_shouldMaintainStatus() {
+        // Given
+        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime pastStartDate = now.minusDays(1); // 과거 시작일
+        OffsetDateTime futureEndDate = now.plusDays(10); // 미래 종료일
+        
+        // INPROGRESS 상태인 스터디
+        StudyVo existingStudy = createTestStudyVo(
+            "INPROGRESS", 
+            ResultSubmitStatus.READY,
+            pastStartDate,
+            futureEndDate
+        );
+
+        // When - 제목만 변경
+        StudyVo updatedStudy = StudyVo.updateFrom(
+            existingStudy,
+            "Updated Title",
+            null, // description은 변경하지 않음
+            null, // content는 변경하지 않음
+            null, // category는 변경하지 않음
+            null, // subCategory는 변경하지 않음
+            null, // startDate는 변경하지 않음
+            null, // endDate는 변경하지 않음
+            null  // maxParticipants는 변경하지 않음
+        );
+
+        // Then - 상태가 유지되어야 함
+        assertThat(updatedStudy.status()).isEqualTo("INPROGRESS");
+        assertThat(updatedStudy.title()).isEqualTo("Updated Title");
     }
 }
