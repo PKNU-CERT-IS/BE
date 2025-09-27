@@ -224,8 +224,9 @@ public record StudyVo(
         OffsetDateTime newStartDate = startDate != null ? startDate : existing.startDate();
         OffsetDateTime newEndDate = endDate != null ? endDate : existing.endDate();
         
-        // startedAt이 현재 시각보다 나중인 경우 APPROVED로 초기화
-        StatusAndResultSubmitStatus statusAndResult = calculateStatusAndResultSubmitStatus(newStartDate, newEndDate);
+        // 상태 재계산 - 기존 상태를 고려하여 적절한 상태 유지
+        StatusAndResultSubmitStatus statusAndResult = calculateStatusAndResultSubmitStatus(
+            newStartDate, newEndDate, existing.status(), existing.resultSubmitStatus());
         
         return new StudyVo(
                 existing.id(),
@@ -323,26 +324,45 @@ public record StudyVo(
 
     /**
      * startedAt과 endedAt을 기준으로 status와 resultSubmitStatus 계산
-     * startedAt이 현재 시각보다 나중인 경우 APPROVED로 초기화
+     * 기존 상태를 고려하여 적절한 상태를 유지
      */
     private static StatusAndResultSubmitStatus calculateStatusAndResultSubmitStatus(
-            OffsetDateTime startedAt, OffsetDateTime endedAt) {
+            OffsetDateTime startedAt, OffsetDateTime endedAt, String currentStatus, ResultSubmitStatus currentResultSubmitStatus) {
         OffsetDateTime now = OffsetDateTime.now();
+        StudyStatus existingStatus = StudyStatus.fromStatusString(currentStatus);
         
-        // startedAt이 현재 시각보다 나중인 경우 APPROVED로 초기화
-        if (startedAt != null && startedAt.isAfter(now)) {
-            return new StatusAndResultSubmitStatus(
-                StudyStatus.APPROVED.name(), 
-                ResultSubmitStatus.READY
-            );
+        // 기존 상태가 REJECTED이면 유지
+        if (existingStatus.isRejected()) {
+            return new StatusAndResultSubmitStatus(currentStatus, currentResultSubmitStatus);
         }
         
-        // endedAt이 현재 시간보다 지났으면 COMPLETED, 아니면 INPROGRESS
-        String status = (endedAt != null && endedAt.isBefore(now)) 
-            ? StudyStatus.COMPLETED.name() 
-            : StudyStatus.INPROGRESS.name();
-            
-        return new StatusAndResultSubmitStatus(status, ResultSubmitStatus.READY);
+        // 기존 상태가 COMPLETED이면 유지
+        if (existingStatus.isCompleted()) {
+            return new StatusAndResultSubmitStatus(currentStatus, currentResultSubmitStatus);
+        }
+        
+        // startedAt이 현재 시각보다 나중인 경우
+        if (startedAt != null && startedAt.isAfter(now)) {
+            // 기존 상태가 READY가 아닌 경우 기존 상태 유지
+            if (!existingStatus.isReady()) {
+                return new StatusAndResultSubmitStatus(currentStatus, currentResultSubmitStatus);
+            }
+            // READY 상태인 경우에만 APPROVED로 변경
+            return new StatusAndResultSubmitStatus(StudyStatus.APPROVED.name(), ResultSubmitStatus.READY);
+        }
+        
+        // endedAt이 현재 시간보다 지났으면 COMPLETED
+        if (endedAt != null && endedAt.isBefore(now)) {
+            return new StatusAndResultSubmitStatus(StudyStatus.COMPLETED.name(), ResultSubmitStatus.READY);
+        }
+        
+        // 기존 상태가 APPROVED나 INPROGRESS인 경우 유지
+        if (existingStatus.isApproved() || existingStatus.isInProgress()) {
+            return new StatusAndResultSubmitStatus(currentStatus, currentResultSubmitStatus);
+        }
+        
+        // READY 상태인 경우에만 INPROGRESS로 변경
+        return new StatusAndResultSubmitStatus(StudyStatus.INPROGRESS.name(), currentResultSubmitStatus);
     }
 
     /**

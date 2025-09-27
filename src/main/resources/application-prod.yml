@@ -1,212 +1,83 @@
-# ===========================================
-# CERT-IS Study Platform - 운영환경 설정 (개선버전)
-# ===========================================
-
 spring:
   config:
     activate:
       on-profile: prod
 
-  # 운영환경 데이터소스 설정 - 외부 PostgreSQL
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgresql:5432/certis_db}
+    url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME:certis_user}
     password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: ${DB_POOL_SIZE:20}
-      minimum-idle: ${DB_MIN_IDLE:5}
+      maximum-pool-size: 20
+      minimum-idle: 5
       leak-detection-threshold: 30000
       connection-timeout: 30000
       idle-timeout: 600000
       max-lifetime: 1800000
-      validation-timeout: 3000
 
-  # JPA/Hibernate 운영 설정
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: validate # Flyway가 마이그레이션 담당
+      ddl-auto: validate
     show-sql: false
-    properties:
-      hibernate:
-        format_sql: false
-        use_sql_comments: false
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        connection:
-          provider_disables_autocommit: true
-        jdbc:
-          batch_size: 25
-          batch_versioned_data: true
 
-  # Flyway 설정 - 운영환경 안전장치 강화
   flyway:
     enabled: true
     locations:
-      - classpath:db/migration/common # mock 제외!
+      - classpath:db/migration/common
     baseline-on-migrate: false
     validate-on-migrate: true
-    clean-on-validation-error: false
     clean-disabled: true
-    out-of-order: false
-    # 추가 안전장치
-    ignore-missing-migrations: false
-    ignore-ignored-migrations: false
-    ignore-pending-migrations: false
-    ignore-future-migrations: false
-    baseline-version: "1.0.0"
-    baseline-description: "Production baseline"
 
-  # SQL 초기화 비활성화
   sql:
     init:
       mode: never
 
-  # Redis 설정 - ElastiCache 최적화
   data:
     redis:
       host: ${SPRING_DATA_REDIS_HOST}
       port: ${SPRING_DATA_REDIS_PORT:6379}
       ssl:
-        enabled: ${SPRING_DATA_REDIS_SSL_ENABLED:true}
-      timeout: 30000ms
-      connect-timeout: 30000ms
+        enabled: true
+      timeout: 10000ms
+      connect-timeout: 10000ms
       database: 0
-      lettuce:
-        pool:
-          max-active: 20
-          max-wait: 10000ms
-          max-idle: 10
-          min-idle: 5
-        shutdown-timeout: 5000ms
 
-  # Redisson 설정 - ElastiCache 호환
-  redis:
-    host: ${SPRING_DATA_REDIS_HOST}
-    port: ${SPRING_DATA_REDIS_PORT:6379}
-    ssl: ${SPRING_DATA_REDIS_SSL_ENABLED:true}
-    timeout: 30000
-    connect-timeout: 30000
-    database: 0
-
-# Redisson 설정 - ElastiCache 최적화
-redisson:
-  config: |
-    singleServerConfig:
-      address: "rediss://${SPRING_DATA_REDIS_HOST}:${SPRING_DATA_REDIS_PORT:6379}"
-      database: 0
-      connectionPoolSize: 20
-      connectionMinimumIdleSize: 5
-      connectTimeout: 10000
-      timeout: 10000
-      retryAttempts: 3
-      retryInterval: 1500
-      keepAlive: true
-      tcpNoDelay: true
-      sslEnableEndpointIdentification: true
-
-# 운영환경 로깅 설정
 logging:
   level:
     root: WARN
     org.certis.studyplatform: INFO
     org.springframework: WARN
     org.hibernate: WARN
-    org.flywaydb: INFO
-    com.zaxxer.hikari: INFO
-    io.lettuce.core: INFO
-    # Redis connection debugging
-    org.springframework.data.redis: INFO
-    org.springframework.data.redis.connection: INFO
-    org.redisson: INFO
-    org.redisson.connection: INFO
-  file:
-    name: ${LOG_FILE:/var/log/cert-is/application.log}
-    max-size: 100MB
-    max-history: 30
-  pattern:
-    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-},%X{spanId:-}] %logger{50} - %msg%n"
 
-# Management/Actuator 운영 설정 강화
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,threaddump
-        exclude: flyway,env,configprops # 민감한 정보 제외
-  endpoint:
-    health:
-      show-details: when-authorized
-      show-components: always
-    flyway:
-      enabled: false # Flyway 엔드포인트 비활성화
-  server:
-    port: ${MANAGEMENT_PORT:8081}
+        include: health,info,metrics
 
-# 운영환경 애플리케이션 설정
 app:
-  # 목 데이터 비활성화 (중요!)
   mock-data:
     enabled: false
-
-  async:
-    cpu-bound:
-      core-pool-size: 16
-      max-pool-size: 32
-      queue-capacity: 200
-    background:
-      core-pool-size: 4
-      max-pool-size: 8
-      queue-capacity: 1000
-    timeout:
-      default: 60
-      long-running: 600
-      background: 1200
-
   jwt:
     secret: ${JWT_SECRET}
     access-token-expiry: 3600000
     refresh-token-expiry: 86400000
-
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:https://cert-is.com}
 
-  file:
-    upload-dir: ${FILE_UPLOAD_DIR:/app/uploads}
-    max-size: 10MB
-
-  cache:
-    default-ttl: 600
-    user-ttl: 3600
-    post-ttl: 1800
-
-  monitoring:
-    metrics:
-      custom-tags:
-        environment: prod
-
-# Embedded 서비스 비활성화
 embedded:
   postgres:
     enabled: false
   redis:
     enabled: false
 
-# 보안 설정 강화
 server:
   forward-headers-strategy: native
-  max-http-header-size: 8KB
   error:
-    include-stacktrace: never # 운영환경 보안
-    include-message: always
-  servlet:
-    session:
-      cookie:
-        secure: true
-        http-only: true
-        same-site: strict
+    include-stacktrace: never
 
-# API 문서 비활성화
 springdoc:
   api-docs:
     enabled: false

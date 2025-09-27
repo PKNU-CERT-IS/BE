@@ -185,7 +185,7 @@ class ProjectVoTest {
         
         // Status는 기존 로직에 따라 재계산됨
         assertThat(updatedProject.status()).isEqualTo(ProjectStatus.INPROGRESS.name());
-        assertThat(updatedProject.resultSubmitStatus()).isEqualTo(ResultSubmitStatus.READY);
+        assertThat(updatedProject.resultSubmitStatus()).isEqualTo(ResultSubmitStatus.INPROGRESS);
     }
 
     @Test
@@ -262,6 +262,166 @@ class ProjectVoTest {
         assertThat(updatedProject.endDate()).isEqualTo(newEndDate);
         assertThat(updatedProject.status()).isEqualTo(ProjectStatus.APPROVED.name());
         assertThat(updatedProject.resultSubmitStatus()).isEqualTo(ResultSubmitStatus.READY);
+    }
+
+    @Test
+    @DisplayName("updateFrom - APPROVED 상태에서 update 시 상태 유지")
+    void updateFrom_whenStatusIsApproved_shouldMaintainStatus() {
+        // Given
+        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime futureEndDate = now.plusDays(30);
+        
+        // APPROVED 상태인 프로젝트
+        ProjectVo existingProject = createTestProjectVo(
+            "APPROVED", 
+            ResultSubmitStatus.READY,
+            now.plusDays(1), // 미래 시작일
+            now.plusDays(10)  // 미래 종료일
+        );
+
+        // When
+        ProjectVo updatedProject = ProjectVo.updateFrom(
+            existingProject,
+            "Updated Title",
+            "Updated Description",
+            null, // content는 변경하지 않음
+            null, // category는 변경하지 않음
+            null, // subCategory는 변경하지 않음
+            null, // startDate는 변경하지 않음 (APPROVED 상태에서는 시작일 변경 불가)
+            futureEndDate,   // 새로운 종료일
+            null, // githubUrl은 변경하지 않음
+            null, // externalUrl은 변경하지 않음
+            null, // demoUrl은 변경하지 않음
+            null, // thumbnailUrl은 변경하지 않음
+            null  // maxParticipants는 변경하지 않음
+        );
+
+        // Then
+        assertThat(updatedProject.status()).isEqualTo("APPROVED"); // 기존 상태 유지
+        assertThat(updatedProject.resultSubmitStatus()).isEqualTo(ResultSubmitStatus.READY); // 기존 상태 유지
+        assertThat(updatedProject.title()).isEqualTo("Updated Title");
+        assertThat(updatedProject.description()).isEqualTo("Updated Description");
+        assertThat(updatedProject.startDate()).isEqualTo(existingProject.startDate()); // 기존 시작일 유지
+        assertThat(updatedProject.endDate()).isEqualTo(futureEndDate);
+    }
+
+    @Test
+    @DisplayName("updateFrom - INPROGRESS 상태에서 update 시 상태 유지")
+    void updateFrom_whenStatusIsInProgress_shouldMaintainStatus() {
+        // Given
+        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime pastStartDate = now.minusDays(1);
+        OffsetDateTime futureEndDate = now.plusDays(10);
+        
+        // INPROGRESS 상태인 프로젝트
+        ProjectVo existingProject = createTestProjectVo(
+            "INPROGRESS", 
+            ResultSubmitStatus.INPROGRESS,
+            pastStartDate,
+            futureEndDate
+        );
+
+        // When
+        ProjectVo updatedProject = ProjectVo.updateFrom(
+            existingProject,
+            "Updated Title",
+            null, // description은 변경하지 않음
+            "Updated Content",
+            null, // category는 변경하지 않음
+            null, // subCategory는 변경하지 않음
+            pastStartDate, // 시작일은 변경하지 않음
+            futureEndDate, // 종료일은 변경하지 않음
+            null, // githubUrl은 변경하지 않음
+            null, // externalUrl은 변경하지 않음
+            null, // demoUrl은 변경하지 않음
+            null, // thumbnailUrl은 변경하지 않음
+            null  // maxParticipants는 변경하지 않음
+        );
+
+        // Then
+        assertThat(updatedProject.status()).isEqualTo("INPROGRESS"); // 기존 상태 유지
+        assertThat(updatedProject.resultSubmitStatus()).isEqualTo(ResultSubmitStatus.INPROGRESS); // 기존 상태 유지
+        assertThat(updatedProject.title()).isEqualTo("Updated Title");
+        assertThat(updatedProject.content()).isEqualTo("Updated Content");
+    }
+
+    @Test
+    @DisplayName("updateFrom - COMPLETED 상태에서 update 시 상태 유지")
+    void updateFrom_whenStatusIsCompleted_shouldMaintainStatus() {
+        // Given
+        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime pastStartDate = now.minusDays(10);
+        OffsetDateTime pastEndDate = now.minusDays(1);
+        
+        // COMPLETED 상태인 프로젝트
+        ProjectVo existingProject = createTestProjectVo(
+            "COMPLETED", 
+            ResultSubmitStatus.COMPLETED,
+            pastStartDate,
+            pastEndDate
+        );
+
+        // When
+        ProjectVo updatedProject = ProjectVo.updateFrom(
+            existingProject,
+            "Updated Title",
+            null, // description은 변경하지 않음
+            null, // content는 변경하지 않음
+            null, // category는 변경하지 않음
+            null, // subCategory는 변경하지 않음
+            pastStartDate, // 시작일은 변경하지 않음
+            pastEndDate, // 종료일은 변경하지 않음
+            null, // githubUrl은 변경하지 않음
+            null, // externalUrl은 변경하지 않음
+            null, // demoUrl은 변경하지 않음
+            null, // thumbnailUrl은 변경하지 않음
+            null  // maxParticipants는 변경하지 않음
+        );
+
+        // Then
+        assertThat(updatedProject.status()).isEqualTo("COMPLETED"); // 기존 상태 유지
+        assertThat(updatedProject.resultSubmitStatus()).isEqualTo(ResultSubmitStatus.COMPLETED); // 기존 상태 유지
+        assertThat(updatedProject.title()).isEqualTo("Updated Title");
+    }
+
+    @Test
+    @DisplayName("updateFrom - REJECTED 상태에서 update 시 상태 유지")
+    void updateFrom_whenStatusIsRejected_shouldMaintainStatus() {
+        // Given
+        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime futureEndDate = now.plusDays(30);
+        
+        // REJECTED 상태인 프로젝트
+        ProjectVo existingProject = createTestProjectVo(
+            "REJECTED", 
+            ResultSubmitStatus.REJECTED,
+            now.plusDays(1),
+            now.plusDays(10)
+        );
+
+        // When
+        ProjectVo updatedProject = ProjectVo.updateFrom(
+            existingProject,
+            "Updated Title",
+            null, // description은 변경하지 않음
+            null, // content는 변경하지 않음
+            null, // category는 변경하지 않음
+            null, // subCategory는 변경하지 않음
+            null, // startDate는 변경하지 않음 (REJECTED 상태에서는 시작일 변경 불가)
+            futureEndDate,   // 새로운 종료일
+            null, // githubUrl은 변경하지 않음
+            null, // externalUrl은 변경하지 않음
+            null, // demoUrl은 변경하지 않음
+            null, // thumbnailUrl은 변경하지 않음
+            null  // maxParticipants는 변경하지 않음
+        );
+
+        // Then
+        assertThat(updatedProject.status()).isEqualTo("REJECTED"); // 기존 상태 유지
+        assertThat(updatedProject.resultSubmitStatus()).isEqualTo(ResultSubmitStatus.REJECTED); // 기존 상태 유지
+        assertThat(updatedProject.title()).isEqualTo("Updated Title");
+        assertThat(updatedProject.startDate()).isEqualTo(existingProject.startDate()); // 기존 시작일 유지
+        assertThat(updatedProject.endDate()).isEqualTo(futureEndDate);
     }
 
     private ProjectVo createTestProjectVo(String status, ResultSubmitStatus resultSubmitStatus, 

@@ -41,10 +41,10 @@ public interface ProjectJpaRepository extends JpaRepository<ProjectEntity, Long>
                                @Param("attachmentUrl") String attachmentUrl);
 
     /**
-     * Approve end submission: set status and endedAt
+     * Approve end submission: set status and endedAt, ensure deletedAt remains null
      */
     @Modifying(clearAutomatically = true)
-    @Query("UPDATE ProjectEntity p SET p.status = 'COMPLETED', p.resultSubmitStatus = :status, p.endedAt = :endedAt, p.updatedAt = :endedAt WHERE p.id = :id AND p.deletedAt IS NULL")
+    @Query("UPDATE ProjectEntity p SET p.status = 'COMPLETED', p.resultSubmitStatus = :status, p.endedAt = :endedAt, p.updatedAt = :endedAt, p.deletedAt = NULL WHERE p.id = :id AND p.deletedAt IS NULL")
     int approveEnd(@Param("id") Long id,
                    @Param("endedAt") OffsetDateTime endedAt,
                    @Param("status") ResultSubmitStatus status);

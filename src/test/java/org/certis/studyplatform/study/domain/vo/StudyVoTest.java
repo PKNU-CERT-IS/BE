@@ -170,7 +170,7 @@ class StudyVoTest {
         
         // Status는 기존 로직에 따라 재계산됨
         assertThat(updatedStudy.status()).isEqualTo(StudyStatus.INPROGRESS.name());
-        assertThat(updatedStudy.resultSubmitStatus()).isEqualTo(ResultSubmitStatus.READY);
+        assertThat(updatedStudy.resultSubmitStatus()).isEqualTo(ResultSubmitStatus.INPROGRESS);
     }
 
     @Test
@@ -239,6 +239,150 @@ class StudyVoTest {
         assertThat(updatedStudy.endDate()).isEqualTo(newEndDate);
         assertThat(updatedStudy.status()).isEqualTo(StudyStatus.APPROVED.name());
         assertThat(updatedStudy.resultSubmitStatus()).isEqualTo(ResultSubmitStatus.READY);
+    }
+
+    @Test
+    @DisplayName("updateFrom - APPROVED 상태에서 update 시 상태 유지")
+    void updateFrom_whenStatusIsApproved_shouldMaintainStatus() {
+        // Given
+        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime futureEndDate = now.plusDays(30);
+        
+        // APPROVED 상태인 스터디
+        StudyVo existingStudy = createTestStudyVo(
+            "APPROVED", 
+            ResultSubmitStatus.READY,
+            now.plusDays(1), // 미래 시작일
+            now.plusDays(10)  // 미래 종료일
+        );
+
+        // When
+        StudyVo updatedStudy = StudyVo.updateFrom(
+            existingStudy,
+            "Updated Title",
+            "Updated Description",
+            null, // content는 변경하지 않음
+            null, // category는 변경하지 않음
+            null, // subCategory는 변경하지 않음
+            null, // startDate는 변경하지 않음 (APPROVED 상태에서는 시작일 변경 불가)
+            futureEndDate,   // 새로운 종료일
+            null  // maxParticipants는 변경하지 않음
+        );
+
+        // Then
+        assertThat(updatedStudy.status()).isEqualTo("APPROVED"); // 기존 상태 유지
+        assertThat(updatedStudy.resultSubmitStatus()).isEqualTo(ResultSubmitStatus.READY); // 기존 상태 유지
+        assertThat(updatedStudy.title()).isEqualTo("Updated Title");
+        assertThat(updatedStudy.description()).isEqualTo("Updated Description");
+        assertThat(updatedStudy.startDate()).isEqualTo(existingStudy.startDate()); // 기존 시작일 유지
+        assertThat(updatedStudy.endDate()).isEqualTo(futureEndDate);
+    }
+
+    @Test
+    @DisplayName("updateFrom - INPROGRESS 상태에서 update 시 상태 유지")
+    void updateFrom_whenStatusIsInProgress_shouldMaintainStatus() {
+        // Given
+        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime pastStartDate = now.minusDays(1);
+        OffsetDateTime futureEndDate = now.plusDays(10);
+        
+        // INPROGRESS 상태인 스터디
+        StudyVo existingStudy = createTestStudyVo(
+            "INPROGRESS", 
+            ResultSubmitStatus.INPROGRESS,
+            pastStartDate,
+            futureEndDate
+        );
+
+        // When
+        StudyVo updatedStudy = StudyVo.updateFrom(
+            existingStudy,
+            "Updated Title",
+            null, // description은 변경하지 않음
+            "Updated Content",
+            null, // category는 변경하지 않음
+            null, // subCategory는 변경하지 않음
+            pastStartDate, // 시작일은 변경하지 않음
+            futureEndDate, // 종료일은 변경하지 않음
+            null  // maxParticipants는 변경하지 않음
+        );
+
+        // Then
+        assertThat(updatedStudy.status()).isEqualTo("INPROGRESS"); // 기존 상태 유지
+        assertThat(updatedStudy.resultSubmitStatus()).isEqualTo(ResultSubmitStatus.INPROGRESS); // 기존 상태 유지
+        assertThat(updatedStudy.title()).isEqualTo("Updated Title");
+        assertThat(updatedStudy.content()).isEqualTo("Updated Content");
+    }
+
+    @Test
+    @DisplayName("updateFrom - COMPLETED 상태에서 update 시 상태 유지")
+    void updateFrom_whenStatusIsCompleted_shouldMaintainStatus() {
+        // Given
+        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime pastStartDate = now.minusDays(10);
+        OffsetDateTime pastEndDate = now.minusDays(1);
+        
+        // COMPLETED 상태인 스터디
+        StudyVo existingStudy = createTestStudyVo(
+            "COMPLETED", 
+            ResultSubmitStatus.COMPLETED,
+            pastStartDate,
+            pastEndDate
+        );
+
+        // When
+        StudyVo updatedStudy = StudyVo.updateFrom(
+            existingStudy,
+            "Updated Title",
+            null, // description은 변경하지 않음
+            null, // content는 변경하지 않음
+            null, // category는 변경하지 않음
+            null, // subCategory는 변경하지 않음
+            pastStartDate, // 시작일은 변경하지 않음
+            pastEndDate, // 종료일은 변경하지 않음
+            null  // maxParticipants는 변경하지 않음
+        );
+
+        // Then
+        assertThat(updatedStudy.status()).isEqualTo("COMPLETED"); // 기존 상태 유지
+        assertThat(updatedStudy.resultSubmitStatus()).isEqualTo(ResultSubmitStatus.COMPLETED); // 기존 상태 유지
+        assertThat(updatedStudy.title()).isEqualTo("Updated Title");
+    }
+
+    @Test
+    @DisplayName("updateFrom - REJECTED 상태에서 update 시 상태 유지")
+    void updateFrom_whenStatusIsRejected_shouldMaintainStatus() {
+        // Given
+        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime futureEndDate = now.plusDays(30);
+        
+        // REJECTED 상태인 스터디
+        StudyVo existingStudy = createTestStudyVo(
+            "REJECTED", 
+            ResultSubmitStatus.REJECTED,
+            now.plusDays(1),
+            now.plusDays(10)
+        );
+
+        // When
+        StudyVo updatedStudy = StudyVo.updateFrom(
+            existingStudy,
+            "Updated Title",
+            null, // description은 변경하지 않음
+            null, // content는 변경하지 않음
+            null, // category는 변경하지 않음
+            null, // subCategory는 변경하지 않음
+            null, // startDate는 변경하지 않음 (REJECTED 상태에서는 시작일 변경 불가)
+            futureEndDate,   // 새로운 종료일
+            null  // maxParticipants는 변경하지 않음
+        );
+
+        // Then
+        assertThat(updatedStudy.status()).isEqualTo("REJECTED"); // 기존 상태 유지
+        assertThat(updatedStudy.resultSubmitStatus()).isEqualTo(ResultSubmitStatus.REJECTED); // 기존 상태 유지
+        assertThat(updatedStudy.title()).isEqualTo("Updated Title");
+        assertThat(updatedStudy.startDate()).isEqualTo(existingStudy.startDate()); // 기존 시작일 유지
+        assertThat(updatedStudy.endDate()).isEqualTo(futureEndDate);
     }
 
     private StudyVo createTestStudyVo(String status, ResultSubmitStatus resultSubmitStatus, 
