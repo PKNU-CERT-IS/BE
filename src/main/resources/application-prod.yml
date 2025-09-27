@@ -65,11 +65,10 @@ spring:
   # Redis 설정 - ElastiCache 최적화
   data:
     redis:
-      host: ${SPRING_DATA_REDIS_HOST:redis}
+      host: ${SPRING_DATA_REDIS_HOST}
       port: ${SPRING_DATA_REDIS_PORT:6379}
-      password: ${SPRING_DATA_REDIS_PASSWORD:}
       ssl:
-        enabled: ${SPRING_DATA_REDIS_SSL_ENABLED:false}
+        enabled: ${SPRING_DATA_REDIS_SSL_ENABLED:true}
       timeout: 30000ms
       connect-timeout: 30000ms
       database: 0
@@ -83,10 +82,9 @@ spring:
 
   # Redisson 설정 - ElastiCache 호환
   redis:
-    host: ${SPRING_DATA_REDIS_HOST:redis}
+    host: ${SPRING_DATA_REDIS_HOST}
     port: ${SPRING_DATA_REDIS_PORT:6379}
-    password: ${SPRING_DATA_REDIS_PASSWORD:}
-    ssl: ${SPRING_DATA_REDIS_SSL_ENABLED:false}
+    ssl: ${SPRING_DATA_REDIS_SSL_ENABLED:true}
     timeout: 30000
     connect-timeout: 30000
     database: 0
@@ -95,8 +93,7 @@ spring:
 redisson:
   config: |
     singleServerConfig:
-      address: "redis://${SPRING_DATA_REDIS_HOST:redis}:${SPRING_DATA_REDIS_PORT:6379}"
-      password: ${SPRING_DATA_REDIS_PASSWORD:}
+      address: "rediss://${SPRING_DATA_REDIS_HOST}"
       database: 0
       connectionPoolSize: 20
       connectionMinimumIdleSize: 5
