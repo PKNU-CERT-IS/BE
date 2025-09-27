@@ -198,5 +198,3 @@ insert into member_penalty (member_id, penalty_point, penaltied_at, updated_at) 
 insert into member_penalty (member_id, penalty_point, penaltied_at, updated_at) values (198, 0, '2025-01-02 14:51:56', '2025-01-19 01:46:56');
 insert into member_penalty (member_id, penalty_point, penaltied_at, updated_at) values (199, 0, '2024-10-18 03:58:19', '2025-04-20 03:41:28');
 insert into member_penalty (member_id, penalty_point, penaltied_at, updated_at) values (200, 0, '2025-06-14 02:16:51', '2025-01-04 12:11:27');
-
-SELECT setval('member_penalty_id_seq', (SELECT MAX(id) FROM member_penalty));

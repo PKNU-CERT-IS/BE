@@ -198,5 +198,3 @@ insert into auth (member_id, account_number, password, created_at, updated_at, d
 insert into auth (member_id, account_number, password, created_at, updated_at, deleted_at) values (198, 'AZ1725', 1234, '2024-08-11 13:23:34', '2025-07-12 23:11:25', null);
 insert into auth (member_id, account_number, password, created_at, updated_at, deleted_at) values (199, 'SK2122', 1234, '2025-04-25 23:10:01', '2024-09-08 18:34:23', null);
 insert into auth (member_id, account_number, password, created_at, updated_at, deleted_at) values (200, 'AA4979', 1234, '2024-10-29 03:38:44', '2024-12-25 10:39:33', null);
-
-SELECT setval('auth_id_seq', (SELECT MAX(id) FROM auth));
