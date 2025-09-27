@@ -23,10 +23,8 @@ class BoardSearchTest {
 
     @BeforeEach
     void setUp() {
-        // Mock S3FileService for unit test
+        // S3FileService mock - toSearchBoardsQuery에서는 사용되지 않지만 생성자에 필요
         S3FileService mockS3FileService = org.mockito.Mockito.mock(S3FileService.class);
-        org.mockito.Mockito.when(mockS3FileService.getFileUrl(org.mockito.ArgumentMatchers.anyString()))
-                .thenAnswer(invocation -> invocation.getArgument(0));
         mapper = new BoardApplicationMapper(mockS3FileService);
     }
 

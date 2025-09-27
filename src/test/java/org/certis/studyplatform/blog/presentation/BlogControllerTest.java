@@ -255,6 +255,7 @@ class BlogControllerTest {
                 .set(STUDY.CATEGORY, "웹 개발")
                 .set(STUDY.SUBCATEGORY, "풀스택")
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(STUDY.STATUS, "APPROVED") // status 필드 추가
                 .set(STUDY.STARTED_AT, now.minusDays(10))
                 .set(STUDY.ENDED_AT, now.minusDays(1)) // 과거로 설정하여 완료 상태
                 .set(STUDY.CREATED_AT, now.minusDays(10))
@@ -271,6 +272,7 @@ class BlogControllerTest {
                 .set(PROJECT.CATEGORY, "웹 개발")
                 .set(PROJECT.SUBCATEGORY, "풀스택")
                 .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(PROJECT.STATUS, "APPROVED") // status 필드 추가
                 .set(PROJECT.STARTED_AT, now.minusDays(15))
                 .set(PROJECT.ENDED_AT, now.minusDays(2)) // 과거로 설정하여 완료 상태
                 .set(PROJECT.CREATED_AT, now.minusDays(15))
@@ -809,6 +811,7 @@ class BlogControllerTest {
                     .set(STUDY.CATEGORY, "웹 개발")
                     .set(STUDY.SUBCATEGORY, "풀스택")
                     .set(STUDY.MAX_PARTICIPANTS_NUMBER, 5)
+                    .set(STUDY.STATUS, "APPROVED") // status 필드 추가
                     .set(STUDY.STARTED_AT, now.minusDays(30))
                     .set(STUDY.ENDED_AT, now.minusDays(1))
                     .set(STUDY.CREATED_AT, now)

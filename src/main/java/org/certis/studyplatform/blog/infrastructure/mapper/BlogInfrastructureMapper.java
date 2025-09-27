@@ -219,6 +219,11 @@ public class BlogInfrastructureMapper {
             referenceTitle = projectTitle;
         }
 
+        // referenceTitle이 아직 null이면 빈 문자열로 보정해 응답 스키마를 안정화
+        if (referenceTitle == null) {
+            referenceTitle = "";
+        }
+
         return BlogSummaryVo.of(
                 BlogIdVo.of(blogId),
                 title,

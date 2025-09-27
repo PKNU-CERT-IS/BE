@@ -38,7 +38,6 @@ import org.certis.studyplatform.project.domain.repository.ProjectParticipantQuer
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Blog Domain Service
@@ -452,11 +451,18 @@ public class BlogDomainService {
             return Map.of();
         }
 
-        // 각 ID별로 제목 조회 (null 값은 수집 대상에서 제외하여 NPE 방지)
-        return referenceIds.stream()
-                .map(id -> Map.entry(id, getReferenceTitle(type, id)))
-                .filter(entry -> entry.getValue() != null)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        // 각 ID별로 제목 조회 (null 값은 제외) - 안전한 수집 방식 사용
+        Map<Long, String> result = new java.util.HashMap<>();
+        for (Long id : referenceIds) {
+            try {
+                String title = getReferenceTitle(type, id);
+                if (title != null) {
+                    result.put(id, title);
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return result;
     }
 
     /**

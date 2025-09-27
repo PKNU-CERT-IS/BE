@@ -103,6 +103,7 @@ class ProjectEndS3E2ETest {
                 .set(PROJECT.ENDED_AT, java.time.OffsetDateTime.now().plusDays(30))
                 .set(PROJECT.MEMBER_ID, STAFF_ID)
                 .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(PROJECT.STATUS, "APPROVED")
                 .set(PROJECT.CREATED_AT, java.time.OffsetDateTime.now())
                 .set(PROJECT.UPDATED_AT, java.time.OffsetDateTime.now())
                 .execute();
@@ -424,6 +425,7 @@ class ProjectEndS3E2ETest {
                 .set(PROJECT.ENDED_AT, java.time.OffsetDateTime.now().plusDays(30))
                 .set(PROJECT.MEMBER_ID, STAFF_ID)
                 .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(PROJECT.STATUS, "APPROVED")
                 .set(PROJECT.CREATED_AT, java.time.OffsetDateTime.now())
                 .set(PROJECT.UPDATED_AT, java.time.OffsetDateTime.now())
                 .set(PROJECT.RESULT_SUBMIT_STATUS, "INPROGRESS")
@@ -443,6 +445,7 @@ class ProjectEndS3E2ETest {
                 .set(PROJECT.ENDED_AT, java.time.OffsetDateTime.now().plusDays(30))
                 .set(PROJECT.MEMBER_ID, STAFF_ID)
                 .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(PROJECT.STATUS, "APPROVED")
                 .set(PROJECT.CREATED_AT, java.time.OffsetDateTime.now())
                 .set(PROJECT.UPDATED_AT, java.time.OffsetDateTime.now())
                 .set(PROJECT.RESULT_SUBMIT_STATUS, "COMPLETED")
@@ -462,6 +465,7 @@ class ProjectEndS3E2ETest {
                 .set(PROJECT.ENDED_AT, java.time.OffsetDateTime.now().plusDays(30))
                 .set(PROJECT.MEMBER_ID, STAFF_ID)
                 .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(PROJECT.STATUS, "APPROVED")
                 .set(PROJECT.CREATED_AT, java.time.OffsetDateTime.now())
                 .set(PROJECT.UPDATED_AT, java.time.OffsetDateTime.now())
                 .setNull(PROJECT.RESULT_SUBMIT_STATUS)
@@ -484,13 +488,13 @@ class ProjectEndS3E2ETest {
         assertThat(data.isArray()).isTrue();
         assertThat(data.size()).isEqualTo(2);
         
-        // Verify the returned projects have INPROGRESS status
+        // Verify the returned projects have INPROGRESS resultSubmitStatus
         var projectIds = new java.util.HashSet<Long>();
         for (var project : data) {
             Long id = project.get("projectId").asLong();
-            String status = project.get("status").asText();
+            String resultSubmitStatus = project.get("resultSubmitStatus").asText();
             projectIds.add(id);
-            assertThat(status).isEqualTo("INPROGRESS");
+            assertThat(resultSubmitStatus).isEqualTo("INPROGRESS");
         }
         
         // Verify we got the correct projects
