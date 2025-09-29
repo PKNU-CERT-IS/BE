@@ -618,10 +618,10 @@ public class MemberDomainService {
 
         for (MemberWithPenaltyVo member : expiredUpsolvers) {
             try {
-                // 벌점 1점 추가
-                Long currentPoints = member.penaltyPoints() != null ? member.penaltyPoints() : 0L;
-                Long newPoints = currentPoints + 1;
-                PenaltyPointsVo penaltyVo = PenaltyPointsVo.of(newPoints.intValue());
+                // 기존 벌점에 +1점 누적 (null 안전 처리)
+                long currentPoints = member.penaltyPoints() != null ? member.penaltyPoints() : 0L;
+                long newTotalPoints = currentPoints + 1L;
+                PenaltyPointsVo penaltyVo = PenaltyPointsVo.of((int) newTotalPoints);
 
                 // 새로운 유예기간 설정 (현재 + 2주)
                 OffsetDateTime nextGrace = now.plusWeeks(2)
@@ -636,13 +636,13 @@ public class MemberDomainService {
 
                 processedCount++;
 
-                log.debug("Domain: Penalty applied to member - memberId: {}, newPoints: {}, newGracePeriod: {}", 
-                    member.memberId().value(), newPoints, nextGrace);
+                log.debug("Domain: Penalty applied to member - memberId: {}, newTotalPoints: {}, newGracePeriod: {}",
+                        member.memberId().value(), newTotalPoints, nextGrace);
 
                 // 6점 이상 시 탈퇴 대상 로그
-                if (newPoints >= 6) {
-                    log.warn("Domain: Member reached withdrawal threshold - memberId: {}, totalPoints: {}", 
-                        member.memberId().value(), newPoints);
+                if (newTotalPoints >= 6) {
+                    log.warn("Domain: Member reached withdrawal threshold - memberId: {}, totalPoints: {}",
+                            member.memberId().value(), newTotalPoints);
                 }
 
             } catch (Exception e) {

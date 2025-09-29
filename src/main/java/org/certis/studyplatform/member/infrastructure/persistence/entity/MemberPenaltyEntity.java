@@ -44,13 +44,13 @@ public class MemberPenaltyEntity {
     }
 
     /**
-     * 패널티 점수 갱신
+     * 패널티 점수 갱신 (초기화 방식)
      */
     public void updatePenaltyPoints(Integer points) {
-        if (points <= 0) {
-            throw new IllegalArgumentException("패널티 점수는 0보다 커야 합니다");
+        if (points < 0) {
+            throw new IllegalArgumentException("패널티 점수는 0 이상이어야 합니다");
         }
-        this.penaltyPoint += points;
+        this.penaltyPoint = points; // 덧셈에서 초기화 방식으로 변경
         this.penaltiedAt = OffsetDateTime.now();
     }
 }
