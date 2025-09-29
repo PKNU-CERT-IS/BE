@@ -397,6 +397,7 @@ public class ProjectCommandService {
         return switch (type) {
             case PDF -> "application/pdf";
             case HWP -> "application/x-hwp";
+            case HWPX -> "application/vnd.hancom.hwpx";
             case WORD -> "application/msword";
             case PPT -> "application/vnd.ms-powerpoint";
             case PPTX -> "application/vnd.openxmlformats-officedocument.presentationml.presentation";
