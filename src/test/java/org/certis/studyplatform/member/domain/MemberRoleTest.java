@@ -108,6 +108,13 @@ class MemberRoleTest {
         }
         
         @Test
+        @DisplayName("CHAIRMAN은 같은 등급인 CHAIRMAN 역할도 변경할 수 있음")
+        void chairmanCanChangeSameRole() {
+            // Given & When & Then
+            assertThat(MemberRole.CHAIRMAN.canChangeRole(MemberRole.CHAIRMAN)).isTrue();
+        }
+        
+        @Test
         @DisplayName("CHAIRMAN은 ADMIN 역할을 변경할 수 없음")
         void chairmanCannotChangeAdmin() {
             // Given & When & Then
@@ -124,6 +131,13 @@ class MemberRoleTest {
         }
         
         @Test
+        @DisplayName("STAFF는 같은 등급인 STAFF 역할도 변경할 수 있음")
+        void staffCanChangeSameRole() {
+            // Given & When & Then
+            assertThat(MemberRole.STAFF.canChangeRole(MemberRole.STAFF)).isTrue();
+        }
+        
+        @Test
         @DisplayName("STAFF는 STAFF 이상의 역할을 변경할 수 없음")
         void staffCannotChangeHigherRoles() {
             // Given & When & Then
@@ -133,16 +147,29 @@ class MemberRoleTest {
         }
         
         @Test
-        @DisplayName("PLAYER는 NONE 역할만 변경할 수 있음 (현재 구현된 로직)")
+        @DisplayName("PLAYER는 NONE 역할만 변경할 수 있음")
         void playerCanOnlyChangeNoneRole() {
             // Given & When & Then
             assertThat(MemberRole.PLAYER.canChangeRole(MemberRole.ADMIN)).isFalse();
             assertThat(MemberRole.PLAYER.canChangeRole(MemberRole.CHAIRMAN)).isFalse();
             assertThat(MemberRole.PLAYER.canChangeRole(MemberRole.VICECHAIRMAN)).isFalse();
             assertThat(MemberRole.PLAYER.canChangeRole(MemberRole.STAFF)).isFalse();
-            assertThat(MemberRole.PLAYER.canChangeRole(MemberRole.UPSOLVER)).isFalse();
-            // NONE의 level(5) > PLAYER의 level(4)이므로 변경 가능
+            assertThat(MemberRole.PLAYER.canChangeRole(MemberRole.UPSOLVER)).isTrue(); // 같은 등급
             assertThat(MemberRole.PLAYER.canChangeRole(MemberRole.NONE)).isTrue();
+        }
+        
+        @Test
+        @DisplayName("PLAYER는 같은 등급인 PLAYER 역할도 변경할 수 있음")
+        void playerCanChangeSameRole() {
+            // Given & When & Then
+            assertThat(MemberRole.PLAYER.canChangeRole(MemberRole.PLAYER)).isTrue();
+        }
+        
+        @Test
+        @DisplayName("UPSOLVER는 같은 등급인 UPSOLVER 역할도 변경할 수 있음")
+        void upsolverCanChangeSameRole() {
+            // Given & When & Then
+            assertThat(MemberRole.UPSOLVER.canChangeRole(MemberRole.UPSOLVER)).isTrue();
         }
     }
 
