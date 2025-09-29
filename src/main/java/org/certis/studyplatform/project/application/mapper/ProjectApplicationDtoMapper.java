@@ -274,6 +274,7 @@ public class ProjectApplicationDtoMapper {
                 .id(vo.id())
                 .memberId(vo.memberId())
                 .memberName(vo.memberName())
+                .memberGrade(vo.memberGrade())
                 .status(vo.status())
                 .createdAt(vo.createdAt())
                 .build();
