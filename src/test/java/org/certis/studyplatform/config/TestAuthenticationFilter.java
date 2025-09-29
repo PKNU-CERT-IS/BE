@@ -9,13 +9,12 @@ import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.shared.security.CurrentUser;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -66,6 +65,45 @@ public class TestAuthenticationFilter extends OncePerRequestFilter {
      * Mock 사용자 인증 정보를 SecurityContext에 설정
      */
     private void setMockAuthenticationToContext() {
+        // @WithMockUser에서 설정한 사용자 정보 확인
+        Authentication existingAuth = SecurityContextHolder.getContext().getAuthentication();
+        
+        if (existingAuth != null && existingAuth.getPrincipal() instanceof CurrentUser) {
+            // 이미 @WithMockUser로 설정된 사용자가 있으면 그대로 사용
+            log.debug("테스트 Mock 인증 - 기존 사용자 사용: {}", existingAuth.getPrincipal());
+            return;
+        }
+        
+        // @WithMockUser에서 설정한 사용자 정보가 있는지 확인
+        if (existingAuth != null && existingAuth.getPrincipal() instanceof String) {
+            String username = (String) existingAuth.getPrincipal();
+            log.debug("테스트 Mock 인증 - @WithMockUser 사용자: {}", username);
+            
+            // @WithMockUser에서 설정한 역할 정보 가져오기
+            String role = getRoleFromAuthorities(existingAuth);
+            if (role == null) {
+                role = getRoleByUsername(username);
+            }
+            
+            // username에 따라 사용자 ID 매핑
+            Long userId = getUserIdByUsername(username);
+            String email = getEmailByUsername(username);
+            String name = getNameByUsername(username);
+            
+            CurrentUser currentUser = new CurrentUser(userId, username, email, name, role);
+            
+            UsernamePasswordAuthenticationToken authenticationToken =
+                    new UsernamePasswordAuthenticationToken(
+                            currentUser,
+                            null,
+                            currentUser.getAuthorities()
+                    );
+            
+            SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+            return;
+        }
+        
+        // 기본 Mock 사용자 정보로 인증 처리
         CurrentUser currentUser = new CurrentUser(
                 DEFAULT_USER_ID,
                 DEFAULT_USERNAME,
@@ -82,6 +120,94 @@ public class TestAuthenticationFilter extends OncePerRequestFilter {
                 );
 
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+    }
+    
+    /**
+     * username에 따른 사용자 ID 매핑
+     */
+    private Long getUserIdByUsername(String username) {
+        switch (username) {
+            case "unauthorized":
+                return 999L; // 권한이 없는 사용자
+            case "user1":
+                return 1L; // 작성자 시나리오 (memberId=1)
+            case "user2":
+                return 2L; // 다른 사용자 시나리오 (memberId=2)
+            case "testuser":
+                return 1L; // 기본 테스트 사용자
+            default:
+                return DEFAULT_USER_ID;
+        }
+    }
+    
+    /**
+     * username에 따른 이메일 매핑
+     */
+    private String getEmailByUsername(String username) {
+        switch (username) {
+            case "unauthorized":
+                return "unauthorized@certis.org";
+            case "user1":
+                return "user1@certis.org";
+            case "user2":
+                return "user2@certis.org";
+            case "testuser":
+                return "test@certis.org";
+            default:
+                return DEFAULT_EMAIL;
+        }
+    }
+    
+    /**
+     * username에 따른 이름 매핑
+     */
+    private String getNameByUsername(String username) {
+        switch (username) {
+            case "unauthorized":
+                return "권한없음";
+            case "user1":
+                return "김개발";
+            case "user2":
+                return "이테스트";
+            case "testuser":
+                return "테스트사용자";
+            default:
+                return DEFAULT_NAME;
+        }
+    }
+    
+    /**
+     * @WithMockUser에서 설정한 권한에서 역할 추출
+     */
+    private String getRoleFromAuthorities(Authentication auth) {
+        if (auth.getAuthorities() == null || auth.getAuthorities().isEmpty()) {
+            return null;
+        }
+        
+        // 첫 번째 권한에서 역할 추출 (ROLE_ 접두사 제거)
+        String authority = auth.getAuthorities().iterator().next().getAuthority();
+        if (authority.startsWith("ROLE_")) {
+            return authority.substring(5); // "ROLE_" 제거
+        }
+        return authority;
+    }
+    
+    /**
+     * username에 따른 역할 매핑
+     */
+    private String getRoleByUsername(String username) {
+        switch (username) {
+            case "unauthorized":
+                return "PLAYER";
+            case "user1":
+                return "UPSOLVER";
+            case "user2":
+                return "PLAYER";
+            case "testuser":
+                return "UPSOLVER";
+            default:
+                return DEFAULT_ROLE.name();
+        }
     }
 
     /**

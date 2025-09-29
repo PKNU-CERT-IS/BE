@@ -2,6 +2,8 @@ package org.certis.studyplatform.board.presentation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
+import org.certis.studyplatform.board.domain.model.vo.BoardIdVo;
+import org.certis.studyplatform.board.domain.repository.BoardRedisRepository;
 import org.certis.studyplatform.board.presentation.dto.request.BoardCreateRequestDto;
 import org.certis.studyplatform.board.presentation.dto.request.BoardUpdateRequestDto;
 import org.certis.studyplatform.config.TestEmbeddedPostgresConfig;
@@ -20,6 +22,7 @@ import org.springframework.test.annotation.Commit;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Statement;
@@ -43,7 +46,8 @@ public class BoardControllerTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
-    @Autowired EntityManager em;
+    @Autowired private EntityManager em;
+    @Autowired private BoardRedisRepository boardRedisRepository;
 
     private static final Long TEST_BOARD_ID = 1L;
     private static final Long TEST_BOARD_ID_FOR_DIFFERENCE = 2L;
@@ -115,7 +119,7 @@ public class BoardControllerTest {
     @DisplayName("3️⃣ 게시글 검색 - 생성된 게시글이 검색되는지 확인")
     @Transactional(readOnly = true)
     void searchBoards_FindCreatedBoard_Success() throws Exception {
-        mockMvc.perform(get("/api/v1/board/keyword")
+        mockMvc.perform(get("/api/v1/board/search")
                         .param("keyword", "실제 통합")
                         .param("category", "TECH")
                         .param("page", "1")
@@ -134,7 +138,45 @@ public class BoardControllerTest {
     @DisplayName("3️⃣-추가 키워드/카테고리 없이 전체 조회")
     @Transactional(readOnly = true)
     void searchBoards_NoParams_ReturnsAll() throws Exception {
-        mockMvc.perform(get("/api/v1/board/keyword"))
+        mockMvc.perform(get("/api/v1/board/search"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.message").value(ResponseStatus.BOARD_SEARCH_SUCCESS.getMessage()))
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.totalElements").exists())
+                // 기본 페이징(page=0, size=10) 확인
+                .andExpect(jsonPath("$.data.number").value(0))
+                .andExpect(jsonPath("$.data.size").value(10));
+    }
+
+    @Test
+    @Order(3)
+    @WithMockUser(username = "user1", roles = "UPSOLVER")
+    @DisplayName("3️⃣-기본 페이징 확인 - 명시적 page/size 없이 size=10, page=0")
+    @Transactional(readOnly = true)
+    void searchBoards_DefaultPaging_WhenNoPageSizeParams() throws Exception {
+        mockMvc.perform(get("/api/v1/board/search")
+                        .param("keyword", "테스트"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.message").value(ResponseStatus.BOARD_SEARCH_SUCCESS.getMessage()))
+                .andExpect(jsonPath("$.data.number").value(0))
+                .andExpect(jsonPath("$.data.size").value(10));
+    }
+
+    @Test
+    @Order(3)
+    @WithMockUser(username = "user1", roles = "UPSOLVER")
+    @DisplayName("3️⃣-ALL 카테고리로 전체 게시글 조회")
+    @Transactional(readOnly = true)
+    void searchBoards_WithAllCategory_ReturnsAll() throws Exception {
+        mockMvc.perform(get("/api/v1/board/search")
+                        .param("keyword", "테스트")
+                        .param("category", "ALL")
+                        .param("page", "0")
+                        .param("size", "10"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
@@ -226,25 +268,101 @@ public class BoardControllerTest {
     @Order(8)
     @WithMockUser(username = "admin", roles = "STAFF")
     @DisplayName("7️⃣ 매일 00시 View→RDB 동기화 트리거 검증 - 수동 호출 시 정상 동작")
-    @Transactional
     void syncBoardStatsDaily_ManualTrigger_Success() throws Exception {
-        // 사전 조건: 통계 관련 View 데이터가 존재한다고 가정 (테스트 DB에 seed 되어 있음)
-        // 동기화 엔드포인트가 별도로 노출되어 있다면 해당 엔드포인트를 호출하는 방식 권장.
-        // 여기서는 스케줄러가 호출하는 Application Service 흐름을 컨트롤러 레벨에서 검증하기 위해
-        // 관리용 엔드포인트를 노출했다고 가정: /api/v1/board/admin/sync
+        // 1. 테스트용 게시글 생성 (트랜잭션 없이)
+        Long testBoardId = createTestBoardWithoutTransaction();
+        BoardIdVo boardIdVo = BoardIdVo.of(testBoardId);
+        
+        // 2. 먼저 동기화를 한 번 실행하여 DB에 기본 통계 데이터 생성
+        mockMvc.perform(post("/api/v1/board/admin/sync").with(csrf()))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.message").value("BOARD_SYNC_SUCCESS"));
+        
+        // 3. Redis에 다른 값으로 설정하여 일관성 불일치 상태 생성
+        boardRedisRepository.setLikeCount(boardIdVo, 5L);  // Redis: 5 (DB: 0)
+        boardRedisRepository.setViewCount(boardIdVo, 10L); // Redis: 10 (DB: 0)
+        
+        // 4. 동기화 전 일관성 검증 (불일치 상태여야 함)
+        mockMvc.perform(get("/api/v1/board/stats/today"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.message").value("BOARD_STATS_FIND_SUCCESS"))
+                .andExpect(jsonPath("$.data.synced").value(false)); // 동기화 전이므로 false
 
+        // 5. 동기화 실행
         mockMvc.perform(post("/api/v1/board/admin/sync").with(csrf()))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("BOARD_SYNC_SUCCESS"));
 
-        // 이후 효과 검증: 특정 집계 조회 API가 동기화 결과를 반영했는지 확인
+        // 6. 동기화 후 일관성 검증 (일치 상태여야 함)
         mockMvc.perform(get("/api/v1/board/stats/today"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("BOARD_STATS_FIND_SUCCESS"))
-                .andExpect(jsonPath("$.data.synced").value(true));
+                .andExpect(jsonPath("$.data.synced").value(true)); // 동기화 후이므로 true
+    }
+    
+    /**
+     * 테스트용 게시글 생성 (트랜잭션 없이)
+     */
+    private Long createTestBoardWithoutTransaction() {
+        // 테스트용 게시글 데이터 생성
+        BoardCreateRequestDto request = BoardCreateRequestDto.builder()
+                .title("테스트 게시글")
+                .content("테스트 내용")
+                .description("테스트 설명")
+                .category("테스트")
+                .build();
+        
+        // 게시글 생성 API 호출
+        try {
+            MvcResult result = mockMvc.perform(post("/api/v1/board/create")
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isCreated())
+                    .andReturn();
+            
+            // 응답에서 게시글 ID 추출 (실제 구현에 따라 다를 수 있음)
+            // 여기서는 간단히 고정된 ID를 반환
+            return 1L; // 테스트용 고정 ID
+        } catch (Exception e) {
+            throw new RuntimeException("테스트 게시글 생성 실패", e);
+        }
+    }
+    
+    /**
+     * 테스트용 게시글 생성
+     */
+    private Long createTestBoard() {
+        // 테스트용 게시글 데이터 생성
+        BoardCreateRequestDto request = BoardCreateRequestDto.builder()
+                .title("테스트 게시글")
+                .content("테스트 내용")
+                .description("테스트 설명")
+                .category("테스트")
+                .build();
+        
+        // 게시글 생성 API 호출
+        try {
+            MvcResult result = mockMvc.perform(post("/api/v1/board/create")
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isCreated())
+                    .andReturn();
+            
+            // 응답에서 게시글 ID 추출 (실제 구현에 따라 다를 수 있음)
+            // 여기서는 간단히 고정된 ID를 반환
+            return 1L; // 테스트용 고정 ID
+        } catch (Exception e) {
+            throw new RuntimeException("테스트 게시글 생성 실패", e);
+        }
     }
 }

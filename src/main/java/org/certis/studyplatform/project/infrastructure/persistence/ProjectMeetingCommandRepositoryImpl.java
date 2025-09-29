@@ -6,14 +6,18 @@ import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.project.domain.repository.ProjectMeetingCommandRepository;
 import org.certis.studyplatform.project.domain.repository.ProjectMeetingQueryRepository;
+import org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository;
 import org.certis.studyplatform.project.domain.vo.ProjectMeetingCreatedVo;
 import org.certis.studyplatform.project.domain.vo.ProjectMeetingUpdatedVo;
 import org.certis.studyplatform.project.domain.vo.ProjectMeetingVo;
+import org.certis.studyplatform.project.domain.vo.ProjectParticipantSummaryVo;
 import org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectMeetingEntity;
 import org.certis.studyplatform.project.infrastructure.persistence.jpa.ProjectMeetingJpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -34,6 +38,7 @@ public class ProjectMeetingCommandRepositoryImpl implements ProjectMeetingComman
     private final ProjectMeetingJpaRepository projectMeetingJpaRepository;
     // ✅ CQRS: 검증을 위한 QueryRepository 의존성 추가
     private final ProjectMeetingQueryRepository projectMeetingQueryRepository;
+    private final ProjectParticipantQueryRepository projectParticipantQueryRepository;
 
     @Override
     public ProjectMeetingCreatedVo save(ProjectMeetingVo projectMeetingVo) {
@@ -45,7 +50,11 @@ public class ProjectMeetingCommandRepositoryImpl implements ProjectMeetingComman
             .memberId(projectMeetingVo.writerId())
             .title(projectMeetingVo.title())
             .content(projectMeetingVo.content())
-            .participants(convertParticipantIdsToArray(projectMeetingVo.participantIds())) // List<Long> -> String[] 변환
+            .participants(toParticipantsArray(
+                    projectMeetingVo.projectId(),
+                    projectMeetingVo.writerId(),
+                    projectMeetingVo.participantNumber()
+            ))
             .build();
 
         // 데이터베이스에 저장
@@ -56,7 +65,7 @@ public class ProjectMeetingCommandRepositoryImpl implements ProjectMeetingComman
             savedEntity.getProjectId(),
             savedEntity.getTitle(),
             savedEntity.getContent(),
-            projectMeetingVo.participantIds(),
+            projectMeetingVo.participantNumber(),
             savedEntity.getMemberId(),
             savedEntity.getCreatedAt()
         );
@@ -83,7 +92,11 @@ public class ProjectMeetingCommandRepositoryImpl implements ProjectMeetingComman
                 projectMeetingVo.id(),
                 projectMeetingVo.title(),
                 projectMeetingVo.content(),
-                convertParticipantIdsToArray(projectMeetingVo.participantIds()),
+                toParticipantsArray(
+                        projectMeetingVo.projectId(),
+                        projectMeetingVo.writerId(),
+                        projectMeetingVo.participantNumber()
+                ),
                 OffsetDateTime.now()
         );
 
@@ -98,7 +111,7 @@ public class ProjectMeetingCommandRepositoryImpl implements ProjectMeetingComman
                 projectMeetingVo.id(),
                 projectMeetingVo.title(),
                 projectMeetingVo.content(),
-                projectMeetingVo.participantIds(),
+                projectMeetingVo.participantNumber(),
                 OffsetDateTime.now()
         );
 
@@ -134,54 +147,36 @@ public class ProjectMeetingCommandRepositoryImpl implements ProjectMeetingComman
     }
 
     /**
-     * List<Long> participantIds를 콤마로 구분된 문자열로 변환 (벌크 업데이트용)
+     * 회의 참가자 배열 생성
+     * - 프로젝트의 APPROVED 참가자 목록을 조회하여 memberId 배열 구성
+     * - 작성자(writerId)가 목록에 없으면 포함
+     * - participantNumber가 지정되면 해당 수로 상한
      */
-    private String convertParticipantIdsToString(java.util.List<Long> participantIds) {
-        if (participantIds == null || participantIds.isEmpty()) {
-            return "";
-        }
+    private Long[] toParticipantsArray(Long projectId, Long writerId, Integer participantNumber) {
+        try {
+            List<ProjectParticipantSummaryVo> approved = projectParticipantQueryRepository.findAllApprovedByProjectId(projectId);
 
-        return participantIds.stream()
-                .map(String::valueOf)
-                .collect(java.util.stream.Collectors.joining(","));
-    }
-
-
-    /**
-     * List<Long> participantIds를 String[] participants로 변환
-     * 임시로 단순 변환 처리 (실제로는 Member ID를 이름으로 변환하는 로직 필요)
-     */
-    private Long[] convertParticipantIdsToArray(java.util.List<Long> participantIds) {
-        if (participantIds == null || participantIds.isEmpty()) {
-            return new Long[0];
-        }
-        
-        // TODO: 실제로는 Member ID를 이름으로 변환하는 로직 필요
-        // 임시로 ID를 문자열로 변환
-        return participantIds.stream()
-            .map(Long::valueOf)
-            .toArray(Long[]::new);
-    }
-
-    /**
-     * String[] participants를 List<Long> participantIds로 변환
-     * 임시로 단순 변환 처리 (실제로는 participants가 이름 문자열이므로 별도 매핑 필요)
-     */
-    private java.util.List<Long> convertParticipantsToIds(String[] participants) {
-        if (participants == null) {
-            return java.util.List.of();
-        }
-        
-        // TODO: 실제로는 participant 이름을 Member ID로 변환하는 로직 필요
-        // 임시로 문자열을 Long으로 변환 시도
-        return java.util.Arrays.stream(participants)
-            .map(s -> {
-                try {
-                    return Long.parseLong(s);
-                } catch (NumberFormatException e) {
-                    return 0L; // 임시 처리
+            List<Long> participantIds = new ArrayList<>();
+            for (ProjectParticipantSummaryVo vo : approved) {
+                Long memberId = vo.memberId();
+                if (memberId != null && !participantIds.contains(memberId)) {
+                    participantIds.add(memberId);
                 }
-            })
-            .toList();
+            }
+
+            if (writerId != null && !participantIds.contains(writerId)) {
+                participantIds.add(0, writerId);
+            }
+
+            if (participantNumber != null && participantNumber > 0 && participantIds.size() > participantNumber) {
+                participantIds = participantIds.subList(0, participantNumber);
+            }
+
+            return participantIds.toArray(new Long[0]);
+        } catch (Exception e) {
+            log.warn("Infrastructure: Failed to build participants array for projectId={}, falling back to writer only. error={}",
+                    projectId, e.getMessage(), e);
+            return writerId != null ? new Long[]{writerId} : new Long[0];
+        }
     }
 } 

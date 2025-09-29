@@ -1,15 +1,19 @@
 package org.certis.studyplatform.project.application.mapper;
 
 import org.certis.studyplatform.project.domain.vo.*;
+import org.certis.studyplatform.project.domain.ProjectParticipantStatus;
 import org.certis.studyplatform.project.presentation.dto.response.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Component;
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
+import lombok.RequiredArgsConstructor;
+import org.certis.studyplatform.shared.service.S3FileService;
 
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * Project Application DTO Mapper
@@ -19,7 +23,10 @@ import java.util.stream.IntStream;
  * Presentation Mapper에서 Application Layer로 이동됨
  */
 @Component
+@RequiredArgsConstructor
 public class ProjectApplicationDtoMapper {
+
+    private final S3FileService s3FileService;
 
     /**
      * ProjectVo를 ProjectDetailResponseDto로 변환
@@ -40,12 +47,24 @@ public class ProjectApplicationDtoMapper {
                 .startDate(vo.startDate())
                 .endDate(vo.endDate())
                 .creatorId(vo.creatorId())
-                .creatorName(vo.creatorName())
+                .projectCreatorName(vo.creatorName())
+                .projectCreatorGrade(vo.creatorGrade())
+                .semester(vo.semester())
+                .status(vo.status() != null ? vo.status().toString() : null)
+                .resultSubmitStatus(vo.resultSubmitStatus() != null ? vo.resultSubmitStatus() : ResultSubmitStatus.READY)
                 .githubUrl(vo.githubUrl())
-                .attachments(Collections.emptyList()) // 초기값은 빈 리스트, Facade에서 추가됨
+                .externalUrl(vo.externalUrl() != null ? 
+                    ExternalUrlResponseDto.builder()
+                        .title(vo.externalUrl().title())
+                        .url(vo.externalUrl().url())
+                        .build() : null)
+                .demoUrl(vo.demoUrl())
+                .thumbnailUrl(normalizeUrl(vo.thumbnailUrl()))
+                .attachments(vo.attached() != null ? toProjectAttachedResponseDtoList(vo.attached()) : Collections.emptyList()) // VO에서 첨부파일 정보 가져오기
                 .meetingSummaries(Collections.emptyList()) // 초기값은 빈 리스트, Facade에서 추가됨
-                .maxParticipants(vo.maxParticipants())
-                .currentParticipants(vo.currentParticipants())
+                .maxParticipantNumber(vo.maxParticipants())
+                .currentParticipantNumber(vo.currentParticipants())
+                .isParticipantable(vo.isParticipantable())
                 .build();
     }
 
@@ -67,9 +86,18 @@ public class ProjectApplicationDtoMapper {
                 .endDate(vo.endDate())
                 .projectCreatorName(vo.projectCreatorName())
                 .projectCreatorGrade(vo.projectCreatorGrade())
+                .semester(vo.semester())
+                .status(vo.status())
+                .resultSubmitStatus(vo.resultSubmitStatus() != null ? vo.resultSubmitStatus() : ResultSubmitStatus.READY)
                 .isParticipantable(vo.isParticipantable())
                 .githubUrl(vo.githubUrl())
-                .externalUrl(vo.externalUrl())
+                .externalUrl(vo.externalUrl() != null ? 
+                    new ExternalUrlResponseDto(vo.externalUrl().title(), vo.externalUrl().url()) : null)
+                .demoUrl(vo.demoUrl())
+                .thumbnailUrl(normalizeUrl(vo.thumbnailUrl()))
+                .maxParticipantNumber(vo.maxParticipantNumber())
+                .currentParticipantNumber(vo.currentParticipantNumber())
+                .attachments(vo.attachedVo() != null ? toProjectAttachedResponseDtoList(vo.attachedVo()) : java.util.Collections.emptyList())
                 .build();
     }
 
@@ -81,12 +109,13 @@ public class ProjectApplicationDtoMapper {
             return null;
         }
 
+        String url = normalizeUrl(vo.attachedUrl());
         return ProjectAttachedResponseDto.builder()
                 .id(vo.id())
                 .name(vo.name())
                 .type(vo.type())
                 .size(vo.size())
-                .attachedUrl(vo.attachedUrl())
+                .attachedUrl(url)
                 .build();
     }
 
@@ -103,6 +132,10 @@ public class ProjectApplicationDtoMapper {
                 .toList();
     }
 
+    private String normalizeUrl(String url) {
+        return s3FileService.toPresignedUrl(url);
+    }
+
     /**
      * ProjectMeetingSummaryWithLinksVo를 ProjectMeetingSummaryResponseDto로 변환
      */
@@ -117,7 +150,7 @@ public class ProjectApplicationDtoMapper {
                 .participantNumber(vo.participantNumber())
                 .creatorName(vo.creatorName())
                 .isEditable(vo.isEditable())
-                .links(vo.hasLinks() ? createMockLinks(vo.safeLinkCount()) : Collections.emptyList())
+                .links(Collections.emptyList())
                 .build();
     }
 
@@ -129,15 +162,9 @@ public class ProjectApplicationDtoMapper {
             return null;
         }
 
-        // 기존 meetingAttachedUrl과 meetingAttachedTitle을 links로 변환
+        // 링크는 Facade 레이어에서 S3 메타데이터를 통해 채울 수 있도록 비워둔다
         List<ProjectMeetingSummaryResponseDto.Link> links = Collections.emptyList();
-        if (vo.meetingAttachedUrl() != null && !vo.meetingAttachedUrl().isEmpty()) {
-            links = List.of(ProjectMeetingSummaryResponseDto.Link.builder()
-                    .title(vo.meetingAttachedTitle() != null ? vo.meetingAttachedTitle() : "회의록 첨부 링크")
-                    .url(vo.meetingAttachedUrl())
-                    .build());
-        }
-
+        
         return ProjectMeetingSummaryResponseDto.builder()
                 .id(vo.id())
                 .title(vo.title())
@@ -158,22 +185,6 @@ public class ProjectApplicationDtoMapper {
 
         return vos.stream()
                 .map(this::toProjectMeetingSummaryResponseDto)
-                .toList();
-    }
-
-    /**
-     * 테스트용 링크 목록 생성
-     */
-    private List<ProjectMeetingSummaryResponseDto.Link> createMockLinks(int count) {
-        if (count <= 0) {
-            return Collections.emptyList();
-        }
-        
-        return IntStream.range(0, count)
-                .mapToObj(i -> ProjectMeetingSummaryResponseDto.Link.builder()
-                        .title("회의록 첨부 링크 " + (i + 1))
-                        .url("https://example.com/meeting-notes-" + (i + 1) + ".pdf")
-                        .build())
                 .toList();
     }
 
@@ -213,7 +224,9 @@ public class ProjectApplicationDtoMapper {
         }
 
         List<ProjectSummaryResponseDto> dtoList = toProjectSummaryResponseDtoList(voPage.getContent());
-        return new PageImpl<>(dtoList, voPage.getPageable(), voPage.getTotalElements());
+        // Normalize Pageable to avoid Unpaged serialization issues
+        var pageable = voPage.getPageable().isPaged() ? voPage.getPageable() : org.springframework.data.domain.PageRequest.of(0, dtoList.size() == 0 ? 1 : dtoList.size());
+        return new PageImpl<>(dtoList, pageable, voPage.getTotalElements());
     }
 
     /**
@@ -316,6 +329,82 @@ public class ProjectApplicationDtoMapper {
                 .pendingCount(pendingCount)
                 .maxParticipants(maxParticipants)
                 .isFull(isFull)
+                .build();
+    }
+
+    /**
+     * AdminProjectParticipantApprovalResponseDto 생성
+     * 
+     * @param participantVo 참가자 정보 VO
+     * @param projectVo 프로젝트 정보 VO
+     * @param adminId 관리자 ID
+     * @param adminName 관리자 이름
+     * @param reason 승인/거절 사유
+     * @param processedAt 처리 시간
+     * @return AdminProjectParticipantApprovalResponseDto
+     */
+    public AdminProjectParticipantApprovalResponseDto toAdminProjectParticipantApprovalResponseDto(
+            ProjectParticipantVo participantVo,
+            ProjectVo projectVo,
+            Long adminId,
+            String adminName,
+            String reason,
+            OffsetDateTime processedAt) {
+        
+        if (participantVo == null || projectVo == null) {
+            return null;
+        }
+
+        return AdminProjectParticipantApprovalResponseDto.builder()
+                .participantId(participantVo.id())
+                .projectId(participantVo.projectId())
+                .projectTitle(projectVo.title())
+                .memberId(participantVo.memberId())
+                .memberName(participantVo.memberName())
+                .status(participantVo.status())
+                .reason(reason)
+                .adminId(adminId)
+                .adminName(adminName)
+                .processedAt(processedAt)
+                .build();
+    }
+
+    /**
+     * ProjectParticipantVo와 업데이트된 상태를 AdminProjectParticipantApprovalResponseDto로 변환
+     * 
+     * @param participantVo 참가자 정보 VO
+     * @param projectVo 프로젝트 정보 VO
+     * @param updatedStatus 업데이트된 상태
+     * @param adminId 관리자 ID
+     * @param adminName 관리자 이름
+     * @param reason 승인/거절 사유
+     * @param processedAt 처리 시간
+     * @return AdminProjectParticipantApprovalResponseDto
+     */
+    public AdminProjectParticipantApprovalResponseDto toAdminProjectParticipantApprovalResponseDto(
+            ProjectParticipantVo participantVo,
+            ProjectVo projectVo,
+            ProjectParticipantStatus updatedStatus,
+            Long adminId,
+            String adminName,
+            String reason,
+            OffsetDateTime processedAt) {
+        
+        if (participantVo == null || projectVo == null) {
+            return null;
+        }
+
+        return AdminProjectParticipantApprovalResponseDto.builder()
+                .participantId(participantVo.id())
+                .projectId(participantVo.projectId())
+                .projectTitle(projectVo.title())
+                .memberId(participantVo.memberId())
+                .memberName(participantVo.memberName())
+                .status(updatedStatus)
+                .reason(reason)
+                .adminId(adminId)
+                .adminName(adminName)
+                .processedAt(processedAt)
                 .build();
     }
 }

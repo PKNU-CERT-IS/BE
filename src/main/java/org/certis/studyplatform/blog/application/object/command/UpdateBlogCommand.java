@@ -15,7 +15,8 @@ public record UpdateBlogCommand(
         String category,
         ArticleReferenceType referenceType,
         Long referenceId,
-        Long requesterId
+        Long requesterId,
+        Boolean isPublic
 ) {
     public static UpdateBlogCommand of(
             Long id,
@@ -25,11 +26,12 @@ public record UpdateBlogCommand(
             String category,
             ArticleReferenceType referenceType,
             Long referenceId,
-            Long requesterId
+            Long requesterId,
+            Boolean isPublic
     ) {
         return new UpdateBlogCommand(
                 id, title, description, content, category,
-                referenceType, referenceId, requesterId
+                referenceType, referenceId, requesterId, isPublic
         );
     }
 }

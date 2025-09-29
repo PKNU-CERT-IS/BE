@@ -82,7 +82,6 @@ class StudyParticipantControllerTest {
 
     @BeforeEach
     void setUp() {
-        System.out.println("🔧 테스트 데이터 설정 시작");
         // 시드 데이터로 인한 PK 충돌 방지를 위해 매 테스트 시작 시 테이블 정리
         dsl.execute("TRUNCATE TABLE study_participant RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE study RESTART IDENTITY CASCADE");
@@ -104,14 +103,11 @@ class StudyParticipantControllerTest {
         dsl.execute("SELECT setval('study_id_seq', 2, false)");
         dsl.execute("SELECT setval('study_participant_id_seq', 2, false)");
         
-        System.out.println("✅ 테스트 데이터 설정 완료");
     }
 
     @AfterEach
     void tearDown() {
-        System.out.println("🧹 테스트 데이터 정리 시작");
         cleanupTestData();
-        System.out.println("✅ 테스트 데이터 정리 완료");
     }
 
     // =================================================================
@@ -143,7 +139,6 @@ class StudyParticipantControllerTest {
         // Then: 데이터베이스에 참가 신청이 정상적으로 저장되었는지 검증
         verifyParticipantRegisteredInDatabase(request);
         
-        System.out.println("✅ 스터디 참가 신청 테스트 성공");
     }
 
     @Test
@@ -172,7 +167,6 @@ class StudyParticipantControllerTest {
         // Then: 데이터베이스에서 승인 상태 확인
         verifyParticipantStatusInDatabase(TEST_STUDY_PARTICIPANT_ID, StudyParticipantStatus.APPROVED);
         
-        System.out.println("✅ 스터디 참가 승인 테스트 성공");
     }
 
     @Test
@@ -198,10 +192,9 @@ class StudyParticipantControllerTest {
                 .andExpect(jsonPath("$.data.participantId").value(TEST_STUDY_PARTICIPANT_ID))
                 .andExpect(jsonPath("$.data.currentStatus").value("REJECTED"));
 
-        // Then: 데이터베이스에서 소프트 삭제 확인 (deleted_at 설정)
-        verifyParticipantSoftDeletedInDatabase(TEST_STUDY_PARTICIPANT_ID);
+        // Then: 데이터베이스에서 상태 업데이트 확인 (REJECTED 상태)
+        verifyParticipantStatusUpdatedInDatabase(TEST_STUDY_PARTICIPANT_ID);
         
-        System.out.println("✅ 스터디 참가 거절 테스트 성공");
     }
 
     @Test
@@ -232,7 +225,6 @@ class StudyParticipantControllerTest {
         // Then: 데이터베이스에서 취소 확인 (소프트 삭제 또는 상태 변경)
         verifyParticipantCancelledInDatabase(TEST_STUDY_ID, TEST_PARTICIPANT_ID);
         
-        System.out.println("✅ 스터디 참가 신청 취소 테스트 성공");
     }
 
     // =================================================================
@@ -261,7 +253,6 @@ class StudyParticipantControllerTest {
                 .andExpect(jsonPath("$.data.size").value(10))
                 .andExpect(jsonPath("$.data.number").value(0));
 
-        System.out.println("✅ 스터디별 전체 참가자 목록 조회 테스트 성공");
     }
 
     @Test
@@ -283,7 +274,6 @@ class StudyParticipantControllerTest {
                 .andExpect(jsonPath("$.data.content").isArray())
                 .andExpect(jsonPath("$.data.totalElements").value(1)); // 1명의 대기 중인 참가자
 
-        System.out.println("✅ 대기 중인 참가자 목록 조회 테스트 성공");
     }
 
     @Test
@@ -305,7 +295,6 @@ class StudyParticipantControllerTest {
                 .andExpect(jsonPath("$.data.content").isArray())
                 .andExpect(jsonPath("$.data.totalElements").value(1)); // 1명의 승인된 참가자
 
-        System.out.println("✅ 승인된 참가자 목록 조회 테스트 성공");
     }
 
     @Test
@@ -326,7 +315,6 @@ class StudyParticipantControllerTest {
                 .andExpect(jsonPath("$.message").value("스터디 참가자 조회에 성공했습니다."))
                 .andExpect(jsonPath("$.data.content").isArray());
 
-        System.out.println("✅ 회원별 참가 스터디 목록 조회 테스트 성공");
     }
 
     // =================================================================
@@ -349,7 +337,6 @@ class StudyParticipantControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400));
 
-        System.out.println("✅ 필수 필드 누락 검증 테스트 성공");
     }
 
     @Test
@@ -369,7 +356,6 @@ class StudyParticipantControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(400))
                 .andExpect(jsonPath("$.message").value("이미 참가 신청한 스터디입니다."));
 
-        System.out.println("✅ 중복 참가 신청 방지 테스트 성공");
     }
 
     @Test
@@ -393,7 +379,6 @@ class StudyParticipantControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(400))
                 .andExpect(jsonPath("$.message").value("스터디 생성자 또는 관리자만 참가 승인/거절을 할 수 있습니다."));
 
-        System.out.println("✅ 권한 없는 사용자 승인 시도 테스트 성공");
     }
 
     // =================================================================
@@ -426,7 +411,6 @@ class StudyParticipantControllerTest {
         // 성능 검증: 1초 이내 응답
         assertThat(executionTime).isLessThan(1000);
         
-        System.out.println("✅ 대용량 데이터 페이징 성능 테스트 성공 - 실행시간: " + executionTime + "ms");
     }
 
     // =================================================================
@@ -513,7 +497,6 @@ class StudyParticipantControllerTest {
                     .execute();
 
         } catch (Exception e) {
-            System.out.println("테스트 데이터 설정 중 오류 발생 (이미 존재할 수 있음): " + e.getMessage());
         }
     }
 
@@ -527,7 +510,6 @@ class StudyParticipantControllerTest {
             dsl.deleteFrom(STUDY).execute();
             dsl.deleteFrom(MEMBER).execute();
         } catch (Exception e) {
-            System.out.println("테스트 데이터 정리 중 오류 발생: " + e.getMessage());
         }
     }
 
@@ -714,14 +696,14 @@ class StudyParticipantControllerTest {
     }
 
     /**
-     * 참가자 소프트 삭제 검증 (거절)
+     * 참가자 상태 업데이트 검증 (REJECTED 상태)
      */
-    private void verifyParticipantSoftDeletedInDatabase(Long participantId) {
+    private void verifyParticipantStatusUpdatedInDatabase(Long participantId) {
         var participant = dsl.selectFrom(STUDY_PARTICIPANT)
                 .where(STUDY_PARTICIPANT.ID.eq(participantId))
                 .fetchOne();
 
         assertThat(participant).isNotNull();
-        assertThat(participant.getDeletedAt()).isNotNull();
+        assertThat(participant.getStatus()).isEqualTo("REJECTED");
     }
 }

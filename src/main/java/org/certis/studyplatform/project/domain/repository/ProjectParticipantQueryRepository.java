@@ -71,4 +71,20 @@ public interface ProjectParticipantQueryRepository {
      * 현재 진행 중(기간 내)이며 APPROVED인 프로젝트 수 (회원 기준)
      */
     long countActiveProjectsByMemberId(Long memberId);
+
+    /**
+     * 특정 사용자가 특정 프로젝트의 승인된 멤버인지 확인
+     * @param projectId 프로젝트 ID
+     * @param memberId 멤버 ID
+     * @return 승인된 멤버이면 true, 그렇지 않으면 false
+     */
+    boolean isApprovedMember(Long projectId, Long memberId);
+
+    /**
+     * 특정 사용자가 특정 프로젝트의 멤버인지 확인 (상태 무관)
+     * @param projectId 프로젝트 ID
+     * @param memberId 멤버 ID
+     * @return 멤버이면 true, 그렇지 않으면 false
+     */
+    boolean isMember(Long projectId, Long memberId);
 }

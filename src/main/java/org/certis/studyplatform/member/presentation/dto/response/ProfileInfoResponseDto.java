@@ -22,7 +22,7 @@ public class ProfileInfoResponseDto {
     private String name;
     private String description;
     private String profileImage;
-    private List<OffsetDateTime> todaySchedules;
+    private List<ScheduleInfoResponseDto> todaySchedules;
     private Integer penaltyCount;
     private OffsetDateTime gracePeriod;
     private MemberRole memberRole;

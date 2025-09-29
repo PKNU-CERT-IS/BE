@@ -55,6 +55,8 @@ public enum ResponseStatus {
     PROJECT_FIND_SUCCESS(HttpStatus.OK, "프로젝트를 성공적으로 조회했습니다"),
     PROJECT_UPDATE_SUCCESS(HttpStatus.OK, "프로젝트 정보가 성공적으로 갱신되었습니다"),
     PROJECT_DELETE_SUCCESS(HttpStatus.OK, "프로젝트가 성공적으로 삭제되었습니다"),
+    PROJECT_END_SUCCESS(HttpStatus.OK, "프로젝트가 성공적으로 종료되었습니다"),
+    PROJECT_END_REJECT_SUCCESS(HttpStatus.OK, "프로젝트 종료 제출이 성공적으로 거절되었습니다"),
     PROJECT_JOIN_SUCCESS(HttpStatus.OK, "프로젝트에 성공적으로 참여했습니다"),
     PROJECT_LEAVE_SUCCESS(HttpStatus.OK, "프로젝트에서 성공적으로 탈퇴했습니다"),
     PROJECT_LIST_SUCCESS(HttpStatus.OK, "프로젝트 목록을 성공적으로 조회했습니다"),
@@ -71,6 +73,8 @@ public enum ResponseStatus {
     PROJECT_PARTICIPANT_JOIN_CANCELED(HttpStatus.OK, "프로젝트 참가 취소가 성공했습니다"),
     PROJECT_PARTICIPANT_JOIN_APPROVED(HttpStatus.OK, "프로젝트 참가가 승인되었습니다"),
     PROJECT_PARTICIPANT_JOIN_REJECTED(HttpStatus.OK, "프로젝트 참가가 거절되었습니다"),
+    PROJECT_PARTICIPANT_APPROVE_SUCCESS(HttpStatus.OK, "프로젝트 참가 신청이 관리자에 의해 성공적으로 승인되었습니다"),
+    PROJECT_PARTICIPANT_REJECT_SUCCESS(HttpStatus.OK, "프로젝트 참가 신청이 관리자에 의해 성공적으로 거절되었습니다"),
     PROJECT_PARTICIPANT_SEARCH_SUCCESS(HttpStatus.OK, "프로젝트 참가자 조회에 성공했습니다."),
 
     // =================================================================
@@ -80,6 +84,8 @@ public enum ResponseStatus {
     STUDY_FIND_SUCCESS(HttpStatus.OK, "스터디를 성공적으로 조회했습니다"),
     STUDY_UPDATE_SUCCESS(HttpStatus.OK, "스터디 정보가 성공적으로 갱신되었습니다"),
     STUDY_DELETE_SUCCESS(HttpStatus.OK, "스터디가 성공적으로 삭제되었습니다"),
+    STUDY_END_SUCCESS(HttpStatus.OK, "스터디가 성공적으로 종료되었습니다"),
+    STUDY_END_REJECT_SUCCESS(HttpStatus.OK, "스터디 종료 제출이 성공적으로 거절되었습니다"),
     STUDY_JOIN_SUCCESS(HttpStatus.OK, "스터디에 성공적으로 참여했습니다"),
     STUDY_LEAVE_SUCCESS(HttpStatus.OK, "스터디에서 성공적으로 탈퇴했습니다"),
     STUDY_SESSION_CREATE_SUCCESS(HttpStatus.CREATED, "스터디 세션이 성공적으로 생성되었습니다"),
@@ -101,6 +107,8 @@ public enum ResponseStatus {
     STUDY_PARTICIPANT_JOIN_CANCELED(HttpStatus.OK, "스터디 참가 취소가 성공했습니다"),
     STUDY_PARTICIPANT_JOIN_APPROVED(HttpStatus.OK, "스터디 참가가 승인되었습니다"),
     STUDY_PARTICIPANT_JOIN_REJECTED(HttpStatus.OK, "스터디 참가가 거절되었습니다"),
+    STUDY_PARTICIPANT_APPROVE_SUCCESS(HttpStatus.OK, "스터디 참가 신청이 관리자에 의해 성공적으로 승인되었습니다"),
+    STUDY_PARTICIPANT_REJECT_SUCCESS(HttpStatus.OK, "스터디 참가 신청이 관리자에 의해 성공적으로 거절되었습니다"),
     STUDY_PARTICIPANT_SEARCH_SUCCESS(HttpStatus.OK, "스터디 참가자 조회에 성공했습니다."),
 
     // =================================================================

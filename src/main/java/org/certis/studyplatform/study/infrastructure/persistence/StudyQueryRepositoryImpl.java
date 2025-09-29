@@ -3,6 +3,7 @@ package org.certis.studyplatform.study.infrastructure.persistence;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.study.domain.repository.StudyQueryRepository;
+import org.certis.studyplatform.study.domain.StudyParticipantStatus;
 import org.certis.studyplatform.study.domain.vo.*;
 import org.certis.studyplatform.study.infrastructure.mapper.StudyInfrastructureMapper;
 import org.jooq.*;
@@ -14,9 +15,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.certis.studyplatform.member.domain.MemberGrade;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 
 import static org.certis.generated.jooq.Tables.*;
 import static org.jooq.impl.DSL.*;
@@ -44,6 +47,63 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
     private final DSLContext dsl;
 
     private final StudyInfrastructureMapper mapper;
+    @Override
+    public Optional<StudyEndSubmissionInfoVo> getEndSubmissionInfo(Long studyId) {
+        var s = STUDY.as("s");
+        var m = MEMBER.as("m");
+        return Optional.ofNullable(
+                dsl.select(
+                            s.ID,
+                            s.STATUS.as("status"),
+                            s.RESULT_SUBMIT_STATUS,
+                            s.RESULT_SUBMITTED_AT,
+                            s.RESULT_ATTACHED_URL,
+                            s.CATEGORY,
+                            s.SUBCATEGORY,
+                            s.TITLE,
+                            s.DESCRIPTION,
+                            s.MEMBER_ID,
+                            m.NAME,
+                            m.GRADE,
+                            s.STARTED_AT,
+                            s.ENDED_AT,
+                            select(count())
+                                    .from(STUDY_PARTICIPANT)
+                                    .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
+                                    .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
+                                    .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
+                                    .asField("current_participants"),
+                            s.MAX_PARTICIPANTS_NUMBER
+                        )
+                        .from(s)
+                        .leftJoin(m).on(s.MEMBER_ID.eq(m.ID))
+                        .where(s.ID.eq(studyId))
+                        .and(s.DELETED_AT.isNull())
+                        .fetchOne()
+        ).map(r -> {
+            String resultSubmitStatusString = r.get(s.RESULT_SUBMIT_STATUS);
+            ResultSubmitStatus resultSubmitStatus = resultSubmitStatusString != null ? ResultSubmitStatus.valueOf(resultSubmitStatusString) : null;
+            org.certis.studyplatform.study.domain.StudyStatus studyStatus = r.get("status", org.certis.studyplatform.study.domain.StudyStatus.class);
+            return new StudyEndSubmissionInfoVo(
+                    r.get(s.ID),
+                    studyStatus,
+                    resultSubmitStatus,
+                    r.get(s.RESULT_SUBMITTED_AT),
+                    r.get(s.RESULT_ATTACHED_URL),
+                    r.get(s.CATEGORY),
+                    r.get(s.SUBCATEGORY),
+                    r.get(s.TITLE),
+                    r.get(s.DESCRIPTION),
+                    r.get(s.MEMBER_ID),
+                    r.get(m.NAME),
+                    r.get(m.GRADE, MemberGrade.class),
+                    r.get(s.STARTED_AT),
+                    r.get(s.ENDED_AT),
+                    r.get("current_participants", Integer.class),
+                    r.get(s.MAX_PARTICIPANTS_NUMBER)
+            );
+        });
+    }
 
     @Override
     public Optional<StudyVo> findStudyDetailById(Long studyId) {
@@ -56,6 +116,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
         Optional<StudyVo> result = Optional.of(
                         dsl.select(
                                         s.ID,
+                                        s.STATUS.as("status"),
                                         s.MEMBER_ID,
                                         m.NAME.as("creator_name"),
                                         m.GRADE.as("creator_grade"),
@@ -65,6 +126,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         s.CATEGORY,
                                         s.SUBCATEGORY,
                                         s.MAX_PARTICIPANTS_NUMBER,
+                                        s.RESULT_SUBMIT_STATUS.as("result_submit_status"),
                                         s.STARTED_AT,
                                         s.ENDED_AT,
                                         s.CREATED_AT,
@@ -73,6 +135,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
                                                 .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
+                                                .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
                                                 .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
                                                 .asField("current_participants"),
                                         // StudyAttached 정보
@@ -129,6 +192,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
         List<StudySummaryVo> studySummaries = Optional.of(
                         dsl.select(
                                         s.ID,
+                                        s.STATUS.as("status"),
                                         s.TITLE,
                                         s.DESCRIPTION,
                                         s.CATEGORY,
@@ -139,10 +203,13 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         m.NAME.as("creator_name"),
                                         m.GRADE.as("creator_grade"),
                                         s.MAX_PARTICIPANTS_NUMBER,
+                                        s.RESULT_SUBMIT_STATUS.as("result_submit_status"),
+                                        s.DELETED_AT.as("deleted_at"),
                                         // 현재 참여자 수 서브쿼리
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
                                                 .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
+                                                .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
                                                 .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
                                                 .asField("current_participants"),
                                         // StudyAttached 정보
@@ -206,6 +273,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
         List<StudySummaryVo> studySummaries = Optional.of(
                         dsl.select(
                                         s.ID,
+                                        s.STATUS.as("status"),
                                         s.TITLE,
                                         s.DESCRIPTION,
                                         s.CATEGORY,
@@ -216,9 +284,11 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         m.NAME.as("creator_name"),
                                         m.GRADE.as("creator_grade"),
                                         s.MAX_PARTICIPANTS_NUMBER,
+                                        s.RESULT_SUBMIT_STATUS.as("result_submit_status"),
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
                                                 .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
+                                                .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
                                                 .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
                                                 .asField("current_participants"),
                                         sa.ID.as("attached_id"),
@@ -267,6 +337,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
         List<StudySummaryVo> studySummaries = Optional.of(
                         dsl.select(
                                         s.ID,
+                                        s.STATUS.as("status"),
                                         s.TITLE,
                                         s.DESCRIPTION,
                                         s.CATEGORY,
@@ -277,9 +348,11 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         m.NAME.as("creator_name"),
                                         m.GRADE.as("creator_grade"),
                                         s.MAX_PARTICIPANTS_NUMBER,
+                                        s.RESULT_SUBMIT_STATUS.as("result_submit_status"),
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
                                                 .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
+                                                .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
                                                 .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
                                                 .asField("current_participants"),
                                         sa.ID.as("attached_id"),
@@ -330,6 +403,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
         List<StudySummaryVo> studySummaries = Optional.of(
                         dsl.select(
                                         s.ID,
+                                        s.STATUS.as("status"),
                                         s.TITLE,
                                         s.DESCRIPTION,
                                         s.CATEGORY,
@@ -340,9 +414,11 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         m.NAME.as("creator_name"),
                                         m.GRADE.as("creator_grade"),
                                         s.MAX_PARTICIPANTS_NUMBER,
+                                        s.RESULT_SUBMIT_STATUS.as("result_submit_status"),
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
                                                 .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
+                                                .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
                                                 .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
                                                 .asField("current_participants"),
                                         sa.ID.as("attached_id"),
@@ -367,6 +443,58 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                 .orElse(List.of());
 
         return createSearchResult(studySummaries, total, pageable);
+    }
+
+    @Override
+    public java.util.List<StudyEndSubmissionInfoVo> findEndSubmissionsInProgress() {
+        var s = STUDY.as("s");
+        var m = MEMBER.as("m");
+        return dsl.select(
+                        s.ID,
+                        s.STATUS.as("status"),
+                        s.RESULT_SUBMIT_STATUS,
+                        s.RESULT_SUBMITTED_AT,
+                        s.RESULT_ATTACHED_URL,
+                        s.CATEGORY,
+                        s.SUBCATEGORY,
+                        s.TITLE,
+                        s.DESCRIPTION,
+                        s.MEMBER_ID,
+                        m.NAME,
+                        m.GRADE,
+                        s.STARTED_AT,
+                        s.ENDED_AT,
+                        select(count())
+                                .from(STUDY_PARTICIPANT)
+                                .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
+                                .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
+                                .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
+                                .asField("current_participants"),
+                        s.MAX_PARTICIPANTS_NUMBER
+                )
+                .from(s)
+                .leftJoin(m).on(s.MEMBER_ID.eq(m.ID))
+                .where(s.RESULT_SUBMIT_STATUS.eq(org.certis.studyplatform.shared.domain.ResultSubmitStatus.INPROGRESS.name()))
+                .and(s.DELETED_AT.isNull())
+                .orderBy(s.RESULT_SUBMITTED_AT.desc())
+                .fetch(r -> new StudyEndSubmissionInfoVo(
+                        r.get(s.ID),
+                        r.get("status", org.certis.studyplatform.study.domain.StudyStatus.class),
+                        org.certis.studyplatform.shared.domain.ResultSubmitStatus.valueOf(r.get(s.RESULT_SUBMIT_STATUS)),
+                        r.get(s.RESULT_SUBMITTED_AT),
+                        r.get(s.RESULT_ATTACHED_URL),
+                        r.get(s.CATEGORY),
+                        r.get(s.SUBCATEGORY),
+                        r.get(s.TITLE),
+                        r.get(s.DESCRIPTION),
+                        r.get(s.MEMBER_ID),
+                        r.get(m.NAME),
+                        r.get(m.GRADE, MemberGrade.class),
+                        r.get(s.STARTED_AT),
+                        r.get(s.ENDED_AT),
+                        r.get("current_participants", Integer.class),
+                        r.get(s.MAX_PARTICIPANTS_NUMBER)
+                ));
     }
 
     @Override
@@ -407,9 +535,11 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         m.NAME.as("creator_name"),
                                         m.GRADE.as("creator_grade"),
                                         s.MAX_PARTICIPANTS_NUMBER,
+                                        s.RESULT_SUBMIT_STATUS.as("result_submit_status"),
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
                                                 .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
+                                                .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
                                                 .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
                                                 .asField("current_participants"),
                                         sa.ID.as("attached_id"),
@@ -471,9 +601,11 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         m.NAME.as("creator_name"),
                                         m.GRADE.as("creator_grade"),
                                         s.MAX_PARTICIPANTS_NUMBER,
+                                        s.RESULT_SUBMIT_STATUS.as("result_submit_status"),
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
                                                 .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
+                                                .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
                                                 .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
                                                 .asField("current_participants"),
                                         sa.ID.as("attached_id"),
@@ -524,6 +656,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
         List<StudySummaryVo> studies = Optional.of(
                         dsl.select(
                                         s.ID,
+                                        s.STATUS.as("status"),
                                         s.TITLE,
                                         s.DESCRIPTION,
                                         s.CATEGORY,
@@ -537,6 +670,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
                                                 .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
+                                                .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
                                                 .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
                                                 .asField("current_participants"),
                                         sa.ID.as("attached_id"),
@@ -576,6 +710,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
         return Optional.of(
                         dsl.select(
                                         s.ID,
+                                        s.STATUS.as("status"),
                                         s.TITLE,
                                         s.DESCRIPTION,
                                         s.CATEGORY,
@@ -589,6 +724,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
                                                 .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
+                                                .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
                                                 .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
                                                 .asField("current_participants"),
                                         sa.ID.as("attached_id"),
@@ -659,6 +795,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
         Optional<StudyVo> result = Optional.of(
                         dsl.select(
                                         s.ID,
+                                        s.STATUS.as("status"),
                                         s.TITLE,
                                         s.DESCRIPTION,
                                         s.CONTENT,
@@ -670,12 +807,14 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         m.NAME.as("creator_name"),
                                         m.GRADE.as("creator_grade"),
                                         s.MAX_PARTICIPANTS_NUMBER,
+                                        s.DELETED_AT.as("deleted_at"),
                                         s.CREATED_AT,
                                         s.UPDATED_AT,
                                         // 현재 참여자 수 서브쿼리
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
                                                 .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
+                                                .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
                                                 .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
                                                 .asField("current_participants"),
                                         sa.ID.as("attached_id"),
@@ -710,6 +849,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
         Optional<StudyVo> result = Optional.of(
                         dsl.select(
                                         s.ID,
+                                        s.STATUS.as("status"),
                                         s.TITLE,
                                         s.DESCRIPTION,
                                         s.CONTENT,
@@ -721,12 +861,14 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         m.NAME.as("creator_name"),
                                         m.GRADE.as("creator_grade"),
                                         s.MAX_PARTICIPANTS_NUMBER,
+                                        s.DELETED_AT.as("deleted_at"),
                                         s.CREATED_AT,
                                         s.UPDATED_AT,
                                         // 현재 참여자 수 서브쿼리
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
                                                 .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
+                                                .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
                                                 .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
                                                 .asField("current_participants"),
                                         sa.ID.as("attached_id"),
@@ -788,8 +930,56 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
             log.debug("jOOQ: Added subcategory condition: {}", criteria.subCategory());
         }
 
+        // 학기 필터 (semester 기간 검색)
+        if (criteria.semester() != null && !criteria.semester().trim().isEmpty()) {
+            try {
+                // DateTimeUtils를 사용하여 semester 기간 파싱
+                var semesterPeriod = org.certis.studyplatform.shared.util.DateTimeUtils.parseSemesterPeriod(criteria.semester());
+
+                // 스터디 기간이 학기 기간과 겹치는 경우를 검색
+                conditions = conditions.and(
+                        s.STARTED_AT.lessOrEqual(semesterPeriod.endDate())
+                                .and(s.ENDED_AT.greaterOrEqual(semesterPeriod.startDate()))
+                );
+                log.debug("jOOQ: Added semester condition: {} to {}",
+                        semesterPeriod.startDate(), semesterPeriod.endDate());
+            } catch (IllegalArgumentException e) {
+                log.warn("jOOQ: Invalid semester format: {}", criteria.semester());
+                // 잘못된 형식의 경우 조건 무시
+            }
+        }
+
+        // 상태 필터 (상태 매핑 로직 적용)
+        if (criteria.status() != null && !criteria.status().trim().isEmpty()) {
+            String upperStatus = criteria.status().toUpperCase();
+            Condition statusCondition = buildStudyStatusCondition(upperStatus, s);
+            if (statusCondition != null) {
+                conditions = conditions.and(statusCondition);
+                log.debug("jOOQ: Added status condition for: {}", criteria.status());
+            }
+        }
+
         log.debug("jOOQ: Final conditions built: {}", conditions);
         return conditions;
+    }
+
+    /**
+     * 스터디 상태 조건 구성 (상태 매핑 로직 적용)
+     * READY → READY, APPROVED
+     * INPROGRESS → INPROGRESS
+     * COMPLETED → COMPLETED
+     */
+    private Condition buildStudyStatusCondition(String status, org.jooq.Table<?> s) {
+        var sTable = STUDY.as("s");
+        return switch (status) {
+            case "READY" -> sTable.STATUS.in("READY", "APPROVED");
+            case "INPROGRESS" -> sTable.STATUS.eq("INPROGRESS");
+            case "COMPLETED" -> sTable.STATUS.eq("COMPLETED");
+            default -> {
+                log.warn("jOOQ: Unknown study status: {}", status);
+                yield null;
+            }
+        };
     }
 
 
@@ -862,5 +1052,92 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
             return new String[0];
         }
         return skills.toArray(new String[0]);
+    }
+
+    @Override
+    public List<StudyAttachedVo> findAttachmentsByStudyId(Long studyId) {
+        log.info("jOOQ: Finding study attachments by study ID - {}", studyId);
+
+        var sa = STUDY_ATTACHED.as("sa");
+
+        List<StudyAttachedVo> attachments = dsl.select(
+                        sa.ID,
+                        sa.NAME,
+                        sa.TYPE,
+                        sa.SIZE,
+                        sa.ATTACHED_URL
+                )
+                .from(sa)
+                .where(sa.STUDY_ID.eq(studyId))
+                .and(sa.DELETED_AT.isNull())
+                .orderBy(sa.CREATED_AT.asc())
+                .fetch()
+                .stream()
+                .map(record -> StudyAttachedVo.of(
+                        record.get(sa.ID),
+                        record.get(sa.NAME),
+                        record.get(sa.TYPE),
+                        record.get(sa.SIZE),
+                        record.get(sa.ATTACHED_URL)
+                ))
+                .toList();
+
+        log.info("jOOQ: Found {} attachments for study ID: {}", attachments.size(), studyId);
+        return attachments;
+    }
+
+    @Override
+    public List<Long> findApprovedStudiesStartedBefore(OffsetDateTime currentTime) {
+        log.info("jOOQ: Finding approved studies started before {}", currentTime);
+
+        List<Long> studyIds = dsl.select(STUDY.ID)
+                .from(STUDY)
+                .where(STUDY.STATUS.eq("APPROVED"))
+                .and(STUDY.STARTED_AT.le(currentTime))
+                .and(STUDY.DELETED_AT.isNull())
+                .fetch()
+                .stream()
+                .map(record -> record.get(STUDY.ID))
+                .toList();
+
+        log.info("jOOQ: Found {} approved studies started before {}", studyIds.size(), currentTime);
+        return studyIds;
+    }
+
+    @Override
+    public Optional<org.certis.studyplatform.study.infrastructure.persistence.entity.StudyEntity> findEntityById(Long studyId) {
+        log.info("jOOQ: Finding study entity by ID - {}", studyId);
+        
+        // JPA Repository를 통해 Entity 직접 조회
+        return Optional.ofNullable(
+            dsl.selectFrom(STUDY)
+                .where(STUDY.ID.eq(studyId))
+                .and(STUDY.DELETED_AT.isNull())
+                .fetchOne()
+        ).map(record -> {
+            // Record를 StudyEntity로 변환
+            return org.certis.studyplatform.study.infrastructure.persistence.entity.StudyEntity.builder()
+                .id(record.get(STUDY.ID))
+                .memberId(record.get(STUDY.MEMBER_ID))
+                .title(record.get(STUDY.TITLE))
+                .description(record.get(STUDY.DESCRIPTION))
+                .content(record.get(STUDY.CONTENT))
+                .category(record.get(STUDY.CATEGORY))
+                .subcategory(record.get(STUDY.SUBCATEGORY))
+                .maxParticipantsNumber(record.get(STUDY.MAX_PARTICIPANTS_NUMBER))
+                .startedAt(record.get(STUDY.STARTED_AT))
+                .endedAt(record.get(STUDY.ENDED_AT))
+                .createdAt(record.get(STUDY.CREATED_AT))
+                .updatedAt(record.get(STUDY.UPDATED_AT))
+                .deletedAt(record.get(STUDY.DELETED_AT))
+                .resultSubmittedAt(record.get(STUDY.RESULT_SUBMITTED_AT))
+                .resultSubmitStatus(record.get(STUDY.RESULT_SUBMIT_STATUS) != null ? 
+                    org.certis.studyplatform.shared.domain.ResultSubmitStatus.valueOf(record.get(STUDY.RESULT_SUBMIT_STATUS)) : null)
+                .resultAttachmentUrl(record.get(STUDY.RESULT_ATTACHED_URL))
+                .status(record.get(STUDY.STATUS) != null ? 
+                    org.certis.studyplatform.study.domain.StudyStatus.valueOf(record.get(STUDY.STATUS)) : 
+                    org.certis.studyplatform.study.domain.StudyStatus.READY)
+                .build();
+        });
     }
 }

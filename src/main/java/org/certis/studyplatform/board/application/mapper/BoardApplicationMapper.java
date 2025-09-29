@@ -15,6 +15,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Component;
 
+import org.certis.studyplatform.shared.service.S3FileService;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,18 +24,18 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class BoardApplicationMapper {
 
+    private final S3FileService s3FileService;
+
     /**
      * BoardSearchRequestDto → SearchBoardsQuery 변환
      */
     public SearchBoardsQuery toSearchBoardsQuery(BoardSearchRequestDto request) {
-        boolean noFilter = (request.getSearch() == null || request.getSearch().trim().isEmpty())
-                && (request.getCategory() == null || request.getCategory().trim().isEmpty());
-
-        int page = noFilter ? 0 : request.getPage();
-        int size = noFilter ? Integer.MAX_VALUE : request.getSize();
+        // 전달된 page/size를 그대로 사용 (검증은 Domain Vo에서 수행)
+        int page = request.getPage();
+        int size = request.getSize();
 
         return SearchBoardsQuery.of(
-                request.getSearch(),
+                request.getKeyword(),
                 request.getCategory(),
                 page,
                 size
@@ -118,7 +120,7 @@ public class BoardApplicationMapper {
                 .title(vo.title())
                 .description(vo.description())
                 .updatedAt(vo.updatedAt())
-                .category(vo.category())
+                .category(vo.category() != null ? vo.category().value() : null)
                 .authorName(vo.authorName())
                 .likeCount(vo.likeCount())
                 .viewCount(vo.viewCount())
@@ -147,8 +149,16 @@ public class BoardApplicationMapper {
                 .name(vo.name())
                 .type(vo.type())
                 .size(vo.size())
-                .attachedUrl(vo.attachedUrl())
+                // S3 URL을 presigned URL로 변환하여 프론트엔드에서 직접 접근 가능하도록 함
+                .attachedUrl(normalizeUrl(vo.attachedUrl()))
                 .build();
+    }
+
+    /**
+     * URL 정규화 - S3 URL을 presigned URL로 변환
+     */
+    private String normalizeUrl(String url) {
+        return s3FileService.toPresignedUrl(url);
     }
 
     /**

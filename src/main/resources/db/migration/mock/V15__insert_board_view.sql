@@ -48,3 +48,6 @@ insert into board_view (id, board_id, view_number, updated_at) values (47, 47, 1
 insert into board_view (id, board_id, view_number, updated_at) values (48, 48, 1, '2025-01-01 05:55:28');
 insert into board_view (id, board_id, view_number, updated_at) values (49, 49, 1, '2025-07-23 17:38:14');
 insert into board_view (id, board_id, view_number, updated_at) values (50, 50, 1, '2025-06-11 12:05:55');
+
+-- 시퀀스 오프셋 조정 (목데이터 삽입 후)
+SELECT setval('board_view_id_seq', (SELECT MAX(id) FROM board_view));

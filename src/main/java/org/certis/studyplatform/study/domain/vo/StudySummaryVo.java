@@ -1,6 +1,7 @@
 package org.certis.studyplatform.study.domain.vo;
 
 import org.certis.studyplatform.member.domain.MemberGrade;
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -20,10 +21,13 @@ public record StudySummaryVo(
     OffsetDateTime endDate,
     String studyCreatorName,
     MemberGrade studyCreatorGrade,
+    String semester,
+    String status,
     boolean isParticipantable,
     List<StudyAttachedVo> attachedVo,
     Integer maxParticipants,
-    Integer currentParticipants
+    Integer currentParticipants,
+    ResultSubmitStatus resultSubmitStatus
 ) {
     public static StudySummaryVo of(
         Long id,
@@ -35,15 +39,18 @@ public record StudySummaryVo(
         OffsetDateTime endDate,
         String studyCreatorName,
         MemberGrade studyCreatorRole,
+        String semester,
+        String status,
         boolean isParticipantable,
         List<StudyAttachedVo> attachedVo,
         Integer maxParticipants,
-        Integer currentParticipants
+        Integer currentParticipants,
+        ResultSubmitStatus resultSubmitStatus
     ) {
         return new StudySummaryVo(
             id, title, description, category, subcategory,
             startDate, endDate, studyCreatorName, studyCreatorRole,
-                isParticipantable, attachedVo, maxParticipants, currentParticipants
+            semester, status, isParticipantable, attachedVo, maxParticipants, currentParticipants, resultSubmitStatus
         );
     }
 }

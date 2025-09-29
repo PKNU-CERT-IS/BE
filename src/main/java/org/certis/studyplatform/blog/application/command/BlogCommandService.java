@@ -65,4 +65,17 @@ public class BlogCommandService {
 
         log.info("Command: Blog deleted successfully - ID: {}", command.id());
     }
+
+    /**
+     * Admin용 블로그 공개 유무 토글
+     */
+    @Transactional
+    public void toggleBlogPublicStatus(Long blogId, Boolean isPublic, Long adminId) {
+        log.info("Command: Toggling blog public status - ID: {} to {} by admin: {}", blogId, isPublic, adminId);
+
+        // Domain Service로 전달
+        blogDomainService.toggleBlogPublicStatus(blogId, isPublic, adminId);
+
+        log.info("Command: Blog public status toggled successfully - ID: {}", blogId);
+    }
 }

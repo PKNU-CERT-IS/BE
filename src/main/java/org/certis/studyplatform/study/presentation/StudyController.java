@@ -22,6 +22,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.certis.studyplatform.study.presentation.dto.request.StudyEndRequestDto;
 
 import java.util.List;
 
@@ -55,7 +56,7 @@ public class StudyController {
     private final StudyFacadeService studyFacadeService;
 
     /**
-     * 프로젝트 생성 (임시 - Spring Security 미구축 상태)
+     * 프로젝트 생성
      *
      * @param request 프로젝트 생성 요청 DTO (leaderId, creatorName 포함)
      * @return 생성된 프로젝트 정보
@@ -76,7 +77,7 @@ public class StudyController {
     }
 
     /**
-     * 프로젝트 정보 수정 (임시 - Spring Security 미구축 상태)
+     * 프로젝트 정보 수정
      *
      * @param request 프로젝트 수정 요청 DTO (studyId, requesterId 포함)
      * @return 수정된 프로젝트 정보
@@ -95,7 +96,7 @@ public class StudyController {
     }
 
     /**
-     * 프로젝트 정보 삭제 (임시 - Spring Security 미구축 상태)
+     * 프로젝트 정보 삭제
      *
      * @param request 프로젝트 삭제 요청 DTO (studyId, requesterId 포함)
      * @return 성공 응답
@@ -152,9 +153,9 @@ public class StudyController {
             @Valid @ModelAttribute StudyAdvancedSearchRequestDto searchRequest,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
-        log.info("REST: Unified study search - keyword: {}, category: {}, subcategory: {}, status: {}, page: {}, size: {}",
+        log.info("REST: Unified study search - keyword: {}, category: {}, subcategory: {}, semester: {}, studyStatus: {}, page: {}, size: {}",
                 searchRequest.getKeyword(),  searchRequest.getCategory(),
-                searchRequest.getSubcategory(), searchRequest.getStatus(),
+                searchRequest.getSubcategory(), searchRequest.getSemester(), searchRequest.getStudyStatus(),
                 pageable.getPageNumber(), pageable.getPageSize());
 
         // 통합 고급 검색 Facade Service 호출
@@ -186,82 +187,6 @@ public class StudyController {
         return GlobalResponseHandler.success(ResponseStatus.STUDY_SEARCH_SUCCESS, result);
     }
 
-
-
-
-    //    /**
-//     * 프로젝트 생성 (Spring Security 구축 후 사용)
-//     *
-//     * @param request 프로젝트 생성 요청 DTO
-//     * @param currentUser 현재 로그인한 사용자 (리더)
-//     * @return 생성된 프로젝트 정보
-//     */
-//    @PostMapping("/create")
-//    public ResponseEntity<GlobalResponseHandler<StudyCreatedVo>> createStudy(
-//            @Valid @RequestBody StudyCreateRequestDto request,
-//            @AuthenticationPrincipal CurrentUser currentUser) {
-//        log.info("REST: Creating study - {}", request.getTitle());
-//
-//        // Facade Service 호출
-//        StudyCreatedVo createdVo = studyFacadeService.createStudy(
-//            request,
-//            currentUser.getId(),
-//            currentUser.getName()
-//        );
-//
-//        log.info("REST: Study created successfully - ID: {}", createdVo.id());
-//
-//        return GlobalResponseHandler.success(ResponseStatus.STUDY_CREATE_SUCCESS, createdVo);
-//    }
-//
-//    /**
-//     * 프로젝트 정보 수정 (Spring Security 구축 후 사용)
-//     *
-//     * @param studyId 프로젝트 ID (쿼리 파라미터)
-//     * @param request 프로젝트 수정 요청 DTO
-//     * @param currentUser 현재 로그인한 사용자
-//     * @return 수정된 프로젝트 정보
-//     */
-//    @PutMapping("/update")
-//    public ResponseEntity<GlobalResponseHandler<StudyUpdatedVo>> updateStudy(
-//            @RequestParam Long studyId,
-//            @Valid @RequestBody StudyUpdateRequestDto request,
-//            @AuthenticationPrincipal CurrentUser currentUser) {
-//        log.info("REST: Updating study - ID: {}", studyId);
-//
-//        // Facade Service 호출
-//        StudyUpdatedVo updatedVo = studyFacadeService.updateStudy(
-//            studyId,
-//            request,
-//            currentUser.getId()
-//        );
-//
-//        log.info("REST: Study updated successfully - ID: {}", updatedVo.id());
-//
-//        return GlobalResponseHandler.success(ResponseStatus.STUDY_UPDATE_SUCCESS, updatedVo);
-//    }
-//
-//    /**
-//     * 프로젝트 정보 삭제 (Spring Security 구축 후 사용)
-//     *
-//     * @param studyId 프로젝트 ID (쿼리 파라미터)
-//     * @param currentUser 현재 로그인한 사용자
-//     * @return 성공 응답
-//     */
-//    @DeleteMapping("/delete")
-//    public ResponseEntity<GlobalResponseHandler<Void>> deleteStudy(
-//            @RequestParam Long studyId,
-//            @AuthenticationPrincipal CurrentUser currentUser) {
-//        log.info("REST: Deleting study - ID: {}", studyId);
-//
-//        // Facade Service 호출
-//        studyFacadeService.deleteStudy(studyId, currentUser.getId());
-//
-//        log.info("REST: Study deleted successfully - ID: {}", studyId);
-//
-//        return GlobalResponseHandler.success(ResponseStatus.STUDY_DELETE_SUCCESS);
-//    }
-
     /**
      * 프로젝트 회의록 요약 목록 조회
      *
@@ -279,5 +204,26 @@ public class StudyController {
         log.info("REST: Found {} meetings for study - ID: {}", meetings.size(), studyId);
 
         return GlobalResponseHandler.success(ResponseStatus.STUDY_FIND_SUCCESS, meetings);
+    }
+
+    /**
+     * 스터디 종료
+     * POST /api/v1/study/end
+     */
+    @PostMapping(value = "/end")
+    public ResponseEntity<GlobalResponseHandler<StudyDetailResponseDto>> endStudy(
+            @Valid @RequestBody StudyEndRequestDto requestDto,
+            @AuthenticationPrincipal CurrentUser currentUser) {
+        log.info("REST: Ending study - ID: {}, requesterId: {}", requestDto.getStudyId(), currentUser.getId());
+
+        // Facade Service 호출 (VO → DTO 변환 포함)
+        StudyDetailResponseDto endedStudy = studyFacadeService.endStudy(
+                requestDto,
+                currentUser.getId()
+        );
+
+        log.info("REST: Study ended successfully - ID: {}", endedStudy.getId());
+
+        return GlobalResponseHandler.success(ResponseStatus.STUDY_END_SUCCESS, endedStudy);
     }
 }

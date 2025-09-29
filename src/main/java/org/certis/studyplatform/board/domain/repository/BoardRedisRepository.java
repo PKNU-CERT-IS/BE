@@ -36,4 +36,10 @@ public interface BoardRedisRepository {
     // 조회수 증가
     void incrementViewCount(BoardIdVo boardId);
 
+    // 테스트용: 특정 값으로 좋아요 수 설정
+    void setLikeCount(BoardIdVo boardId, Long count);
+
+    // 테스트용: 특정 값으로 조회수 설정
+    void setViewCount(BoardIdVo boardId, Long count);
+
 }

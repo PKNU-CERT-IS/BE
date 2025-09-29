@@ -13,11 +13,9 @@ import org.certis.studyplatform.member.domain.vo.*;
 import org.certis.studyplatform.member.domain.repository.command.MemberCommandRepository;
 import org.certis.studyplatform.member.domain.repository.query.MemberQueryRepository;
 import org.certis.studyplatform.member.domain.mapper.MemberDomainMapper;
-import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 
 /**
@@ -85,7 +83,7 @@ public class MemberDomainService {
         GradeVo gradeVo = memberDomainMapper.toGradeVo(command.grade());
         log.debug("✅ GradeVo created: {}", gradeVo.grade());
 
-        SkillsVo skillsVo = null; // 회원가입에서는 항상 null
+        // 회원가입에서는 skills는 항상 null (도메인 규칙에 따라 추후 확장 가능)
 
         // 역할 VO 변환 (길이, 형식 검증 자동 수행)
         RoleVo roleVo = memberDomainMapper.toRoleVo(command.role());
@@ -145,6 +143,15 @@ public class MemberDomainService {
                 null
         );
         memberContactCommandRepository.createContact(contactVo);
+
+        // ================================================================
+        // STEP 5: Member Penalty 생성 (신규 회원가입 시)
+        // 신규 회원의 패널티 레코드를 0점으로 초기화하여 생성
+        // ================================================================
+
+        log.debug("🎯 Creating penalty record for new member...");
+        memberCommandRepository.createPenalty(createdMember.id());
+        log.debug("✅ Penalty record created successfully");
 
         return createdMember;
     }
@@ -586,8 +593,17 @@ public class MemberDomainService {
      * 매주 일요일 24:00에 실행되어 유예기간이 만료된 Upsolver들에게 벌점 부여
      */
     public void applyGracePeriodForGrantingPenalties() {
+        applyGracePeriodForGrantingPenalties(OffsetDateTime.now());
+    }
+
+    /**
+     * 유예기간 만료 벌점 처리 (테스트용)
+     * 
+     * @param currentTime 현재 시간 (테스트에서 시간을 제어하기 위해 사용)
+     */
+    public void applyGracePeriodForGrantingPenalties(OffsetDateTime currentTime) {
         log.info("Domain: Starting grace period penalty processing");
-        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime now = currentTime;
         List<MemberWithPenaltyVo> expiredUpsolvers = memberQueryRepository.findExpiredUpsolvers(now);
 
         if (expiredUpsolvers.isEmpty()) {
@@ -645,9 +661,13 @@ public class MemberDomainService {
      */
     public boolean isWithdrawalCandidate(MemberIdVo memberId) {
         try {
-            // 회원의 벌점 정보 조회 (실제 구현에서는 별도 메서드 필요)
-            // 현재는 간단한 로직으로 구현
-            return false; // 실제 구현 필요
+            if (memberId == null || memberId.value() == null) {
+                return false;
+            }
+
+            int points = getCurrentPenaltyPoints(memberId);
+            // 정책: 벌점 6점 이상이면 탈퇴 대상
+            return points >= 6;
         } catch (Exception e) {
             log.error("Domain: Failed to check withdrawal status - memberId: {}", memberId.value(), e);
             return false;
@@ -659,8 +679,10 @@ public class MemberDomainService {
      */
     public int getCurrentPenaltyPoints(MemberIdVo memberId) {
         try {
-            // 실제 구현에서는 memberQueryRepository.findPenaltyByMemberId() 등의 메서드 필요
-            return 0; // 실제 구현 필요
+            if (memberId == null || memberId.value() == null) {
+                return 0;
+            }
+            return memberQueryRepository.findPenaltyPointsByMemberId(memberId.value());
         } catch (Exception e) {
             log.error("Domain: Failed to get penalty points - memberId: {}", memberId.value(), e);
             return 0;
@@ -668,12 +690,12 @@ public class MemberDomainService {
     }
 
     public List<MemberWithContactVo> searchMembersWithContact(SearchMembersWithContactQuery query) {
-        log.info("Domain: Searching members with contact - search: {}, grade: {}, role: {}",
-                query.search(), query.grade(), query.role());
+        log.info("Domain: Searching members with contact - keyword: {}, grade: {}, role: {}",
+                query.keyword(), query.grade(), query.role());
 
         // Query 객체를 VO로 변환
         MemberSearchConditionVo searchConditionVo = MemberSearchConditionVo.of(
-                query.search(),
+                query.keyword(),
                 query.grade(),
                 query.role()
         );

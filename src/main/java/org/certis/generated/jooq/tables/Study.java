@@ -15,7 +15,6 @@ import org.certis.generated.jooq.tables.Blog.BlogPath;
 import org.certis.generated.jooq.tables.Member.MemberPath;
 import org.certis.generated.jooq.tables.StudyAttached.StudyAttachedPath;
 import org.certis.generated.jooq.tables.StudyMeeting.StudyMeetingPath;
-import org.certis.generated.jooq.tables.StudyMeetingLink.StudyMeetingLinkPath;
 import org.certis.generated.jooq.tables.StudyParticipant.StudyParticipantPath;
 import org.certis.generated.jooq.tables.records.StudyRecord;
 import org.jooq.Condition;
@@ -80,7 +79,7 @@ public class Study extends TableImpl<StudyRecord> {
     /**
      * The column <code>public.study.content</code>.
      */
-    public final TableField<StudyRecord, String> CONTENT = createField(DSL.name("content"), SQLDataType.VARCHAR.nullable(false), this, "");
+    public final TableField<StudyRecord, String> CONTENT = createField(DSL.name("content"), SQLDataType.CLOB.nullable(false), this, "");
 
     /**
      * The column <code>public.study.category</code>.
@@ -126,6 +125,26 @@ public class Study extends TableImpl<StudyRecord> {
      * The column <code>public.study.description</code>.
      */
     public final TableField<StudyRecord, String> DESCRIPTION = createField(DSL.name("description"), SQLDataType.VARCHAR.nullable(false), this, "");
+
+    /**
+     * The column <code>public.study.result_submitted_at</code>.
+     */
+    public final TableField<StudyRecord, OffsetDateTime> RESULT_SUBMITTED_AT = createField(DSL.name("result_submitted_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "");
+
+    /**
+     * The column <code>public.study.result_attached_url</code>.
+     */
+    public final TableField<StudyRecord, String> RESULT_ATTACHED_URL = createField(DSL.name("result_attached_url"), SQLDataType.VARCHAR, this, "");
+
+    /**
+     * The column <code>public.study.result_submit_status</code>.
+     */
+    public final TableField<StudyRecord, String> RESULT_SUBMIT_STATUS = createField(DSL.name("result_submit_status"), SQLDataType.VARCHAR(20).defaultValue(DSL.field(DSL.raw("'READY'::character varying"), SQLDataType.VARCHAR)), this, "");
+
+    /**
+     * The column <code>public.study.status</code>.
+     */
+    public final TableField<StudyRecord, String> STATUS = createField(DSL.name("status"), SQLDataType.VARCHAR(20).nullable(false).defaultValue(DSL.field(DSL.raw("'READY'::character varying"), SQLDataType.VARCHAR)), this, "");
 
     private Study(Name alias, Table<StudyRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
@@ -244,19 +263,6 @@ public class Study extends TableImpl<StudyRecord> {
             _studyAttached = new StudyAttachedPath(this, null, Keys.STUDY_ATTACHED__FK_STUDY_ATTACHED_STUDY.getInverseKey());
 
         return _studyAttached;
-    }
-
-    private transient StudyMeetingLinkPath _studyMeetingLink;
-
-    /**
-     * Get the implicit to-many join path to the
-     * <code>public.study_meeting_link</code> table
-     */
-    public StudyMeetingLinkPath studyMeetingLink() {
-        if (_studyMeetingLink == null)
-            _studyMeetingLink = new StudyMeetingLinkPath(this, null, Keys.STUDY_MEETING_LINK__FK_STUDY_MEETING_LINK_STUDY.getInverseKey());
-
-        return _studyMeetingLink;
     }
 
     private transient StudyMeetingPath _studyMeeting;

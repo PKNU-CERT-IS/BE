@@ -408,19 +408,25 @@ class S3FileUploadIntegrationTest {
     @Order(11)
     @DisplayName("🚫 20MB 초과 파일 업로드 시 실패")
     void uploadFailsWhenFileExceeds20MB() {
-        // 20MB + 1바이트
+        // Given: 20MB + 1바이트 크기의 파일
         int size = 20 * 1024 * 1024 + 1;
         byte[] data = createLargeFileData(size);
-        String key = String.format("test-files/%s/too-large.bin",
-                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")));
 
-        // S3 자체는 20MB 제한이 없으므로, 애플리케이션 레벨에서 검증해야 함
-        // 실제로는 S3AttachmentService에서 20MB 제한을 검증하므로
-        // 이 테스트는 통과하지만, 실제 애플리케이션에서는 400 에러가 발생해야 함
-        assertThatCode(() -> uploadFile(data, "application/octet-stream", key))
-                .doesNotThrowAnyException();
-        
-        log.info("✅ 20MB 초과 파일도 S3에 업로드됨 (애플리케이션 레벨에서 제한 필요)");
+        // When: 실제 애플리케이션의 검증 메서드 호출
+        org.springframework.mock.web.MockMultipartFile multipartFile =
+                new org.springframework.mock.web.MockMultipartFile(
+                        "file",
+                        "too-large.bin",
+                        "application/octet-stream",
+                        data
+                );
+
+        org.certis.studyplatform.shared.service.S3AttachmentService service =
+                new org.certis.studyplatform.shared.service.S3AttachmentService();
+
+        // Then: 20MB 초과 시 예외 발생
+        assertThatThrownBy(() -> service.validateFileSize(multipartFile, 20))
+                .isInstanceOf(org.certis.studyplatform.exception.InfrastructureException.class);
     }
 
     // ================================================================
@@ -548,45 +554,45 @@ class S3FileUploadIntegrationTest {
     private byte[] createMockPdfData() {
         // 간단한 PDF 파일 구조 생성
         String pdfContent = """
-            %PDF-1.4
-            1 0 obj
-            <<
-            /Type /Catalog
-            /Pages 2 0 R
-            >>
-            endobj
-            
-            2 0 obj
-            <<
-            /Type /Pages
-            /Kids [3 0 R]
-            /Count 1
-            >>
-            endobj
-            
-            3 0 obj
-            <<
-            /Type /Page
-            /Parent 2 0 R
-            /MediaBox [0 0 612 792]
-            >>
-            endobj
-            
-            xref
-            0 4
-            0000000000 65535 f 
-            0000000010 00000 n 
-            0000000079 00000 n 
-            0000000173 00000 n 
-            trailer
-            <<
-            /Size 4
-            /Root 1 0 R
-            >>
-            startxref
-            253
-            %%EOF
-            """;
+        %PDF-1.4
+        1 0 obj
+        
+        /Type /Catalog
+        /Pages 2 0 R
+        >>
+        endobj
+
+        2 0 obj
+        
+        /Type /Pages
+        /Kids [3 0 R]
+        /Count 1
+        >>
+        endobj
+
+        3 0 obj
+        
+        /Type /Page
+        /Parent 2 0 R
+        /MediaBox [0 0 612 792]
+        >>
+        endobj
+
+        xref
+        0 4
+        0000000000 65535 f
+        0000000010 00000 n
+        0000000079 00000 n
+        0000000173 00000 n
+        trailer
+        
+        /Size 4
+        /Root 1 0 R
+        >>
+        startxref
+        253
+        %%EOF
+        """;
 
         return pdfContent.getBytes(StandardCharsets.UTF_8);
     }

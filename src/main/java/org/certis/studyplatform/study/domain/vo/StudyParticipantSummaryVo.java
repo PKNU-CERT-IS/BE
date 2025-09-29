@@ -1,5 +1,6 @@
 package org.certis.studyplatform.study.domain.vo;
 
+import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.study.domain.StudyParticipantStatus;
 
 import java.time.OffsetDateTime;
@@ -11,8 +12,11 @@ import java.time.OffsetDateTime;
  */
 public record StudyParticipantSummaryVo(
         Long id,
+        Long studyId,
         Long memberId,
         String memberName,
+        MemberGrade memberGrade,
+        String studyTitle,
         StudyParticipantStatus status,
         OffsetDateTime createdAt
 ) {}

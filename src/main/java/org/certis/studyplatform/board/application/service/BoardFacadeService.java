@@ -22,6 +22,8 @@ import org.certis.studyplatform.board.presentation.dto.response.BoardListRespons
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.certis.studyplatform.board.presentation.dto.response.BoardStatsResponseDto;
+import org.certis.studyplatform.board.domain.service.BoardDomainService;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +33,7 @@ public class BoardFacadeService {
     private final BoardCommandService boardCommandService;
     private final BoardQueryService boardQueryService;
     private final BoardSyncService boardSyncService;
+    private final BoardDomainService boardDomainService;
 
     private final BoardApplicationMapper boardApplicationMapper;
 
@@ -40,8 +43,8 @@ public class BoardFacadeService {
      * @return 페이징된 게시글 목록
      */
     public Page<BoardListResponseDto> searchBoards(BoardSearchRequestDto request) {
-        log.info("Facade: Searching boards - search: {}, category: {}, page: {}, size: {}",
-                request.getSearch(), request.getCategory(), request.getPage(), request.getSize());
+        log.info("Facade: Searching boards - keyword: {}, category: {}, page: {}, size: {}",
+                request.getKeyword(), request.getCategory(), request.getPage(), request.getSize());
 
         // 1. DTO → Query Object 변환
         SearchBoardsQuery query = boardApplicationMapper.toSearchBoardsQuery(request);
@@ -177,8 +180,14 @@ public class BoardFacadeService {
 
     // 오늘 통계 조회 (간단한 더미 값 반환)
     @Transactional(readOnly = true)
-    public org.certis.studyplatform.board.presentation.dto.response.BoardStatsResponseDto getTodayStats() {
-        // 실제 구현에서는 QueryService를 통해 조회
-        return new org.certis.studyplatform.board.presentation.dto.response.BoardStatsResponseDto(true);
+    public BoardStatsResponseDto getTodayStats() {
+        // Redis와 RDB 간 오늘자 통계 동기화가 완료되었는지(일관성) 점검
+        try {
+            boolean isConsistent = boardDomainService.validateStatsConsistency();
+            return new BoardStatsResponseDto(isConsistent);
+        } catch (Exception e) {
+            log.error("Facade: Failed to get today's board stats consistency", e);
+            return new BoardStatsResponseDto(false);
+        }
     }
 }

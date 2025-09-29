@@ -17,45 +17,45 @@ public class StudyMeetingLink implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private Long id;
-    private Long studyId;
     private Long memberId;
     private String name;
     private String attachedUrl;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private OffsetDateTime deletedAt;
+    private Long meetingId;
 
     public StudyMeetingLink() {}
 
     public StudyMeetingLink(StudyMeetingLink value) {
         this.id = value.id;
-        this.studyId = value.studyId;
         this.memberId = value.memberId;
         this.name = value.name;
         this.attachedUrl = value.attachedUrl;
         this.createdAt = value.createdAt;
         this.updatedAt = value.updatedAt;
         this.deletedAt = value.deletedAt;
+        this.meetingId = value.meetingId;
     }
 
     public StudyMeetingLink(
         Long id,
-        Long studyId,
         Long memberId,
         String name,
         String attachedUrl,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt,
-        OffsetDateTime deletedAt
+        OffsetDateTime deletedAt,
+        Long meetingId
     ) {
         this.id = id;
-        this.studyId = studyId;
         this.memberId = memberId;
         this.name = name;
         this.attachedUrl = attachedUrl;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.deletedAt = deletedAt;
+        this.meetingId = meetingId;
     }
 
     /**
@@ -70,20 +70,6 @@ public class StudyMeetingLink implements Serializable {
      */
     public void setId(Long id) {
         this.id = id;
-    }
-
-    /**
-     * Getter for <code>public.study_meeting_link.study_id</code>.
-     */
-    public Long getStudyId() {
-        return this.studyId;
-    }
-
-    /**
-     * Setter for <code>public.study_meeting_link.study_id</code>.
-     */
-    public void setStudyId(Long studyId) {
-        this.studyId = studyId;
     }
 
     /**
@@ -170,6 +156,20 @@ public class StudyMeetingLink implements Serializable {
         this.deletedAt = deletedAt;
     }
 
+    /**
+     * Getter for <code>public.study_meeting_link.meeting_id</code>.
+     */
+    public Long getMeetingId() {
+        return this.meetingId;
+    }
+
+    /**
+     * Setter for <code>public.study_meeting_link.meeting_id</code>.
+     */
+    public void setMeetingId(Long meetingId) {
+        this.meetingId = meetingId;
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
@@ -184,12 +184,6 @@ public class StudyMeetingLink implements Serializable {
                 return false;
         }
         else if (!this.id.equals(other.id))
-            return false;
-        if (this.studyId == null) {
-            if (other.studyId != null)
-                return false;
-        }
-        else if (!this.studyId.equals(other.studyId))
             return false;
         if (this.memberId == null) {
             if (other.memberId != null)
@@ -227,6 +221,12 @@ public class StudyMeetingLink implements Serializable {
         }
         else if (!this.deletedAt.equals(other.deletedAt))
             return false;
+        if (this.meetingId == null) {
+            if (other.meetingId != null)
+                return false;
+        }
+        else if (!this.meetingId.equals(other.meetingId))
+            return false;
         return true;
     }
 
@@ -235,13 +235,13 @@ public class StudyMeetingLink implements Serializable {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((this.id == null) ? 0 : this.id.hashCode());
-        result = prime * result + ((this.studyId == null) ? 0 : this.studyId.hashCode());
         result = prime * result + ((this.memberId == null) ? 0 : this.memberId.hashCode());
         result = prime * result + ((this.name == null) ? 0 : this.name.hashCode());
         result = prime * result + ((this.attachedUrl == null) ? 0 : this.attachedUrl.hashCode());
         result = prime * result + ((this.createdAt == null) ? 0 : this.createdAt.hashCode());
         result = prime * result + ((this.updatedAt == null) ? 0 : this.updatedAt.hashCode());
         result = prime * result + ((this.deletedAt == null) ? 0 : this.deletedAt.hashCode());
+        result = prime * result + ((this.meetingId == null) ? 0 : this.meetingId.hashCode());
         return result;
     }
 
@@ -250,13 +250,13 @@ public class StudyMeetingLink implements Serializable {
         StringBuilder sb = new StringBuilder("StudyMeetingLink (");
 
         sb.append(id);
-        sb.append(", ").append(studyId);
         sb.append(", ").append(memberId);
         sb.append(", ").append(name);
         sb.append(", ").append(attachedUrl);
         sb.append(", ").append(createdAt);
         sb.append(", ").append(updatedAt);
         sb.append(", ").append(deletedAt);
+        sb.append(", ").append(meetingId);
 
         sb.append(")");
         return sb.toString();

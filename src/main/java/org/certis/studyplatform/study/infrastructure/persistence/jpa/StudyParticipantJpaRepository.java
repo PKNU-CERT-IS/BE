@@ -9,7 +9,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
-import java.util.Optional;
 
 /**
  * Study Participant JPA Repository

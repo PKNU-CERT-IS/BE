@@ -1,10 +1,12 @@
 package org.certis.studyplatform.blog.domain.repository;
 
 import org.certis.studyplatform.blog.domain.vo.BlogVo;
+import org.certis.studyplatform.blog.domain.vo.BlogSummaryVo;
 import org.certis.studyplatform.blog.domain.vo.BlogSearchCriteriaVo;
 import org.certis.studyplatform.blog.domain.vo.BlogSearchResultVo;
 import org.certis.studyplatform.blog.domain.vo.BlogEnableReferenceVo;
 import org.certis.studyplatform.blog.domain.ArticleReferenceType;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
@@ -81,4 +83,31 @@ public interface BlogQueryRepository {
      * @return 중복 여부
      */
     boolean existsByTitleAndIdNot(String title, Long blogId);
+
+    /**
+     * 공개 유무에 따른 블로그 조회
+     *
+     * @param isPublic 공개 유무 (null이면 모든 블로그)
+     * @param pageable 페이징 정보
+     * @param criteria 검색 조건 (keyword, category)
+     * @return 블로그 목록
+     */
+    Page<BlogSummaryVo> findByPublicStatus(Boolean isPublic, Pageable pageable, BlogSearchCriteriaVo criteria);
+
+    /**
+     * 회원별 작성 블로그 목록 조회
+     *
+     * @param memberId 회원 ID
+     * @param pageable 페이징 정보
+     * @return 블로그 목록
+     */
+    Page<BlogSummaryVo> findByMemberId(Long memberId, Pageable pageable);
+
+    /**
+     * 회원별 작성 블로그 수 조회
+     *
+     * @param memberId 회원 ID
+     * @return 블로그 수
+     */
+    long countByMemberId(Long memberId);
 }

@@ -8,6 +8,7 @@ import org.certis.studyplatform.member.domain.vo.ProfileVo;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Profile Command Service
@@ -60,5 +61,23 @@ public class ProfileCommandService {
 
         log.info("Profile update command executed successfully - member ID: {}", command.memberId());
         return updatedProfile;
+    }
+
+    /**
+     * 프로필 이미지 업로드
+     *
+     * @param memberId 회원 ID
+     * @param file 업로드할 이미지 파일
+     * @return 업로드된 이미지 URL
+     */
+    @Transactional
+    public String uploadProfileImage(Long memberId, MultipartFile file) {
+        log.info("Uploading profile image - member ID: {}", memberId);
+
+        // S3에 이미지 업로드
+        String imageUrl = profileDomainService.uploadProfileImage(memberId, file);
+
+        log.info("Profile image uploaded successfully - member ID: {}, URL: {}", memberId, imageUrl);
+        return imageUrl;
     }
 }

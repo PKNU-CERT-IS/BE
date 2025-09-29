@@ -5,8 +5,11 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
+import org.certis.studyplatform.study.domain.StudyStatus;
 
 import java.time.OffsetDateTime;
+import jakarta.persistence.Column;
 
 /**
  * study JPA Entity
@@ -31,19 +34,19 @@ public class StudyEntity {
     @Column(nullable = false, name = "member_id")
     private Long memberId;
 
-    @Column(nullable = false, length = 30)
+    @Column(nullable = false)
     private String title;
 
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false)
     private String description;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false)
     private String content;
 
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false)
     private String category;
 
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false)
     private String subcategory;
 
     @Column(nullable = false, name = "max_participants_number")
@@ -55,6 +58,11 @@ public class StudyEntity {
     @Column(nullable = false, name = "ended_at")
     private OffsetDateTime endedAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, name = "status")
+    @Builder.Default
+    private StudyStatus status = StudyStatus.READY;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false, name = "created_at")
     private OffsetDateTime createdAt;
@@ -65,4 +73,17 @@ public class StudyEntity {
 
     @Column(name = "deleted_at")
     private OffsetDateTime deletedAt;
+
+    // ===== Result submission fields =====
+    @Column(name = "result_submitted_at")
+    private OffsetDateTime resultSubmittedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "result_submit_status", nullable = false)
+    @Builder.Default
+    private ResultSubmitStatus resultSubmitStatus = ResultSubmitStatus.READY;
+
+    // Single URL for result attachment
+    @Column(name = "result_attached_url")
+    private String resultAttachmentUrl;
 }

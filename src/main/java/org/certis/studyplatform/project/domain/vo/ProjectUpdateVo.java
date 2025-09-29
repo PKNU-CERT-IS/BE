@@ -19,7 +19,8 @@ public record ProjectUpdateVo(
         OffsetDateTime endDate,
         List<String> skills,
         String githubUrl,
-        String externalUrl,
+        ExternalUrlVo externalUrl,
+        String demoUrl,
         Integer maxParticipants
 ) {
     public static ProjectUpdateVo of(
@@ -33,11 +34,12 @@ public record ProjectUpdateVo(
             OffsetDateTime endDate,
             List<String> skills,
             String githubUrl,
-            String externalUrl,
+            ExternalUrlVo externalUrl,
+            String demoUrl,
             Integer maxParticipants
     ) {
         return new ProjectUpdateVo(id, title, description, content,
                 category, subCategory, startDate, endDate,
-                skills, githubUrl, externalUrl, maxParticipants);
+                skills, githubUrl, externalUrl, demoUrl, maxParticipants);
     }
 }

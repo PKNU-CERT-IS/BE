@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -75,5 +76,6 @@ public interface ProjectParticipantJpaRepository extends JpaRepository<ProjectPa
     @Modifying(clearAutomatically = true)
     @Query("UPDATE ProjectParticipantEntity p SET p.deletedAt = :deletedAt, p.updatedAt = :deletedAt WHERE p.id = :id AND p.deletedAt IS NULL")
     int softDeleteById(@Param("id") Long id, @Param("deletedAt") OffsetDateTime deletedAt);
+
 }
 

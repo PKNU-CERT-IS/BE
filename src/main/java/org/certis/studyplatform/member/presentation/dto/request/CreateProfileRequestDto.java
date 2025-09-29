@@ -22,6 +22,5 @@ public class CreateProfileRequestDto {
 
     @Pattern(regexp = "^(https?://.*\\.(jpg|jpeg|png|gif|webp).*|)$",
             message = "올바른 이미지 URL 형식이 아닙니다.")
-    @Size(max = 255, message = "프로필 이미지 URL은 255자 이하여야 합니다.")
     private String profileImageUrl;
 }

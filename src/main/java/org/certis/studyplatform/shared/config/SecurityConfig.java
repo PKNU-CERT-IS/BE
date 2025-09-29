@@ -18,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
+import org.certis.studyplatform.shared.config.InvalidApiPathMatcher;
 
 @Configuration
 @EnableWebSecurity
@@ -46,15 +47,64 @@ public class SecurityConfig {
                 )
                 // 경로별 권한 설정
                 .authorizeHttpRequests(auths -> auths
+                        // 잘못된 API 경로들 (커스텀 matcher 사용) - 먼저 처리
+                        .requestMatchers(new InvalidApiPathMatcher()).permitAll()
                         // 인증이 필요하지 않은 경로
                         .requestMatchers(
+                                "/api/v1/member/**",
                                 "/api/v1/auth/login",
-                                "/api/v1/auth/register",     // 회원가입
-                                "/api/v1/auth/refresh",      // 토큰 갱신
+                                "/api/v1/auth/register",  // 회원가입 추가
+                                "/api/v1/auth/refresh",   // 토큰 갱신
+                                "/api/v1/blog",              // 블로그 목록 조회
+                                "/api/v1/blog/detail",       // 블로그 상세 조회
+                                "/api/v1/blog/search",       // 블로그 검색
+                                "/api/v1/blog/search/keyword", // 블로그 고급 검색
+                
+                                
+                                //문서 모니터링
+                                "/api/v1/board",
+                                "/api/v1/board/search/**",
+                                "/api/v1/board/search",
+                                "/api/v1/board/detail",
+                
+                                "/api/v1/project/search",
+                                "/api/v1/project/detail",
+                                "/api/v1/project/search/**",
+                                "/api/v1/project",
+                                "/api/v1/project/{projectId}/meetings",
+                                "/api/v1/project/meeting/detail",
+                                "/api/v1/project/meeting/all",
+                                "/api/v1/project/participant/{projectId}/participants/{participantId}",
+                                "/api/v1/project/participant/members/{memberId}/participants",
+                                "/api/v1/project/participant/{projectId}/participants/all",
+                                "/api/v1/project/participant/{projectId}/participants/pending",
+                                "/api/v1/project/participant/{projectId}/participants/approved",
+                
+                                "/api/v1/schedule/requests",
+                                "/api/v1/schedule/requests/**",
+                
+                                "/api/v1/study/search",
+                                "/api/v1/study/detail",
+                                "/api/v1/study/search/**",
+                                "/api/v1/study",
+                                "/api/v1/study/{studyId}/meetings",
+                                "/api/v1/study/meeting/detail",
+                                "/api/v1/study/meeting/all",
+                                "/api/v1/study/participant/{studyId}/participants/{participantId}",
+                                "/api/v1/study/participant/members/{memberId}/participants",
+                                "/api/v1/study/participant/{studyId}/participants/pending",
+                                "/api/v1/study/participant/{studyId}/participants/approved",
+
+                                // Swagger/OpenAPI 관련 경로 (더 포괄적으로 수정)
+                                "/swagger-ui/**",           // 모든 swagger-ui 하위 경로
                                 "/swagger-ui.html",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**",
-                                "/actuator/health",          // 헬스체크
+                                "/v3/api-docs/**",          // 모든 api-docs 하위 경로
+                                "/swagger-resources/**",    // Swagger 리소스
+                                "/webjars/**",             // Swagger UI 웹 자원
+                                "/configuration/ui",        // Swagger UI 설정
+                                "/configuration/security",  // Swagger 보안 설정
+                                "/v3/api-docs",
+                                "/actuator/health",
                                 "/favicon.ico",
                                 "/error"
                         ).permitAll()

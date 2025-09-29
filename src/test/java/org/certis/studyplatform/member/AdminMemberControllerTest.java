@@ -62,21 +62,17 @@ class AdminMemberControllerTest {
 
     @BeforeEach
     void setUp() {
-        System.out.println("🔧 관리자 테스트 데이터 설정 시작");
         // 데이터 충돌 방지: 관련 테이블 초기화
         dsl.execute("TRUNCATE TABLE member_penalty RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE member_contact RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
 
         setupTestData();
-        System.out.println("✅ 관리자 테스트 데이터 설정 완료");
     }
 
     @AfterEach
     void tearDown() {
-        System.out.println("🧹 관리자 테스트 데이터 정리 시작");
         cleanupTestData();
-        System.out.println("✅ 관리자 테스트 데이터 정리 완료");
     }
 
     // =================================================================
@@ -108,7 +104,6 @@ class AdminMemberControllerTest {
         // Then: 데이터베이스에서 실제 수정 확인
         verifyMemberRoleUpdatedInDatabase(TEST_TARGET_MEMBER_ID, MemberRole.STAFF);
 
-        System.out.println("✅ 관리자 권한 변경 테스트 성공");
     }
 
     @Test
@@ -118,8 +113,8 @@ class AdminMemberControllerTest {
         // Given: 검색할 회원이 존재함
 
         // When: 관리자용 회원 검색 API 호출
-        mockMvc.perform(get(BASE_URL + "/keyword")
-                        .param("search", "대상"))
+        mockMvc.perform(get(BASE_URL + "/search")
+                        .param("keyword", "대상"))
                 .andDo(print())
                 // Then: HTTP 200 OK 응답과 검색 결과 확인
                 .andExpect(status().isOk())
@@ -128,7 +123,6 @@ class AdminMemberControllerTest {
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data[0].name").value(TEST_TARGET_MEMBER_NAME));
 
-        System.out.println("✅ 관리자 회원 검색 테스트 성공");
     }
 
     @Test
@@ -154,7 +148,6 @@ class AdminMemberControllerTest {
         // Then: 데이터베이스에서 유예기간 설정 확인
         verifyGracePeriodInDatabase(TEST_TARGET_MEMBER_ID);
 
-        System.out.println("✅ 유예기간 부여 테스트 성공");
     }
 
     @Test
@@ -180,7 +173,6 @@ class AdminMemberControllerTest {
         // Then: 데이터베이스에서 벌점 설정 확인
         verifyPenaltyInDatabase(TEST_TARGET_MEMBER_ID, 5);
 
-        System.out.println("✅ 벌점 부여 테스트 성공");
     }
 
     @Test
@@ -200,7 +192,6 @@ class AdminMemberControllerTest {
         // Then: 데이터베이스에서 소프트 삭제 확인
         verifyMemberDeletedInDatabase(TEST_TARGET_MEMBER_ID);
 
-        System.out.println("✅ 회원 삭제 테스트 성공");
     }
 
     // =================================================================

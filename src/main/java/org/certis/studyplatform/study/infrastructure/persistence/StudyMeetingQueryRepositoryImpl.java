@@ -79,9 +79,24 @@ public class StudyMeetingQueryRepositoryImpl implements StudyMeetingQueryReposit
                         sm.ID,
                         sm.TITLE,
                         sm.PARTICIPANTS,
-                        sm.MEMBER_ID,
+                        sm.MEMBER_ID.as("writer_id"),
                         sm.CREATED_AT,
-                        m.NAME.as("writer_name")
+                        m.NAME.as("writer_name"),
+                        // 최근 생성된 링크 1건의 URL/Title 서브쿼리로 조회
+                        dsl.select(STUDY_MEETING_LINK.as("smlk").ATTACHED_URL)
+                                .from(STUDY_MEETING_LINK.as("smlk"))
+                                .where(STUDY_MEETING_LINK.as("smlk").field("meeting_id", Long.class).eq(sm.ID))
+                                .and(STUDY_MEETING_LINK.as("smlk").DELETED_AT.isNull())
+                                .orderBy(STUDY_MEETING_LINK.as("smlk").CREATED_AT.desc())
+                                .limit(1)
+                                .asField("attached_url"),
+                        dsl.select(STUDY_MEETING_LINK.as("smlk").NAME)
+                                .from(STUDY_MEETING_LINK.as("smlk"))
+                                .where(STUDY_MEETING_LINK.as("smlk").field("meeting_id", Long.class).eq(sm.ID))
+                                .and(STUDY_MEETING_LINK.as("smlk").DELETED_AT.isNull())
+                                .orderBy(STUDY_MEETING_LINK.as("smlk").CREATED_AT.desc())
+                                .limit(1)
+                                .asField("attached_title")
                 )
                 .from(sm)
                 .leftJoin(m).on(sm.MEMBER_ID.eq(m.ID))

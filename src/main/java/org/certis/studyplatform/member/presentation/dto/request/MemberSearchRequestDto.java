@@ -1,14 +1,13 @@
 package org.certis.studyplatform.member.presentation.dto.request;
 
+import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.certis.generated.jooq.tables.Member;
 import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.member.domain.MemberRole;
 
-import java.util.List;
 
 /**
  * 회원 검색 요청 DTO
@@ -32,5 +31,17 @@ public class MemberSearchRequestDto {
      * 검색 키워드 (선택적)
      * 이름, 전공, 기술 스택에서 검색
      */
-    private String search;
+    private String keyword;
+
+    /**
+     * 페이지 번호 (기본값 0)
+     */
+    @Min(0)
+    private int page = 0;
+
+    /**
+     * 페이지 크기 (기본값 10)
+     */
+    @Min(1)
+    private int size = 10;
 }

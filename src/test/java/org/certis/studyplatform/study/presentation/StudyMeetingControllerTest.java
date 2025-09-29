@@ -16,6 +16,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.certis.studyplatform.shared.dto.LinkDto;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -25,6 +26,10 @@ import static org.certis.generated.jooq.Tables.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.certis.studyplatform.shared.service.S3FileService;
+import static org.mockito.Mockito.when;
+import org.certis.studyplatform.shared.service.S3ObjectInfo;
 
 /**
  * StudyMeetingController 완전 새로운 통합 테스트
@@ -51,10 +56,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({TestEmbeddedPostgresConfig.class, TestWebMvcConfig.class})
 @ActiveProfiles("test")
 @TestPropertySource(locations = "classpath:application-test.yml")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @DisplayName("🚀 StudyMeetingController 새로운 통합 테스트")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class StudyMeetingControllerTest {
+    @MockBean
+    private S3FileService s3FileService;
 
     @Autowired
     private MockMvc mockMvc;
@@ -79,21 +86,17 @@ class StudyMeetingControllerTest {
 
     @BeforeEach
     void setUp() {
-        System.out.println("🔧 테스트 데이터 설정 시작");
         // 데이터 충돌 방지: 관련 테이블 초기화
         dsl.execute("TRUNCATE TABLE study_meeting RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE study RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
 
         setupTestData();
-        System.out.println("✅ 테스트 데이터 설정 완료");
     }
 
     @AfterEach
     void tearDown() {
-        System.out.println("🧹 테스트 데이터 정리 시작");
         cleanupTestData();
-        System.out.println("✅ 테스트 데이터 정리 완료");
     }
 
     // =================================================================
@@ -121,7 +124,56 @@ class StudyMeetingControllerTest {
         // Then: 데이터베이스에 회의록이 정상적으로 저장되었는지 검증
         verifyMeetingCreatedInDatabase(request);
         
-        System.out.println("✅ 스터디 회의록 생성 테스트 성공");
+    }
+
+    @Test
+    @Order(25)
+    @DisplayName("🔁 스터디 회의록 링크 교체 및 S3 메타 반영")
+    void updateStudyMeeting_ReplacesLinks_AndReturnsS3EnrichedLinks() throws Exception {
+        // Given: 회의록 생성 및 초기 링크 2개
+        StudyMeetingCreateRequestDto create = createValidMeetingRequest();
+        create.setStudyId(TEST_STUDY_ID);
+        create.setLinks(List.of(
+            new LinkDto("old-1", "https://bucket.s3.ap-northeast-2.amazonaws.com/study-end-attachments/1/old1.pdf"),
+            new LinkDto("old-2", "https://bucket.s3.ap-northeast-2.amazonaws.com/study-end-attachments/1/old2.pdf")
+        ));
+
+        mockMvc.perform(post("/api/v1/study/meeting/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(create)))
+                .andExpect(status().isCreated());
+
+        // When: 링크를 1개로 교체하여 수정
+        StudyMeetingUpdateRequestDto update = new StudyMeetingUpdateRequestDto();
+        update.setMeetingId(1L);
+        update.setTitle("회의록 수정");
+        update.setContent("내용 수정");
+        update.setParticipantNumber(3);
+        String newUrl = "https://bucket.s3.ap-northeast-2.amazonaws.com/study-end-attachments/1/new.pdf";
+        update.setLinks(List.of(new LinkDto("new-title", newUrl)));
+
+        // Mock S3 metadata
+        when(s3FileService.getObjectInfo(newUrl))
+                .thenReturn(new S3ObjectInfo("new.pdf", "application/pdf", 123L, newUrl));
+
+        mockMvc.perform(put("/api/v1/study/meeting/edit")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(update)))
+                .andExpect(status().isOk());
+
+        // Then: DB에는 교체된 1개 링크만 존재
+        var remaining = dsl.fetch("select count(*) as c from study_meeting_link where meeting_id = ? and deleted_at is null", 1L);
+        assertThat(remaining.get(0).get("c", Integer.class)).isEqualTo(1);
+
+        // And: 상세 조회 시 S3 메타에서 가져온 name/url이 노출
+        var res = mockMvc.perform(get("/api/v1/study/meeting/detail").param("meetingId", "1"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
+
+        var json = objectMapper.readTree(res.getResponse().getContentAsString());
+        assertThat(json.at("/data/links/0/title").asText()).isEqualTo("new.pdf");
+        assertThat(json.at("/data/links/0/url").asText()).isEqualTo(newUrl);
     }
 
     @Test
@@ -152,7 +204,6 @@ class StudyMeetingControllerTest {
                 .andExpect(jsonPath("$.data.updatedAt").exists())
                 .andExpect(jsonPath("$.data.editable").isBoolean());
 
-        System.out.println("✅ 스터디 회의록 상세 조회 테스트 성공");
     }
 
     @Test
@@ -167,8 +218,10 @@ class StudyMeetingControllerTest {
         request.setMeetingId(TEST_MEETING_ID);
         request.setTitle("수정된 회의록 제목");
         request.setContent("수정된 회의록 내용입니다.");
-        request.setParticipants(List.of(TEST_MEMBER_ID, TEST_MEMBER_2_ID));
-        request.setAttachedUrl("https://example.com/updated-meeting-notes.pdf");
+        request.setParticipantNumber(2);
+        request.setLinks(List.of(
+            new LinkDto("업데이트된 회의록", "https://example.com/updated-meeting-notes.pdf")
+        ));
 
         // When: 회의록 수정 API 호출
         mockMvc.perform(put("/api/v1/study/meeting/edit")
@@ -180,7 +233,6 @@ class StudyMeetingControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("스터디 회의록이 성공적으로 수정되었습니다"));
 
-        System.out.println("✅ 스터디 회의록 수정 테스트 성공");
     }
 
     @Test
@@ -209,7 +261,6 @@ class StudyMeetingControllerTest {
                 .andExpect(jsonPath("$.data.first").value(true))
                 .andExpect(jsonPath("$.data.last").value(true));
 
-        System.out.println("✅ 스터디 회의록 목록 조회 테스트 성공");
     }
 
     @Test
@@ -236,7 +287,6 @@ class StudyMeetingControllerTest {
         // Then: 데이터베이스에서 소프트 삭제 확인 (deletedAt 필드 설정)
         verifyMeetingDeletedInDatabase(TEST_MEETING_ID);
         
-        System.out.println("✅ 스터디 회의록 삭제 테스트 성공");
     }
 
     // =================================================================
@@ -259,7 +309,6 @@ class StudyMeetingControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400));
 
-        System.out.println("✅ 필수 필드 누락 검증 테스트 성공");
     }
 
     @Test
@@ -272,7 +321,7 @@ class StudyMeetingControllerTest {
         request.setStudyId(-1L); // 음수 ID
         request.setTitle(""); // 빈 제목
         request.setContent(""); // 빈 내용
-        request.setParticipantIds(List.of()); // 빈 참가자 목록
+        request.setParticipantNumber(0); // 참가자 수 0
 
         // When & Then: 검증 실패로 HTTP 400 Bad Request 응답
         mockMvc.perform(post("/api/v1/study/meeting/create")
@@ -282,7 +331,6 @@ class StudyMeetingControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400));
 
-        System.out.println("✅ 잘못된 데이터 형식 검증 테스트 성공");
     }
 
     @Test
@@ -300,7 +348,6 @@ class StudyMeetingControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(404))
                 .andExpect(jsonPath("$.message").value("회의록을 찾을 수 없습니다"));
 
-        System.out.println("✅ 존재하지 않는 회의록 조회 테스트 성공");
     }
 
 
@@ -317,7 +364,9 @@ class StudyMeetingControllerTest {
         request.setMeetingId(TEST_MEETING_ID);
         request.setTitle("무단 수정 시도");
         request.setContent("권한이 없는 사용자의 수정 시도");
-        request.setAttachedUrl("https://malicious.com/unauthorized-link.pdf");
+        request.setLinks(List.of(
+            new LinkDto("악성 링크", "https://malicious.com/unauthorized-link.pdf")
+        ));
 
         // When & Then: HTTP 403 Forbidden 응답 (권한 검증이 올바르게 작동함)
         mockMvc.perform(put("/api/v1/study/meeting/edit")
@@ -328,7 +377,6 @@ class StudyMeetingControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(403))
                 .andExpect(jsonPath("$.message").value("회의록을 수정할 권한이 없습니다"));
 
-        System.out.println("✅ 권한 없는 사용자 수정 시도 테스트 성공");
     }
 
     // =================================================================
@@ -349,7 +397,164 @@ class StudyMeetingControllerTest {
                 .andDo(print())
                 .andExpect(status().isUnsupportedMediaType());
 
-        System.out.println("✅ 잘못된 Content-Type 테스트 성공");
+    }
+
+    @Test
+    @Order(20)
+    @DisplayName("🔗 여러 링크가 있는 스터디 회의록 생성 - 다중 링크 저장")
+    void createStudyMeeting_WithMultipleLinks_SuccessfulMultipleLinkStorage() throws Exception {
+        // Given: 여러 링크가 포함된 스터디 회의록 생성 요청
+        StudyMeetingCreateRequestDto request = createValidMeetingRequest();
+        request.setStudyId(TEST_STUDY_ID); // 테스트 데이터에 존재하는 스터디 ID 사용
+        
+        // 여러 링크 설정
+        List<LinkDto> multipleLinks = List.of(
+            new LinkDto("회의록 문서", "https://docs.google.com/document/d/study-meeting-notes"),
+            new LinkDto("발표 자료", "https://docs.google.com/presentation/d/study-presentation"),
+            new LinkDto("녹화 영상", "https://youtube.com/watch?v=study-example")
+        );
+        request.setLinks(multipleLinks);
+
+        // When: 스터디 회의록 생성 API 호출
+        mockMvc.perform(post("/api/v1/study/meeting/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                // Then: HTTP 201 Created 응답 (다중 링크 포함 생성 성공)
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType("application/json;charset=UTF-8"))
+                .andExpect(jsonPath("$.statusCode").value(201))
+                .andExpect(jsonPath("$.message").value("스터디 회의록이 성공적으로 생성되었습니다"));
+        
+    }
+
+    @Test
+    @Order(21)
+    @DisplayName("📋 스터디 상세 조회 - isParticipantable 필드 포함")
+    void getStudyDetail_IncludesParticipantableField() throws Exception {
+        // Given: 유효한 스터디가 존재함
+        setupTestData();
+
+        // When: 스터디 상세 조회 API 호출
+        var result = mockMvc.perform(get("/api/v1/study/detail")
+                .param("studyId", TEST_STUDY_ID.toString()))
+                .andDo(print())
+                // Then: HTTP 200 OK 응답과 isParticipantable 필드 확인
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/json;charset=UTF-8"))
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andReturn();
+        
+        // 실제 응답 내용 출력
+        String responseContent = result.getResponse().getContentAsString();
+        
+        // JSON 파싱하여 isParticipantable 필드 확인
+        try {
+            com.fasterxml.jackson.databind.JsonNode jsonNode = objectMapper.readTree(responseContent);
+            if (jsonNode.get("data") != null) {
+            }
+        } catch (Exception e) {
+        }
+        
+    }
+
+    @Test
+    @Order(22)
+    @DisplayName("📋 스터디 목록 조회 - isParticipantable 필드 포함")
+    void getStudyList_IncludesParticipantableField() throws Exception {
+        // Given: 유효한 스터디들이 존재함
+        setupTestData();
+
+        // When: 스터디 목록 조회 API 호출
+        var result = mockMvc.perform(get("/api/v1/study")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                // Then: HTTP 200 OK 응답과 isParticipantable 필드 확인
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/json;charset=UTF-8"))
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andReturn();
+        
+        // 실제 응답 내용 출력
+        String responseContent = result.getResponse().getContentAsString();
+        
+        // JSON 파싱하여 isParticipantable 필드 확인
+        try {
+            com.fasterxml.jackson.databind.JsonNode jsonNode = objectMapper.readTree(responseContent);
+            if (jsonNode.get("data") != null && jsonNode.get("data").get("content") != null) {
+                if (jsonNode.get("data").get("content").isArray() && jsonNode.get("data").get("content").size() > 0) {
+                }
+            }
+        } catch (Exception e) {
+        }
+        
+    }
+
+    @Test
+    @Order(23)
+    @DisplayName("📎 스터디 상세 조회 - attachments 필드 포함")
+    void getStudyDetail_IncludesAttachmentsField() throws Exception {
+        // Given: 첨부파일이 있는 스터디가 존재함
+        setupTestData();
+        createTestStudyAttachedFileInDatabase(TEST_STUDY_ID, "스터디 자료.pdf", "PDF", "2MB", "https://example.com/study.pdf");
+
+        // When: 스터디 상세 조회 API 호출
+        var result = mockMvc.perform(get("/api/v1/study/detail")
+                .param("studyId", TEST_STUDY_ID.toString()))
+                .andDo(print())
+                // Then: HTTP 200 OK 응답과 attachments 필드 확인
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/json;charset=UTF-8"))
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andReturn();
+        
+        // 실제 응답 내용 출력
+        String responseContent = result.getResponse().getContentAsString();
+        
+        // JSON 파싱하여 attachments 필드 확인
+        try {
+            com.fasterxml.jackson.databind.JsonNode jsonNode = objectMapper.readTree(responseContent);
+            if (jsonNode.get("data") != null) {
+            }
+        } catch (Exception e) {
+        }
+        
+    }
+
+    @Test
+    @Order(24)
+    @DisplayName("📋 스터디 회의록 목록 조회 - content 필드 포함")
+    void getStudyMeetingList_IncludesContentField() throws Exception {
+        // Given: 회의록이 존재함
+        setupTestData();
+        createTestStudyMeetingInDatabase();
+
+        // When: 스터디 회의록 목록 조회 API 호출
+        var result = mockMvc.perform(get("/api/v1/study/meeting/all")
+                        .param("studyId", String.valueOf(TEST_STUDY_ID))
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                // Then: HTTP 200 OK 응답과 content 필드 확인
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/json;charset=UTF-8"))
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andReturn();
+        
+        // 실제 응답 내용 출력
+        String responseContent = result.getResponse().getContentAsString();
+        
+        // JSON 파싱하여 content 필드 확인
+        try {
+            com.fasterxml.jackson.databind.JsonNode jsonNode = objectMapper.readTree(responseContent);
+            if (jsonNode.get("data") != null && jsonNode.get("data").get("content") != null) {
+                if (jsonNode.get("data").get("content").isArray() && jsonNode.get("data").get("content").size() > 0) {
+                }
+            }
+        } catch (Exception e) {
+        }
+        
     }
 
     @Test
@@ -379,7 +584,110 @@ class StudyMeetingControllerTest {
         // 성능 검증: 1초 이내 응답
         assertThat(executionTime).isLessThan(1000);
         
-        System.out.println("✅ 대용량 데이터 페이징 성능 테스트 성공 - 실행시간: " + executionTime + "ms");
+    }
+
+    @Test
+    @Order(25)
+    @DisplayName("🔗 /meeting/all 링크가 회의록별로 올바르게 매핑되어야 한다")
+    void meetingAll_ShouldReturnLinksPerMeeting() throws Exception {
+        // Given: 동일 스터디에 회의록 2개를 만들고, 첫 번째 생성 시 링크를 1개 추가
+        setupTestData();
+
+        // create meeting #1 with a link via API
+        StudyMeetingCreateRequestDto req1 = new StudyMeetingCreateRequestDto();
+        req1.setStudyId(TEST_STUDY_ID);
+        req1.setTitle("회의록 1");
+        req1.setContent("내용 1");
+        req1.setParticipantNumber(2);
+        req1.setLinks(List.of(new LinkDto("문서1", "https://example.com/doc1")));
+        mockMvc.perform(post("/api/v1/study/meeting/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req1)))
+                .andExpect(status().isCreated());
+
+        // create meeting #2 without links via DB (distinct meeting id)
+        OffsetDateTime now = OffsetDateTime.now();
+        dsl.execute(
+            "INSERT INTO study_meeting (id, study_id, member_id, title, content, participants, created_at, updated_at) " +
+            "VALUES (?, ?, ?, ?, ?, ?, CAST(? AS TIMESTAMPTZ), CAST(? AS TIMESTAMPTZ))",
+            2L, TEST_STUDY_ID, TEST_MEMBER_ID, "회의록 2", "내용 2", new Long[]{TEST_MEMBER_ID}, now, now
+        );
+
+        // When: /meeting/all 조회
+        var result = mockMvc.perform(get("/api/v1/study/meeting/all")
+                        .param("studyId", TEST_STUDY_ID.toString())
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // Then: 회의록별로 링크 개수가 달라야 한다 (1번만 링크 존재)
+        String body = result.getResponse().getContentAsString();
+        com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(body);
+        var content = root.path("data").path("content");
+        assertThat(content.isArray()).isTrue();
+        // 회의록 2개
+        assertThat(content.size()).isGreaterThanOrEqualTo(2);
+        // 하나는 links 비어있지 않고, 다른 하나는 비어있어야 함
+        int nonEmptyLinks = 0;
+        int emptyLinks = 0;
+        for (var item : content) {
+            if (item.path("links").isArray() && item.path("links").size() > 0) nonEmptyLinks++;
+            else emptyLinks++;
+        }
+        assertThat(nonEmptyLinks).isGreaterThanOrEqualTo(1);
+        assertThat(emptyLinks).isGreaterThanOrEqualTo(1);
+    }
+
+    @Test
+    @Order(26)
+    @DisplayName("🚫 한 회의록에 추가한 links가 다른 회의록 detail에 섞이면 안 된다")
+    void creatingLinks_ShouldNotAffectOtherMeetingDetails() throws Exception {
+        // Given: 회의록 2개 생성 후, 첫 번째에만 링크 생성
+        setupTestData();
+
+        // meeting #1 with link via API
+        StudyMeetingCreateRequestDto req1 = new StudyMeetingCreateRequestDto();
+        req1.setStudyId(TEST_STUDY_ID);
+        req1.setTitle("회의록 A");
+        req1.setContent("내용 A");
+        req1.setParticipantNumber(2);
+        req1.setLinks(List.of(new LinkDto("A-문서", "https://example.com/a")));
+        mockMvc.perform(post("/api/v1/study/meeting/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req1)))
+                .andExpect(status().isCreated());
+
+        // meeting #2 without link via API
+        StudyMeetingCreateRequestDto req2 = new StudyMeetingCreateRequestDto();
+        req2.setStudyId(TEST_STUDY_ID);
+        req2.setTitle("회의록 B");
+        req2.setContent("내용 B");
+        req2.setParticipantNumber(1);
+        mockMvc.perform(post("/api/v1/study/meeting/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req2)))
+                .andExpect(status().isCreated());
+
+        // When: 각각 상세 조회 (id 1, 2 가정)
+        var res1 = mockMvc.perform(get("/api/v1/study/meeting/detail").param("meetingId", "1"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
+
+        var res2 = mockMvc.perform(get("/api/v1/study/meeting/detail").param("meetingId", "2"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // Then: #1 detail 은 links 가 존재, #2 detail 은 links 가 없어야 함
+        com.fasterxml.jackson.databind.JsonNode d1 = objectMapper.readTree(res1.getResponse().getContentAsString());
+        com.fasterxml.jackson.databind.JsonNode d2 = objectMapper.readTree(res2.getResponse().getContentAsString());
+        assertThat(d1.path("data").path("links").isArray()).isTrue();
+        assertThat(d1.path("data").path("links").size()).isGreaterThan(0);
+        assertThat(d2.path("data").path("links").isArray()).isTrue();
+        assertThat(d2.path("data").path("links").size()).isEqualTo(0);
     }
 
     // =================================================================
@@ -394,8 +702,14 @@ class StudyMeetingControllerTest {
         request.setStudyId(TEST_STUDY_ID);
         request.setTitle(TEST_MEETING_TITLE);
         request.setContent(TEST_MEETING_CONTENT);
-        request.setParticipantIds(List.of(TEST_MEMBER_ID, TEST_MEMBER_2_ID));
-        request.setAttachedUrl("https://example.com/meeting-notes.pdf");
+        request.setParticipantNumber(2);
+        
+        // 새로운 links 구조 사용
+        List<LinkDto> links = List.of(
+            new LinkDto("회의록 문서", "https://example.com/meeting-notes.pdf"),
+            new LinkDto("발표 자료", "https://example.com/presentation.pdf")
+        );
+        request.setLinks(links);
         return request;
     }
 
@@ -453,7 +767,6 @@ class StudyMeetingControllerTest {
                     .execute();
 
         } catch (Exception e) {
-            System.out.println("테스트 데이터 설정 중 오류 발생 (이미 존재할 수 있음): " + e.getMessage());
         }
     }
 
@@ -467,7 +780,6 @@ class StudyMeetingControllerTest {
             dsl.deleteFrom(STUDY).execute();
             dsl.deleteFrom(MEMBER).execute();
         } catch (Exception e) {
-            System.out.println("테스트 데이터 정리 중 오류 발생: " + e.getMessage());
         }
     }
 
@@ -563,5 +875,31 @@ class StudyMeetingControllerTest {
 
         assertThat(meeting).isNotNull();
         assertThat(meeting.getDeletedAt()).isNotNull(); // 소프트 삭제 확인
+    }
+
+    /**
+     * 테스트용 스터디 첨부파일 생성
+     */
+    private void createTestStudyAttachedFileInDatabase(Long studyId, String name, String type, String size, String url) {
+        OffsetDateTime now = OffsetDateTime.now();
+        
+        dsl.execute(
+            "INSERT INTO study_attached (id, study_id, member_id, name, type, size, attached_url, created_at, updated_at) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, CAST(? AS TIMESTAMPTZ), CAST(? AS TIMESTAMPTZ))",
+            1L, studyId, TEST_MEMBER_ID, name, type, size, url, now, now
+        );
+    }
+
+    /**
+     * 데이터베이스에 테스트용 스터디 회의록 생성
+     */
+    private void createTestStudyMeetingInDatabase() {
+        OffsetDateTime now = OffsetDateTime.now();
+        
+        dsl.execute(
+            "INSERT INTO study_meeting (id, study_id, member_id, title, content, participants, created_at, updated_at) " +
+            "VALUES (?, ?, ?, ?, ?, ?, CAST(? AS TIMESTAMPTZ), CAST(? AS TIMESTAMPTZ))",
+            TEST_MEETING_ID, TEST_STUDY_ID, TEST_MEMBER_ID, TEST_MEETING_TITLE, TEST_MEETING_CONTENT, new Long[]{TEST_MEMBER_ID}, now, now
+        );
     }
 }

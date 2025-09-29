@@ -1,177 +1,83 @@
-# ===========================================
-# CERT-IS Study Platform - 운영환경 설정
-# ===========================================
-
 spring:
-  # 운영환경 데이터소스 설정 - 외부 PostgreSQL
+  config:
+    activate:
+      on-profile: prod
+
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgresql:5432/certis_db}
+    url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME:certis_user}
     password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: ${DB_POOL_SIZE:50} # 500은 너무 큼, 50으로 조정
-      minimum-idle: ${DB_MIN_IDLE:10} # 50은 너무 큼, 10으로 조정
+      maximum-pool-size: 20
+      minimum-idle: 5
       leak-detection-threshold: 30000
       connection-timeout: 30000
       idle-timeout: 600000
       max-lifetime: 1800000
 
-  # JPA/Hibernate 운영 설정 - Flyway와 함께 사용
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: validate # Flyway가 마이그레이션 담당, JPA는 검증만
+      ddl-auto: validate
     show-sql: false
-    properties:
-      hibernate:
-        format_sql: false
-        use_sql_comments: false
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        connection:
-          provider_disables_autocommit: true
-        jdbc:
-          batch_size: 25
-          batch_versioned_data: true
 
-  # Flyway 설정 - PRODUCTION에서만 활성화
   flyway:
     enabled: true
-    locations: classpath:db/migration,classpath:db/common
-    baseline-on-migrate: false # 운영환경에서는 신중하게
+    locations:
+      - classpath:db/migration/common
+    baseline-on-migrate: false
     validate-on-migrate: true
-    clean-on-validation-error: false # 운영에서는 절대 clean 안함
-    out-of-order: false
+    clean-disabled: true
 
-  # SQL 초기화 설정 - 운영환경에서는 비활성화
   sql:
     init:
       mode: never
 
-  # Redis 설정 - 운영환경에서는 필수
   data:
     redis:
-      host: ${SPRING_DATA_REDIS_HOST:redis}
+      host: ${SPRING_DATA_REDIS_HOST}
       port: ${SPRING_DATA_REDIS_PORT:6379}
-      password: ${SPRING_DATA_REDIS_PASSWORD:}
-      timeout: 5000ms
+      ssl:
+        enabled: true
+      timeout: 10000ms
+      connect-timeout: 10000ms
       database: 0
-      lettuce:
-        pool:
-          max-active: 20
-          max-wait: -1ms
-          max-idle: 20
-          min-idle: 5
-        shutdown-timeout: 200ms
 
-  # 캐시 설정 - 운영환경에서는 Redis 필수
-  cache:
-    type: redis
-    redis:
-      time-to-live: 600000 # 10분
-
-  # Spring Security 운영 설정
-  security:
-    user:
-      name: ${SECURITY_USER_NAME}
-      password: ${SECURITY_USER_PASSWORD}
-      roles: ${SECURITY_USER_ROLES:ADMIN}
-
-  # 개발 도구 비활성화
-  devtools:
-    restart:
-      enabled: false
-    livereload:
-      enabled: false
-
-# 운영환경 로깅 설정
 logging:
   level:
     root: WARN
     org.certis.studyplatform: INFO
     org.springframework: WARN
-    org.springframework.web: WARN
-    org.springframework.security: WARN
     org.hibernate: WARN
-    org.hibernate.SQL: WARN
-    org.flywaydb: INFO # Flyway 로그는 중요하므로 INFO
-    com.zaxxer.hikari: INFO
-  file:
-    name: ${LOG_FILE:/var/log/cert-is/application.log}
-    max-size: 100MB
-    max-history: 30
-  pattern:
-    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-},%X{spanId:-}] %logger{50} - %msg%n"
 
-# Management/Actuator 운영 설정
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,threaddump
-  endpoint:
-    health:
-      show-details: when-authorized
-  server:
-    port: ${MANAGEMENT_PORT:8081}
+        include: health,info,metrics
 
-# 운영환경 애플리케이션 설정
 app:
-  async:
-    cpu-bound:
-      core-pool-size: 16
-      max-pool-size: 32
-      queue-capacity: 200
-    background:
-      core-pool-size: 4
-      max-pool-size: 8
-      queue-capacity: 1000
-    timeout:
-      default: 60
-      long-running: 600
-      background: 1200
-
+  mock-data:
+    enabled: false
   jwt:
-    secret: ${JWT_SECRET} # 반드시 환경변수에서 설정
+    secret: ${JWT_SECRET}
     access-token-expiry: 3600000
     refresh-token-expiry: 86400000
-
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:https://your-domain.com}
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:https://cert-is.com}
 
-  file:
-    upload-dir: ${FILE_UPLOAD_DIR:/app/uploads}
-    max-size: 10MB
-
-  cache:
-    default-ttl: 600
-    user-ttl: 3600
-    post-ttl: 1800
-
-  monitoring:
-    metrics:
-      custom-tags:
-        environment: prod
-
-# Embedded 서비스 비활성화
 embedded:
   postgres:
     enabled: false
   redis:
     enabled: false
 
-# 보안 설정
 server:
   forward-headers-strategy: native
-  max-http-header-size: 8KB
-  servlet:
-    session:
-      cookie:
-        secure: true
-        http-only: true
-        same-site: strict
+  error:
+    include-stacktrace: never
 
-# API 문서 비활성화
 springdoc:
   api-docs:
     enabled: false

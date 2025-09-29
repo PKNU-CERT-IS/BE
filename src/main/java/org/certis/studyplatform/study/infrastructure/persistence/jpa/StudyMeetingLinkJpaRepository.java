@@ -25,8 +25,8 @@ public interface StudyMeetingLinkJpaRepository extends JpaRepository<StudyMeetin
     @Query("UPDATE StudyMeetingLinkEntity e SET " +
             "e.deletedAt = :deletedAt, " +
             "e.updatedAt = :deletedAt " +
-            "WHERE e.studyId = :studyId AND e.deletedAt IS NULL")
-    int bulkSoftDeleteByStudyId(@Param("studyId") Long studyId,
+            "WHERE e.meetingId = :meetingId AND e.deletedAt IS NULL")
+    int bulkSoftDeleteByStudyId(@Param("meetingId") Long meetingId,
                                   @Param("deletedAt") OffsetDateTime deletedAt);
 
     /**

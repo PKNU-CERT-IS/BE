@@ -40,12 +40,12 @@ public class MemberController {
     /**
      * 회원 상세 조회 -> members 페이지 조회로 구현
      */
-    @GetMapping("/keyword")
+    @GetMapping("/search")
     public ResponseEntity<GlobalResponseHandler<List<MemberSearchResponseDto>>> searchMembers(
             @ModelAttribute MemberSearchRequestDto searchRequest) {
 
-        log.info("REST: Searching members - search: {}, grade: {}, role: {}",
-                searchRequest.getSearch(),
+        log.info("REST: Searching members - keyword: {}, grade: {}, role: {}",
+                searchRequest.getKeyword(),
                 searchRequest.getGrade(),
                 searchRequest.getRole());
 

@@ -8,6 +8,7 @@ import org.certis.studyplatform.project.domain.vo.*;
 import org.certis.studyplatform.project.infrastructure.mapper.ProjectInfrastructureMapper;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
+import static org.jooq.impl.DSL.inline;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -71,6 +72,7 @@ public class ProjectParticipantQueryRepositoryImpl implements ProjectParticipant
 
         var pp = PROJECT_PARTICIPANT.as("pp");
         var m = MEMBER.as("m");
+        var p = PROJECT.as("p");
 
         Condition condition = pp.PROJECT_ID.eq(projectId).and(pp.DELETED_AT.isNull());
         if (status != null) {
@@ -90,13 +92,17 @@ public class ProjectParticipantQueryRepositoryImpl implements ProjectParticipant
         // 페이징된 데이터 조회
         List<ProjectParticipantSummaryVo> participants = dsl.select(
                         pp.ID,
+                        pp.PROJECT_ID,
                         pp.MEMBER_ID,
                         m.NAME.as("member_name"),
+                        m.GRADE.as("member_grade"),
+                        p.TITLE.as("project_title"),
                         pp.STATUS,
                         pp.CREATED_AT
                 )
                 .from(pp)
                 .leftJoin(m).on(pp.MEMBER_ID.eq(m.ID))
+                .leftJoin(p).on(pp.PROJECT_ID.eq(p.ID))
                 .where(condition)
                 .orderBy(pp.CREATED_AT.desc())
                 .limit(pageable.getPageSize())
@@ -117,6 +123,7 @@ public class ProjectParticipantQueryRepositoryImpl implements ProjectParticipant
         log.info("jOOQ: Finding participants by member - memberId: {}", memberId);
 
         var pp = PROJECT_PARTICIPANT.as("pp");
+        var m = MEMBER.as("m");
         var p = PROJECT.as("p");
 
         Condition condition = pp.MEMBER_ID.eq(memberId).and(pp.DELETED_AT.isNull());
@@ -132,20 +139,47 @@ public class ProjectParticipantQueryRepositoryImpl implements ProjectParticipant
         }
 
         // 페이징된 데이터 조회 (프로젝트 정보 포함)
-        List<ProjectParticipantSummaryVo> participants = dsl.select(
-                        pp.ID,
-                        pp.MEMBER_ID,
-                        p.TITLE.as("member_name"), // 프로젝트 제목을 memberName 필드에 임시 저장
-                        pp.STATUS,
-                        pp.CREATED_AT
-                )
-                .from(pp)
-                .leftJoin(p).on(pp.PROJECT_ID.eq(p.ID))
-                .where(condition)
-                .orderBy(pp.CREATED_AT.desc())
-                .limit(pageable.getPageSize())
-                .offset((int) pageable.getOffset())
-                .fetch(mapper::toSummaryVoFromRecord);
+        List<ProjectParticipantSummaryVo> participants;
+        
+        if (pageable.isUnpaged()) {
+            // Pageable이 unpaged인 경우 페이징 없이 조회
+            participants = dsl.select(
+                            pp.ID,
+                            pp.PROJECT_ID,
+                            pp.MEMBER_ID,
+                            m.NAME.as("member_name"),
+                            m.GRADE.as("member_grade"),
+                            p.TITLE.as("project_title"), // 프로젝트 제목을 별도 필드로 저장
+                            pp.STATUS,
+                            pp.CREATED_AT
+                    )
+                    .from(pp)
+                    .leftJoin(p).on(pp.PROJECT_ID.eq(p.ID))
+                    .leftJoin(m).on(pp.MEMBER_ID.eq(m.ID))
+                    .where(condition)
+                    .orderBy(pp.CREATED_AT.desc())
+                    .fetch(mapper::toSummaryVoFromRecord);
+        } else {
+            // Pageable이 페이징된 경우 limit/offset 적용
+            participants = dsl.select(
+                            pp.ID,
+                            pp.PROJECT_ID,
+                            pp.MEMBER_ID,
+                            m.NAME.as("member_name"),
+                            m.GRADE.as("member_grade"),
+                            p.TITLE.as("project_title"), // 프로젝트 제목을 별도 필드로 저장
+                            pp.STATUS,
+                            pp.CREATED_AT
+                    )
+                    .from(pp)
+                    .leftJoin(p).on(pp.PROJECT_ID.eq(p.ID))
+                    .leftJoin(m).on(pp.MEMBER_ID.eq(m.ID))
+                    .where(condition)
+                    .orderBy(pp.CREATED_AT.desc())
+                    .limit(pageable.getPageSize())
+                    .offset((int) pageable.getOffset())
+                    .fetch(mapper::toSummaryVoFromRecord);
+        }
 
         log.info("jOOQ: Found {} member participations", total);
         return new PageImpl<>(participants, pageable, total);
@@ -265,16 +299,21 @@ public class ProjectParticipantQueryRepositoryImpl implements ProjectParticipant
 
         var pp = PROJECT_PARTICIPANT.as("pp");
         var m = MEMBER.as("m");
+        var p = PROJECT.as("p");
 
         List<ProjectParticipantSummaryVo> participants = dsl.select(
                         pp.ID,
+                        pp.PROJECT_ID,
                         pp.MEMBER_ID,
                         m.NAME.as("member_name"),
+                        m.GRADE.as("member_grade"),
+                        p.TITLE.as("project_title"),
                         pp.STATUS,
                         pp.CREATED_AT
                 )
                 .from(pp)
                 .leftJoin(m).on(pp.MEMBER_ID.eq(m.ID))
+                .leftJoin(p).on(pp.PROJECT_ID.eq(p.ID))
                 .where(pp.PROJECT_ID.eq(projectId)
                         .and(pp.STATUS.eq(ProjectParticipantStatus.APPROVED.name()))
                         .and(pp.DELETED_AT.isNull()))
@@ -305,5 +344,44 @@ public class ProjectParticipantQueryRepositoryImpl implements ProjectParticipant
 
         log.info("jOOQ: Active projects count: {} - memberId: {}", count, memberId);
         return count;
+    }
+
+    @Override
+    public boolean isApprovedMember(Long projectId, Long memberId) {
+        log.info("jOOQ: Checking if member is approved - projectId: {}, memberId: {}", projectId, memberId);
+
+        var pp = PROJECT_PARTICIPANT.as("pp");
+
+        boolean isApproved = dsl.fetchExists(
+                dsl.selectOne()
+                        .from(pp)
+                        .where(pp.PROJECT_ID.eq(projectId))
+                        .and(pp.MEMBER_ID.eq(memberId))
+                        .and(pp.STATUS.eq(ProjectParticipantStatus.APPROVED.name()))
+                        .and(pp.DELETED_AT.isNull())
+        );
+
+        log.info("jOOQ: Member approved status - projectId: {}, memberId: {}, isApproved: {}", 
+                projectId, memberId, isApproved);
+        return isApproved;
+    }
+
+    @Override
+    public boolean isMember(Long projectId, Long memberId) {
+        log.info("jOOQ: Checking if member exists - projectId: {}, memberId: {}", projectId, memberId);
+
+        var pp = PROJECT_PARTICIPANT.as("pp");
+
+        boolean isMember = dsl.fetchExists(
+                dsl.selectOne()
+                        .from(pp)
+                        .where(pp.PROJECT_ID.eq(projectId))
+                        .and(pp.MEMBER_ID.eq(memberId))
+                        .and(pp.DELETED_AT.isNull())
+        );
+
+        log.info("jOOQ: Member exists status - projectId: {}, memberId: {}, isMember: {}", 
+                projectId, memberId, isMember);
+        return isMember;
     }
 }

@@ -105,14 +105,16 @@ public class Board implements Serializable {
     }
 
     /**
-     * Getter for <code>public.board.content</code>.
+     * Getter for <code>public.board.content</code>. Board post content -
+     * supports large text content
      */
     public String getContent() {
         return this.content;
     }
 
     /**
-     * Setter for <code>public.board.content</code>.
+     * Setter for <code>public.board.content</code>. Board post content -
+     * supports large text content
      */
     public void setContent(String content) {
         this.content = content;
@@ -175,14 +177,14 @@ public class Board implements Serializable {
     }
 
     /**
-     * Getter for <code>public.board.description</code>.
+     * Getter for <code>public.board.description</code>. Board post description
      */
     public String getDescription() {
         return this.description;
     }
 
     /**
-     * Setter for <code>public.board.description</code>.
+     * Setter for <code>public.board.description</code>. Board post description
      */
     public void setDescription(String description) {
         this.description = description;

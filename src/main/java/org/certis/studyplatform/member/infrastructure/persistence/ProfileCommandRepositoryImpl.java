@@ -9,10 +9,15 @@ import org.certis.studyplatform.member.domain.vo.MemberIdVo;
 import org.certis.studyplatform.member.domain.vo.ProfileVo;
 import org.certis.studyplatform.member.infrastructure.mapper.MemberInfrastructureMapper;
 import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberEntity;
+import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberContactEntity;
 import org.certis.studyplatform.member.infrastructure.persistence.jpa.MemberJpaRepository;
+import org.certis.studyplatform.member.infrastructure.persistence.jpa.MemberContactJpaRepository;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import org.certis.studyplatform.shared.service.S3FileService;
+import java.time.OffsetDateTime;
 import java.util.Optional;
 
 /**
@@ -37,7 +42,9 @@ import java.util.Optional;
 public class ProfileCommandRepositoryImpl implements ProfileCommandRepository {
 
     private final MemberJpaRepository memberJpaRepository;
+    private final MemberContactJpaRepository memberContactJpaRepository;
     private final MemberInfrastructureMapper memberInfrastructureMapper;
+    private final S3FileService s3FileService;
 
     @Override
     @Transactional
@@ -53,16 +60,26 @@ public class ProfileCommandRepositoryImpl implements ProfileCommandRepository {
             MemberEntity existingEntity = memberJpaRepository.findById(profileVo.memberId())
                     .orElseThrow(() -> new InfrastructureException(ExceptionStatus.PROFILE_INFRASTRUCTURE_NOT_FOUND,"Member not found: " + profileVo.memberId()));
 
-            // DomainToEntityMapper를 사용하여 Builder 패턴으로 새 Entity 생성
-            MemberEntity updatedEntity = memberInfrastructureMapper.updateMemberEntityWithProfile(existingEntity, profileVo);
+            // 프로필 이미지 null 업데이트 시 기존 S3 파일 삭제
+            if (existingEntity.getProfileImage() != null && profileVo.profileImage() == null) {
+                try {
+                    s3FileService.deleteFile(existingEntity.getProfileImage());
+                } catch (Exception ex) {
+                    log.warn("Failed to delete old profile image from S3 url={} memberId={}", existingEntity.getProfileImage(), profileVo.memberId(), ex);
+                }
+            }
 
-            // 저장
-            MemberEntity savedEntity = memberJpaRepository.save(updatedEntity);
+            // 1. Member Entity 업데이트 (기본 프로필 정보)
+            MemberEntity updatedMemberEntity = memberInfrastructureMapper.updateMemberEntityWithProfileInfo(existingEntity, profileVo);
+            MemberEntity savedMemberEntity = memberJpaRepository.save(updatedMemberEntity);
+
+            // 2. Contact 정보 저장/업데이트
+            saveOrUpdateContact(profileVo);
 
             log.debug("Command Infrastructure: Profile saved successfully for member ID: {}", profileVo.memberId());
 
             // EntityToDomainMapper를 사용하여 Entity → Profile Domain 변환
-            return memberInfrastructureMapper.toProfile(savedEntity);
+            return memberInfrastructureMapper.toProfile(savedMemberEntity);
 
         } catch (Exception e) {
             log.error("Error saving profile for member ID {}: {}", profileVo.memberId(), e.getMessage());
@@ -108,6 +125,39 @@ public class ProfileCommandRepositoryImpl implements ProfileCommandRepository {
         } catch (Exception e) {
             log.error("Error clearing all profiles: {}", e.getMessage());
             throw new RuntimeException("Failed to clear all profiles", e);
+        }
+    }
+
+    // =================================================================
+    // Private Helper Methods
+    // =================================================================
+
+    /**
+     * Contact 정보 저장/업데이트
+     */
+    private void saveOrUpdateContact(ProfileVo profileVo) {
+        Long memberId = profileVo.memberId();
+        
+        // 연락처 정보가 있는 경우에만 처리
+        if (profileVo.email() == null && profileVo.phoneNumber() == null && 
+            profileVo.githubUrl() == null && profileVo.linkedUrl() == null) {
+            log.debug("Command Infrastructure: No contact information to save for member ID: {}", memberId);
+            return;
+        }
+
+        Optional<MemberContactEntity> existingContactOpt = memberContactJpaRepository.findById(memberId);
+        
+        if (existingContactOpt.isPresent()) {
+            // 기존 Contact 정보 업데이트
+            MemberContactEntity existingContact = existingContactOpt.get();
+            MemberContactEntity updatedContact = memberInfrastructureMapper.updateContactEntity(existingContact, profileVo);
+            memberContactJpaRepository.save(updatedContact);
+            log.debug("Command Infrastructure: Contact updated for member ID: {}", memberId);
+        } else {
+            // 새로운 Contact 정보 생성
+            MemberContactEntity newContact = memberInfrastructureMapper.createOrUpdateContactEntity(memberId, profileVo);
+            memberContactJpaRepository.save(newContact);
+            log.debug("Command Infrastructure: Contact created for member ID: {}", memberId);
         }
     }
 
@@ -159,6 +209,14 @@ public class ProfileCommandRepositoryImpl implements ProfileCommandRepository {
         try {
             return memberJpaRepository.findById(memberIdVo.toLong())
                     .map(existingEntity -> {
+                        // 프로필 이미지 제거(null) 시 기존 S3 파일 삭제
+                        if (profileImageUrl == null && existingEntity.getProfileImage() != null) {
+                            try {
+                                s3FileService.deleteFile(existingEntity.getProfileImage());
+                            } catch (Exception ex) {
+                                log.warn("Failed to delete old profile image from S3 url={} memberId={}", existingEntity.getProfileImage(), memberIdVo.toLong(), ex);
+                            }
+                        }
                         MemberEntity updatedEntity = memberInfrastructureMapper.updateProfileFields(
                                 existingEntity,
                                 existingEntity.getDescription(),
@@ -199,6 +257,40 @@ public class ProfileCommandRepositoryImpl implements ProfileCommandRepository {
         } catch (Exception e) {
             log.error("Error updating profile visibility for member ID {}: {}", memberIdVo.toLong(), e.getMessage());
             throw new RuntimeException("Failed to update profile visibility", e);
+        }
+    }
+
+    /**
+     * 프로필 이미지 업로드
+     *
+     * @param memberIdVo 회원 ID
+     * @param file 업로드할 이미지 파일
+     * @return 업로드된 이미지 URL
+     */
+    @Transactional
+    public String uploadProfileImage(MemberIdVo memberIdVo, MultipartFile file) {
+        log.debug("Command Infrastructure: Uploading profile image for member ID: {}", memberIdVo.toLong());
+
+        try {
+            // S3에 이미지 업로드
+            String imageUrl = s3FileService.uploadFile(file, "profile");
+
+            // 프로필에 이미지 URL 업데이트
+            memberJpaRepository.findById(memberIdVo.toLong())
+                    .ifPresent(existingEntity -> {
+                        MemberEntity updatedEntity = existingEntity.toBuilder()
+                                .profileImage(imageUrl)
+                                .updatedAt(OffsetDateTime.now())
+                                .build();
+                        memberJpaRepository.save(updatedEntity);
+                    });
+
+            log.debug("Command Infrastructure: Profile image uploaded successfully for member ID: {}", memberIdVo.toLong());
+            return imageUrl;
+
+        } catch (Exception e) {
+            log.error("Error uploading profile image for member ID {}: {}", memberIdVo.toLong(), e.getMessage());
+            throw new RuntimeException("Failed to upload profile image", e);
         }
     }
 }

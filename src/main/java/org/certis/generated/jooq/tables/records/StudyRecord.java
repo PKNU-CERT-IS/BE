@@ -201,6 +201,62 @@ public class StudyRecord extends UpdatableRecordImpl<StudyRecord> {
         return (String) get(12);
     }
 
+    /**
+     * Setter for <code>public.study.result_submitted_at</code>.
+     */
+    public void setResultSubmittedAt(OffsetDateTime value) {
+        set(13, value);
+    }
+
+    /**
+     * Getter for <code>public.study.result_submitted_at</code>.
+     */
+    public OffsetDateTime getResultSubmittedAt() {
+        return (OffsetDateTime) get(13);
+    }
+
+    /**
+     * Setter for <code>public.study.result_attached_url</code>.
+     */
+    public void setResultAttachedUrl(String value) {
+        set(14, value);
+    }
+
+    /**
+     * Getter for <code>public.study.result_attached_url</code>.
+     */
+    public String getResultAttachedUrl() {
+        return (String) get(14);
+    }
+
+    /**
+     * Setter for <code>public.study.result_submit_status</code>.
+     */
+    public void setResultSubmitStatus(String value) {
+        set(15, value);
+    }
+
+    /**
+     * Getter for <code>public.study.result_submit_status</code>.
+     */
+    public String getResultSubmitStatus() {
+        return (String) get(15);
+    }
+
+    /**
+     * Setter for <code>public.study.status</code>.
+     */
+    public void setStatus(String value) {
+        set(16, value);
+    }
+
+    /**
+     * Getter for <code>public.study.status</code>.
+     */
+    public String getStatus() {
+        return (String) get(16);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -224,7 +280,7 @@ public class StudyRecord extends UpdatableRecordImpl<StudyRecord> {
     /**
      * Create a detached, initialised StudyRecord
      */
-    public StudyRecord(Long id, Long memberId, String title, String content, String category, String subcategory, OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt, OffsetDateTime startedAt, OffsetDateTime endedAt, Integer maxParticipantsNumber, String description) {
+    public StudyRecord(Long id, Long memberId, String title, String content, String category, String subcategory, OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt, OffsetDateTime startedAt, OffsetDateTime endedAt, Integer maxParticipantsNumber, String description, OffsetDateTime resultSubmittedAt, String resultAttachedUrl, String resultSubmitStatus, String status) {
         super(Study.STUDY);
 
         setId(id);
@@ -240,6 +296,10 @@ public class StudyRecord extends UpdatableRecordImpl<StudyRecord> {
         setEndedAt(endedAt);
         setMaxParticipantsNumber(maxParticipantsNumber);
         setDescription(description);
+        setResultSubmittedAt(resultSubmittedAt);
+        setResultAttachedUrl(resultAttachedUrl);
+        setResultSubmitStatus(resultSubmitStatus);
+        setStatus(status);
         resetTouchedOnNotNull();
     }
 
@@ -263,6 +323,10 @@ public class StudyRecord extends UpdatableRecordImpl<StudyRecord> {
             setEndedAt(value.getEndedAt());
             setMaxParticipantsNumber(value.getMaxParticipantsNumber());
             setDescription(value.getDescription());
+            setResultSubmittedAt(value.getResultSubmittedAt());
+            setResultAttachedUrl(value.getResultAttachedUrl());
+            setResultSubmitStatus(value.getResultSubmitStatus());
+            setStatus(value.getStatus());
             resetTouchedOnNotNull();
         }
     }

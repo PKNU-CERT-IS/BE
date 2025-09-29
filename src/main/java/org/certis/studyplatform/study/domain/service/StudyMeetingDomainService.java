@@ -13,6 +13,8 @@ import org.certis.studyplatform.study.domain.repository.StudyMeetingCommandRepos
 import org.certis.studyplatform.study.domain.repository.StudyMeetingLinkCommandRepository;
 import org.certis.studyplatform.study.domain.repository.StudyMeetingLinkQueryRepository;
 import org.certis.studyplatform.study.domain.repository.StudyMeetingQueryRepository;
+import org.certis.studyplatform.study.domain.repository.StudyParticipantQueryRepository;
+import org.certis.studyplatform.study.domain.repository.StudyQueryRepository;
 import org.certis.studyplatform.study.domain.vo.*;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
@@ -34,6 +36,8 @@ public class StudyMeetingDomainService {
     private final StudyMeetingQueryRepository studyMeetingQueryRepository;
     private final StudyMeetingLinkCommandRepository studyMeetingLinkCommandRepository;
     private final StudyMeetingLinkQueryRepository studyMeetingLinkQueryRepository;
+    private final StudyParticipantQueryRepository studyParticipantQueryRepository;
+    private final StudyQueryRepository studyQueryRepository;
 
     /**
      * 스터디 회의록 생성
@@ -50,7 +54,7 @@ public class StudyMeetingDomainService {
                 command.studyId(),
                 command.title(),
                 command.content(),
-                command.participantIds(),
+                command.participantNumber(),
                 command.writerId(),
                 true,
                 null,
@@ -59,15 +63,17 @@ public class StudyMeetingDomainService {
 
         StudyMeetingCreatedVo createdVo = studyMeetingCommandRepository.save(meetingVo);
 
-        if (command.attachedUrl() != null && !command.attachedUrl().trim().isEmpty()) {
-            StudyMeetingLinkVo linkVo = StudyMeetingLinkVo.forCreation(
-                    createdVo.studyId(),
-                    createdVo.writerId(),
-                    "회의록 첨부 링크",
-                    command.attachedUrl()
-            );
-            studyMeetingLinkCommandRepository.save(linkVo);
-            log.info("MeetingDomain: Study meeting link saved - URL: {}", command.attachedUrl());
+        if (command.links() != null && !command.links().isEmpty()) {
+            for (var link : command.links()) {
+                StudyMeetingLinkVo linkVo = StudyMeetingLinkVo.forCreation(
+                        createdVo.id(),
+                        createdVo.writerId(),
+                        link.getTitle(),
+                        link.getUrl()
+                );
+                studyMeetingLinkCommandRepository.save(linkVo);
+                log.info("MeetingDomain: Study meeting link saved - Title: {}, URL: {}", link.getTitle(), link.getUrl());
+            }
         }
 
         log.info("MeetingDomain: Study meeting created successfully - ID: {}", createdVo.id());
@@ -92,7 +98,7 @@ public class StudyMeetingDomainService {
                 existingMeeting.studyId(),
                 command.title(),
                 command.content(),
-                command.participantIds(),
+                command.participantNumber(),
                 existingMeeting.writerId(),
                 true,
                 existingMeeting.createdAt(),
@@ -101,18 +107,21 @@ public class StudyMeetingDomainService {
 
         StudyMeetingUpdatedVo updatedVo = studyMeetingCommandRepository.update(updatedMeetingVo);
 
-        if (command.attachedUrl() != null) {
-            studyMeetingLinkCommandRepository.deleteByStudyId(existingMeeting.studyId());
+        if (command.links() != null) {
+            // 링크 전체 교체: 해당 회의(meetingId)의 기존 링크 모두 삭제 후, 전달된 링크를 전부 추가
+            studyMeetingLinkCommandRepository.deleteByMeetingId(existingMeeting.id());
 
-            if (!command.attachedUrl().trim().isEmpty()) {
-                StudyMeetingLinkVo linkVo = StudyMeetingLinkVo.forCreation(
-                        existingMeeting.studyId(),
-                        command.requesterId(),
-                        "회의록 첨부 링크",
-                        command.attachedUrl()
-                );
-                studyMeetingLinkCommandRepository.save(linkVo);
-                log.info("MeetingDomain: Study meeting link updated - URL: {}", command.attachedUrl());
+            if (!command.links().isEmpty()) {
+                for (var link : command.links()) {
+                    StudyMeetingLinkVo linkVo = StudyMeetingLinkVo.forCreation(
+                            existingMeeting.id(),
+                            command.requesterId(),
+                            link.getTitle(),
+                            link.getUrl()
+                    );
+                    studyMeetingLinkCommandRepository.save(linkVo);
+                    log.info("MeetingDomain: Study meeting link updated - Title: {}, URL: {}", link.getTitle(), link.getUrl());
+                }
             }
         }
 
@@ -133,8 +142,8 @@ public class StudyMeetingDomainService {
         // 권한 체크: 작성자만 삭제 가능
         validateWriterPermission(existingMeeting.writerId(), command.requesterId(), "회의록을 삭제할 권한이 없습니다");
 
-        studyMeetingLinkCommandRepository.deleteByStudyId(existingMeeting.studyId());
-        log.info("MeetingDomain: Study meeting links deleted - studyId: {}", existingMeeting.studyId());
+        studyMeetingLinkCommandRepository.deleteByMeetingId(existingMeeting.id());
+        log.info("MeetingDomain: Study meeting links deleted - meetingId: {}", existingMeeting.id());
 
         studyMeetingCommandRepository.deleteByIdWithPermission(command.meetingId(), command.requesterId());
 
@@ -152,8 +161,8 @@ public class StudyMeetingDomainService {
         StudyMeetingVo meetingVo = studyMeetingQueryRepository.findById(query.meetingId())
                 .orElseThrow(() -> new DomainException(ExceptionStatus.STUDY_INFRASTRUCTURE_NOT_FOUND, "회의록을 찾을 수 없습니다"));
 
-        // 해당 스터디의 모든 링크 조회
-        List<StudyMeetingLinkVo> links = studyMeetingLinkQueryRepository.findByStudyId(meetingVo.studyId());
+        // 해당 미팅의 링크만 조회
+        List<StudyMeetingLinkVo> links = studyMeetingLinkQueryRepository.findByMeetingId(meetingVo.id());
         log.info("MeetingDomain: Found {} links for meeting - meetingId: {}", links.size(), query.meetingId());
 
         // 링크 정보를 포함한 상세 VO 생성
@@ -201,15 +210,37 @@ public class StudyMeetingDomainService {
 
     /**
      * 스터디 접근 권한 검증
-     * TODO: 실제 스터디 멤버십 체크 로직 구현 필요
+     * - 스터디 생성자 또는 승인된 참가자만 접근 가능
      */
     private void validateStudyAccess(Long studyId, Long requesterId) {
-        // 현재는 기본 구현만 제공
-        // 실제로는 스터디 멤버십이나 권한을 체크하는 로직이 필요
         if (studyId == null || requesterId == null) {
             log.warn("Invalid study access parameters - studyId: {}", studyId);
             throw new DomainException(ExceptionStatus.STUDY_DOMAIN_PERMISSION_DENINED);
         }
-        log.debug("Study access validated - studyId: {}", studyId);
+
+        // 스터디 존재 및 생성자 확인
+        var studyVoOptional = studyQueryRepository.findById(studyId);
+        if (studyVoOptional.isEmpty()) {
+            log.warn("Study not found - studyId: {}", studyId);
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_NOT_FOUND, "스터디를 찾을 수 없습니다");
+        }
+
+        if (requesterId.equals(studyVoOptional.get().creatorId())) {
+            log.debug("Study access granted - requester is study creator: studyId: {}, requesterId: {}", studyId, requesterId);
+            return;
+        }
+
+        // 승인된 참가자인지 확인
+        boolean isApprovedMember = studyParticipantQueryRepository
+                .findByStudyIdAndMemberId(studyId, requesterId)
+                .map(org.certis.studyplatform.study.domain.vo.StudyParticipantVo::isApproved)
+                .orElse(false);
+
+        if (!isApprovedMember) {
+            log.warn("Study access denied - studyId: {}, requesterId: {} (not an approved member)", studyId, requesterId);
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_PERMISSION_DENINED, "스터디의 승인된 멤버만 접근할 수 있습니다.");
+        }
+
+        log.debug("Study access validated - studyId: {}, requesterId: {}", studyId, requesterId);
     }
 }

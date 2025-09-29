@@ -32,6 +32,11 @@ public class Project implements Serializable {
     private String githubUrl;
     private String externalUrl;
     private String thumbnailUrl;
+    private String demoUrl;
+    private OffsetDateTime resultSubmittedAt;
+    private String resultAttachedUrl;
+    private String resultSubmitStatus;
+    private String status;
 
     public Project() {}
 
@@ -52,6 +57,11 @@ public class Project implements Serializable {
         this.githubUrl = value.githubUrl;
         this.externalUrl = value.externalUrl;
         this.thumbnailUrl = value.thumbnailUrl;
+        this.demoUrl = value.demoUrl;
+        this.resultSubmittedAt = value.resultSubmittedAt;
+        this.resultAttachedUrl = value.resultAttachedUrl;
+        this.resultSubmitStatus = value.resultSubmitStatus;
+        this.status = value.status;
     }
 
     public Project(
@@ -70,7 +80,12 @@ public class Project implements Serializable {
         Integer maxParticipantsNumber,
         String githubUrl,
         String externalUrl,
-        String thumbnailUrl
+        String thumbnailUrl,
+        String demoUrl,
+        OffsetDateTime resultSubmittedAt,
+        String resultAttachedUrl,
+        String resultSubmitStatus,
+        String status
     ) {
         this.id = id;
         this.memberId = memberId;
@@ -88,6 +103,11 @@ public class Project implements Serializable {
         this.githubUrl = githubUrl;
         this.externalUrl = externalUrl;
         this.thumbnailUrl = thumbnailUrl;
+        this.demoUrl = demoUrl;
+        this.resultSubmittedAt = resultSubmittedAt;
+        this.resultAttachedUrl = resultAttachedUrl;
+        this.resultSubmitStatus = resultSubmitStatus;
+        this.status = status;
     }
 
     /**
@@ -314,6 +334,76 @@ public class Project implements Serializable {
         this.thumbnailUrl = thumbnailUrl;
     }
 
+    /**
+     * Getter for <code>public.project.demo_url</code>. 프로젝트 데모 URL
+     */
+    public String getDemoUrl() {
+        return this.demoUrl;
+    }
+
+    /**
+     * Setter for <code>public.project.demo_url</code>. 프로젝트 데모 URL
+     */
+    public void setDemoUrl(String demoUrl) {
+        this.demoUrl = demoUrl;
+    }
+
+    /**
+     * Getter for <code>public.project.result_submitted_at</code>.
+     */
+    public OffsetDateTime getResultSubmittedAt() {
+        return this.resultSubmittedAt;
+    }
+
+    /**
+     * Setter for <code>public.project.result_submitted_at</code>.
+     */
+    public void setResultSubmittedAt(OffsetDateTime resultSubmittedAt) {
+        this.resultSubmittedAt = resultSubmittedAt;
+    }
+
+    /**
+     * Getter for <code>public.project.result_attached_url</code>.
+     */
+    public String getResultAttachedUrl() {
+        return this.resultAttachedUrl;
+    }
+
+    /**
+     * Setter for <code>public.project.result_attached_url</code>.
+     */
+    public void setResultAttachedUrl(String resultAttachedUrl) {
+        this.resultAttachedUrl = resultAttachedUrl;
+    }
+
+    /**
+     * Getter for <code>public.project.result_submit_status</code>.
+     */
+    public String getResultSubmitStatus() {
+        return this.resultSubmitStatus;
+    }
+
+    /**
+     * Setter for <code>public.project.result_submit_status</code>.
+     */
+    public void setResultSubmitStatus(String resultSubmitStatus) {
+        this.resultSubmitStatus = resultSubmitStatus;
+    }
+
+    /**
+     * Getter for <code>public.project.status</code>.
+     */
+    public String getStatus() {
+        return this.status;
+    }
+
+    /**
+     * Setter for <code>public.project.status</code>.
+     */
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
@@ -419,6 +509,36 @@ public class Project implements Serializable {
         }
         else if (!this.thumbnailUrl.equals(other.thumbnailUrl))
             return false;
+        if (this.demoUrl == null) {
+            if (other.demoUrl != null)
+                return false;
+        }
+        else if (!this.demoUrl.equals(other.demoUrl))
+            return false;
+        if (this.resultSubmittedAt == null) {
+            if (other.resultSubmittedAt != null)
+                return false;
+        }
+        else if (!this.resultSubmittedAt.equals(other.resultSubmittedAt))
+            return false;
+        if (this.resultAttachedUrl == null) {
+            if (other.resultAttachedUrl != null)
+                return false;
+        }
+        else if (!this.resultAttachedUrl.equals(other.resultAttachedUrl))
+            return false;
+        if (this.resultSubmitStatus == null) {
+            if (other.resultSubmitStatus != null)
+                return false;
+        }
+        else if (!this.resultSubmitStatus.equals(other.resultSubmitStatus))
+            return false;
+        if (this.status == null) {
+            if (other.status != null)
+                return false;
+        }
+        else if (!this.status.equals(other.status))
+            return false;
         return true;
     }
 
@@ -442,6 +562,11 @@ public class Project implements Serializable {
         result = prime * result + ((this.githubUrl == null) ? 0 : this.githubUrl.hashCode());
         result = prime * result + ((this.externalUrl == null) ? 0 : this.externalUrl.hashCode());
         result = prime * result + ((this.thumbnailUrl == null) ? 0 : this.thumbnailUrl.hashCode());
+        result = prime * result + ((this.demoUrl == null) ? 0 : this.demoUrl.hashCode());
+        result = prime * result + ((this.resultSubmittedAt == null) ? 0 : this.resultSubmittedAt.hashCode());
+        result = prime * result + ((this.resultAttachedUrl == null) ? 0 : this.resultAttachedUrl.hashCode());
+        result = prime * result + ((this.resultSubmitStatus == null) ? 0 : this.resultSubmitStatus.hashCode());
+        result = prime * result + ((this.status == null) ? 0 : this.status.hashCode());
         return result;
     }
 
@@ -465,6 +590,11 @@ public class Project implements Serializable {
         sb.append(", ").append(githubUrl);
         sb.append(", ").append(externalUrl);
         sb.append(", ").append(thumbnailUrl);
+        sb.append(", ").append(demoUrl);
+        sb.append(", ").append(resultSubmittedAt);
+        sb.append(", ").append(resultAttachedUrl);
+        sb.append(", ").append(resultSubmitStatus);
+        sb.append(", ").append(status);
 
         sb.append(")");
         return sb.toString();

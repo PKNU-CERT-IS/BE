@@ -69,4 +69,9 @@ public class ProjectQueryService {
         log.info("Query: Project search completed - found {} projects", projects.getTotalElements());
         return projects;
     }
+
+    @Transactional(readOnly = true)
+    public java.util.List<org.certis.studyplatform.project.domain.vo.ProjectEndSubmissionInfoVo> getEndSubmissionsInProgress() {
+        return projectDomainService.getEndSubmissionsInProgress();
+    }
 }

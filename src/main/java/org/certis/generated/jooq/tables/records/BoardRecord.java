@@ -62,14 +62,16 @@ public class BoardRecord extends UpdatableRecordImpl<BoardRecord> {
     }
 
     /**
-     * Setter for <code>public.board.content</code>.
+     * Setter for <code>public.board.content</code>. Board post content -
+     * supports large text content
      */
     public void setContent(String value) {
         set(3, value);
     }
 
     /**
-     * Getter for <code>public.board.content</code>.
+     * Getter for <code>public.board.content</code>. Board post content -
+     * supports large text content
      */
     public String getContent() {
         return (String) get(3);
@@ -132,14 +134,14 @@ public class BoardRecord extends UpdatableRecordImpl<BoardRecord> {
     }
 
     /**
-     * Setter for <code>public.board.description</code>.
+     * Setter for <code>public.board.description</code>. Board post description
      */
     public void setDescription(String value) {
         set(8, value);
     }
 
     /**
-     * Getter for <code>public.board.description</code>.
+     * Getter for <code>public.board.description</code>. Board post description
      */
     public String getDescription() {
         return (String) get(8);

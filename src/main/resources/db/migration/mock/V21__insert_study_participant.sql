@@ -148,3 +148,6 @@ insert into study_participant (id, study_id, member_id, status, created_at, upda
 insert into study_participant (id, study_id, member_id, status, created_at, updated_at, deleted_at) values (148, 50, 148, 'PENDING', '2025-03-20 10:31:20', '2025-01-11 04:40:05', null);
 insert into study_participant (id, study_id, member_id, status, created_at, updated_at, deleted_at) values (149, 50, 149, 'PENDING', '2025-03-28 13:02:11', '2025-04-12 07:21:18', null);
 insert into study_participant (id, study_id, member_id, status, created_at, updated_at, deleted_at) values (150, 50, 150, 'APPROVED', '2025-04-20 02:17:31', '2025-01-21 00:02:06', null);
+
+-- 시퀀스 오프셋 조정 (목데이터 삽입 후)
+SELECT setval('study_participant_id_seq', (SELECT MAX(id) FROM study_participant));

@@ -13,6 +13,7 @@ import org.certis.studyplatform.member.domain.repository.command.ProfileCommandR
 import org.certis.studyplatform.member.domain.repository.query.ProfileQueryRepository;
 import org.certis.studyplatform.member.domain.vo.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -97,7 +98,7 @@ public class ProfileDomainService {
         // 3. 변경 사항 반영 (null 이 아닌 항목만 덮어쓰기)
         String newName = command.name() != null ? command.name() : existing.name();
         String newDescription = command.description() != null ? command.description() : existing.description();
-        String newProfileImage = command.profileImage() != null ? command.profileImage() : existing.profileImage();
+        String newProfileImage = command.profileImage();
         String newMajor = command.major() != null ? command.major() : existing.major();
         java.time.OffsetDateTime newBirthday = command.birthday() != null ? command.birthday() : existing.birthday();
         String newPhoneNumber = command.phoneNumber() != null ? command.phoneNumber() : existing.phoneNumber();
@@ -136,6 +137,23 @@ public class ProfileDomainService {
 
         // 6. Profile domain 객체를 VO로 변환해서 반환
         return savedProfile;
+    }
+
+    /**
+     * 프로필 이미지 업로드
+     *
+     * @param memberId 회원 ID
+     * @param file 업로드할 이미지 파일
+     * @return 업로드된 이미지 URL
+     */
+    public String uploadProfileImage(Long memberId, MultipartFile file) {
+        log.info("Domain: Uploading profile image for member ID: {}", memberId);
+
+        // S3에 이미지 업로드
+        String imageUrl = profileCommandRepository.uploadProfileImage(new MemberIdVo(memberId), file);
+
+        log.info("Domain: Profile image uploaded successfully for member ID: {}, URL: {}", memberId, imageUrl);
+        return imageUrl;
     }
 
     // ================================================================

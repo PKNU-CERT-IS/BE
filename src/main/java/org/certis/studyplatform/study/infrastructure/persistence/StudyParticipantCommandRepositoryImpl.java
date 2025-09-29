@@ -57,9 +57,9 @@ public class StudyParticipantCommandRepositoryImpl implements StudyParticipantCo
      * 프로젝트 참가자 상태 벌크 업데이트 - 조회 없이 바로 업데이트
      */
     @Override
-    public StudyParticipantStatusUpdatedVo updateStatus(StudyParticipantVo participantVo) {
-        log.debug("Command: Bulk updating participant status - ID: {}, status: {}",
-                participantVo.id(), participantVo.status());
+    public StudyParticipantStatusUpdatedVo updateStatus(StudyParticipantVo participantVo, Long requesterId) {
+        log.debug("Command: Bulk updating participant status - ID: {}, status: {}, requesterId: {}",
+                participantVo.id(), participantVo.status(), requesterId);
 
         // 벌크 업데이트 실행 (조회 없이)
         int affectedRows = jpaRepository.bulkUpdateStatus(
@@ -79,7 +79,8 @@ public class StudyParticipantCommandRepositoryImpl implements StudyParticipantCo
                 participantVo.studyId(),
                 participantVo.memberId(),
                 null, // previousStatus는 벌크 업데이트에서 알 수 없음
-                participantVo.status()); // currentStatus는 업데이트된 상태
+                participantVo.status(), // currentStatus는 업데이트된 상태
+                requesterId);
 
         log.debug("Command: Participant status bulk updated successfully - ID: {}, status: {}",
                 participantVo.id(), participantVo.status());

@@ -5,6 +5,7 @@ import lombok.Getter;
 @Getter
 public enum StudyStatus {
     READY("준비 중"),
+    APPROVED("승인됨"),
     INPROGRESS("진행 중"),
     COMPLETED("완료"),
     REJECTED("중단됨");
@@ -52,6 +53,7 @@ public enum StudyStatus {
                 case "CANCELLED" -> REJECTED;
                 case "RECRUITING" -> READY;
                 case "NONE" -> READY;
+                case "APPROVED" -> APPROVED;
                 default -> READY;
             };
         }
@@ -59,6 +61,10 @@ public enum StudyStatus {
 
     public boolean isReady() {
         return this == READY;
+    }
+
+    public boolean isApproved() {
+        return this == APPROVED;
     }
 
     public boolean isInProgress() {
@@ -74,6 +80,6 @@ public enum StudyStatus {
     }
 
     public boolean isActive() {
-        return this == READY || this == INPROGRESS;
+        return this == READY || this == APPROVED || this == INPROGRESS;
     }
 }

@@ -1,5 +1,6 @@
 package org.certis.studyplatform.study.presentation.dto.request;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -37,9 +38,27 @@ public class StudyAdvancedSearchRequestDto {
     private String subcategory;
 
     /**
-     * 상태 필터 (Ready, InProgress, Completed)
+     * 학기 필터 (예: "2025-01", "2024-02")
      */
-    private StudyStatus status;
+    @Pattern(regexp = "^\\d{4}-\\d{2}$", message = "학기는 YYYY-MM 형식이어야 합니다")
+    private String semester;
+
+    /**
+     * 스터디 상태 필터 (Ready, InProgress, Completed)
+     */
+    private StudyStatus studyStatus;
+
+    /**
+     * 페이지 번호 (기본값 0)
+     */
+    @Min(0)
+    private int page = 0;
+
+    /**
+     * 페이지 크기 (기본값 10)
+     */
+    @Min(1)
+    private int size = 10;
 
     /**
      * 모든 필터가 비어있는지 확인
@@ -48,7 +67,8 @@ public class StudyAdvancedSearchRequestDto {
         return (keyword == null || keyword.trim().isEmpty()) &&
                (category == null || category.trim().isEmpty()) &&
                (subcategory == null || subcategory.trim().isEmpty()) &&
-               (status == null);
+               (semester == null || semester.trim().isEmpty()) &&
+               (studyStatus == null);
     }
 
     /**
@@ -56,6 +76,13 @@ public class StudyAdvancedSearchRequestDto {
      */
     public boolean hasKeyword() {
         return keyword != null && !keyword.trim().isEmpty();
+    }
+
+    /**
+     * 스터디 상태 필터가 설정되어 있는지 확인
+     */
+    public boolean hasStudyStatus() {
+        return studyStatus != null;
     }
 
     /**
@@ -73,10 +100,10 @@ public class StudyAdvancedSearchRequestDto {
     }
 
     /**
-     * 상태 필터가 설정되어 있는지 확인
+     * 학기 필터가 설정되어 있는지 확인
      */
-    public boolean hasStatus() {
-        return status != null;
+    public boolean hasSemester() {
+        return semester != null && !semester.trim().isEmpty();
     }
 
     @Override
@@ -85,7 +112,7 @@ public class StudyAdvancedSearchRequestDto {
                "keyword='" + keyword + '\'' +
                ", category='" + category + '\'' +
                ", subcategory='" + subcategory + '\'' +
-               ", status='" + status + '\'' +
+               ", studyStatus='" + studyStatus + '\'' +
                '}';
     }
 } 

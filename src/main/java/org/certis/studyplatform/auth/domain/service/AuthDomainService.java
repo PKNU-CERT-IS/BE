@@ -109,6 +109,8 @@ public class AuthDomainService {
         EncodedPasswordVo encodedPasswordVo = encodePassword(rawPasswordVo);
         log.debug("✅ Password encoded successfully");
 
+
+
         log.debug("🔗 Creating AuthCreationVo...");
         AuthCreationVo authCreationVo = AuthCreationVo.of(
                 createAuthCommand.memberId(),

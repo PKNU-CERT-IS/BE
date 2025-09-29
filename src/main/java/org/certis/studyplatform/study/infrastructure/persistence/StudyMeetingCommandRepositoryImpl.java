@@ -45,7 +45,7 @@ public class StudyMeetingCommandRepositoryImpl implements StudyMeetingCommandRep
             .memberId(studyMeetingVo.writerId())
             .title(studyMeetingVo.title())
             .content(studyMeetingVo.content())
-            .participants(convertParticipantIdsToArray(studyMeetingVo.participantIds())) // List<Long> -> String[] 변환
+            .participants(convertParticipantNumberToArray(studyMeetingVo.participantNumber())) // Integer -> String[] 변환
             .build();
 
         // 데이터베이스에 저장
@@ -56,7 +56,7 @@ public class StudyMeetingCommandRepositoryImpl implements StudyMeetingCommandRep
             savedEntity.getStudyId(),
             savedEntity.getTitle(),
             savedEntity.getContent(),
-            studyMeetingVo.participantIds(),
+            studyMeetingVo.participantNumber(),
             savedEntity.getMemberId(),
             savedEntity.getCreatedAt()
         );
@@ -83,7 +83,7 @@ public class StudyMeetingCommandRepositoryImpl implements StudyMeetingCommandRep
                 studyMeetingVo.id(),
                 studyMeetingVo.title(),
                 studyMeetingVo.content(),
-                convertParticipantIdsToArray(studyMeetingVo.participantIds()),
+                convertParticipantNumberToArray(studyMeetingVo.participantNumber()),
                 OffsetDateTime.now()
         );
 
@@ -98,7 +98,7 @@ public class StudyMeetingCommandRepositoryImpl implements StudyMeetingCommandRep
                 studyMeetingVo.id(),
                 studyMeetingVo.title(),
                 studyMeetingVo.content(),
-                studyMeetingVo.participantIds(),
+                studyMeetingVo.participantNumber(),
                 OffsetDateTime.now()
         );
 
@@ -151,37 +151,16 @@ public class StudyMeetingCommandRepositoryImpl implements StudyMeetingCommandRep
      * List<Long> participantIds를 String[] participants로 변환
      * 임시로 단순 변환 처리 (실제로는 Member ID를 이름으로 변환하는 로직 필요)
      */
-    private Long[] convertParticipantIdsToArray(java.util.List<Long> participantIds) {
-        if (participantIds == null || participantIds.isEmpty()) {
+    private Long[] convertParticipantNumberToArray(Integer participantNumber) {
+        if (participantNumber == null || participantNumber <= 0) {
             return new Long[0];
         }
         
-        // TODO: 실제로는 Member ID를 이름으로 변환하는 로직 필요
-        // 임시로 ID를 문자열로 변환
-        return participantIds.stream()
-            .map(Long::valueOf)
-            .toArray(Long[]::new);
-    }
-
-    /**
-     * String[] participants를 List<Long> participantIds로 변환
-     * 임시로 단순 변환 처리 (실제로는 participants가 이름 문자열이므로 별도 매핑 필요)
-     */
-    private java.util.List<Long> convertParticipantsToIds(String[] participants) {
-        if (participants == null) {
-            return java.util.List.of();
+        // participantNumber만큼의 더미 ID 배열 생성 (실제 구현에서는 다른 방식 사용 가능)
+        Long[] result = new Long[participantNumber];
+        for (int i = 0; i < participantNumber; i++) {
+            result[i] = (long) (i + 1); // 더미 ID
         }
-        
-        // TODO: 실제로는 participant 이름을 Member ID로 변환하는 로직 필요
-        // 임시로 문자열을 Long으로 변환 시도
-        return java.util.Arrays.stream(participants)
-            .map(s -> {
-                try {
-                    return Long.parseLong(s);
-                } catch (NumberFormatException e) {
-                    return 0L; // 임시 처리
-                }
-            })
-            .toList();
+        return result;
     }
 } 

@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import org.certis.studyplatform.shared.dto.LinkDto;
 
 import java.util.List;
 
@@ -23,14 +24,14 @@ public class ProjectMeetingCreateRequestDto {
     private Long projectId;
 
     @NotBlank(message = "회의록 제목은 필수입니다")
-    @Size(max = 255, message = "제목은 255자를 초과할 수 없습니다")
     private String title;
 
     @NotBlank(message = "회의록 내용은 필수입니다")
     private String content;
 
-    @NotNull(message = "참가자 목록은 필수입니다")
-    private List<Long> participantIds;
+    @NotNull(message = "참가자 수는 필수입니다")
+    @Positive(message = "참가자 수는 양수여야 합니다")
+    private Integer participantNumber;
 
-    private String attachedUrl;
+    private List<LinkDto> links;
 } 

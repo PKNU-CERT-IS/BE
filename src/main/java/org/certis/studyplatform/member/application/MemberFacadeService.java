@@ -159,11 +159,11 @@ public class MemberFacadeService {
     }
 
     public List<MemberSearchResponseDto> searchMembers(MemberSearchRequestDto request) {
-        log.info("Facade: Searching members - search: {}, grade: {}, role: {}",
-                request.getSearch(), request.getGrade(), request.getRole());
+        log.info("Facade: Searching members - keyword: {}, grade: {}, role: {}",
+                request.getKeyword(), request.getGrade(), request.getRole());
 
         SearchMembersWithContactQuery query = SearchMembersWithContactQuery.of(
-                request.getSearch(),
+                request.getKeyword(),
                 request.getGrade(),
                 request.getRole()
         );

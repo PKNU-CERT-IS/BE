@@ -29,7 +29,7 @@ public record StudyMeetingPageResultVo(
         // 회의록별 링크 개수 계산
         Map<Long, Integer> linkCountByMeetingId = allLinks.stream()
                 .collect(Collectors.groupingBy(
-                        StudyMeetingLinkVo::studyId,
+                        StudyMeetingLinkVo::meetingId,
                         Collectors.collectingAndThen(Collectors.counting(), Math::toIntExact)
                 ));
 

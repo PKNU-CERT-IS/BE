@@ -1,6 +1,7 @@
 package org.certis.studyplatform.project.domain.vo;
 
 import org.certis.studyplatform.member.domain.MemberGrade;
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -20,9 +21,17 @@ public record ProjectSummaryVo(
     OffsetDateTime endDate,
     String projectCreatorName,
     MemberGrade projectCreatorGrade,
+    String semester,
+    String status,
     boolean isParticipantable,
     String githubUrl,
-    String externalUrl
+    ExternalUrlVo externalUrl,
+    String thumbnailUrl,
+    String demoUrl,
+    Integer maxParticipantNumber,
+    Integer currentParticipantNumber,
+    ResultSubmitStatus resultSubmitStatus,
+    List<ProjectAttachedVo> attachedVo
 ) {
     public static ProjectSummaryVo of(
         Long id,
@@ -34,14 +43,23 @@ public record ProjectSummaryVo(
         OffsetDateTime endDate,
         String projectCreatorName,
         MemberGrade projectCreatorGrade,
+        String semester,
+        String status,
         boolean isParticipantable,
         String githubUrl,
-        String externalUrl
+        ExternalUrlVo externalUrl,
+        String thumbnailUrl,
+        String demoUrl,
+        Integer maxParticipantNumber,
+        Integer currentParticipantNumber,
+        ResultSubmitStatus resultSubmitStatus,
+        List<ProjectAttachedVo> attachedVo
     ) {
         return new ProjectSummaryVo(
             id, title, description, category, subcategory,
             startDate, endDate, projectCreatorName, projectCreatorGrade,
-                isParticipantable, githubUrl, externalUrl
+            semester, status, isParticipantable, githubUrl, externalUrl,
+            thumbnailUrl, demoUrl, maxParticipantNumber, currentParticipantNumber, resultSubmitStatus, attachedVo
         );
     }
 }

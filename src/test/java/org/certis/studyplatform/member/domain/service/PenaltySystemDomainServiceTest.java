@@ -6,12 +6,15 @@ import org.certis.studyplatform.member.domain.mapper.MemberDomainMapper;
 import org.certis.studyplatform.member.domain.repository.command.MemberContactCommandRepository;
 import org.certis.studyplatform.member.domain.vo.*;
 import org.certis.studyplatform.member.domain.MemberRole;
+import org.certis.studyplatform.member.domain.MemberGrade;
 import java.util.Optional;
 import org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository;
+import org.certis.studyplatform.project.domain.repository.ProjectQueryRepository;
 import org.certis.studyplatform.project.domain.ProjectParticipantStatus;
 import org.certis.studyplatform.project.domain.vo.ProjectParticipantSummaryVo;
 import org.certis.studyplatform.shared.util.GracePeriodCalculator;
 import org.certis.studyplatform.study.domain.repository.StudyParticipantQueryRepository;
+import org.certis.studyplatform.study.domain.repository.StudyQueryRepository;
 import org.certis.studyplatform.study.domain.StudyParticipantStatus;
 import org.certis.studyplatform.study.domain.vo.StudyParticipantSummaryVo;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,6 +59,12 @@ class PenaltySystemDomainServiceTest {
     private ProjectParticipantQueryRepository projectParticipantQueryRepository;
 
     @Mock
+    private StudyQueryRepository studyQueryRepository;
+
+    @Mock
+    private ProjectQueryRepository projectQueryRepository;
+
+    @Mock
     private MemberDomainMapper memberDomainMapper;
 
     @Mock
@@ -73,6 +82,8 @@ class PenaltySystemDomainServiceTest {
             memberCommandRepository,
             studyParticipantQueryRepository,
             projectParticipantQueryRepository,
+            studyQueryRepository,
+            projectQueryRepository,
             memberQueryRepository
         );
 
@@ -117,9 +128,9 @@ class PenaltySystemDomainServiceTest {
             // expectedGracePeriod: studyEndDate.plusWeeks(1) - 3주 이하 → 1주 추가
             // 승인된 참가자 요약 목록 stubbing
             List<StudyParticipantSummaryVo> summaries = Arrays.asList(
-                new StudyParticipantSummaryVo(1L, 1L, "m1", StudyParticipantStatus.APPROVED, now),
-                new StudyParticipantSummaryVo(2L, 2L, "m2", StudyParticipantStatus.APPROVED, now),
-                new StudyParticipantSummaryVo(3L, 3L, "m3", StudyParticipantStatus.APPROVED, now)
+                new StudyParticipantSummaryVo(1L, studyId, 1L, "m1", MemberGrade.FRESHMAN, "Study Title", StudyParticipantStatus.APPROVED, now),
+                new StudyParticipantSummaryVo(2L, studyId, 2L, "m2", MemberGrade.FRESHMAN, "Study Title", StudyParticipantStatus.APPROVED, now),
+                new StudyParticipantSummaryVo(3L, studyId, 3L, "m3", MemberGrade.FRESHMAN, "Study Title", StudyParticipantStatus.APPROVED, now)
             );
             when(studyParticipantQueryRepository.findAllApprovedByStudyId(eq(studyId)))
                 .thenReturn(summaries);
@@ -151,9 +162,9 @@ class PenaltySystemDomainServiceTest {
             // expectedGracePeriod: projectEndDate.plusWeeks(2) - 4주 이상 → 2주 추가
             // 승인된 참가자 요약 목록 stubbing
             List<ProjectParticipantSummaryVo> summaries = Arrays.asList(
-                new ProjectParticipantSummaryVo(1L, 1L, "m1", ProjectParticipantStatus.APPROVED, now),
-                new ProjectParticipantSummaryVo(2L, 2L, "m2", ProjectParticipantStatus.APPROVED, now),
-                new ProjectParticipantSummaryVo(3L, 3L, "m3", ProjectParticipantStatus.APPROVED, now)
+                new ProjectParticipantSummaryVo(1L, projectId, 1L, "m1", MemberGrade.FRESHMAN, "Project Title", ProjectParticipantStatus.APPROVED, now),
+                new ProjectParticipantSummaryVo(2L, projectId, 2L, "m2", MemberGrade.FRESHMAN, "Project Title", ProjectParticipantStatus.APPROVED, now),
+                new ProjectParticipantSummaryVo(3L, projectId, 3L, "m3", MemberGrade.FRESHMAN, "Project Title", ProjectParticipantStatus.APPROVED, now)
             );
             when(projectParticipantQueryRepository.findAllApprovedByProjectId(eq(projectId)))
                 .thenReturn(summaries);
@@ -255,9 +266,9 @@ class PenaltySystemDomainServiceTest {
             OffsetDateTime endDate = now.plusWeeks(3);
 
             List<StudyParticipantSummaryVo> summaries = Arrays.asList(
-                new StudyParticipantSummaryVo(100L, 1L, "m1", StudyParticipantStatus.APPROVED, now),
-                new StudyParticipantSummaryVo(101L, 2L, "m2", StudyParticipantStatus.APPROVED, now),
-                new StudyParticipantSummaryVo(102L, 3L, "m3", StudyParticipantStatus.APPROVED, now)
+                new StudyParticipantSummaryVo(100L, studyId, 1L, "m1", MemberGrade.FRESHMAN, "Study Title", StudyParticipantStatus.APPROVED, now),
+                new StudyParticipantSummaryVo(101L, studyId, 2L, "m2", MemberGrade.FRESHMAN, "Study Title", StudyParticipantStatus.APPROVED, now),
+                new StudyParticipantSummaryVo(102L, studyId, 3L, "m3", MemberGrade.FRESHMAN, "Study Title", StudyParticipantStatus.APPROVED, now)
             );
             when(studyParticipantQueryRepository.findAllApprovedByStudyId(eq(studyId)))
                 .thenReturn(summaries);
@@ -281,9 +292,9 @@ class PenaltySystemDomainServiceTest {
             OffsetDateTime endDate = now.plusWeeks(2);
 
             List<StudyParticipantSummaryVo> summaries = Arrays.asList(
-                new StudyParticipantSummaryVo(1L, 11L, "u1", StudyParticipantStatus.APPROVED, now), // UPSOLVER (default)
-                new StudyParticipantSummaryVo(2L, 12L, "p1", StudyParticipantStatus.APPROVED, now), // PLAYER
-                new StudyParticipantSummaryVo(3L, 13L, "s1", StudyParticipantStatus.APPROVED, now)  // STAFF
+                new StudyParticipantSummaryVo(1L, studyId, 11L, "u1", MemberGrade.FRESHMAN, "Study Title", StudyParticipantStatus.APPROVED, now), // FRESHMAN
+                new StudyParticipantSummaryVo(2L, studyId, 12L, "p1", MemberGrade.SOPHOMORE, "Study Title", StudyParticipantStatus.APPROVED, now), // SOPHOMORE
+                new StudyParticipantSummaryVo(3L, studyId, 13L, "s1", MemberGrade.JUNIOR, "Study Title", StudyParticipantStatus.APPROVED, now)  // JUNIOR
             );
             when(studyParticipantQueryRepository.findAllApprovedByStudyId(eq(studyId)))
                 .thenReturn(summaries);
@@ -312,9 +323,9 @@ class PenaltySystemDomainServiceTest {
             OffsetDateTime endDate = now.plusWeeks(5);
 
             List<ProjectParticipantSummaryVo> summaries = Arrays.asList(
-                new ProjectParticipantSummaryVo(1L, 21L, "u1", ProjectParticipantStatus.APPROVED, now), // UPSOLVER (default)
-                new ProjectParticipantSummaryVo(2L, 22L, "p1", ProjectParticipantStatus.APPROVED, now), // PLAYER
-                new ProjectParticipantSummaryVo(3L, 23L, "s1", ProjectParticipantStatus.APPROVED, now)  // STAFF
+                new ProjectParticipantSummaryVo(1L, projectId, 21L, "u1", MemberGrade.FRESHMAN, "Project Title", ProjectParticipantStatus.APPROVED, now), // FRESHMAN
+                new ProjectParticipantSummaryVo(2L, projectId, 22L, "p1", MemberGrade.SOPHOMORE, "Project Title", ProjectParticipantStatus.APPROVED, now), // SOPHOMORE
+                new ProjectParticipantSummaryVo(3L, projectId, 23L, "s1", MemberGrade.JUNIOR, "Project Title", ProjectParticipantStatus.APPROVED, now)  // JUNIOR
             );
             when(projectParticipantQueryRepository.findAllApprovedByProjectId(eq(projectId)))
                 .thenReturn(summaries);

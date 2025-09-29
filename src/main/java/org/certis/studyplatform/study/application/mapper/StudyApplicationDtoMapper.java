@@ -5,11 +5,13 @@ import org.certis.studyplatform.study.presentation.dto.response.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Component;
+import lombok.RequiredArgsConstructor;
+import org.certis.studyplatform.shared.service.S3FileService;
 
 import java.util.Collections;
+import java.util.Objects;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * Study Application DTO Mapper
@@ -19,7 +21,10 @@ import java.util.stream.IntStream;
  * Presentation Mapper에서 Application Layer로 이동됨
  */
 @Component
+@RequiredArgsConstructor
 public class StudyApplicationDtoMapper {
+
+    private final S3FileService s3FileService;
 
     /**
      * StudyVo를 StudyDetailResponseDto로 변환
@@ -29,6 +34,8 @@ public class StudyApplicationDtoMapper {
         if (vo == null) {
             return null;
         }
+
+        String thumbnailUrl = null;
 
         return StudyDetailResponseDto.builder()
                 .id(vo.id())
@@ -42,13 +49,18 @@ public class StudyApplicationDtoMapper {
                 .createdAt(vo.createdAt())
                 .updatedAt(vo.updatedAt())
                 .creatorId(vo.creatorId())
-                .creatorName(vo.creatorName())
-                .creatorGrade(vo.creatorGrade())
+                .studyCreatorName(vo.creatorName())
+                .studyCreatorGrade(vo.creatorGrade() != null ? vo.creatorGrade().toString() : null)
+                .semester(vo.semester())
+                .status(vo.status())
+                .resultSubmitStatus(vo.resultSubmitStatus())
+                .thumbnailUrl(thumbnailUrl)
                 .attachments(toStudyAttachedResponseDtoList(vo.attached()))
                 .meetingSummaries(toStudyMeetingSummaryResponseDtoList(vo.summaryVoList()))
                 .participantSummaries(toStudyParticipantSummaryResponseDtoListFromVo(vo.participantVoList()))
                 .maxParticipantNumber(vo.maxParticipants())
                 .currentParticipantNumber(vo.currentParticipants())
+                .isParticipantable(vo.isParticipantable())
                 .build();
     }
 
@@ -58,6 +70,22 @@ public class StudyApplicationDtoMapper {
     public StudySummaryResponseDto toStudySummaryResponseDto(StudySummaryVo vo) {
         if (vo == null) {
             return null;
+        }
+
+        String thumbnailUrl = null;
+        if (vo.attachedVo() != null) {
+            thumbnailUrl = vo.attachedVo().stream()
+                    .filter(a -> a.type() != null && (
+                            a.type().toLowerCase().startsWith("image/") ||
+                            a.type().equalsIgnoreCase("png") ||
+                            a.type().equalsIgnoreCase("jpg") ||
+                            a.type().equalsIgnoreCase("jpeg")
+                    ))
+                    .map(StudyAttachedVo::attachedUrl)
+                    .filter(Objects::nonNull)
+                    .findFirst()
+                    .map(this::normalizeUrl)
+                    .orElse(null);
         }
 
         return StudySummaryResponseDto.builder()
@@ -70,9 +98,13 @@ public class StudyApplicationDtoMapper {
                 .endDate(vo.endDate())
                 .studyCreatorName(vo.studyCreatorName())
                 .studyCreatorGrade(vo.studyCreatorGrade())
+                .semester(vo.semester())
+                .status(vo.status())
+                .resultSubmitStatus(vo.resultSubmitStatus())
                 .isParticipantable(vo.isParticipantable())
                 .currentParticipantNumber(vo.currentParticipants())
                 .maxParticipantNumber(vo.maxParticipants())
+                .thumbnailUrl(thumbnailUrl)
                 .attachments(toStudyAttachedResponseDtoList(vo.attachedVo()))
                 .build();
     }
@@ -85,12 +117,13 @@ public class StudyApplicationDtoMapper {
             return null;
         }
 
+        String url = normalizeUrl(vo.attachedUrl());
         return StudyAttachedResponseDto.builder()
                 .id(vo.id())
                 .name(vo.name())
                 .type(vo.type())
                 .size(vo.size())
-                .attachedUrl(vo.attachedUrl())
+                .attachedUrl(url)
                 .build();
     }
 
@@ -107,6 +140,10 @@ public class StudyApplicationDtoMapper {
                 .toList();
     }
 
+    private String normalizeUrl(String url) {
+        return s3FileService.toPresignedUrl(url);
+    }
+
     /**
      * StudyMeetingSummaryWithLinksVo를 StudyMeetingSummaryResponseDto로 변환
      */
@@ -121,7 +158,7 @@ public class StudyApplicationDtoMapper {
                 .participantNumber(vo.participantNumber())
                 .creatorName(vo.creatorName())
                 .isEditable(vo.isEditable())
-                .links(vo.hasLinks() ? createMockLinks(vo.safeLinkCount()) : Collections.emptyList())
+                .links(Collections.emptyList())
                 .build();
     }
 
@@ -133,14 +170,8 @@ public class StudyApplicationDtoMapper {
             return null;
         }
 
-        // 기존 meetingAttachedUrl과 meetingAttachedTitle을 links로 변환
+        // 링크는 Facade 레이어에서 S3 메타데이터를 통해 채울 수 있도록 비워둔다
         List<StudyMeetingSummaryResponseDto.Link> links = Collections.emptyList();
-        if (vo.meetingAttachedUrl() != null && !vo.meetingAttachedUrl().isEmpty()) {
-            links = List.of(StudyMeetingSummaryResponseDto.Link.builder()
-                    .title(vo.meetingAttachedTitle() != null ? vo.meetingAttachedTitle() : "회의록 첨부 링크")
-                    .url(vo.meetingAttachedUrl())
-                    .build());
-        }
 
         return StudyMeetingSummaryResponseDto.builder()
                 .id(vo.id())
@@ -201,7 +232,9 @@ public class StudyApplicationDtoMapper {
         }
 
         List<StudySummaryResponseDto> dtoList = toStudySummaryResponseDtoList(voPage.getContent());
-        return new PageImpl<>(dtoList, voPage.getPageable(), voPage.getTotalElements());
+        // Normalize Pageable to avoid Unpaged serialization issues
+        var pageable = voPage.getPageable().isPaged() ? voPage.getPageable() : org.springframework.data.domain.PageRequest.of(0, dtoList.size() == 0 ? 1 : dtoList.size());
+        return new PageImpl<>(dtoList, pageable, voPage.getTotalElements());
     }
 
     /**
@@ -214,22 +247,6 @@ public class StudyApplicationDtoMapper {
                 .status(vo.status())
                 .createdAt(vo.createdAt())
                 .build();
-    }
-
-    /**
-     * 테스트용 링크 목록 생성
-     */
-    private List<StudyMeetingSummaryResponseDto.Link> createMockLinks(int count) {
-        if (count <= 0) {
-            return Collections.emptyList();
-        }
-        
-        return IntStream.range(0, count)
-                .mapToObj(i -> StudyMeetingSummaryResponseDto.Link.builder()
-                        .title("회의록 첨부 링크 " + (i + 1))
-                        .url("https://example.com/meeting-notes-" + (i + 1) + ".pdf")
-                        .build())
-                .toList();
     }
 
     /**
@@ -265,6 +282,7 @@ public class StudyApplicationDtoMapper {
                 .id(vo.id())
                 .memberId(vo.memberId())
                 .memberName(vo.memberName())
+                .memberGrade(vo.memberGrade())
                 .status(vo.status())
                 .createdAt(vo.createdAt())
                 .build();
@@ -340,6 +358,32 @@ public class StudyApplicationDtoMapper {
                 .pendingCount(pendingCount)
                 .maxParticipants(maxParticipants)
                 .isFull(isFull)
+                .build();
+    }
+
+    /**
+     * StudyParticipantStatusUpdatedVo → AdminStudyParticipantApprovalResponseDto 변환 (실데이터 버전)
+     */
+    public AdminStudyParticipantApprovalResponseDto toAdminStudyParticipantApprovalResponseDto(
+            StudyParticipantStatusUpdatedVo vo,
+            String studyTitle,
+            String memberName,
+            org.certis.studyplatform.study.domain.StudyParticipantStatus status,
+            Long adminId,
+            String adminName,
+            String reason
+    ) {
+        return AdminStudyParticipantApprovalResponseDto.builder()
+                .participantId(vo.id())
+                .studyId(vo.studyId())
+                .studyTitle(studyTitle)
+                .memberId(vo.memberId())
+                .memberName(memberName)
+                .status(status)
+                .reason(reason)
+                .adminId(adminId)
+                .adminName(adminName)
+                .processedAt(vo.updatedAt())
                 .build();
     }
 }

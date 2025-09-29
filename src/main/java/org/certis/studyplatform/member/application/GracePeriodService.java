@@ -29,10 +29,19 @@ public class GracePeriodService {
      * 스케줄러에서 호출되어 유예기간이 만료된 회원들에게 벌점 부여
      */
     public void applyExpiredGracePeriods() {
+        applyExpiredGracePeriods(OffsetDateTime.now());
+    }
+
+    /**
+     * 만료된 유예기간 처리 (테스트용)
+     * 
+     * @param currentTime 현재 시간 (테스트에서 시간을 제어하기 위해 사용)
+     */
+    public void applyExpiredGracePeriods(OffsetDateTime currentTime) {
         log.info("Application: Starting expired grace period processing");
         
         try {
-            memberDomainService.applyGracePeriodForGrantingPenalties();
+            memberDomainService.applyGracePeriodForGrantingPenalties(currentTime);
             log.info("Application: Expired grace period processing completed successfully");
         } catch (Exception e) {
             log.error("Application: Failed to process expired grace periods", e);
@@ -76,6 +85,44 @@ public class GracePeriodService {
             log.info("Application: Grace period extension completed for project - projectId: {}", projectId);
         } catch (Exception e) {
             log.error("Application: Failed to extend grace period for project - projectId: {}, error: {}", projectId, e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    /**
+     * 스터디 조기 종료 시 유예기간 재조정
+     * 
+     * @param studyId 조기 종료된 스터디 ID
+     * @param studyStartDate 스터디 시작일
+     * @param actualEndDate 실제 종료일 (조기 종료일)
+     */
+    public void adjustGracePeriodForEarlyTerminatedStudy(Long studyId, OffsetDateTime studyStartDate, OffsetDateTime actualEndDate) {
+        log.info("Application: Adjusting grace period for early terminated study - studyId: {}, actualEndDate: {}", studyId, actualEndDate);
+        
+        try {
+            gracePeriodExtensionDomainService.adjustGracePeriodForEarlyTerminatedStudy(studyId, studyStartDate, actualEndDate);
+            log.info("Application: Grace period adjustment completed for early terminated study - studyId: {}", studyId);
+        } catch (Exception e) {
+            log.error("Application: Failed to adjust grace period for early terminated study - studyId: {}, error: {}", studyId, e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    /**
+     * 프로젝트 조기 종료 시 유예기간 재조정
+     * 
+     * @param projectId 조기 종료된 프로젝트 ID
+     * @param projectStartDate 프로젝트 시작일
+     * @param actualEndDate 실제 종료일 (조기 종료일)
+     */
+    public void adjustGracePeriodForEarlyTerminatedProject(Long projectId, OffsetDateTime projectStartDate, OffsetDateTime actualEndDate) {
+        log.info("Application: Adjusting grace period for early terminated project - projectId: {}, actualEndDate: {}", projectId, actualEndDate);
+        
+        try {
+            gracePeriodExtensionDomainService.adjustGracePeriodForEarlyTerminatedProject(projectId, projectStartDate, actualEndDate);
+            log.info("Application: Grace period adjustment completed for early terminated project - projectId: {}", projectId);
+        } catch (Exception e) {
+            log.error("Application: Failed to adjust grace period for early terminated project - projectId: {}, error: {}", projectId, e.getMessage(), e);
             throw e;
         }
     }

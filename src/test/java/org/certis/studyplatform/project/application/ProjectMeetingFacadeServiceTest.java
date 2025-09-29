@@ -1,7 +1,10 @@
 package org.certis.studyplatform.project.application;
 
+import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.project.application.command.ProjectMeetingCommandService;
 import org.certis.studyplatform.project.application.query.ProjectMeetingQueryService;
+import org.certis.studyplatform.project.application.query.ProjectParticipantQueryService;
+import org.certis.studyplatform.project.domain.ProjectParticipantStatus;
 import org.certis.studyplatform.project.domain.vo.*;
 import org.certis.studyplatform.project.presentation.dto.request.ProjectMeetingAllRequestDto;
 import org.certis.studyplatform.project.presentation.dto.request.ProjectMeetingDetailRequestDto;
@@ -17,6 +20,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.certis.studyplatform.shared.service.S3FileService;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -40,12 +44,18 @@ class ProjectMeetingFacadeServiceTest {
     @Mock
     private ProjectMeetingQueryService projectMeetingQueryService;
 
+    @Mock
+    private ProjectParticipantQueryService projectParticipantQueryService;
+
     private ProjectMeetingFacadeService projectMeetingFacadeService;
+
+    @Mock
+    private S3FileService s3FileService;
 
     @BeforeEach
     void setUp() {
         projectMeetingFacadeService = new ProjectMeetingFacadeService(
-            projectMeetingCommandService, projectMeetingQueryService);
+            projectMeetingCommandService, projectMeetingQueryService, projectParticipantQueryService, s3FileService);
     }
 
     @Test
@@ -61,7 +71,7 @@ class ProjectMeetingFacadeServiceTest {
                 1L,                          // projectId
                 "킥오프 회의",                 // title
                 "회의 내용",                   // content
-                List.of(1L, 2L, 3L, 4L),     // participantIds
+                4,                           // participantNumber
                 1L,                          // writerId
                 true,                        // isEditable
                 OffsetDateTime.now(),        // createdAt
@@ -69,7 +79,21 @@ class ProjectMeetingFacadeServiceTest {
                 List.of()                    // attachedLinks (빈 리스트)
         );
 
+        // ProjectParticipantSummaryVo Mock 데이터 생성
+        ProjectParticipantSummaryVo mockParticipant = new ProjectParticipantSummaryVo(
+                1L,                          // id
+                1L,                          // projectId
+                1L,                          // memberId
+                "테스트 사용자",               // memberName
+                MemberGrade.FRESHMAN,        // memberGrade
+                "테스트 프로젝트",             // projectTitle
+                ProjectParticipantStatus.APPROVED, // status
+                OffsetDateTime.now()         // createdAt
+        );
+        Page<ProjectParticipantSummaryVo> mockParticipants = new PageImpl<>(List.of(mockParticipant));
+
         when(projectMeetingQueryService.getProjectMeetingById(any())).thenReturn(mockMeetingDetailVo);
+        when(projectParticipantQueryService.getParticipantsByProject(any(), any(), any())).thenReturn(mockParticipants);
 
         // When
         ProjectMeetingDetailResponseDto result = projectMeetingFacadeService.getProjectMeetingDetail(request);
@@ -79,7 +103,8 @@ class ProjectMeetingFacadeServiceTest {
         assertThat(result.getId()).isEqualTo(1L);
         assertThat(result.getTitle()).isEqualTo("킥오프 회의");
         assertThat(result.getProjectId()).isEqualTo(1L);
-        assertThat(result.getParticipantIds()).hasSize(4);
+        assertThat(result.getParticipantIds()).hasSize(1);
+        assertThat(result.getParticipantIds().get(0)).isEqualTo(1L);
         assertThat(result.isEditable()).isTrue();
     }
 
@@ -117,7 +142,7 @@ class ProjectMeetingFacadeServiceTest {
                 1L,                          // projectId
                 "킥오프 회의",                 // title
                 "회의 내용",                   // content
-                List.of(1L, 2L, 3L, 4L),     // participantIds
+                4,                           // participantNumber
                 1L,                          // writerId
                 true,                        // isEditable
                 OffsetDateTime.now(),        // createdAt
@@ -125,7 +150,21 @@ class ProjectMeetingFacadeServiceTest {
                 mockLinks                    // attachedLinks
         );
 
+        // ProjectParticipantSummaryVo Mock 데이터 생성
+        ProjectParticipantSummaryVo mockParticipant = new ProjectParticipantSummaryVo(
+                1L,                          // id
+                1L,                          // projectId
+                1L,                          // memberId
+                "테스트 사용자",               // memberName
+                MemberGrade.FRESHMAN,        // memberGrade
+                "테스트 프로젝트",             // projectTitle
+                ProjectParticipantStatus.APPROVED, // status
+                OffsetDateTime.now()         // createdAt
+        );
+        Page<ProjectParticipantSummaryVo> mockParticipants = new PageImpl<>(List.of(mockParticipant));
+
         when(projectMeetingQueryService.getProjectMeetingById(any())).thenReturn(mockMeetingDetailVo);
+        when(projectParticipantQueryService.getParticipantsByProject(any(), any(), any())).thenReturn(mockParticipants);
 
         // When
         ProjectMeetingDetailResponseDto result = projectMeetingFacadeService.getProjectMeetingDetail(request);
@@ -135,7 +174,8 @@ class ProjectMeetingFacadeServiceTest {
         assertThat(result.getId()).isEqualTo(1L);
         assertThat(result.getTitle()).isEqualTo("킥오프 회의");
         assertThat(result.getProjectId()).isEqualTo(1L);
-        assertThat(result.getParticipantIds()).hasSize(4);
+        assertThat(result.getParticipantIds()).hasSize(1);
+        assertThat(result.getParticipantIds().get(0)).isEqualTo(1L);
         assertThat(result.isEditable()).isTrue();
         // 링크 관련 추가 검증 가능
     }
@@ -149,10 +189,10 @@ class ProjectMeetingFacadeServiceTest {
         Pageable pageable = PageRequest.of(0, 10);
 
         List<ProjectMeetingSummaryVo> mockMeetings = List.of(
-                ProjectMeetingSummaryVo.of(1L, "킥오프 회의", "", 4, "김철수", true, null, null),
-                ProjectMeetingSummaryVo.of(2L, "1차 진행상황 회의", "", 4, "이영희", false, null, null),
-                ProjectMeetingSummaryVo.of(3L, "중간 점검 회의", "", 3, "박민수", true, null, null),
-                ProjectMeetingSummaryVo.of(4L, "최종 발표 준비 회의", "", 4, "정하나", false, null, null)
+                ProjectMeetingSummaryVo.of(1L, "킥오프 회의", "", 4, "김철수", true, OffsetDateTime.now(), null, null),
+                ProjectMeetingSummaryVo.of(2L, "1차 진행상황 회의", "", 4, "이영희", false, OffsetDateTime.now(), null, null),
+                ProjectMeetingSummaryVo.of(3L, "중간 점검 회의", "", 3, "박민수", true, OffsetDateTime.now(), null, null),
+                ProjectMeetingSummaryVo.of(4L, "최종 발표 준비 회의", "", 4, "정하나", false, OffsetDateTime.now(), null, null)
         );
         Page<ProjectMeetingSummaryVo> mockPage = new PageImpl<>(mockMeetings, pageable, mockMeetings.size());
 

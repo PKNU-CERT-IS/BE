@@ -45,4 +45,5 @@ public class StudyAttachedInfrastructureMapper {
                 .map(this::toVo)
                 .toList();
     }
+
 } 

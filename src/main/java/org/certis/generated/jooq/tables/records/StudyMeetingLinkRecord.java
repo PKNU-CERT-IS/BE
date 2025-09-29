@@ -34,101 +34,101 @@ public class StudyMeetingLinkRecord extends UpdatableRecordImpl<StudyMeetingLink
     }
 
     /**
-     * Setter for <code>public.study_meeting_link.study_id</code>.
-     */
-    public void setStudyId(Long value) {
-        set(1, value);
-    }
-
-    /**
-     * Getter for <code>public.study_meeting_link.study_id</code>.
-     */
-    public Long getStudyId() {
-        return (Long) get(1);
-    }
-
-    /**
      * Setter for <code>public.study_meeting_link.member_id</code>.
      */
     public void setMemberId(Long value) {
-        set(2, value);
+        set(1, value);
     }
 
     /**
      * Getter for <code>public.study_meeting_link.member_id</code>.
      */
     public Long getMemberId() {
-        return (Long) get(2);
+        return (Long) get(1);
     }
 
     /**
      * Setter for <code>public.study_meeting_link.name</code>.
      */
     public void setName(String value) {
-        set(3, value);
+        set(2, value);
     }
 
     /**
      * Getter for <code>public.study_meeting_link.name</code>.
      */
     public String getName() {
-        return (String) get(3);
+        return (String) get(2);
     }
 
     /**
      * Setter for <code>public.study_meeting_link.attached_url</code>.
      */
     public void setAttachedUrl(String value) {
-        set(4, value);
+        set(3, value);
     }
 
     /**
      * Getter for <code>public.study_meeting_link.attached_url</code>.
      */
     public String getAttachedUrl() {
-        return (String) get(4);
+        return (String) get(3);
     }
 
     /**
      * Setter for <code>public.study_meeting_link.created_at</code>.
      */
     public void setCreatedAt(OffsetDateTime value) {
-        set(5, value);
+        set(4, value);
     }
 
     /**
      * Getter for <code>public.study_meeting_link.created_at</code>.
      */
     public OffsetDateTime getCreatedAt() {
-        return (OffsetDateTime) get(5);
+        return (OffsetDateTime) get(4);
     }
 
     /**
      * Setter for <code>public.study_meeting_link.updated_at</code>.
      */
     public void setUpdatedAt(OffsetDateTime value) {
-        set(6, value);
+        set(5, value);
     }
 
     /**
      * Getter for <code>public.study_meeting_link.updated_at</code>.
      */
     public OffsetDateTime getUpdatedAt() {
-        return (OffsetDateTime) get(6);
+        return (OffsetDateTime) get(5);
     }
 
     /**
      * Setter for <code>public.study_meeting_link.deleted_at</code>.
      */
     public void setDeletedAt(OffsetDateTime value) {
-        set(7, value);
+        set(6, value);
     }
 
     /**
      * Getter for <code>public.study_meeting_link.deleted_at</code>.
      */
     public OffsetDateTime getDeletedAt() {
-        return (OffsetDateTime) get(7);
+        return (OffsetDateTime) get(6);
+    }
+
+    /**
+     * Setter for <code>public.study_meeting_link.meeting_id</code>.
+     */
+    public void setMeetingId(Long value) {
+        set(7, value);
+    }
+
+    /**
+     * Getter for <code>public.study_meeting_link.meeting_id</code>.
+     */
+    public Long getMeetingId() {
+        return (Long) get(7);
     }
 
     // -------------------------------------------------------------------------
@@ -154,17 +154,17 @@ public class StudyMeetingLinkRecord extends UpdatableRecordImpl<StudyMeetingLink
     /**
      * Create a detached, initialised StudyMeetingLinkRecord
      */
-    public StudyMeetingLinkRecord(Long id, Long studyId, Long memberId, String name, String attachedUrl, OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
+    public StudyMeetingLinkRecord(Long id, Long memberId, String name, String attachedUrl, OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt, Long meetingId) {
         super(StudyMeetingLink.STUDY_MEETING_LINK);
 
         setId(id);
-        setStudyId(studyId);
         setMemberId(memberId);
         setName(name);
         setAttachedUrl(attachedUrl);
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
         setDeletedAt(deletedAt);
+        setMeetingId(meetingId);
         resetTouchedOnNotNull();
     }
 
@@ -176,13 +176,13 @@ public class StudyMeetingLinkRecord extends UpdatableRecordImpl<StudyMeetingLink
 
         if (value != null) {
             setId(value.getId());
-            setStudyId(value.getStudyId());
             setMemberId(value.getMemberId());
             setName(value.getName());
             setAttachedUrl(value.getAttachedUrl());
             setCreatedAt(value.getCreatedAt());
             setUpdatedAt(value.getUpdatedAt());
             setDeletedAt(value.getDeletedAt());
+            setMeetingId(value.getMeetingId());
             resetTouchedOnNotNull();
         }
     }

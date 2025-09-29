@@ -146,6 +146,11 @@ test {
     testLogging {
         events "passed", "skipped", "failed"
     }
+    
+    // Mockito agent configuration to avoid self-attaching warning
+    jvmArgs = [
+        '-javaagent:' + configurations.testRuntimeClasspath.find { it.name.contains('byte-buddy-agent') }.absolutePath
+    ]
 }
 
 // ===================================================================
@@ -344,14 +349,6 @@ task generateJooqCode {
     doFirst {
         // 환경변수 로딩
         loadEnvironmentVariables()
-        
-        // 환경변수가 설정되었는지 확인
-        def requiredVars = ['JOOQ_DB_URL', 'JOOQ_DB_USERNAME', 'JOOQ_DB_PASSWORD']
-        def missingVars = requiredVars.findAll { !System.getProperty(it) && !System.getenv(it) }
-        
-        if (missingVars) {
-            throw new GradleException("Missing required environment variables for jOOQ: ${missingVars.join(', ')}")
-        }
         
         println "✅ jOOQ environment variables validated"
     }

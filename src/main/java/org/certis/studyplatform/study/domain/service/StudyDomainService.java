@@ -8,9 +8,9 @@ import org.certis.studyplatform.member.application.object.query.GetMemberByIdQue
 import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.service.MemberDomainService;
 import org.certis.studyplatform.member.domain.vo.MemberVo;
-import org.certis.studyplatform.member.infrastructure.persistence.MemberQueryRepositoryImpl;
 import org.certis.studyplatform.study.application.object.command.CreateStudyCommand;
 import org.certis.studyplatform.study.application.object.command.DeleteStudyCommand;
+import org.certis.studyplatform.study.application.object.command.EndStudyCommand;
 import org.certis.studyplatform.study.application.object.command.UpdateStudyCommand;
 import org.certis.studyplatform.study.application.object.query.GetAllStudiesQuery;
 import org.certis.studyplatform.study.application.object.query.GetCompletedStudiesByMemberQuery;
@@ -18,6 +18,7 @@ import org.certis.studyplatform.study.application.object.query.GetStudyByIdQuery
 import org.certis.studyplatform.study.application.object.query.SearchStudiesQuery;
 import org.certis.studyplatform.study.domain.repository.StudyCommandRepository;
 import org.certis.studyplatform.study.domain.repository.StudyQueryRepository;
+import org.certis.studyplatform.study.domain.StudyStatus;
 import org.certis.studyplatform.study.domain.vo.StudySearchCriteriaVo;
 import org.certis.studyplatform.study.domain.vo.StudySearchResultVo;
 import org.certis.studyplatform.study.domain.vo.StudySummaryVo;
@@ -25,8 +26,14 @@ import org.certis.studyplatform.study.domain.vo.StudyVo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import org.certis.studyplatform.shared.service.S3FileService;
+import org.certis.studyplatform.study.application.object.command.CreateStudyAttachedCommand;
 
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
+import java.time.OffsetDateTime;
 import java.util.List;
+import org.certis.studyplatform.study.application.object.command.CreateStudyAttachedCommand;
 
 /**
  * Study Domain Service
@@ -46,6 +53,7 @@ public class StudyDomainService {
     private final StudyCommandRepository commandRepository;
     private final StudyQueryRepository queryRepository;
     private final MemberDomainService memberDomainService;
+    private final S3FileService s3FileService;
 
     // ================================================================
     // COMMAND OPERATIONS
@@ -84,9 +92,27 @@ public class StudyDomainService {
         // Command Repository를 통한 저장 (VO 전달)
         StudyVo savedStudyVo = commandRepository.save(studyVo);
 
+        // 첨부파일은 CommandService에서 S3 업로드 선행 및 저장 처리함
+
         log.info("Domain: Study created successfully - ID: {}", savedStudyVo.id());
 
         return savedStudyVo;
+    }
+
+    private String mapAttachedTypeToContentType(org.certis.studyplatform.shared.type.AttachedType type) {
+        if (type == null) return "application/octet-stream";
+        return switch (type) {
+            case PDF -> "application/pdf";
+            case HWP -> "application/x-hwp";
+            case WORD -> "application/msword";
+            case PPT -> "application/vnd.ms-powerpoint";
+            case PPTX -> "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+            case EXCEL -> "application/vnd.ms-excel";
+            case TEXT -> "text/plain";
+            case PNG -> "image/png";
+            case JPEG, JPG -> "image/jpeg";
+            case ZIP -> "application/zip";
+        };
     }
 
     /**
@@ -149,6 +175,26 @@ public class StudyDomainService {
         log.info("Domain: Study deleted successfully - ID: {}", existingStudy.id());
     }
 
+    /**
+     * 스터디 첨부파일 업로드
+     */
+    public String uploadStudyAttachment(Long studyId, Long memberId, MultipartFile file) {
+        log.info("Domain: Uploading study attachment for study ID: {}, member ID: {}", studyId, memberId);
+
+        // S3에 첨부파일 업로드
+        String attachmentUrl = commandRepository.uploadStudyAttachment(studyId, memberId, file);
+
+        log.info("Domain: Study attachment uploaded successfully for study ID: {}, member ID: {}, URL: {}", studyId, memberId, attachmentUrl);
+        return attachmentUrl;
+    }
+
+    /**
+     * 스터디 첨부파일 업데이트 (위임: Infrastructure Repository)
+     */
+    public void updateStudyAttachments(Long studyId, Long requesterId, List<CreateStudyAttachedCommand> attachments) {
+        commandRepository.updateStudyAttachments(studyId, requesterId, attachments);
+    }
+
     // ================================================================
     // QUERY OPERATIONS
     // ================================================================
@@ -188,14 +234,20 @@ public class StudyDomainService {
      * 복합 검색 조건으로 스터디 검색 (고급 검색 지원)
      */
     public Page<StudySummaryVo> searchStudiesByCriteria(SearchStudiesQuery query) {
-        log.info("Domain: Searching studies from query - keyword: {}, category: {}, status: {}",
-                query.keyword(), query.category(), query.status());
+        log.info("Domain: Searching studies from query - keyword: {}, category: {}, semester: {}, status: {}",
+                query.keyword(), query.category(), query.semester(), query.status());
+
+        // studyStatus 필드명 검증
+        if (query.status() != null && !query.status().trim().isEmpty()) {
+            validateStudyStatusField(query.status());
+        }
 
         // Query를 StudySearchCriteria로 변환 (고급 검색 필드 포함)
         StudySearchCriteriaVo criteria = StudySearchCriteriaVo.ofAdvanced(
                 query.keyword(),
                 query.category(),
                 query.subCategory(),
+                query.semester(),
                 query.status()
         );
 
@@ -206,6 +258,20 @@ public class StudyDomainService {
 
         log.info("Domain: Found {} studies by advanced criteria", studyPage.getTotalElements());
         return studyPage;
+    }
+
+    /**
+     * studyStatus 필드명 검증
+     * studyStatus가 아니면 에러를 발생시킴
+     */
+    private void validateStudyStatusField(String status) {
+        // 실제로는 status 값이 유효한 StudyStatus 값인지 검증
+        try {
+            StudyStatus.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid study status value. Expected one of [READY, INPROGRESS, COMPLETED] but got: " + status);
+        }
+        log.debug("Domain: Study status field validation passed for: {}", status);
     }
 
     /**
@@ -351,6 +417,102 @@ public class StudyDomainService {
                     "이미 존재하는 스터디 제목입니다: " + title);
         }
         log.debug("Domain: Study title duplication validation passed - {}", title);
+    }
+
+    /**
+     * 스터디 종료
+     */
+    public StudyVo endStudy(EndStudyCommand command) {
+        log.info("Domain: Ending study from command - ID: {}", command.studyId());
+
+        // 기존 스터디 조회
+        StudyVo existingStudy = queryRepository.findById(command.studyId())
+                .orElseThrow(() -> new DomainException(ExceptionStatus.STUDY_DOMAIN_NOT_FOUND,
+                        "스터디를 찾을 수 없습니다: " + command.studyId()));
+
+        // 권한 검증: STAFF 이상이거나 스터디 생성자인지 확인
+        validateStudyEndPermission(command.requesterId(), existingStudy.creatorId());
+
+        // 이미 종료된 스터디인지 검증
+        if (existingStudy.endDate() != null && existingStudy.endDate().isBefore(OffsetDateTime.now())) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION,
+                    "이미 종료된 스터디입니다");
+        }
+
+        // 제출 단계: 종료는 승인 시 처리. 여기서는 변경 없이 반환.
+        log.info("Domain: Study end submission initiated - ID: {}", existingStudy.id());
+        return existingStudy;
+    }
+
+    // ===== Commands previously in CommandService moved behind command repository =====
+    public void updateResultSubmission(Long studyId, OffsetDateTime submittedAt,
+                                       ResultSubmitStatus status,
+                                       String attachmentUrl) {
+        commandRepository.updateResultSubmission(studyId, submittedAt, status, attachmentUrl);
+    }
+
+    public void approveEnd(Long studyId, OffsetDateTime endedAt,
+                           ResultSubmitStatus status) {
+        commandRepository.approveEnd(studyId, endedAt, status);
+    }
+
+    public void rejectEnd(Long studyId, ResultSubmitStatus status,
+                          OffsetDateTime now) {
+        commandRepository.rejectEnd(studyId, status, now);
+    }
+
+    public void bulkSoftDeleteById(Long studyId, OffsetDateTime deletedAt) {
+        commandRepository.bulkSoftDeleteById(studyId, deletedAt);
+    }
+
+    public java.util.Optional<String> getResultAttachmentUrlById(Long studyId) {
+        return commandRepository.getResultAttachmentUrlById(studyId);
+    }
+
+    /**
+     * 종료 제출 정보 조회 (계층: Domain -> QueryRepository)
+     */
+    public org.certis.studyplatform.study.domain.vo.StudyEndSubmissionInfoVo getEndSubmissionInfo(Long studyId) {
+        return queryRepository.getEndSubmissionInfo(studyId)
+                .orElse(new org.certis.studyplatform.study.domain.vo.StudyEndSubmissionInfoVo(
+                        studyId,
+                        null, // status (StudyStatus)
+                        null, // resultSubmitStatus
+                        null, // submittedAt
+                        null, // attachmentUrl
+                        null, // category
+                        null, // subCategory
+                        null, // title
+                        null, // description
+                        null, // creatorId
+                        null, // creatorName
+                        null, // creatorGrade
+                        null, // startedAt
+                        null, // endedAt
+                        null, // currentParticipantNumber
+                        null  // maxParticipantNumber
+                ));
+    }
+
+    public java.util.List<org.certis.studyplatform.study.domain.vo.StudyEndSubmissionInfoVo> getEndSubmissionsInProgress() {
+        return queryRepository.findEndSubmissionsInProgress();
+    }
+
+    /**
+     * 스터디 종료 권한 검증
+     */
+    private void validateStudyEndPermission(Long requesterId, Long creatorId) {
+        // 요청자 정보 조회
+        MemberVo requester = memberDomainService.getMemberVo(new GetMemberByIdQuery(requesterId));
+        
+        // STAFF 이상이거나 스터디 생성자인지 확인
+        if (!MemberRole.isStaffOrAbove(requester.role()) && !requesterId.equals(creatorId)) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION,
+                    "스터디 종료 권한이 없습니다. 스터디 생성자이거나 STAFF 이상이어야 합니다.");
+        }
+        
+        log.debug("Domain: Study end permission validation passed - requesterId: {}, creatorId: {}", 
+                requesterId, creatorId);
     }
 
     /**

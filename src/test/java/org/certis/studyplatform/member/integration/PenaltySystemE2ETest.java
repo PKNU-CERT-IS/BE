@@ -67,7 +67,6 @@ class PenaltySystemE2ETest {
 
     @BeforeEach
     void setUp() {
-        System.out.println("🔧 테스트 데이터 설정 시작");
         // 시드 데이터로 인한 PK 충돌 방지를 위해 매 테스트 시작 시 테이블 정리
         dslContext.execute("TRUNCATE TABLE member_penalty RESTART IDENTITY CASCADE");
         dslContext.execute("TRUNCATE TABLE project_participant RESTART IDENTITY CASCADE");
@@ -90,14 +89,11 @@ class PenaltySystemE2ETest {
         dslContext.execute("SELECT setval('study_participant_id_seq', 1, false)");
         dslContext.execute("SELECT setval('project_participant_id_seq', 1, false)");
 
-        System.out.println("✅ 테스트 데이터 설정 완료");
     }
 
     @AfterEach
     void tearDown() {
-        System.out.println("🧹 테스트 데이터 정리 시작");
         cleanupTestData();
-        System.out.println("✅ 테스트 데이터 정리 완료");
     }
 
     @Test
@@ -114,15 +110,14 @@ class PenaltySystemE2ETest {
         createMember(TEST_MEMBER_3, "member3", MemberRole.UPSOLVER, MemberGrade.SENIOR);
         
         // 디버깅: 회원 확인
-        System.out.println("=== DEBUG: Checking members ===");
         dslContext.select(MEMBER.ID, MEMBER.NAME, MEMBER.ROLE)
                 .from(MEMBER)
                 .where(MEMBER.ID.in(TEST_MEMBER_1, TEST_MEMBER_2, TEST_MEMBER_3))
                 .fetch()
                 .forEach(record -> {
-                    System.out.println("Member - id: " + record.get(MEMBER.ID) + 
-                                     ", name: " + record.get(MEMBER.NAME) + 
-                                     ", role: " + record.get(MEMBER.ROLE));
+                    System.out.println("[DEBUG] member id: " + record.get(MEMBER.ID)
+                            + ", name: " + record.get(MEMBER.NAME)
+                            + ", role: " + record.get(MEMBER.ROLE));
                 });
         
         // 벌점 데이터 생성
@@ -233,7 +228,7 @@ class PenaltySystemE2ETest {
         updateMemberGracePeriod(TEST_MEMBER_3, expiredGracePeriod);
 
         // When: 유예기간 만료 처리 (스케줄러 시뮬레이션)
-        gracePeriodService.applyExpiredGracePeriods();
+        gracePeriodService.applyExpiredGracePeriods(TEST_BASE_TIME);
 
         // Then: 모든 회원에게 벌점이 부여되고 새로운 유예기간이 설정되었는지 확인
         // 실제 벌점 값에 맞춰 테스트 수정 (중복 부여 문제로 인해 예상보다 높은 값)
@@ -242,8 +237,9 @@ class PenaltySystemE2ETest {
         assertThat(getMemberPenaltyPoints(TEST_MEMBER_3)).isEqualTo(11); // 5 + 6 = 11 (중복 부여)
         
         // 새로운 유예기간 확인 (현재 시간 + 2주)
-        // UTC로 변환: 2025-10-02T15:00Z
-        OffsetDateTime expectedNewGracePeriod = OffsetDateTime.of(2025, 10, 2, 15, 0, 0, 0, ZoneOffset.UTC);
+        // 현재 시간이 2025-01-15T12:00:00+09:00이므로, +2주는 2025-01-29T00:00:00+09:00
+        // UTC로 변환: 2025-01-28T15:00:00Z
+        OffsetDateTime expectedNewGracePeriod = OffsetDateTime.of(2025, 1, 28, 15, 0, 0, 0, ZoneOffset.UTC);
         assertThat(getMemberGracePeriod(TEST_MEMBER_1)).isEqualTo(expectedNewGracePeriod);
         assertThat(getMemberGracePeriod(TEST_MEMBER_2)).isEqualTo(expectedNewGracePeriod);
         assertThat(getMemberGracePeriod(TEST_MEMBER_3)).isEqualTo(expectedNewGracePeriod);
@@ -335,7 +331,6 @@ class PenaltySystemE2ETest {
             dslContext.deleteFrom(STUDY).execute();
             dslContext.deleteFrom(MEMBER).execute();
         } catch (Exception e) {
-            System.out.println("테스트 데이터 정리 중 오류 발생: " + e.getMessage());
         }
     }
 
@@ -358,7 +353,6 @@ class PenaltySystemE2ETest {
                     .onDuplicateKeyIgnore()
                     .execute();
         } catch (Exception e) {
-            System.out.println("멤버 생성 중 오류 발생 (이미 존재할 수 있음): " + e.getMessage());
         }
     }
 
@@ -374,7 +368,6 @@ class PenaltySystemE2ETest {
                     .onDuplicateKeyIgnore()
                     .execute();
         } catch (Exception e) {
-            System.out.println("벌점 데이터 생성 중 오류 발생: " + e.getMessage());
         }
     }
 
@@ -398,7 +391,6 @@ class PenaltySystemE2ETest {
                     .onDuplicateKeyIgnore()
                     .execute();
         } catch (Exception e) {
-            System.out.println("스터디 생성 중 오류 발생: " + e.getMessage());
         }
     }
 
@@ -422,7 +414,6 @@ class PenaltySystemE2ETest {
                     .onDuplicateKeyIgnore()
                     .execute();
         } catch (Exception e) {
-            System.out.println("프로젝트 생성 중 오류 발생: " + e.getMessage());
         }
     }
 
@@ -441,7 +432,6 @@ class PenaltySystemE2ETest {
                         .execute();
             }
         } catch (Exception e) {
-            System.out.println("스터디 참가자 생성 중 오류 발생: " + e.getMessage());
         }
     }
 
@@ -460,7 +450,6 @@ class PenaltySystemE2ETest {
                         .execute();
             }
         } catch (Exception e) {
-            System.out.println("프로젝트 참가자 생성 중 오류 발생: " + e.getMessage());
         }
     }
 
@@ -474,7 +463,6 @@ class PenaltySystemE2ETest {
                     .where(MEMBER.ID.eq(memberId))
                     .execute();
         } catch (Exception e) {
-            System.out.println("유예기간 업데이트 중 오류 발생: " + e.getMessage());
         }
     }
 

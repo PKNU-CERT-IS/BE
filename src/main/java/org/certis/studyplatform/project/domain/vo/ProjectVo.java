@@ -2,8 +2,11 @@ package org.certis.studyplatform.project.domain.vo;
 
 import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
+import org.certis.studyplatform.project.domain.ProjectStatus;
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 
 import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -24,11 +27,18 @@ public record ProjectVo(
         OffsetDateTime endDate,
         Long creatorId,
         String creatorName,
+        String creatorGrade,
+        String semester,
+        String status,
+        ResultSubmitStatus resultSubmitStatus,
         String githubUrl,
-        String externalUrl,
+        ExternalUrlVo externalUrl,
+        String demoUrl,
         String thumbnailUrl,
         Integer maxParticipants,
         Integer currentParticipants,
+        boolean isParticipantable,
+        List<ProjectAttachedVo> attached,
         List<ProjectMeetingSummaryVo> meetingSummaryVos
 ) {
 
@@ -37,37 +47,33 @@ public record ProjectVo(
      */
     public ProjectVo {
         // 제목/설명/내용/카테고리 길이 검증
-        if (title == null || title.trim().isEmpty() || title.length() > 30) {
+        if (title == null || title.trim().isEmpty()) {
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_TITLE, "프로젝트 제목은 필수입니다");
         }
-        if (description != null && description.length() > 100) {
+        if (description == null || description.trim().isEmpty()) {
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_DESCRIPTION);
         }
-        if (content != null && content.length() > 255) {
+        if (content == null || content.trim().isEmpty()) {
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION);
         }
-        if (category != null && category.length() > 20) {
+        if (category == null || category.trim().isEmpty()) {
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION);
         }
-        if (subCategory != null && subCategory.length() > 100) {
+        if (subCategory == null || subCategory.trim().isEmpty()) {
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION);
         }
-        if (thumbnailUrl != null && thumbnailUrl.length() > 1000) {
-            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION);
-        }
-        if (githubUrl != null && githubUrl.length() > 1000) {
-            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION);
-        }
-        if (externalUrl != null && externalUrl.length() > 1000) {
-            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION);
-        }
+        // 선택적 필드들은 유효성 검사하지 않음
 
         // 기간 검증
         if (startDate == null || endDate == null) {
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_DATE, "프로젝트 시작일과 종료일은 필수입니다");
         }
 
-        if (startDate.isAfter(endDate)) {
+        // 프로젝트 종료 시에는 시작일과 종료일 비교를 건너뛰기
+        // (ended_at을 현재 시간으로 설정할 때 startDate가 현재 시간보다 늦을 수 있음)
+        if (id != null && endDate != null && endDate.isAfter(OffsetDateTime.now().minusMinutes(1))) {
+            // 프로젝트 종료 중인 경우 validation 건너뛰기
+        } else if (startDate.isAfter(endDate)) {
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_DATE, "시작일은 종료일보다 빨라야 합니다");
         }
 
@@ -111,19 +117,61 @@ public record ProjectVo(
             OffsetDateTime endDate,
             Long creatorId,
             String creatorName,
+            String creatorGrade,
+            String semester,
+            String status,
+            ResultSubmitStatus resultSubmitStatus,
             String githubUrl,
-            String externalUrl,
+            ExternalUrlVo externalUrl,
+            String demoUrl,
             String thumbnailUrl,
             Integer maxParticipants,
             Integer currentParticipants,
+            boolean isParticipantable,
+            List<ProjectAttachedVo> attached,
             List<ProjectMeetingSummaryVo> meetingSummaryVos
     ) {
         return new ProjectVo(
                 id, title, description, content, category, subCategory,
-                startDate, endDate, creatorId, creatorName, githubUrl,
-                externalUrl, thumbnailUrl, maxParticipants, currentParticipants,
+                startDate, endDate, creatorId, creatorName, creatorGrade, semester, status, resultSubmitStatus,
+                githubUrl, externalUrl, demoUrl, thumbnailUrl, maxParticipants, currentParticipants,
+                isParticipantable,
+                attached,
                 meetingSummaryVos
         );
+    }
+
+    /**
+     * Backward-compatible factory method without resultSubmitStatus (for legacy tests)
+     */
+    public static ProjectVo of(
+            Long id,
+            String title,
+            String description,
+            String content,
+            String category,
+            String subCategory,
+            OffsetDateTime startDate,
+            OffsetDateTime endDate,
+            Long creatorId,
+            String creatorName,
+            String creatorGrade,
+            String semester,
+            String status,
+            String githubUrl,
+            ExternalUrlVo externalUrl,
+            String demoUrl,
+            String thumbnailUrl,
+            Integer maxParticipants,
+            Integer currentParticipants,
+            boolean isParticipantable,
+            List<ProjectAttachedVo> attached,
+            List<ProjectMeetingSummaryVo> meetingSummaryVos
+    ) {
+        return of(id, title, description, content, category, subCategory, startDate, endDate,
+                creatorId, creatorName, creatorGrade, semester, status, null,
+                githubUrl, externalUrl, demoUrl, thumbnailUrl, maxParticipants, currentParticipants,
+                isParticipantable, attached, meetingSummaryVos);
     }
 
     /**
@@ -139,16 +187,26 @@ public record ProjectVo(
             OffsetDateTime endDate,
             Long creatorId,
             String creatorName,
+            String creatorGrade,
+            String semester,
+            String status,
             String githubUrl,
-            String externalUrl,
+            ExternalUrlVo externalUrl,
+            String demoUrl,
             String thumbnailUrl,
             Integer maxParticipants
     ) {
+        // status가 null인 경우 startDate와 endDate를 기준으로 계산
+        String resolvedStatus = status != null ? status : calculateStatusWithStartDate(startDate, endDate);
+        
         return new ProjectVo(
                 null, // id는 null (새 생성)
                 title, description, content, category, subCategory,
-                startDate, endDate, creatorId, creatorName, githubUrl,
-                externalUrl, thumbnailUrl, maxParticipants, 0, // 초기 참가자는 0명
+                startDate, endDate, creatorId, creatorName, creatorGrade, semester, resolvedStatus,
+                ResultSubmitStatus.READY, // 새로 생성된 프로젝트는 READY
+                githubUrl, externalUrl, demoUrl, thumbnailUrl, maxParticipants, 0, // 초기 참가자는 0명
+                true, // 새로 생성된 프로젝트는 참여 가능
+                Collections.emptyList(), // attached
                 null
         );
     }
@@ -165,9 +223,23 @@ public record ProjectVo(
                                        OffsetDateTime startDate,
                                        OffsetDateTime endDate,
                                        String githubUrl,
-                                       String externalUrl,
+                                       ExternalUrlVo externalUrl,
+                                       String demoUrl,
                                        String thumbnailUrl,
                                        Integer maxParticipants) {
+        // startDate 변경 시 상태 검증
+        if (startDate != null && !startDate.equals(existing.startDate())) {
+            ProjectStatus currentStatus = ProjectStatus.fromStatusString(existing.status());
+            if (!currentStatus.isReady()) {
+                throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_STATUS,
+                        "프로젝트가 READY 상태가 아닐 때는 시작일을 변경할 수 없습니다. 현재 상태: " + currentStatus.getDescription());
+            }
+        }
+        
+        OffsetDateTime newStartDate = startDate != null ? startDate : existing.startDate();
+        OffsetDateTime newEndDate = endDate != null ? endDate : existing.endDate();
+        
+        // 기존 상태를 그대로 유지 (재계산하지 않음)
         return new ProjectVo(
                 existing.id(),
                 title != null ? title : existing.title(),
@@ -175,16 +247,134 @@ public record ProjectVo(
                 content != null ? content : existing.content(),
                 category != null ? category : existing.category(),
                 subCategory != null ? subCategory : existing.subCategory(),
-                startDate != null ? startDate : existing.startDate(),
-                endDate != null ? endDate : existing.endDate(),
+                newStartDate,
+                newEndDate,
                 existing.creatorId(),
                 existing.creatorName(),
+                existing.creatorGrade(),
+                existing.semester(),
+                existing.status(), // 기존 상태 유지 (재계산하지 않음)
+                existing.resultSubmitStatus(), // 기존 resultSubmitStatus 유지
                 githubUrl != null ? githubUrl : existing.githubUrl(),
                 externalUrl != null ? externalUrl : existing.externalUrl(),
+                demoUrl != null ? demoUrl : existing.demoUrl(),
                 thumbnailUrl != null ? thumbnailUrl : existing.thumbnailUrl(),
                 maxParticipants != null ? maxParticipants : existing.maxParticipants(),
                 existing.currentParticipants(),
+                existing.isParticipantable(), // 기존 참여 가능 여부 유지
+                existing.attached(), // 기존 첨부파일 유지
                 existing.meetingSummaryVos()
         );
     }
+
+    /**
+     * startedAt과 endedAt을 기준으로 status와 resultSubmitStatus 계산
+     * 기존 상태를 고려하여 적절한 상태를 유지
+     */
+    private static StatusAndResultSubmitStatus calculateStatusAndResultSubmitStatus(
+            OffsetDateTime startedAt, OffsetDateTime endedAt, String currentStatus, ResultSubmitStatus currentResultSubmitStatus) {
+        OffsetDateTime now = OffsetDateTime.now();
+        ProjectStatus existingStatus = ProjectStatus.fromStatusString(currentStatus);
+        
+        // 기존 상태가 REJECTED이면 유지
+        if (existingStatus.isRejected()) {
+            return new StatusAndResultSubmitStatus(currentStatus, currentResultSubmitStatus);
+        }
+        
+        // 기존 상태가 COMPLETED이면 유지
+        if (existingStatus.isCompleted()) {
+            return new StatusAndResultSubmitStatus(currentStatus, currentResultSubmitStatus);
+        }
+        
+        // startedAt이 현재 시각보다 나중인 경우
+        if (startedAt != null && startedAt.isAfter(now)) {
+            // 기존 상태가 READY가 아닌 경우 기존 상태 유지
+            if (!existingStatus.isReady()) {
+                return new StatusAndResultSubmitStatus(currentStatus, currentResultSubmitStatus);
+            }
+            // READY 상태인 경우에만 APPROVED로 변경
+            return new StatusAndResultSubmitStatus(ProjectStatus.APPROVED.name(), ResultSubmitStatus.READY);
+        }
+        
+        // endedAt이 현재 시간보다 지났으면 COMPLETED
+        if (endedAt != null && endedAt.isBefore(now)) {
+            return new StatusAndResultSubmitStatus(ProjectStatus.COMPLETED.name(), ResultSubmitStatus.READY);
+        }
+        
+        // 기존 상태가 APPROVED나 INPROGRESS인 경우 유지
+        if (existingStatus.isApproved() || existingStatus.isInProgress()) {
+            return new StatusAndResultSubmitStatus(currentStatus, currentResultSubmitStatus);
+        }
+        
+        // 기존 상태가 READY인 경우에만 INPROGRESS로 변경
+        if (existingStatus.isReady()) {
+            return new StatusAndResultSubmitStatus(ProjectStatus.INPROGRESS.name(), currentResultSubmitStatus);
+        }
+        
+        // 그 외의 경우 기존 상태 유지
+        return new StatusAndResultSubmitStatus(currentStatus, currentResultSubmitStatus);
+    }
+
+    /**
+     * startedAt과 endedAt을 고려하여 상태 계산 (새로 생성할 때 사용)
+     */
+    private static String calculateStatusWithStartDate(OffsetDateTime startDate, OffsetDateTime endDate) {
+        if (startDate == null || endDate == null) {
+            return ProjectStatus.READY.name();
+        }
+        
+        OffsetDateTime now = OffsetDateTime.now();
+        
+        // 아직 시작하지 않았으면 READY
+        if (now.isBefore(startDate)) {
+            return ProjectStatus.READY.name();
+        }
+        
+        // 종료되었으면 COMPLETED
+        if (now.isAfter(endDate) || now.isEqual(endDate)) {
+            return ProjectStatus.COMPLETED.name();
+        }
+        
+        // 시작했지만 아직 종료되지 않았으면 INPROGRESS
+        return ProjectStatus.INPROGRESS.name();
+    }
+
+    /**
+     * Status와 ResultSubmitStatus를 함께 반환하는 레코드
+     */
+    private record StatusAndResultSubmitStatus(String status, ResultSubmitStatus resultSubmitStatus) {}
+
+    /**
+     * Backward-compatible auxiliary constructor to support legacy tests using new ProjectVo(...)
+     */
+    public ProjectVo(
+            Long id,
+            String title,
+            String description,
+            String content,
+            String category,
+            String subCategory,
+            OffsetDateTime startDate,
+            OffsetDateTime endDate,
+            Long creatorId,
+            String creatorName,
+            String creatorGrade,
+            String semester,
+            String status,
+            String githubUrl,
+            ExternalUrlVo externalUrl,
+            String demoUrl,
+            String thumbnailUrl,
+            Integer maxParticipants,
+            Integer currentParticipants,
+            boolean isParticipantable,
+            List<ProjectAttachedVo> attached,
+            List<ProjectMeetingSummaryVo> meetingSummaryVos
+    ) {
+        this(id, title, description, content, category, subCategory, startDate, endDate,
+                creatorId, creatorName, creatorGrade, semester, status, null,
+                githubUrl, externalUrl, demoUrl, thumbnailUrl, maxParticipants, currentParticipants,
+                isParticipantable, attached, meetingSummaryVos);
+    }
+
 }

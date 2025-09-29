@@ -10,25 +10,29 @@ import org.certis.studyplatform.project.application.object.command.CreateProject
 import org.certis.studyplatform.project.application.object.command.UpdateProjectParticipantStatusCommand;
 import org.certis.studyplatform.project.application.object.query.GetProjectByIdQuery;
 import org.certis.studyplatform.project.application.query.ProjectParticipantQueryService;
+import org.certis.studyplatform.project.application.query.ProjectQueryService;
+import org.certis.studyplatform.member.application.query.MemberQueryService;
+import org.certis.studyplatform.member.application.object.query.GetMemberByIdQuery;
+import org.certis.studyplatform.member.domain.vo.MemberVo;
 import org.certis.studyplatform.project.domain.ProjectParticipantStatus;
 import org.certis.studyplatform.project.domain.vo.ProjectParticipantCreatedVo;
 import org.certis.studyplatform.project.domain.vo.ProjectParticipantStatusUpdatedVo;
 import org.certis.studyplatform.project.domain.vo.ProjectParticipantSummaryVo;
+import org.certis.studyplatform.project.domain.vo.ProjectParticipantVo;
 import org.certis.studyplatform.project.domain.vo.ProjectVo;
 import org.certis.studyplatform.project.presentation.dto.request.ProjectJoinApproveRequestDto;
 import org.certis.studyplatform.project.presentation.dto.request.ProjectJoinCancelRequestDto;
 import org.certis.studyplatform.project.presentation.dto.request.ProjectJoinRejectRequestDto;
 import org.certis.studyplatform.project.presentation.dto.request.ProjectJoinRequestDto;
+import org.certis.studyplatform.project.presentation.dto.request.AdminProjectParticipantApprovalRequestDto;
 import org.certis.studyplatform.project.presentation.dto.response.ProjectJoinResponseDto;
-import org.certis.studyplatform.project.presentation.dto.response.ProjectParticipantStatsResponseDto;
 import org.certis.studyplatform.project.presentation.dto.response.ProjectParticipantStatusUpdateResponseDto;
+import org.certis.studyplatform.project.presentation.dto.response.AdminProjectParticipantApprovalResponseDto;
 import org.certis.studyplatform.project.presentation.dto.response.ProjectParticipantSummaryResponseDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +43,8 @@ public class ProjectParticipantFacadeService {
     // Facade Service에 추가할 의존성들
     private final ProjectParticipantCommandService participantCommandService;
     private final ProjectParticipantQueryService participantQueryService;
+    private final ProjectQueryService projectQueryService;
+    private final MemberQueryService memberQueryService;
     private final ProjectApplicationCommandMapper commandMapper;
     private final ProjectApplicationDtoMapper dtoMapper;
 
@@ -170,6 +176,84 @@ public class ProjectParticipantFacadeService {
                 .toProjectParticipantSummaryResponseDtoPage(participationsVo);
 
         log.info("Facade: Found {} member participations", responseDto.getTotalElements());
+        return responseDto;
+    }
+
+    // ================================================================
+    // ADMIN PROJECT PARTICIPANT OPERATIONS - 관리자 프로젝트 참가 관리
+    // ================================================================
+
+    /**
+     * 관리자가 프로젝트 참가 신청을 승인
+     */
+    public AdminProjectParticipantApprovalResponseDto approveParticipantByAdmin(
+            AdminProjectParticipantApprovalRequestDto request, Long adminId) {
+        log.info("Facade: Admin approving project participant - participantId: {}, adminId: {}", 
+                request.getParticipantId(), adminId);
+
+        // 1. 참가자 정보 조회
+        ProjectParticipantVo participantVo = participantQueryService.getParticipantById(request.getParticipantId())
+                .orElseThrow(() -> new IllegalArgumentException("참가 신청을 찾을 수 없습니다: " + request.getParticipantId()));
+
+        // 2. 프로젝트 정보 조회
+        ProjectVo projectVo = projectQueryService.getProjectById(GetProjectByIdQuery.of(participantVo.projectId()));
+
+        // 3. 관리자 정보 조회
+        MemberVo adminMember = memberQueryService.getMemberById(new GetMemberByIdQuery(adminId));
+        String adminName = adminMember.name();
+
+        // 4. DTO → Command Object 변환
+        UpdateProjectParticipantStatusCommand command = commandMapper
+                .toApproveProjectParticipantByAdminCommand(request, adminId);
+
+        // 5. Command Service 호출
+        ProjectParticipantStatusUpdatedVo updatedVo = participantCommandService.approveParticipant(command);
+
+        // 6. VO → Response DTO 변환 (업데이트된 상태 사용)
+        AdminProjectParticipantApprovalResponseDto responseDto = dtoMapper
+                .toAdminProjectParticipantApprovalResponseDto(
+                        participantVo, projectVo, updatedVo.currentStatus(), adminId, adminName, 
+                        request.getReason(), updatedVo.updatedAt());
+
+        log.info("Facade: Admin approved project participant successfully - participantId: {}", 
+                responseDto.getParticipantId());
+        return responseDto;
+    }
+
+    /**
+     * 관리자가 프로젝트 참가 신청을 거절
+     */
+    public AdminProjectParticipantApprovalResponseDto rejectParticipantByAdmin(
+            AdminProjectParticipantApprovalRequestDto request, Long adminId) {
+        log.info("Facade: Admin rejecting project participant - participantId: {}, adminId: {}", 
+                request.getParticipantId(), adminId);
+
+        // 1. 참가자 정보 조회
+        ProjectParticipantVo participantVo = participantQueryService.getParticipantById(request.getParticipantId())
+                .orElseThrow(() -> new IllegalArgumentException("참가 신청을 찾을 수 없습니다: " + request.getParticipantId()));
+
+        // 2. 프로젝트 정보 조회
+        ProjectVo projectVo = projectQueryService.getProjectById(GetProjectByIdQuery.of(participantVo.projectId()));
+
+        // 3. 관리자 정보 조회
+        MemberVo adminMember = memberQueryService.getMemberById(new GetMemberByIdQuery(adminId));
+        String adminName = adminMember.name();
+
+        // 4. DTO → Command Object 변환
+        UpdateProjectParticipantStatusCommand command = commandMapper
+                .toRejectProjectParticipantByAdminCommand(request, adminId);
+
+        // 5. Command Service 호출
+        ProjectParticipantStatusUpdatedVo updatedVo = participantCommandService.rejectParticipant(command);
+
+        // 6. VO → Response DTO 변환 (업데이트된 상태 사용)
+        AdminProjectParticipantApprovalResponseDto responseDto = dtoMapper
+                .toAdminProjectParticipantApprovalResponseDto(
+                        participantVo, projectVo, updatedVo.currentStatus(), adminId, adminName,
+                        request.getReason(), updatedVo.updatedAt());
+
+        log.info("Facade: Admin rejected project participant successfully - participantId: {}", 
+                responseDto.getParticipantId());
         return responseDto;
     }
 }

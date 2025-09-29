@@ -7,9 +7,11 @@ import org.certis.studyplatform.blog.application.object.query.GetBlogByIdQuery;
 import org.certis.studyplatform.blog.application.object.query.SearchBlogsQuery;
 import org.certis.studyplatform.blog.domain.service.BlogDomainService;
 import org.certis.studyplatform.blog.domain.vo.BlogEnableReferenceVo;
+import org.certis.studyplatform.blog.domain.vo.BlogSearchCriteriaVo;
 import org.certis.studyplatform.blog.domain.vo.BlogSummaryVo;
 import org.certis.studyplatform.blog.domain.vo.BlogVo;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -80,10 +82,24 @@ public class BlogQueryService {
     public List<BlogEnableReferenceVo> getBlogReference(Long memberId) {
         log.info("Query: Getting blog reference list");
 
-        // Domain Service로 전달
-        List<BlogEnableReferenceVo> blogReferenceList = blogDomainService.getBlogReferenceByCompletedMember(memberId);
+        // Domain Service로 전달: 참여한 스터디/프로젝트 기준으로 변경
+        List<BlogEnableReferenceVo> blogReferenceList = blogDomainService.getBlogReferenceByParticipatedMember(memberId);
 
         log.info("Query: Blog reference list retrieved - found {} items", blogReferenceList.size());
         return blogReferenceList;
+    }
+
+    /**
+     * 공개 유무에 따른 블로그 조회
+     */
+    @Transactional(readOnly = true)
+    public Page<BlogSummaryVo> getBlogsByPublicStatus(Boolean isPublic, Pageable pageable, Long memberId, BlogSearchCriteriaVo criteria) {
+        log.info("Query: Getting blogs by public status - isPublic: {}", isPublic);
+
+        // Domain Service로 전달
+        Page<BlogSummaryVo> blogs = blogDomainService.getBlogsByPublicStatus(isPublic, pageable, memberId, criteria);
+
+        log.info("Query: Blogs retrieved by public status - found {} blogs", blogs.getTotalElements());
+        return blogs;
     }
 }

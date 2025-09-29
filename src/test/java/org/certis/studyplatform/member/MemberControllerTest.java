@@ -17,8 +17,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -61,20 +59,16 @@ class MemberControllerTest {
 
     @BeforeEach
     void setUp() {
-        System.out.println("🔧 테스트 데이터 설정 시작");
         // 데이터 충돌 방지: 관련 테이블 초기화
         dsl.execute("TRUNCATE TABLE member_contact RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
 
         setupTestData();
-        System.out.println("✅ 테스트 데이터 설정 완료");
     }
 
     @AfterEach
     void tearDown() {
-        System.out.println("🧹 테스트 데이터 정리 시작");
         cleanupTestData();
-        System.out.println("✅ 테스트 데이터 정리 완료");
     }
 
     // =================================================================
@@ -88,8 +82,8 @@ class MemberControllerTest {
         // Given: 검색할 회원이 데이터베이스에 존재함
 
         // When: 이름으로 회원 검색 API 호출
-        mockMvc.perform(get(BASE_URL + "/keyword")
-                        .param("search", "김테스트"))
+        mockMvc.perform(get(BASE_URL + "/search")
+                        .param("keyword", "김테스트"))
                 .andDo(print())
                 // Then: HTTP 200 OK 응답과 검색 결과 확인
                 .andExpect(status().isOk())
@@ -101,7 +95,20 @@ class MemberControllerTest {
                 .andExpect(jsonPath("$.data[0].email").exists())
                 .andExpect(jsonPath("$.data[0].githubUrl").exists());
 
-        System.out.println("✅ 이름 검색 테스트 성공");
+    }
+
+    @Test
+    @Order(1)
+    @DisplayName("🔍 회원 검색 - page/size 누락 시 기본값 적용")
+    void searchMembers_DefaultPaging_WhenNoPageSizeParams() throws Exception {
+        // When: page/size 미전달
+        mockMvc.perform(get(BASE_URL + "/search")
+                        .param("keyword", "김"))
+                .andDo(print())
+                // Then: 기본값이 적용되어도 응답은 성공해야 함 (리스트 응답)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isArray());
+        // Member 검색은 Page가 아닌 List 반환 구조라 페이징 메타 검증은 생략
     }
 
     @Test
@@ -111,15 +118,14 @@ class MemberControllerTest {
         // Given: 같은 전공의 회원들이 존재함
 
         // When: 전공으로 회원 검색 API 호출
-        mockMvc.perform(get(BASE_URL + "/keyword")
-                        .param("search", "소프트웨어"))
+        mockMvc.perform(get(BASE_URL + "/search")
+                        .param("keyword", "소프트웨어"))
                 .andDo(print())
                 // Then: HTTP 200 OK 응답과 전공 매칭 결과 확인
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data[0].major").value(TEST_MAJOR));
 
-        System.out.println("✅ 전공 검색 테스트 성공");
     }
 
     @Test
@@ -129,15 +135,14 @@ class MemberControllerTest {
         // Given: 특정 기술스택을 가진 회원이 존재함
 
         // When: 기술스택으로 회원 검색 API 호출
-        mockMvc.perform(get(BASE_URL + "/keyword")
-                        .param("search", "Java"))
+        mockMvc.perform(get(BASE_URL + "/search")
+                        .param("keyword", "Java"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data[0].skills[0]").value("Java"))
                 .andExpect(jsonPath("$.data[0].skills").isArray());
 
-        System.out.println("✅ 기술스택 검색 테스트 성공");
     }
 
     @Test
@@ -147,7 +152,7 @@ class MemberControllerTest {
         // Given: 다양한 학년의 회원들이 존재함
 
         // When: 학년으로 필터링하여 검색 API 호출
-        mockMvc.perform(get(BASE_URL + "/keyword")
+        mockMvc.perform(get(BASE_URL + "/search")
                         .param("grade", MemberGrade.SENIOR.name()))
                 .andDo(print())
                 // Then: HTTP 200 OK 응답과 해당 학년 회원만 반환
@@ -155,7 +160,6 @@ class MemberControllerTest {
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data[0].grade").value(MemberGrade.SENIOR.name()));
 
-        System.out.println("✅ 학년 필터링 테스트 성공");
     }
 
     @Test
@@ -165,7 +169,7 @@ class MemberControllerTest {
         // Given: 다양한 역할의 회원들이 존재함
 
         // When: 역할로 필터링하여 검색 API 호출
-        mockMvc.perform(get(BASE_URL + "/keyword")
+        mockMvc.perform(get(BASE_URL + "/search")
                         .param("role", "PLAYER"))
                 .andDo(print())
                 // Then: HTTP 200 OK 응답과 해당 역할 회원만 반환
@@ -173,7 +177,6 @@ class MemberControllerTest {
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data[0].role").value("PLAYER"));
 
-        System.out.println("✅ 역할 필터링 테스트 성공");
     }
 
     @Test
@@ -183,8 +186,8 @@ class MemberControllerTest {
         // Given: 복합 조건에 맞는 회원이 존재함
 
         // When: 검색어 + 학년 + 역할로 복합 검색 API 호출
-        mockMvc.perform(get(BASE_URL + "/keyword")
-                        .param("search", "김")
+        mockMvc.perform(get(BASE_URL + "/search")
+                        .param("keyword", "김")
                         .param("grade", MemberGrade.SENIOR.name())
                         .param("role", "PLAYER"))
                 .andDo(print())
@@ -192,7 +195,6 @@ class MemberControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray());
 
-        System.out.println("✅ 복합 조건 검색 테스트 성공");
     }
 
     @Test
@@ -216,7 +218,6 @@ class MemberControllerTest {
         // Then: 데이터베이스에서 실제 수정 확인
         verifyMemberUpdatedInDatabase(TEST_MEMBER_ID, request.getName());
 
-        System.out.println("✅ 회원 정보 수정 테스트 성공");
     }
 
     // =================================================================

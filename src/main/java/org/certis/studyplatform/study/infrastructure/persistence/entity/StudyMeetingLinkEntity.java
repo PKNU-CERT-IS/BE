@@ -28,16 +28,16 @@ public class StudyMeetingLinkEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, name = "study_id")
-    private Long studyId;
+    @Column(nullable = false, name = "meeting_id")
+    private Long meetingId;
 
     @Column(nullable = false, name = "member_id")
     private Long memberId;
 
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false, name = "attached_url", length = 500)
+    @Column(nullable = false, name = "attached_url")
     private String attachedUrl;
 
     @CreationTimestamp

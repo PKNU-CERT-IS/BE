@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.certis.studyplatform.member.domain.MemberGrade;
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -48,9 +48,17 @@ public class StudyDetailResponseDto {
 
     private Long creatorId;
 
-    private String creatorName;
+    private String studyCreatorName;
 
-    private MemberGrade creatorGrade;
+    private String studyCreatorGrade;
+
+    private String semester;
+
+    private String status;
+
+    private ResultSubmitStatus resultSubmitStatus;
+
+    private String thumbnailUrl;
 
     private List<StudyAttachedResponseDto> attachments;
 
@@ -62,6 +70,8 @@ public class StudyDetailResponseDto {
 
     private Integer currentParticipantNumber;
 
+    private boolean isParticipantable;
+
 
 
     // toString for logging
@@ -70,7 +80,7 @@ public class StudyDetailResponseDto {
         return "StudyDetailResponseDto{" +
                 "id=" + id +
                 ", title='" + title + '\'' +
-                ", creatorName='" + creatorName + '\'' +
+                ", studyCreatorName='" + studyCreatorName + '\'' +
                 ", startDate=" + startDate +
                 ", endDate=" + endDate +
                 '}';

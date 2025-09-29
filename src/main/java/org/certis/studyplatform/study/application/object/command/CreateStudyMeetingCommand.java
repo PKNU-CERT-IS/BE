@@ -1,6 +1,7 @@
 package org.certis.studyplatform.study.application.object.command;
 
 import java.util.List;
+import org.certis.studyplatform.shared.dto.LinkDto;
 
 /**
  * Create Study Meeting Command
@@ -12,19 +13,19 @@ public record CreateStudyMeetingCommand(
     Long writerId,
     String title,
     String content,
-    List<Long> participantIds,
-    String attachedUrl
+    Integer participantNumber,
+    List<LinkDto> links
 ) {
     public static CreateStudyMeetingCommand of(
         Long studyId,
         Long writerId,
         String title,
         String content,
-        List<Long> participantIds,
-        String attachedUrl
+        Integer participantNumber,
+        List<LinkDto> links
     ) {
         return new CreateStudyMeetingCommand(
-            studyId, writerId, title, content, participantIds, attachedUrl
+            studyId, writerId, title, content, participantNumber, links
         );
     }
 } 

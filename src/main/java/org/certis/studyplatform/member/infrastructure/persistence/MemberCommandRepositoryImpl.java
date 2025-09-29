@@ -305,33 +305,6 @@ public class MemberCommandRepositoryImpl implements MemberCommandRepository {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public long countByConditions(GradeVo grade, RoleVo role) {
-        log.debug("Command Infrastructure: Counting members by conditions - grade: {}, role: {}",
-                grade != null ? grade.grade() : null,
-                role != null ? role.role() : null);
-
-        try {
-            if (grade != null && role != null) {
-                // TODO: JPA Repository에 countByGradeAndRole 메서드 추가 필요
-                return 0L; // 임시 구현
-            } else if (grade != null) {
-                // TODO: JPA Repository에 countByGrade 메서드 추가 필요
-                return 0L; // 임시 구현
-            } else if (role != null) {
-                // TODO: JPA Repository에 countByRole 메서드 추가 필요
-                return 0L; // 임시 구현
-            } else {
-                return memberJpaRepository.count();
-            }
-
-        } catch (Exception e) {
-            log.error("Error counting members by conditions: {}", e.getMessage());
-            return 0L;
-        }
-    }
-
-    @Override
     @Transactional
     public void updatePenalty(MemberIdVo memberIdVo, PenaltyPointsVo penaltyPointsVo) {
         log.info("Infrastructure: Updating penalty for memberId={}, points={}",
@@ -385,6 +358,31 @@ public class MemberCommandRepositoryImpl implements MemberCommandRepository {
             log.error("❌ Infrastructure: Failed to update grace period for memberId={}, error: {}", 
                     memberIdVo.value(), e.getMessage(), e);
             throw e;
+        }
+    }
+
+    @Override
+    @Transactional
+    public void createPenalty(MemberIdVo memberId) {
+        log.info("Infrastructure: Creating penalty record for memberId={}", memberId.value());
+
+        try {
+            // 신규 회원의 패널티 레코드 생성 (초기값: 0점)
+            MemberPenaltyEntity penaltyEntity = MemberPenaltyEntity.builder()
+                    .memberId(memberId.value())
+                    .penaltyPoint(0)
+                    .penaltiedAt(OffsetDateTime.now())
+                    .updatedAt(OffsetDateTime.now())
+                    .build();
+
+            memberPenaltyJpaRepository.save(penaltyEntity);
+
+            log.info("✅ Infrastructure: Penalty record created successfully for memberId={}", memberId.value());
+        } catch (Exception e) {
+            log.error("❌ Infrastructure: Failed to create penalty record for memberId={}, error: {}", 
+                    memberId.value(), e.getMessage(), e);
+            throw new InfrastructureException(ExceptionStatus.MEMBER_INFRASTRUCTURE_DATABASE_ERROR,
+                    "패널티 레코드 생성 중 오류가 발생했습니다: " + e.getMessage(), e);
         }
     }
 }

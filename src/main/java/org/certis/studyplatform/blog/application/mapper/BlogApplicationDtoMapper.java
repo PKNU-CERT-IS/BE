@@ -35,9 +35,13 @@ public class BlogApplicationDtoMapper {
                 .content(vo.content())
                 .description(vo.description())
                 .category(vo.category())
+                .referenceType(vo.referenceType())
+                .referenceId(vo.referenceId())
+                .referenceTitle(vo.referenceTitle())
                 .viewCount(vo.viewCount())
                 .creatorName(vo.creatorName())
                 .createdAt(vo.createdAt())
+                .isPublic(vo.isPublic())
                 .build();
     }
 
@@ -54,8 +58,13 @@ public class BlogApplicationDtoMapper {
                 .title(vo.title())
                 .description(vo.description())
                 .category(vo.category())
+                .referenceType(vo.referenceType())
+                .referenceTitle(vo.referenceTitle())
+                .referenceId(vo.studyId() != null ? vo.studyId() : vo.projectId())
                 .createdAt(vo.createdAt())
+                .updatedAt(vo.updatedAt())
                 .blogCreatorName(vo.blogCreatorName())
+                .views(vo.views())
                 .build();
     }
 
@@ -70,6 +79,7 @@ public class BlogApplicationDtoMapper {
         return BlogEnableReferenceResponseDto.builder()
                 .referenceType(vo.referenceType())
                 .referenceId(vo.referenceId())
+                .referenceTitle(vo.title())
                 .build();
     }
 
@@ -95,7 +105,9 @@ public class BlogApplicationDtoMapper {
         }
 
         List<BlogSummaryResponseDto> dtoList = toBlogSummaryResponseDtoList(voPage.getContent());
-        return new PageImpl<>(dtoList, voPage.getPageable(), voPage.getTotalElements());
+        // Normalize Pageable to avoid Unpaged serialization issues
+        var pageable = voPage.getPageable().isPaged() ? voPage.getPageable() : org.springframework.data.domain.PageRequest.of(0, dtoList.size() == 0 ? 1 : dtoList.size());
+        return new PageImpl<>(dtoList, pageable, voPage.getTotalElements());
     }
 
     /**

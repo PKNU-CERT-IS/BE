@@ -11,7 +11,11 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.certis.studyplatform.shared.security.CurrentUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -21,6 +25,7 @@ import java.time.OffsetDateTime;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.certis.generated.jooq.Tables.*;
+import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -65,7 +70,7 @@ class StudyControllerTest {
     private DSLContext dsl; // JOOQ로 직접 데이터베이스 조작
 
     // 테스트 상수
-    private static final Long TEST_STUDY_ID = 1L;
+    private static final Long TEST_STUDY_ID = 2L;
     private static final Long TEST_MEMBER_ID = 1L;
     private static final Long TEST_MEMBER_2_ID = 2L;
     
@@ -77,20 +82,17 @@ class StudyControllerTest {
 
     @BeforeEach
     void setUp() {
-        System.out.println("🔧 테스트 데이터 설정 시작");
         // 데이터 충돌 방지: 관련 테이블 초기화
+        dsl.execute("TRUNCATE TABLE study_attached RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE study RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
 
         setupTestData();
-        System.out.println("✅ 테스트 데이터 설정 완료");
     }
 
     @AfterEach
     void tearDown() {
-        System.out.println("🧹 테스트 데이터 정리 시작");
         cleanupTestData();
-        System.out.println("✅ 테스트 데이터 정리 완료");
     }
 
     // =================================================================
@@ -119,7 +121,6 @@ class StudyControllerTest {
         // Then: 데이터베이스에 스터디가 정상적으로 저장되었는지 검증
         verifyStudyCreatedInDatabase(request);
         
-        System.out.println("✅ 스터디 생성 테스트 성공");
     }
 
     @Test
@@ -147,6 +148,7 @@ class StudyControllerTest {
                 .andExpect(jsonPath("$.data.currentParticipantNumber").exists())
                 .andExpect(jsonPath("$.data.maxParticipantNumber").value(10))
                 .andExpect(jsonPath("$.data.attachments").isArray())
+                .andExpect(jsonPath("$.data.resultSubmitStatus").exists())
                 .andExpect(jsonPath("$.data.createdAt").exists())
                 .andExpect(jsonPath("$.data.updatedAt").exists())
                 .andReturn();
@@ -160,7 +162,6 @@ class StudyControllerTest {
                 .fetchOne(STUDY.MEMBER_ID);
         assertThat(responseCreatorId).isEqualTo(dbCreatorId);
 
-        System.out.println("✅ 스터디 상세 조회 테스트 성공");
     }
 
     @Test
@@ -192,7 +193,44 @@ class StudyControllerTest {
         // Then: 데이터베이스에서 수정 확인
         verifyStudyUpdatedInDatabase(request);
         
-        System.out.println("✅ 스터디 수정 테스트 성공");
+    }
+
+    @Test
+    @Order(3)
+    @DisplayName("✏️ 스터디 수정 - attachments=null 이면 기존 첨부 유지")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
+    void updateStudy_NullAttachments_ShouldKeepExisting() throws Exception {
+        // Given: 스터디와 기존 첨부 존재
+        createTestStudyInDatabase();
+        OffsetDateTime now = OffsetDateTime.now();
+        dsl.insertInto(STUDY_ATTACHED)
+                .set(STUDY_ATTACHED.STUDY_ID, TEST_STUDY_ID)
+                .set(STUDY_ATTACHED.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY_ATTACHED.NAME, "old.txt")
+                .set(STUDY_ATTACHED.TYPE, "text/plain")
+                .set(STUDY_ATTACHED.SIZE, "10")
+                .set(STUDY_ATTACHED.ATTACHED_URL, "https://s3.example.com/old.txt")
+                .set(STUDY_ATTACHED.CREATED_AT, now)
+                .set(STUDY_ATTACHED.UPDATED_AT, now)
+                .execute();
+
+        StudyUpdateRequestDto request = new StudyUpdateRequestDto();
+        request.setStudyId(TEST_STUDY_ID);
+        request.setTitle("제목유지");
+        request.setDescription("설명유지");
+        request.setAttachments(null); // 핵심: null 전달
+
+        // When
+        mockMvc.perform(put("/api/v1/study/update")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200));
+
+        // Then: 첨부 테이블에 기존 첨부가 유지되어야 함 (현재 구현에서는 null 전달 시 기존 첨부 유지)
+        Integer count = dsl.fetchCount(STUDY_ATTACHED, STUDY_ATTACHED.STUDY_ID.eq(TEST_STUDY_ID));
+        assertThat(count).isEqualTo(1);
     }
 
     @Test
@@ -214,12 +252,12 @@ class StudyControllerTest {
                 .andExpect(jsonPath("$.data.content.length()").value(3)) // 3개 스터디
                 .andExpect(jsonPath("$.data.totalElements").value(3))
                 .andExpect(jsonPath("$.data.totalPages").value(1))
+                .andExpect(jsonPath("$.data.content[0].resultSubmitStatus").exists())
                 .andExpect(jsonPath("$.data.size").value(10))
                 .andExpect(jsonPath("$.data.number").value(0))
                 .andExpect(jsonPath("$.data.first").value(true))
                 .andExpect(jsonPath("$.data.last").value(true));
 
-        System.out.println("✅ 스터디 목록 조회 테스트 성공");
     }
 
     @Test
@@ -238,7 +276,8 @@ class StudyControllerTest {
                 .andExpect(jsonPath("$.data.content").isArray())
                 .andExpect(jsonPath("$.data.content[0].currentParticipantNumber").exists())
                 .andExpect(jsonPath("$.data.content[0].maxParticipantNumber").exists())
-                .andExpect(jsonPath("$.data.content[0].attachments").exists());
+                .andExpect(jsonPath("$.data.content[0].attachments").exists())
+                .andExpect(jsonPath("$.data.content[0].status").exists());
     }
 
     @Test
@@ -252,7 +291,7 @@ class StudyControllerTest {
         mockMvc.perform(get("/api/v1/study/search")
                         .param("keyword", "개발")
                         .param("category", "웹 개발")
-                        .param("status", "READY")
+                        .param("studyStatus", "READY")
                         .param("page", "0")
                         .param("size", "10"))
                 .andDo(print())
@@ -260,9 +299,27 @@ class StudyControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("스터디 검색을 성공적으로 완료했습니다"))
-                .andExpect(jsonPath("$.data.content").isArray());
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content[0].status").exists());
 
-        System.out.println("✅ 스터디 고급 검색 테스트 성공");
+    }
+
+    @Test
+    @Order(5)
+    @DisplayName("🔍 스터디 고급 검색 - page/size 누락 시 기본값 적용")
+    void searchStudiesAdvanced_DefaultPaging_WhenNoPageSizeParams() throws Exception {
+        // Given: 다양한 스터디가 존재함
+        createMultipleStudiesInDatabase();
+
+        // When: page/size 미전달
+        mockMvc.perform(get("/api/v1/study/search")
+                        .param("keyword", "개발")
+                        .param("category", "웹 개발"))
+                .andDo(print())
+                // Then: 기본 페이징(page=0, size=10)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.number").value(0))
+                .andExpect(jsonPath("$.data.size").value(10));
     }
 
     @Test
@@ -289,7 +346,6 @@ class StudyControllerTest {
         // Then: 데이터베이스에서 소프트 삭제 확인 (deletedAt 필드 설정)
         verifyStudyDeletedInDatabase(TEST_STUDY_ID);
         
-        System.out.println("✅ 스터디 삭제 테스트 성공");
     }
 
     // =================================================================
@@ -312,7 +368,6 @@ class StudyControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400));
 
-        System.out.println("✅ 필수 필드 누락 검증 테스트 성공");
     }
 
     @Test
@@ -330,7 +385,6 @@ class StudyControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(404))
                 .andExpect(jsonPath("$.message").value("스터디를 찾을 수 없습니다: " + nonExistentStudyId));
 
-        System.out.println("✅ 존재하지 않는 스터디 조회 테스트 성공");
     }
 
     // =================================================================
@@ -351,7 +405,6 @@ class StudyControllerTest {
                 .andDo(print())
                 .andExpect(status().isUnsupportedMediaType());
 
-        System.out.println("✅ 잘못된 Content-Type 테스트 성공");
     }
 
     @Test
@@ -380,7 +433,157 @@ class StudyControllerTest {
         // 성능 검증: 1초 이내 응답
         assertThat(executionTime).isLessThan(1000);
         
-        System.out.println("✅ 대용량 데이터 페이징 성능 테스트 성공 - 실행시간: " + executionTime + "ms");
+    }
+
+    @Test
+    @Order(300)
+    @DisplayName("✅ 스터디 상세 조회 - 첨부파일이 존재하면 배열에 채워진다")
+    void should_return_attachments_in_study_detail_when_exist() throws Exception {
+        // Given
+        OffsetDateTime now = OffsetDateTime.now();
+
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, TEST_STUDY_ID)
+                .set(STUDY.TITLE, TEST_STUDY_TITLE)
+                .set(STUDY.DESCRIPTION, TEST_STUDY_DESCRIPTION)
+                .set(STUDY.CONTENT, TEST_STUDY_CONTENT)
+                .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY.CATEGORY, "웹 개발")
+                .set(STUDY.SUBCATEGORY, "풀스택")
+                .set(STUDY.STATUS, "READY")
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(STUDY.STARTED_AT, now.plusDays(1))
+                .set(STUDY.ENDED_AT, now.plusDays(30))
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .execute();
+
+        createTestAttachedFileInDatabase(TEST_STUDY_ID, "spec.pdf", "pdf", "12345", "https://s3.example.com/spec.pdf");
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/study/detail")
+                        .param("studyId", TEST_STUDY_ID.toString()))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.attachments").isArray())
+                .andExpect(jsonPath("$.data.attachments.length()").value(1))
+                .andExpect(jsonPath("$.data.attachments[0].attachedUrl").value("https://s3.example.com/spec.pdf"));
+    }
+
+    @Test
+    @Order(301)
+    @DisplayName("✅ 스터디 목록 조회 - 첨부파일 배열이 포함된다")
+    void should_return_attachments_in_study_list_when_exist() throws Exception {
+        // Given
+        OffsetDateTime now = OffsetDateTime.now();
+
+        // 최신 정렬 기준에 따라 첫 번째 요소가 되도록 ID=1이 가장 최근
+        for (int i = 1; i <= 3; i++) {
+            dsl.insertInto(STUDY)
+                    .set(STUDY.ID, (long) i)
+                    .set(STUDY.TITLE, "스터디 " + i)
+                    .set(STUDY.DESCRIPTION, "스터디 " + i + " 설명")
+                    .set(STUDY.CONTENT, "스터디 " + i + " 내용")
+                    .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                    .set(STUDY.CATEGORY, "웹 개발")
+                    .set(STUDY.SUBCATEGORY, "풀스택")
+                    .set(STUDY.STATUS, "READY")
+                    .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                    .set(STUDY.STARTED_AT, now.plusDays(i))
+                    .set(STUDY.ENDED_AT, now.plusDays(30 + i))
+                    .set(STUDY.CREATED_AT, now.minusHours(i))
+                    .set(STUDY.UPDATED_AT, now.minusHours(i))
+                    .execute();
+        }
+
+        // ID=1 스터디에 첨부파일 추가 (목록 첫 요소가 됨)
+        createTestAttachedFileInDatabase(1L, "list-spec.pdf", "pdf", "7777", "https://s3.example.com/list-spec.pdf");
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/study")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content[0].attachments").isArray())
+                .andExpect(jsonPath("$.data.content[0].attachments.length()").value(1))
+                .andExpect(jsonPath("$.data.content[0].attachments[0].attachedUrl").value("https://s3.example.com/list-spec.pdf"));
+    }
+
+    @Test
+    @Order(302)
+    @DisplayName("✅ 스터디 상세 조회 - 이미지 첨부가 있으면 thumbnailUrl이 채워진다")
+    void should_return_thumbnailUrl_in_study_detail_when_image_attachment_exists() throws Exception {
+        // Given
+        OffsetDateTime now = OffsetDateTime.now();
+
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, TEST_STUDY_ID)
+                .set(STUDY.TITLE, TEST_STUDY_TITLE)
+                .set(STUDY.DESCRIPTION, TEST_STUDY_DESCRIPTION)
+                .set(STUDY.CONTENT, TEST_STUDY_CONTENT)
+                .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY.CATEGORY, "웹 개발")
+                .set(STUDY.SUBCATEGORY, "풀스택")
+                .set(STUDY.STATUS, "READY")
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(STUDY.STARTED_AT, now.plusDays(1))
+                .set(STUDY.ENDED_AT, now.plusDays(30))
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .execute();
+
+        // 이미지와 비이미지 첨부를 함께 추가했을 때 첫 이미지의 URL이 썸네일이 됨
+        createTestAttachedFileInDatabase(TEST_STUDY_ID, "문서.pdf", "pdf", "10000", "https://s3.example.com/doc.pdf");
+        createTestAttachedFileInDatabase(TEST_STUDY_ID, "썸네일.png", "png", "2048", "https://s3.example.com/thumb.png");
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/study/detail")
+                        .param("studyId", TEST_STUDY_ID.toString()))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.thumbnailUrl").value("https://s3.example.com/thumb.png"));
+    }
+
+    @Test
+    @Order(303)
+    @DisplayName("✅ 스터디 목록 조회 - 이미지 첨부가 있으면 thumbnailUrl이 채워진다")
+    void should_return_thumbnailUrl_in_study_list_when_image_attachment_exists() throws Exception {
+        // Given
+        OffsetDateTime now = OffsetDateTime.now();
+
+        for (int i = 1; i <= 2; i++) {
+            dsl.insertInto(STUDY)
+                    .set(STUDY.ID, (long) i)
+                    .set(STUDY.TITLE, "스터디 " + i)
+                    .set(STUDY.DESCRIPTION, "스터디 " + i + " 설명")
+                    .set(STUDY.CONTENT, "스터디 " + i + " 내용")
+                    .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                    .set(STUDY.CATEGORY, "웹 개발")
+                    .set(STUDY.SUBCATEGORY, "풀스택")
+                    .set(STUDY.STATUS, "READY")
+                    .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                    .set(STUDY.STARTED_AT, now.plusDays(i))
+                    .set(STUDY.ENDED_AT, now.plusDays(30 + i))
+                    .set(STUDY.CREATED_AT, now.minusHours(i))
+                    .set(STUDY.UPDATED_AT, now.minusHours(i))
+                    .execute();
+        }
+
+        // ID=1은 이미지 첨부 포함, ID=2는 비이미지 첨부만
+        createTestAttachedFileInDatabase(1L, "표지.jpg", "jpg", "4096", "https://s3.example.com/cover.jpg");
+        createTestAttachedFileInDatabase(2L, "문서.pdf", "pdf", "10000", "https://s3.example.com/only-doc.pdf");
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/study")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content[0].thumbnailUrl").value("https://s3.example.com/cover.jpg"))
+                .andExpect(jsonPath("$.data.content[1].thumbnailUrl").doesNotExist());
     }
 
     // =================================================================
@@ -440,7 +643,6 @@ class StudyControllerTest {
                     .execute();
 
         } catch (Exception e) {
-            System.out.println("테스트 데이터 설정 중 오류 발생 (이미 존재할 수 있음): " + e.getMessage());
         }
     }
 
@@ -453,7 +655,6 @@ class StudyControllerTest {
             dsl.deleteFrom(STUDY).execute();
             dsl.deleteFrom(MEMBER).execute();
         } catch (Exception e) {
-            System.out.println("테스트 데이터 정리 중 오류 발생: " + e.getMessage());
         }
     }
 
@@ -471,6 +672,7 @@ class StudyControllerTest {
                 .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
                 .set(STUDY.CATEGORY, "웹 개발")
                 .set(STUDY.SUBCATEGORY, "풀스택")
+                .set(STUDY.STATUS, "READY")
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                 .set(STUDY.STARTED_AT, now.plusDays(1))
                 .set(STUDY.ENDED_AT, now.plusDays(30))
@@ -494,6 +696,7 @@ class StudyControllerTest {
                     .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
                     .set(STUDY.CATEGORY, "웹 개발")
                     .set(STUDY.SUBCATEGORY, "풀스택")
+                    .set(STUDY.STATUS, "READY")
                     .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                     .set(STUDY.STARTED_AT, now.plusDays(i))
                     .set(STUDY.ENDED_AT, now.plusDays(30 + i))
@@ -518,6 +721,7 @@ class StudyControllerTest {
                     .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
                     .set(STUDY.CATEGORY, "웹 개발")
                     .set(STUDY.SUBCATEGORY, "풀스택")
+                    .set(STUDY.STATUS, "READY")
                     .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                     .set(STUDY.STARTED_AT, now.plusDays(i))
                     .set(STUDY.ENDED_AT, now.plusDays(30 + i))
@@ -525,6 +729,20 @@ class StudyControllerTest {
                     .set(STUDY.UPDATED_AT, now.minusHours(i))
                     .execute();
         }
+    }
+
+    private void createTestAttachedFileInDatabase(Long studyId, String name, String type, String size, String url) {
+        OffsetDateTime now = OffsetDateTime.now();
+        dsl.insertInto(STUDY_ATTACHED)
+                .set(STUDY_ATTACHED.STUDY_ID, studyId)
+                .set(STUDY_ATTACHED.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY_ATTACHED.NAME, name)
+                .set(STUDY_ATTACHED.TYPE, type)
+                .set(STUDY_ATTACHED.SIZE, size)
+                .set(STUDY_ATTACHED.ATTACHED_URL, url)
+                .set(STUDY_ATTACHED.CREATED_AT, now)
+                .set(STUDY_ATTACHED.UPDATED_AT, now)
+                .execute();
     }
 
     /**
@@ -557,6 +775,122 @@ class StudyControllerTest {
         assertThat(study.getUpdatedAt()).isAfter(study.getCreatedAt());
     }
 
+    // =================================================================
+    // 🆕 새로운 기능 테스트 (semester, status 필드 추가)
+    // =================================================================
+
+    @Test
+    @Order(100)
+    @DisplayName("✅ 스터디 상세 조회 시 새로운 필드들이 올바르게 반환된다")
+    @WithMockUser(username = "testuser", roles = {"PLAYER"})
+    void should_return_new_fields_in_study_detail() throws Exception {
+        // Given: 새로운 필드들을 포함한 스터디가 존재하는 상태
+        createStudyWithNewFields();
+
+        // When: 스터디 상세 조회
+        mockMvc.perform(get("/api/v1/study/detail")
+                        .param("studyId", String.valueOf(TEST_STUDY_ID)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.data.id").value(TEST_STUDY_ID))
+                .andExpect(jsonPath("$.data.studyCreatorName").exists())
+                .andExpect(jsonPath("$.data.studyCreatorGrade").exists())
+                .andExpect(jsonPath("$.data.semester").exists())
+                .andExpect(jsonPath("$.data.status").exists());
+    }
+
+    @Test
+    @Order(101)
+    @DisplayName("✅ 스터디 목록 조회 시 새로운 필드들이 올바르게 반환된다")
+    @WithMockUser(username = "testuser", roles = {"PLAYER"})
+    void should_return_new_fields_in_study_list() throws Exception {
+        // Given: 새로운 필드들을 포함한 스터디가 존재하는 상태
+        createStudyWithNewFields();
+
+        // When: 스터디 목록 조회
+        mockMvc.perform(get("/api/v1/study")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.data.content[0].id").value(TEST_STUDY_ID))
+                .andExpect(jsonPath("$.data.content[0].semester").exists())
+                .andExpect(jsonPath("$.data.content[0].status").exists());
+    }
+
+    @Test
+    @Order(102)
+    @DisplayName("✅ 스터디 검색 시 새로운 필드들이 올바르게 반환된다")
+    @WithMockUser(username = "testuser", roles = {"PLAYER"})
+    void should_return_new_fields_in_study_search() throws Exception {
+        // Given: 새로운 필드들을 포함한 스터디가 존재하는 상태
+        createStudyWithNewFields();
+
+        // When: 스터디 검색
+        mockMvc.perform(get("/api/v1/study/search")
+                        .param("keyword", "새로운 필드")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.data.content[0].id").value(TEST_STUDY_ID))
+                .andExpect(jsonPath("$.data.content[0].semester").exists())
+                .andExpect(jsonPath("$.data.content[0].status").exists());
+    }
+
+    @Test
+    @Order(103)
+    @DisplayName("✅ 스터디 고급 검색 시 semester 필드로 필터링이 가능하다")
+    @WithMockUser(username = "testuser", roles = {"PLAYER"})
+    void should_filter_by_semester_in_advanced_search() throws Exception {
+        // Given: 특정 학기의 스터디가 존재하는 상태
+        createStudyWithNewFields();
+
+        // When: 학기로 고급 검색
+        mockMvc.perform(get("/api/v1/study/search")
+                        .param("semester", "2025-02")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.data.content[0].id").value(TEST_STUDY_ID))
+                .andExpect(jsonPath("$.data.content[0].semester").value("2025-2"));
+    }
+
+    // =================================================================
+    // 🛠 새로운 기능 테스트를 위한 헬퍼 메서드
+    // =================================================================
+
+    /**
+     * 새로운 필드들을 포함한 스터디 생성
+     */
+    private void createStudyWithNewFields() {
+        // Ensure member exists first
+        setupTestData();
+        
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, TEST_STUDY_ID)
+                .set(STUDY.TITLE, "새로운 필드 테스트 스터디")
+                .set(STUDY.DESCRIPTION, "semester와 status 필드 테스트")
+                .set(STUDY.CONTENT, "새로운 필드들이 올바르게 저장되는지 테스트")
+                .set(STUDY.CATEGORY, "CS")
+                .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.STATUS, "READY")
+                .set(STUDY.STARTED_AT, OffsetDateTime.now().plusDays(1))
+                .set(STUDY.ENDED_AT, OffsetDateTime.now().plusDays(30))
+                .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                // .set(STUDY.CURRENT_PARTICIPANTS, 0) // CURRENT_PARTICIPANTS 필드가 없음
+                // .set(STUDY.SEMESTER, "2024-1") // SEMESTER 필드가 없음
+                .set(STUDY.CREATED_AT, OffsetDateTime.now())
+                .set(STUDY.UPDATED_AT, OffsetDateTime.now())
+                .execute();
+    }
+
     /**
      * 스터디 삭제 검증 (소프트 삭제)
      */
@@ -567,5 +901,410 @@ class StudyControllerTest {
 
         assertThat(study).isNotNull();
         assertThat(study.getDeletedAt()).isNotNull(); // 소프트 삭제 확인
+    }
+
+    
+
+    @Test
+    @Order(200)
+    @DisplayName("✅ 스터디 상세 조회 - Status 값 검증 (진행 중)")
+    void should_return_correct_study_status_in_detail() throws Exception {
+        // Given
+        Long studyId = TEST_STUDY_ID;
+        
+        // 스터디를 현재 진행 중인 상태로 생성
+        OffsetDateTime now = OffsetDateTime.now();
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, studyId)
+                .set(STUDY.TITLE, "진행 중인 스터디")
+                .set(STUDY.DESCRIPTION, "현재 진행 중인 스터디")
+                .set(STUDY.CONTENT, "진행 중인 스터디 상세 내용")
+                .set(STUDY.MEMBER_ID, 1L)
+                .set(STUDY.CATEGORY, "CS")
+                .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.STATUS, "READY")
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(STUDY.STARTED_AT, now.minusDays(1)) // 1일 전 시작
+                .set(STUDY.ENDED_AT, now.plusDays(30))   // 30일 후 종료
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .execute();
+        
+        // When & Then - 진행 중인 스터디 조회
+        mockMvc.perform(get("/api/v1/study/detail")
+                        .param("studyId", String.valueOf(studyId)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.data.id").value(studyId))
+                .andExpect(jsonPath("$.data.status").value("INPROGRESS")); // 진행 중 상태 확인
+    }
+
+    @Test
+    @Order(201)
+    @DisplayName("✅ 스터디 목록 조회 - Status 값 검증")
+    void should_return_correct_study_status_in_list() throws Exception {
+        // Given
+        
+        // 스터디를 현재 진행 중인 상태로 생성
+        OffsetDateTime now = OffsetDateTime.now();
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, TEST_STUDY_ID)
+                .set(STUDY.TITLE, "진행 중인 스터디")
+                .set(STUDY.DESCRIPTION, "현재 진행 중인 스터디")
+                .set(STUDY.CONTENT, "진행 중인 스터디 상세 내용")
+                .set(STUDY.MEMBER_ID, 1L)
+                .set(STUDY.CATEGORY, "CS")
+                .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.STATUS, "READY")
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(STUDY.STARTED_AT, now.minusDays(1)) // 1일 전 시작
+                .set(STUDY.ENDED_AT, now.plusDays(30))   // 30일 후 종료
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .execute();
+        
+        // When & Then - 스터디 목록 조회
+        mockMvc.perform(get("/api/v1/study")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.data.content[0].status").value("INPROGRESS")); // 진행 중 상태 확인
+    }
+
+    @Test
+    @Order(202)
+    @DisplayName("✅ 완료된 스터디 - Status 값 검증")
+    void should_return_completed_status_for_ended_study() throws Exception {
+        // Given
+        Long studyId = TEST_STUDY_ID;
+        
+        // 스터디를 완료된 상태로 생성
+        OffsetDateTime now = OffsetDateTime.now();
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, studyId)
+                .set(STUDY.TITLE, "완료된 스터디")
+                .set(STUDY.DESCRIPTION, "완료된 스터디 설명")
+                .set(STUDY.CONTENT, "완료된 스터디 상세 내용")
+                .set(STUDY.MEMBER_ID, 1L)
+                .set(STUDY.CATEGORY, "CS")
+                .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.STATUS, "READY")
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(STUDY.STARTED_AT, now.minusDays(10)) // 10일 전 시작
+                .set(STUDY.ENDED_AT, now.minusDays(1))    // 1일 전 종료
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .execute();
+        
+        // When & Then - 완료된 스터디 조회
+        mockMvc.perform(get("/api/v1/study/detail")
+                        .param("studyId", String.valueOf(studyId)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.data.id").value(studyId))
+                .andExpect(jsonPath("$.data.status").value("COMPLETED")); // 완료 상태 확인
+    }
+
+    @Test
+    @Order(203)
+    @DisplayName("✅ 준비 중인 스터디 - Status 값 검증")
+    void should_return_ready_status_for_future_study() throws Exception {
+        // Given
+        Long studyId = TEST_STUDY_ID;
+        
+        // 스터디를 처음부터 미래 날짜로 생성
+        OffsetDateTime now = OffsetDateTime.now();
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, studyId)
+                .set(STUDY.TITLE, "미래 스터디")
+                .set(STUDY.CONTENT, "미래에 시작될 스터디")
+                .set(STUDY.DESCRIPTION, "미래 스터디 설명")
+                .set(STUDY.CATEGORY, "CS")
+                .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.MEMBER_ID, 1L)
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(STUDY.STARTED_AT, now.plusDays(10)) // 10일 후 시작
+                .set(STUDY.ENDED_AT, now.plusDays(40))   // 40일 후 종료
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .execute();
+        
+        // When & Then - 준비 중인 스터디 조회
+        mockMvc.perform(get("/api/v1/study/detail")
+                        .param("studyId", String.valueOf(studyId)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.data.id").value(studyId))
+                .andExpect(jsonPath("$.data.status").value("READY")); // 준비 중 상태 확인
+    }
+
+    @Test
+    @Order(106)
+    @DisplayName("✅ 스터디 고급 검색 - status 필터로 상태별로 필터링된다")
+    void should_filter_by_status_in_advanced_search() throws Exception {
+        // Given: 서로 다른 상태의 스터디 3개 생성
+        OffsetDateTime now = OffsetDateTime.now();
+
+        // READY: 미래 시작/미래 종료
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, 101L)
+                .set(STUDY.TITLE, "READY 스터디")
+                .set(STUDY.DESCRIPTION, "미래 스터디")
+                .set(STUDY.CONTENT, "내용")
+                .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY.CATEGORY, "CS")
+                .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.STATUS, "READY")
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(STUDY.STARTED_AT, now.plusDays(5))
+                .set(STUDY.ENDED_AT, now.plusDays(35))
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .execute();
+
+        // INPROGRESS: 과거 시작/미래 종료
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, 102L)
+                .set(STUDY.TITLE, "INPROGRESS 스터디")
+                .set(STUDY.DESCRIPTION, "진행중 스터디")
+                .set(STUDY.CONTENT, "내용")
+                .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY.CATEGORY, "CS")
+                .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.STATUS, "READY")
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(STUDY.STARTED_AT, now.minusDays(1))
+                .set(STUDY.ENDED_AT, now.plusDays(20))
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .execute();
+
+        // COMPLETED: 과거 시작/과거 종료
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, 103L)
+                .set(STUDY.TITLE, "COMPLETED 스터디")
+                .set(STUDY.DESCRIPTION, "완료 스터디")
+                .set(STUDY.CONTENT, "내용")
+                .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY.CATEGORY, "CS")
+                .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.STATUS, "READY")
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(STUDY.STARTED_AT, now.minusDays(10))
+                .set(STUDY.ENDED_AT, now.minusDays(1))
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .execute();
+
+        // When & Then: READY 필터 (studyStatus 파라미터 사용)
+        mockMvc.perform(get("/api/v1/study/search")
+                        .param("studyStatus", "READY")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content.length()").value(1))
+                .andExpect(jsonPath("$.data.content[0].id").value(101L))
+                .andExpect(jsonPath("$.data.content[0].status").value("READY"));
+
+        // When & Then: INPROGRESS 필터 (studyStatus 파라미터 사용)
+        mockMvc.perform(get("/api/v1/study/search")
+                        .param("studyStatus", "INPROGRESS")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content.length()").value(1))
+                .andExpect(jsonPath("$.data.content[0].id").value(102L))
+                .andExpect(jsonPath("$.data.content[0].status").value("INPROGRESS"));
+
+        // When & Then: COMPLETED 필터 (studyStatus 파라미터 사용)
+        mockMvc.perform(get("/api/v1/study/search")
+                        .param("studyStatus", "COMPLETED")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content.length()").value(1))
+                .andExpect(jsonPath("$.data.content[0].id").value(103L))
+                .andExpect(jsonPath("$.data.content[0].status").value("COMPLETED"));
+    }
+
+    @Test
+    @Order(8)
+    @DisplayName("📊 스터디 목록 조회 응답 필드 - 참가자 수와 첨부 포함")
+    void getAllStudies_ResponseFieldsWithParticipantCountAndAttachments() throws Exception {
+        // Given: 테스트 데이터 생성
+        createMultipleStudiesInDatabase();
+
+        // When: 스터디 목록 조회 API 호출
+        mockMvc.perform(get("/api/v1/study")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                // Then: 참가자 수와 첨부파일 필드가 포함된 응답 확인
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.message").value("스터디 검색을 성공적으로 완료했습니다"))
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content[0].id").exists())
+                .andExpect(jsonPath("$.data.content[0].title").exists())
+                .andExpect(jsonPath("$.data.content[0].currentParticipantNumber").exists()) // 참가자 수 필드 존재
+                .andExpect(jsonPath("$.data.content[0].maxParticipantNumber").exists()) // 최대 참가자 수 필드 존재
+                .andExpect(jsonPath("$.data.content[0].attachments").isArray()); // 첨부파일 배열 필드 존재
+    }
+
+    @Test
+    @Order(107)
+    @DisplayName("✅ 스터디 고급 검색 - 상태 매핑 로직 테스트 (READY → READY, APPROVED / INPROGRESS → INPROGRESS)")
+    void should_filter_by_status_mapping_logic() throws Exception {
+        // Given: 다양한 상태의 스터디 생성
+        OffsetDateTime now = OffsetDateTime.now();
+
+        // READY 상태 스터디
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, 201L)
+                .set(STUDY.TITLE, "READY 스터디")
+                .set(STUDY.DESCRIPTION, "준비중 스터디")
+                .set(STUDY.CONTENT, "내용")
+                .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY.CATEGORY, "CS")
+                .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.STATUS, "READY")
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(STUDY.STARTED_AT, now.plusDays(5))
+                .set(STUDY.ENDED_AT, now.plusDays(35))
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .execute();
+
+        // APPROVED 상태 스터디 (READY 필터에서 포함되어야 함)
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, 202L)
+                .set(STUDY.TITLE, "APPROVED 스터디")
+                .set(STUDY.DESCRIPTION, "승인된 스터디")
+                .set(STUDY.CONTENT, "내용")
+                .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY.CATEGORY, "CS")
+                .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.STATUS, "APPROVED")
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(STUDY.STARTED_AT, now.minusDays(1))
+                .set(STUDY.ENDED_AT, now.plusDays(20))
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .execute();
+
+        // INPROGRESS 상태 스터디 (INPROGRESS 필터에서만 포함되어야 함)
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, 203L)
+                .set(STUDY.TITLE, "INPROGRESS 스터디")
+                .set(STUDY.DESCRIPTION, "진행중 스터디")
+                .set(STUDY.CONTENT, "내용")
+                .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY.CATEGORY, "CS")
+                .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.STATUS, "INPROGRESS")
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(STUDY.STARTED_AT, now.minusDays(1))
+                .set(STUDY.ENDED_AT, now.plusDays(20))
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .execute();
+
+        // COMPLETED 상태 스터디
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, 204L)
+                .set(STUDY.TITLE, "COMPLETED 스터디")
+                .set(STUDY.DESCRIPTION, "완료 스터디")
+                .set(STUDY.CONTENT, "내용")
+                .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY.CATEGORY, "CS")
+                .set(STUDY.SUBCATEGORY, "백엔드")
+                .set(STUDY.STATUS, "COMPLETED")
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(STUDY.STARTED_AT, now.minusDays(10))
+                .set(STUDY.ENDED_AT, now.minusDays(1))
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .execute();
+
+        // When & Then: READY 필터 - READY와 APPROVED 상태 모두 반환
+        mockMvc.perform(get("/api/v1/study/search")
+                        .param("studyStatus", "READY")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content.length()").value(2))
+                .andExpect(jsonPath("$.data.content[0].status").value(anyOf(is("READY"), is("APPROVED"))))
+                .andExpect(jsonPath("$.data.content[1].status").value(anyOf(is("READY"), is("APPROVED"))));
+
+        // When & Then: INPROGRESS 필터 - INPROGRESS 상태만 반환
+        mockMvc.perform(get("/api/v1/study/search")
+                        .param("studyStatus", "INPROGRESS")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content.length()").value(1))
+                .andExpect(jsonPath("$.data.content[0].id").value(203L))
+                .andExpect(jsonPath("$.data.content[0].status").value("INPROGRESS"));
+
+        // When & Then: COMPLETED 필터 - COMPLETED 상태만 반환
+        mockMvc.perform(get("/api/v1/study/search")
+                        .param("studyStatus", "COMPLETED")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content.length()").value(1))
+                .andExpect(jsonPath("$.data.content[0].id").value(204L))
+                .andExpect(jsonPath("$.data.content[0].status").value("COMPLETED"));
+    }
+
+    @Test
+    @Order(108)
+    @DisplayName("❌ 스터디 고급 검색 - 잘못된 필드명 사용 시 에러 발생")
+    void should_throw_error_when_using_wrong_field_name() throws Exception {
+        // Given: 테스트 데이터 생성
+        createMultipleStudiesInDatabase();
+
+        // When & Then: 잘못된 필드명 'status' 사용 시 에러 발생
+        mockMvc.perform(get("/api/v1/study/search")
+                        .param("status", "READY")  // 잘못된 필드명
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(containsString("Invalid status parameter")));
+    }
+
+    @Test
+    @Order(109)
+    @DisplayName("✅ 스터디 고급 검색 - studyStatus 필드명 사용 시 정상 동작")
+    void should_work_correctly_with_correct_field_name() throws Exception {
+        // Given: 테스트 데이터 생성
+        createMultipleStudiesInDatabase();
+
+        // When & Then: 올바른 필드명 'studyStatus' 사용 시 정상 동작
+        mockMvc.perform(get("/api/v1/study/search")
+                        .param("studyStatus", "READY")  // 올바른 필드명
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray());
     }
 }

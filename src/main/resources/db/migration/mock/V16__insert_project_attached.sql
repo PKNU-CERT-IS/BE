@@ -148,3 +148,6 @@ insert into project_attached (id, project_id, member_id, name, type, size, attac
 insert into project_attached (id, project_id, member_id, name, type, size, attached_url, created_at, updated_at, deleted_at) values (148, 50, 148, 'Zaam-Dox', 'pdf', 10, 'http://dummyimage.com/183x100.png/dddddd/000000', '2025-06-22 11:59:02', '2025-05-14 05:00:04', null);
 insert into project_attached (id, project_id, member_id, name, type, size, attached_url, created_at, updated_at, deleted_at) values (149, 50, 149, 'Treeflex', 'zip', 100, 'http://dummyimage.com/192x100.png/5fa2dd/ffffff', '2025-06-27 05:05:47', '2024-09-06 10:04:25', null);
 insert into project_attached (id, project_id, member_id, name, type, size, attached_url, created_at, updated_at, deleted_at) values (150, 50, 150, 'Stim', 'png', 1000, 'http://dummyimage.com/138x100.png/dddddd/000000', '2025-07-29 02:15:47', '2025-04-15 15:25:56', null);
+
+-- 시퀀스 오프셋 조정 (목데이터 삽입 후)
+SELECT setval('project_attached_id_seq', (SELECT MAX(id) FROM project_attached));

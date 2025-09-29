@@ -7,10 +7,10 @@ import org.certis.studyplatform.project.domain.vo.ProjectMeetingLinkVo;
 import org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectMeetingEntity;
 import org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectMeetingLinkEntity;
 import org.certis.studyplatform.project.presentation.dto.response.ProjectMeetingSummaryResponseDto;
-import org.certis.studyplatform.shared.util.DataConverter;
 import org.jooq.Record;
 import org.springframework.stereotype.Component;
 
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 
@@ -23,10 +23,7 @@ import static org.certis.generated.jooq.Tables.*;
  * Infrastructure Layer
  */
 @Component
-@RequiredArgsConstructor
 public class ProjectMeetingInfrastructureMapper {
-
-    private final DataConverter dataConverter;
 
     /**
      * ProjectMeetingEntity를 ProjectMeetingVo로 변환 (Command Repository용)
@@ -44,7 +41,7 @@ public class ProjectMeetingInfrastructureMapper {
                 entity.getProjectId(),
                 entity.getTitle(),
                 entity.getContent(),
-                List.of(entity.getParticipants()),
+                entity.getParticipants() != null ? entity.getParticipants().length : 0,
                 entity.getMemberId(),
                 isEditable,
                 entity.getCreatedAt(),
@@ -65,7 +62,7 @@ public class ProjectMeetingInfrastructureMapper {
                 record.get(PROJECT_MEETING.PROJECT_ID),
                 record.get(PROJECT_MEETING.TITLE),
                 record.get(PROJECT_MEETING.CONTENT),
-                dataConverter.convertToLongList(record.get(PROJECT_MEETING.PARTICIPANTS)),
+                record.get(PROJECT_MEETING.PARTICIPANTS) != null ? record.get(PROJECT_MEETING.PARTICIPANTS).length : 0,
                 writerId,
                 isEditable,
                 record.get(PROJECT_MEETING.CREATED_AT),
@@ -88,7 +85,7 @@ public class ProjectMeetingInfrastructureMapper {
 
         return ProjectMeetingLinkVo.of(
                 entity.getId(),
-                entity.getProjectId(),
+                entity.getMeetingId(),
                 entity.getMemberId(),
                 entity.getName(),
                 entity.getAttachedUrl(),
@@ -107,7 +104,7 @@ public class ProjectMeetingInfrastructureMapper {
 
         return ProjectMeetingLinkEntity.builder()
                 .id(vo.id())
-                .projectId(vo.projectId())
+                .meetingId(vo.meetingId())
                 .memberId(vo.memberId())
                 .name(vo.name())
                 .attachedUrl(vo.attachedUrl())
@@ -148,6 +145,7 @@ public class ProjectMeetingInfrastructureMapper {
                 participantNumber,
                 creatorName,
                 isEditable,
+                entity.getCreatedAt(),
                 null,
                 null
         );
@@ -194,6 +192,17 @@ public class ProjectMeetingInfrastructureMapper {
      * ✅ jOOQ Record를 ProjectMeetingSummaryVo로 변환
      */
     public ProjectMeetingSummaryVo recordToSummaryVo(Record record) {
+        return recordToSummaryVo(record, null);
+    }
+
+    /**
+     * ✅ jOOQ Record를 ProjectMeetingSummaryVo로 변환 (현재 사용자 ID 포함)
+     */
+    public ProjectMeetingSummaryVo recordToSummaryVo(Record record, Long currentUserId) {
+        if (record == null) {
+            return null;
+        }
+
         // alias된 테이블에서 데이터 가져오기
         String[] participants = record.get("participants", String[].class);
         int participantCount = participants != null ? participants.length : 0;
@@ -203,13 +212,20 @@ public class ProjectMeetingInfrastructureMapper {
             writerName = "알 수 없음";
         }
 
+        // 현재 사용자와 작성자 비교하여 편집 가능 여부 결정
+        Long writerId = record.get("writer_id", Long.class);
+        boolean isEditable = currentUserId != null && writerId != null && currentUserId.equals(writerId);
+
+        OffsetDateTime createdAt = record.get("created_at", OffsetDateTime.class);
+        
         return ProjectMeetingSummaryVo.of(
                 record.get("id", Long.class),
                 record.get("title", String.class),
                 null,
                 participantCount,
                 writerName,
-                true, // TODO: 실제로는 현재 사용자와 작성자 비교하여 편집 가능 여부 결정
+                isEditable,
+                createdAt,
                 null,
                 null
         );

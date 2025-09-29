@@ -148,3 +148,6 @@ insert into project_participant (id, project_id, status, member_id, created_at, 
 insert into project_participant (id, project_id, status, member_id, created_at, updated_at, deleted_at) values (148, 50, 'APPROVED', 148, '2024-08-18 11:07:20', '2025-04-09 03:19:32', null);
 insert into project_participant (id, project_id, status, member_id, created_at, updated_at, deleted_at) values (149, 50, 'APPROVED', 149, '2024-08-18 14:29:30', '2024-09-18 18:33:45', null);
 insert into project_participant (id, project_id, status, member_id, created_at, updated_at, deleted_at) values (150, 50, 'PENDING', 150, '2025-06-01 04:54:25', '2025-07-06 19:47:22', null);
+
+-- 시퀀스 오프셋 조정 (목데이터 삽입 후)
+SELECT setval('project_participant_id_seq', (SELECT MAX(id) FROM project_participant));

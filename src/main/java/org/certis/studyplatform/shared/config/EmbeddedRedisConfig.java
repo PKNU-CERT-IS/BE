@@ -23,7 +23,7 @@ import java.net.ServerSocket;
  */
 @Slf4j
 @Component
-@Profile("local")
+@Profile({"local", "test"})
 @Order(1) // Redis 관련 다른 빈들보다 먼저 실행
 @ConditionalOnProperty(name = "embedded.redis.enabled", havingValue = "true", matchIfMissing = true)
 public class EmbeddedRedisConfig {
@@ -49,6 +49,9 @@ public class EmbeddedRedisConfig {
                 redisPort = availablePort;
                 // 시스템 프로퍼티로 다른 설정에서 참조할 수 있도록 설정
                 System.setProperty("embedded.redis.actual.port", String.valueOf(redisPort));
+                // Spring Redis 설정에 포트를 반영하여 연결 팩토리가 올바른 포트를 사용하도록 설정
+                System.setProperty("spring.data.redis.port", String.valueOf(redisPort));
+                System.setProperty("spring.data.redis.host", "localhost");
             }
 
             // 2. Redis 프로세스가 이미 실행 중인지 확인

@@ -3,6 +3,12 @@ package org.certis.studyplatform.study.application;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.study.domain.StudyParticipantStatus;
+import org.certis.studyplatform.member.application.query.MemberQueryService;
+import org.certis.studyplatform.member.application.object.query.GetMemberByIdQuery;
+import org.certis.studyplatform.member.domain.vo.MemberVo;
+import org.certis.studyplatform.study.application.query.StudyQueryService;
+import org.certis.studyplatform.study.application.object.query.GetStudyByIdQuery;
+import org.certis.studyplatform.study.domain.vo.StudyVo;
 import org.certis.studyplatform.study.domain.vo.StudyParticipantCreatedVo;
 import org.certis.studyplatform.study.domain.vo.StudyParticipantStatusUpdatedVo;
 import org.certis.studyplatform.study.domain.vo.StudyParticipantSummaryVo;
@@ -10,8 +16,10 @@ import org.certis.studyplatform.study.presentation.dto.request.StudyJoinApproveR
 import org.certis.studyplatform.study.presentation.dto.request.StudyJoinCancelRequestDto;
 import org.certis.studyplatform.study.presentation.dto.request.StudyJoinRejectRequestDto;
 import org.certis.studyplatform.study.presentation.dto.request.StudyJoinRequestDto;
+import org.certis.studyplatform.study.presentation.dto.request.AdminStudyParticipantApprovalRequestDto;
 import org.certis.studyplatform.study.presentation.dto.response.StudyJoinResponseDto;
 import org.certis.studyplatform.study.presentation.dto.response.StudyParticipantStatusUpdateResponseDto;
+import org.certis.studyplatform.study.presentation.dto.response.AdminStudyParticipantApprovalResponseDto;
 import org.certis.studyplatform.study.presentation.dto.response.StudyParticipantSummaryResponseDto;
 import org.certis.studyplatform.study.application.command.StudyParticipantCommandService;
 import org.certis.studyplatform.study.application.mapper.StudyApplicationCommandMapper;
@@ -35,6 +43,8 @@ public class StudyParticipantFacadeService {
     private final StudyParticipantQueryService participantQueryService;
     private final StudyApplicationCommandMapper commandMapper;
     private final StudyApplicationDtoMapper dtoMapper;
+    private final MemberQueryService memberQueryService;
+    private final StudyQueryService studyQueryService;
 
     // ================================================================
     // STUDY PARTICIPANT OPERATIONS - 프로젝트 참가 관리
@@ -165,6 +175,114 @@ public class StudyParticipantFacadeService {
                 .toStudyParticipantSummaryResponseDtoPage(participationsVo);
 
         log.info("Facade: Found {} member participations", responseDto.getTotalElements());
+        return responseDto;
+    }
+
+    // ================================================================
+    // ADMIN STUDY PARTICIPANT OPERATIONS - 관리자 스터디 참가 관리
+    // ================================================================
+
+    /**
+     * 관리자가 스터디 참가 신청을 승인
+     */
+    public AdminStudyParticipantApprovalResponseDto approveParticipantByAdmin(
+            AdminStudyParticipantApprovalRequestDto request, Long adminId) {
+        log.info("Facade: Admin approving study participant - participantId: {}, adminId: {}", 
+                request.getParticipantId(), adminId);
+
+        // DTO → Command Object 변환
+        UpdateStudyParticipantStatusCommand command = commandMapper
+                .toApproveStudyParticipantByAdminCommand(request, adminId);
+
+        // Command Service 호출
+        StudyParticipantStatusUpdatedVo updatedVo = participantCommandService.approveParticipant(command);
+
+        // 조회: 스터디 제목, 멤버 이름, 관리자 이름
+        String studyTitle = null;
+        String memberName = null;
+        String adminName = null;
+
+        if (updatedVo.studyId() != null) {
+            StudyVo studyVo = studyQueryService.getStudyById(GetStudyByIdQuery.of(updatedVo.studyId()));
+            studyTitle = studyVo != null ? studyVo.title() : null;
+        }
+        if (updatedVo.memberId() != null) {
+            MemberVo memberVo = memberQueryService.getMemberById(new GetMemberByIdQuery(updatedVo.memberId()));
+            memberName = memberVo != null ? memberVo.name() : null;
+        }
+        if (adminId != null) {
+            MemberVo adminVo = memberQueryService.getMemberById(new GetMemberByIdQuery(adminId));
+            adminName = adminVo != null ? adminVo.name() : null;
+        }
+
+        String reason = request.getReason();
+
+        // VO → Response DTO 변환 (실데이터 적용)
+        AdminStudyParticipantApprovalResponseDto responseDto = dtoMapper
+                .toAdminStudyParticipantApprovalResponseDto(
+                        updatedVo,
+                        studyTitle,
+                        memberName,
+                        StudyParticipantStatus.APPROVED,
+                        adminId,
+                        adminName,
+                        reason
+                );
+
+        log.info("Facade: Admin study participant approved successfully - participantId: {}", 
+                responseDto.getParticipantId());
+        return responseDto;
+    }
+
+    /**
+     * 관리자가 스터디 참가 신청을 거절
+     */
+    public AdminStudyParticipantApprovalResponseDto rejectParticipantByAdmin(
+            AdminStudyParticipantApprovalRequestDto request, Long adminId) {
+        log.info("Facade: Admin rejecting study participant - participantId: {}, adminId: {}", 
+                request.getParticipantId(), adminId);
+
+        // DTO → Command Object 변환
+        UpdateStudyParticipantStatusCommand command = commandMapper
+                .toRejectStudyParticipantByAdminCommand(request, adminId);
+
+        // Command Service 호출
+        StudyParticipantStatusUpdatedVo updatedVo = participantCommandService.rejectParticipant(command);
+
+        // 조회: 스터디 제목, 멤버 이름, 관리자 이름
+        String studyTitle = null;
+        String memberName = null;
+        String adminName = null;
+
+        if (updatedVo.studyId() != null) {
+            StudyVo studyVo = studyQueryService.getStudyById(GetStudyByIdQuery.of(updatedVo.studyId()));
+            studyTitle = studyVo != null ? studyVo.title() : null;
+        }
+        if (updatedVo.memberId() != null) {
+            MemberVo memberVo = memberQueryService.getMemberById(new GetMemberByIdQuery(updatedVo.memberId()));
+            memberName = memberVo != null ? memberVo.name() : null;
+        }
+        if (adminId != null) {
+            MemberVo adminVo = memberQueryService.getMemberById(new GetMemberByIdQuery(adminId));
+            adminName = adminVo != null ? adminVo.name() : null;
+        }
+
+        String reason = request.getReason();
+
+        // VO → Response DTO 변환 (실데이터 적용)
+        AdminStudyParticipantApprovalResponseDto responseDto = dtoMapper
+                .toAdminStudyParticipantApprovalResponseDto(
+                        updatedVo,
+                        studyTitle,
+                        memberName,
+                        StudyParticipantStatus.REJECTED,
+                        adminId,
+                        adminName,
+                        reason
+                );
+
+        log.info("Facade: Admin study participant rejected successfully - participantId: {}", 
+                responseDto.getParticipantId());
         return responseDto;
     }
 }

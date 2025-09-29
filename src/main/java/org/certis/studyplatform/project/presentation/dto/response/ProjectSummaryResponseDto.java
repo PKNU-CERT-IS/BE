@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.certis.studyplatform.member.domain.MemberGrade;
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -42,13 +43,27 @@ public class ProjectSummaryResponseDto {
 
     private MemberGrade projectCreatorGrade;
 
+    private String semester;
+
+    private String status;
+
+    private ResultSubmitStatus resultSubmitStatus;
+
     private boolean isParticipantable;
 
     private String githubUrl;
 
-    private String externalUrl;
+    private ExternalUrlResponseDto externalUrl;
+
+    private String demoUrl;
 
     private String thumbnailUrl;
+
+    private Integer maxParticipantNumber;
+
+    private Integer currentParticipantNumber;
+
+    private List<ProjectAttachedResponseDto> attachments;
 
     // toString for logging
     @Override

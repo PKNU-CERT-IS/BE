@@ -28,10 +28,10 @@ public class MemberContactEntity {
     @Column(name = "email", nullable = false)
     private String email;
 
-    @Column(name = "github_url", length = 2000)
+    @Column(name = "github_url")
     private String githubUrl;
 
-    @Column(name = "linkedin_url", length = 2000)
+    @Column(name = "linkedin_url")
     private String linkedinUrl;
 
     @Column(name = "phone_number", nullable = false)

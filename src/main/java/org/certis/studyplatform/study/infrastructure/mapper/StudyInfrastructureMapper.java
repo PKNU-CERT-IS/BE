@@ -4,13 +4,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.study.domain.vo.*;
+import org.certis.studyplatform.study.domain.StudyStatus;
 import org.certis.studyplatform.study.infrastructure.persistence.entity.StudyEntity;
 import org.certis.studyplatform.study.infrastructure.persistence.entity.StudyParticipantEntity;
 import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -54,6 +57,8 @@ public class StudyInfrastructureMapper {
                 .maxParticipantsNumber(vo.maxParticipants())
                 .startedAt(vo.startDate())
                 .endedAt(vo.endDate())
+                .status(vo.status() != null ? StudyStatus.valueOf(vo.status()) : StudyStatus.READY)
+                .resultSubmitStatus(vo.resultSubmitStatus() != null ? vo.resultSubmitStatus() : ResultSubmitStatus.READY)
                 .build();
     }
 
@@ -65,6 +70,9 @@ public class StudyInfrastructureMapper {
         if (entity == null) {
             return null;
         }
+
+        // Entity에 저장된 상태를 그대로 사용 (계산하지 않음)
+        String resolvedStatus = entity.getStatus() != null ? entity.getStatus().name() : StudyStatus.READY.name();
 
         return StudyVo.of(
                 entity.getId(),
@@ -80,8 +88,14 @@ public class StudyInfrastructureMapper {
                 entity.getMemberId(),
                 null, // creatorName은 별도 조회 필요
                 null, // creatorGrade는 별도 조회 필요
+                calculateSemester(entity.getEndedAt()), // semester 계산
+                resolvedStatus, // status 계산 (APPROVED 등 명시 상태 우선)
+                entity.getResultSubmitStatus(),
                 entity.getMaxParticipantsNumber(),
-                0 // currentParticipants는 별도 계산 필요
+                0, // currentParticipants는 별도 계산 필요
+                determineParticipantable(entity.getStartedAt(), entity.getEndedAt(), 
+                    entity.getMaxParticipantsNumber(), 0),
+                Collections.emptyList() // attached는 별도 조회 필요
         );
     }
 
@@ -130,6 +144,21 @@ public class StudyInfrastructureMapper {
 
 
         // ✅ [MODIFICATION] StudyVo 생성자 인자 순서 변경 (createdAt, updatedAt 추가)
+        OffsetDateTime endedAt = firstRecord.get("ended_at", OffsetDateTime.class);
+        // Safely read optional columns that may not be selected in some queries
+        OffsetDateTime deletedAt = firstRecord.field("deleted_at") != null
+                ? firstRecord.get("deleted_at", OffsetDateTime.class)
+                : null;
+        ResultSubmitStatus submitStatus = firstRecord.field("result_submit_status") != null
+                ? firstRecord.get("result_submit_status", ResultSubmitStatus.class)
+                : null;
+        if (submitStatus == null) {
+            submitStatus = ResultSubmitStatus.READY;
+        }
+        
+        // DB에 저장된 상태를 그대로 사용 (계산하지 않음)
+        String resolvedStatusFromRecord = resolveStatusFromRecord(firstRecord, null);
+
         return new StudyVo(
                 firstRecord.get("id", Long.class),
                 firstRecord.get("title", String.class),
@@ -138,14 +167,20 @@ public class StudyInfrastructureMapper {
                 firstRecord.get("category", String.class),
                 firstRecord.get("subcategory", String.class),
                 firstRecord.get("started_at", OffsetDateTime.class),
-                firstRecord.get("ended_at", OffsetDateTime.class),
+                endedAt,
                 firstRecord.get("created_at", OffsetDateTime.class),
                 firstRecord.get("updated_at", OffsetDateTime.class),
                 firstRecord.get("member_id", Long.class),
                 firstRecord.get("creator_name", String.class),
                 safeParseMemberGrade(firstRecord.get("creator_grade", String.class)),
+                calculateSemester(endedAt), // semester 계산
+                resolvedStatusFromRecord, // status 계산 (DB status 우선)
+                submitStatus,
                 firstRecord.get("max_participants_number", Integer.class),
                 firstRecord.get("current_participants", Integer.class),
+                determineParticipantable(firstRecord.get("started_at", OffsetDateTime.class), endedAt,
+                    firstRecord.get("max_participants_number", Integer.class), 
+                    firstRecord.get("current_participants", Integer.class)),
                 attachedVos,
                 summaryVos,
                 participantVos
@@ -172,6 +207,21 @@ public class StudyInfrastructureMapper {
                 .collect(Collectors.toList());
 
         // ✅ [MODIFICATION] StudyVo 생성자 인자 순서 변경 (createdAt, updatedAt 추가)
+        OffsetDateTime endedAt = firstRecord.get("ended_at", OffsetDateTime.class);
+        OffsetDateTime deletedAt = firstRecord.field("deleted_at") != null
+                ? firstRecord.get("deleted_at", OffsetDateTime.class)
+                : null;
+        ResultSubmitStatus submitStatus;
+        if (firstRecord.field("result_submit_status") != null) {
+            String statusString = firstRecord.get("result_submit_status", String.class);
+            submitStatus = statusString != null ? ResultSubmitStatus.valueOf(statusString) : ResultSubmitStatus.READY;
+        } else {
+            submitStatus = ResultSubmitStatus.READY;
+        }
+        
+        // DB에 저장된 상태를 그대로 사용 (계산하지 않음)
+        String resolvedStatusFromRecord2 = resolveStatusFromRecord(firstRecord, null);
+
         return new StudyVo(
                 firstRecord.get("id", Long.class),
                 firstRecord.get("title", String.class),
@@ -180,14 +230,20 @@ public class StudyInfrastructureMapper {
                 firstRecord.get("category", String.class),
                 firstRecord.get("subcategory", String.class),
                 firstRecord.get("started_at", OffsetDateTime.class),
-                firstRecord.get("ended_at", OffsetDateTime.class),
+                endedAt,
                 firstRecord.get("created_at", OffsetDateTime.class),
                 firstRecord.get("updated_at", OffsetDateTime.class),
                 firstRecord.get("member_id", Long.class),
                 firstRecord.get("creator_name", String.class),
                 safeParseMemberGrade(firstRecord.get("creator_grade", String.class)),
+                calculateSemester(endedAt), // semester 계산
+                resolvedStatusFromRecord2, // status 계산 (DB status 우선)
+                submitStatus,
                 firstRecord.get("max_participants_number", Integer.class),
                 firstRecord.get("current_participants", Integer.class),
+                determineParticipantable(firstRecord.get("started_at", OffsetDateTime.class), endedAt,
+                    firstRecord.get("max_participants_number", Integer.class), 
+                    firstRecord.get("current_participants", Integer.class)),
                 attachedVos,               // attached
                 Collections.emptyList(),   // summaryVoList
                 Collections.emptyList()    // participantVoList
@@ -238,6 +294,17 @@ public class StudyInfrastructureMapper {
         );
 
         MemberGrade memberGrade = safeParseMemberGrade(firstRecord.get("creator_grade", String.class));
+        OffsetDateTime endedAt = firstRecord.get("ended_at", OffsetDateTime.class);
+        OffsetDateTime deletedAt = firstRecord.field("deleted_at") != null
+                ? firstRecord.get("deleted_at", OffsetDateTime.class)
+                : null;
+        ResultSubmitStatus submitStatus = firstRecord.get("result_submit_status", ResultSubmitStatus.class);
+        if (submitStatus == null) {
+            submitStatus = ResultSubmitStatus.READY;
+        }
+
+        // DB에 저장된 상태를 그대로 사용 (계산하지 않음)
+        String resolvedStatusFromRecord3 = resolveStatusFromRecord(firstRecord, null);
 
         return StudySummaryVo.of(
                 studyId,
@@ -246,13 +313,16 @@ public class StudyInfrastructureMapper {
                 firstRecord.get("category", String.class),
                 firstRecord.get("subcategory", String.class),
                 firstRecord.get("started_at", OffsetDateTime.class),
-                firstRecord.get("ended_at", OffsetDateTime.class),
+                endedAt,
                 firstRecord.get("creator_name", String.class),
                 memberGrade,
+                calculateSemester(endedAt), // semester 계산
+                resolvedStatusFromRecord3, // status 계산 (DB status 우선)
                 isParticipantable,
                 attachedVos,
                 firstRecord.get("max_participants_number", Integer.class),
-                firstRecord.get("current_participants", Integer.class)
+                firstRecord.get("current_participants", Integer.class),
+                submitStatus
         );
     }
 
@@ -274,16 +344,19 @@ public class StudyInfrastructureMapper {
      */
     private boolean determineParticipantable(OffsetDateTime startedAt, OffsetDateTime endedAt,
                                              Integer maxParticipants, Integer currentParticipants) {
-        OffsetDateTime now = OffsetDateTime.now();
-
-        if (endedAt != null && endedAt.isBefore(now)) {
+        if (startedAt == null || endedAt == null || maxParticipants == null || currentParticipants == null) {
             return false;
         }
-
-        if (maxParticipants != null && currentParticipants != null) {
-            return currentParticipants < maxParticipants;
+        
+        OffsetDateTime now = OffsetDateTime.now();
+        
+        // 프로젝트/스터디가 종료되지 않아야 함 (종료일이 현재 시간보다 미래)
+        if (endedAt.isBefore(now) || endedAt.isEqual(now)) {
+            return false;
         }
-        return true;
+        
+        // 현재 참여자 수가 최대 참여자 수보다 작아야 함
+        return currentParticipants < maxParticipants;
     }
 
     // ================================================================
@@ -353,7 +426,7 @@ public class StudyInfrastructureMapper {
 
     /**
      * jOOQ Record -> StudyParticipantSummaryVo 매핑
-     * Repository에서 목록 조회 시 사용 (별칭: member_name)
+     * Repository에서 목록 조회 시 사용
      */
     public StudyParticipantSummaryVo toSummaryVoFromRecord(Record record) {
         if (record == null) {
@@ -362,8 +435,11 @@ public class StudyInfrastructureMapper {
 
         return new StudyParticipantSummaryVo(
                 record.get("id", Long.class),
+                record.get("study_id", Long.class),
                 record.get("member_id", Long.class),
                 record.get("member_name", String.class),
+                record.get("member_grade", org.certis.studyplatform.member.domain.MemberGrade.class),
+                record.get("study_title", String.class),
                 record.get("status", org.certis.studyplatform.study.domain.StudyParticipantStatus.class),
                 record.get("created_at", OffsetDateTime.class)
         );
@@ -413,5 +489,85 @@ public class StudyInfrastructureMapper {
             log.warn("Invalid member grade string: {}", grade);
             return null;
         }
+    }
+
+    // ================================================================
+    // 비즈니스 로직 계산 메서드들
+    // ================================================================
+
+    /**
+     * ended_at을 기준으로 semester 계산
+     * 3월~8월: 해당 년도 1학기
+     * 9월~다음해 2월: 해당 년도 2학기
+     */
+    private String calculateSemester(OffsetDateTime endedAt) {
+        if (endedAt == null) {
+            return null;
+        }
+        
+        LocalDate endDate = endedAt.toLocalDate();
+        int year = endDate.getYear();
+        int month = endDate.getMonthValue();
+        
+        if (month >= 3 && month <= 8) {
+            return year + "-1"; // 1학기
+        } else {
+            return year + "-2"; // 2학기
+        }
+    }
+
+    /**
+     * 스터디 상태를 StudyStatus enum으로 계산
+     */
+    private String calculateStatusString(OffsetDateTime startDate, OffsetDateTime endDate,
+                                         OffsetDateTime deletedAt,
+                                         ResultSubmitStatus resultSubmitStatus) {
+        if (deletedAt != null) {
+            return StudyStatus.REJECTED.name();
+        }
+
+        OffsetDateTime now = OffsetDateTime.now();
+
+        // 종료 승인 또는 종료 시간이 현재와 같거나 이전이면 완료 처리
+        if (resultSubmitStatus == ResultSubmitStatus.COMPLETED) {
+            return StudyStatus.COMPLETED.name();
+        }
+        if (endDate != null && (now.isAfter(endDate) || now.isEqual(endDate))) {
+            return StudyStatus.COMPLETED.name();
+        }
+
+        if (startDate == null || endDate == null) {
+            return StudyStatus.READY.name();
+        }
+
+        if (now.isBefore(startDate)) {
+            return StudyStatus.READY.name();
+        }
+        if (now.isBefore(endDate)) {
+            return StudyStatus.INPROGRESS.name();
+        }
+        return StudyStatus.INPROGRESS.name();
+    }
+
+    /**
+     * Record에 DB의 명시적 status 컬럼이 포함되어 있으면 그 값을 우선 사용한다.
+     * 없거나 비어있으면 계산된 상태 문자열을 반환한다.
+     */
+    private String resolveStatusFromRecord(Record record, String calculatedFallback) {
+        if (record == null) {
+            return calculatedFallback;
+        }
+        try {
+            // jOOQ로 선택된 컬럼명이 소문자 "status" 또는 별칭 없이 포함될 수 있음
+            if (record.field("status") != null) {
+                String dbStatus = record.get("status", String.class);
+                if (dbStatus != null && !dbStatus.isBlank()) {
+                    return dbStatus.trim().toUpperCase();
+                }
+            }
+        } catch (Exception ignore) {
+            // 안전하게 계산 값으로 폴백
+        }
+        return calculatedFallback;
     }
 }

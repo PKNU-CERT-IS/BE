@@ -85,21 +85,17 @@ class ProjectParticipantControllerTest {
 
     @BeforeEach
     void setUp() {
-        System.out.println("테스트 데이터 설정 시작");
         // 데이터 충돌 방지: 관련 테이블 초기화
         dsl.execute("TRUNCATE TABLE project_participant RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE project RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
 
         setupTestData();
-        System.out.println("테스트 데이터 설정 완료");
     }
 
     @AfterEach
     void tearDown() {
-        System.out.println("테스트 데이터 정리 시작");
         cleanupTestData();
-        System.out.println("테스트 데이터 정리 완료");
     }
 
     // =================================================================
@@ -129,7 +125,6 @@ class ProjectParticipantControllerTest {
         // Then: 데이터베이스에 참가 신청이 정상적으로 저장되었는지 검증
         verifyParticipantCreatedInDatabase(request);
 
-        System.out.println("프로젝트 참가 신청 테스트 성공");
     }
 
     @Test
@@ -153,7 +148,6 @@ class ProjectParticipantControllerTest {
         // Then: 데이터베이스에서 소프트 삭제 확인
         verifyParticipantCancelledInDatabase(TEST_PROJECT_2_ID, 1L);
 
-        System.out.println("프로젝트 참가 신청 취소 테스트 성공");
     }
 
     @Test
@@ -179,7 +173,6 @@ class ProjectParticipantControllerTest {
         // Then: 데이터베이스에서 상태 변경 확인
         verifyParticipantStatusInDatabase(participantId, ProjectParticipantStatus.APPROVED);
 
-        System.out.println("프로젝트 참가 승인 테스트 성공");
     }
 
     @Test
@@ -205,7 +198,6 @@ class ProjectParticipantControllerTest {
         // Then: 데이터베이스에서 소프트 삭제 확인 (deleted_at 설정)
         verifyParticipantSoftDeletedInDatabase(participantId);
 
-        System.out.println("프로젝트 참가 거절 테스트 성공");
     }
 
     @Test
@@ -232,7 +224,6 @@ class ProjectParticipantControllerTest {
                 .andExpect(jsonPath("$.data.first").value(true))
                 .andExpect(jsonPath("$.data.last").value(true));
 
-        System.out.println("프로젝트별 참가자 목록 조회 테스트 성공");
     }
 
     @Test
@@ -254,7 +245,6 @@ class ProjectParticipantControllerTest {
                 .andExpect(jsonPath("$.data.content.length()").value(2)) // 2개 프로젝트 참가
                 .andExpect(jsonPath("$.data.totalElements").value(2));
 
-        System.out.println("사용자별 참가 프로젝트 목록 조회 테스트 성공");
     }
 
     // =================================================================
@@ -276,7 +266,6 @@ class ProjectParticipantControllerTest {
                 .andDo(print())
                 .andExpect(status().isBadRequest());
 
-        System.out.println("필수 필드 누락 검증 테스트 성공");
     }
 
     @Test
@@ -297,7 +286,6 @@ class ProjectParticipantControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("이미 참가 신청한 프로젝트입니다."));
 
-        System.out.println("중복 참가 신청 테스트 성공");
     }
 
     @Test
@@ -316,7 +304,6 @@ class ProjectParticipantControllerTest {
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.message").value("프로젝트 생성자는 자신의 프로젝트에 참가 신청할 수 없습니다."));
 
-        System.out.println("프로젝트 생성자 자가 신청 거부 테스트 성공");
     }
 
     @Test
@@ -335,7 +322,6 @@ class ProjectParticipantControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("참가 신청을 찾을 수 없습니다."));
 
-        System.out.println("존재하지 않는 참가 신청 승인 테스트 성공");
     }
 
     @Test
@@ -356,7 +342,6 @@ class ProjectParticipantControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("대기 중인 참가 신청만 승인할 수 있습니다."));
 
-        System.out.println("이미 처리된 참가 신청 승인 테스트 성공");
     }
 
     // =================================================================
@@ -383,7 +368,6 @@ class ProjectParticipantControllerTest {
                 .andExpect(jsonPath("$.data.content.length()").value(1)) // PENDING 1명만
                 .andExpect(jsonPath("$.data.content[0].status").value("PENDING"));
 
-        System.out.println("대기 중인 참가자 목록 조회 테스트 성공");
     }
 
     @Test
@@ -407,7 +391,6 @@ class ProjectParticipantControllerTest {
                 .andExpect(jsonPath("$.data.content[0].status").value("APPROVED"))
                 .andExpect(jsonPath("$.data.content[1].status").value("APPROVED"));
 
-        System.out.println("승인된 참가자 목록 조회 테스트 성공");
     }
 
     // =================================================================
@@ -428,7 +411,6 @@ class ProjectParticipantControllerTest {
                 .andDo(print())
                 .andExpect(status().isUnsupportedMediaType());
 
-        System.out.println("잘못된 Content-Type 테스트 성공");
     }
 
     @Test
@@ -442,7 +424,6 @@ class ProjectParticipantControllerTest {
                 .andDo(print())
                 .andExpect(status().isBadRequest());
 
-        System.out.println("잘못된 JSON 형식 테스트 성공");
     }
 
     @Test
@@ -454,7 +435,6 @@ class ProjectParticipantControllerTest {
                 .andDo(print())
                 .andExpect(status().isMethodNotAllowed());
 
-        System.out.println("잘못된 HTTP 메서드 테스트 성공");
     }
 
     // =================================================================
@@ -487,7 +467,6 @@ class ProjectParticipantControllerTest {
         // 성능 검증: 1초 이내 응답
         assertThat(executionTime).isLessThan(1000);
 
-        System.out.println("대용량 데이터 페이징 성능 테스트 성공 - 실행시간: " + executionTime + "ms");
     }
 
     @Test
@@ -508,7 +487,6 @@ class ProjectParticipantControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("프로젝트 정원이 가득 찼습니다."));
 
-        System.out.println("참가자 수 제한 테스트 성공");
     }
 
     // =================================================================
@@ -572,7 +550,6 @@ class ProjectParticipantControllerTest {
             createMemberInDatabase(TEST_MEMBER_3_ID, TEST_MEMBER_3_NAME, "member3@certis.org", now);
 
         } catch (Exception e) {
-            System.out.println("테스트 데이터 설정 중 오류 발생 (이미 존재할 수 있음): " + e.getMessage());
         }
     }
 
@@ -605,7 +582,6 @@ class ProjectParticipantControllerTest {
             dsl.deleteFrom(PROJECT).execute();
             dsl.deleteFrom(MEMBER).execute();
         } catch (Exception e) {
-            System.out.println("테스트 데이터 정리 중 오류 발생: " + e.getMessage());
         }
     }
 
@@ -737,7 +713,7 @@ class ProjectParticipantControllerTest {
     }
 
     /**
-     * 참가자 소프트 삭제 검증 (거절)
+     * 참가자 상태 업데이트 검증 (거절)
      */
     private void verifyParticipantSoftDeletedInDatabase(Long participantId) {
         var participant = dsl.selectFrom(PROJECT_PARTICIPANT)
@@ -745,6 +721,6 @@ class ProjectParticipantControllerTest {
                 .fetchOne();
 
         assertThat(participant).isNotNull();
-        assertThat(participant.getDeletedAt()).isNotNull();
+        assertThat(participant.getStatus()).isEqualTo("REJECTED");
     }
 }

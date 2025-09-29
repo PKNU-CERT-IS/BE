@@ -1,5 +1,6 @@
 package org.certis.studyplatform.blog.presentation.dto.request;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -26,6 +27,18 @@ public class BlogAdvancedSearchRequestDto {
      */
     @Size(max = 50, message = "카테고리는 50자 이하여야 합니다")
     private String category;
+
+    /**
+     * 페이지 번호 (기본값 0)
+     */
+    @Min(0)
+    private int page = 0;
+
+    /**
+     * 페이지 크기 (기본값 10)
+     */
+    @Min(1)
+    private int size = 10;
 
     /**
      * 모든 필터가 비어있는지 확인

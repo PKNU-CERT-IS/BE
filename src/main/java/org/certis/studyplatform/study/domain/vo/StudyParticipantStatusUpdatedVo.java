@@ -15,7 +15,8 @@ public record StudyParticipantStatusUpdatedVo(
         Long memberId,
         StudyParticipantStatus previousStatus,
         StudyParticipantStatus currentStatus,
-        OffsetDateTime updatedAt
+        OffsetDateTime updatedAt,
+        Long requesterId
 ) {
 
     /**
@@ -32,7 +33,8 @@ public record StudyParticipantStatusUpdatedVo(
                 participantVo.memberId(),
                 null, // 벌크 연산에서는 이전 상태를 알 수 없음
                 participantVo.status(),
-                OffsetDateTime.now()
+                OffsetDateTime.now(),
+                null // 벌크 연산에서는 요청자 ID를 알 수 없음
         );
     }
 
@@ -52,7 +54,8 @@ public record StudyParticipantStatusUpdatedVo(
                 participantVo.memberId(),
                 previousStatus,
                 participantVo.status(),
-                OffsetDateTime.now()
+                OffsetDateTime.now(),
+                null // 요청자 ID는 별도로 설정 필요
         );
     }
 
@@ -64,20 +67,23 @@ public record StudyParticipantStatusUpdatedVo(
      * @param memberId 멤버 ID
      * @param previousStatus 이전 상태
      * @param currentStatus 현재 상태
+     * @param requesterId 요청자 ID
      * @return StudyParticipantStatusUpdatedVo
      */
     public static StudyParticipantStatusUpdatedVo of(Long id,
                                                        Long studyId,
                                                        Long memberId,
                                                        StudyParticipantStatus previousStatus,
-                                                       StudyParticipantStatus currentStatus) {
+                                                       StudyParticipantStatus currentStatus,
+                                                       Long requesterId) {
         return new StudyParticipantStatusUpdatedVo(
                 id,
                 studyId,
                 memberId,
                 previousStatus,
                 currentStatus,
-                OffsetDateTime.now()
+                OffsetDateTime.now(),
+                requesterId
         );
     }
 
@@ -88,18 +94,21 @@ public record StudyParticipantStatusUpdatedVo(
      * @param id 참가자 ID
      * @param previousStatus 이전 상태
      * @param currentStatus 현재 상태
+     * @param requesterId 요청자 ID
      * @return StudyParticipantStatusUpdatedVo
      */
     public static StudyParticipantStatusUpdatedVo ofStatusChange(Long id,
                                                                    StudyParticipantStatus previousStatus,
-                                                                   StudyParticipantStatus currentStatus) {
+                                                                   StudyParticipantStatus currentStatus,
+                                                                   Long requesterId) {
         return new StudyParticipantStatusUpdatedVo(
                 id,
                 null, // 별도로 설정 필요
                 null, // 별도로 설정 필요
                 previousStatus,
                 currentStatus,
-                OffsetDateTime.now()
+                OffsetDateTime.now(),
+                requesterId
         );
     }
 }

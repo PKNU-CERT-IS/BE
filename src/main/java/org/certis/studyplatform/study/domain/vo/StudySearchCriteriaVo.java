@@ -12,7 +12,8 @@ public record StudySearchCriteriaVo(
         String keyword,
         String category,
         String subCategory,
-        StudyStatus status
+        String semester,
+        String status
 ) {
     /**
      * 고급 검색용 팩토리 메소드
@@ -20,6 +21,7 @@ public record StudySearchCriteriaVo(
      * @param keyword 검색 키워드
      * @param category 카테고리
      * @param subCategory 서브 카테고리
+     * @param semester 학기
      * @param status 스터디 상태
      * @return StudySearchCriteria
      */
@@ -27,12 +29,14 @@ public record StudySearchCriteriaVo(
             String keyword,
             String category,
             String subCategory,
-            StudyStatus status
+            String semester,
+            String status
     ) {
         return new StudySearchCriteriaVo(
                 keyword,
                 category,
                 subCategory,
+                semester,
                 status
         );
     }
@@ -46,7 +50,7 @@ public record StudySearchCriteriaVo(
     public static StudySearchCriteriaVo ofKeyword(String keyword) {
         return new StudySearchCriteriaVo(
                 keyword,
-                null, null, null
+                null, null, null, null
         );
     }
 
@@ -57,7 +61,7 @@ public record StudySearchCriteriaVo(
      */
     public static StudySearchCriteriaVo empty() {
         return new StudySearchCriteriaVo(
-                null, null, null, null
+                null, null, null, null, null
         );
     }
 }

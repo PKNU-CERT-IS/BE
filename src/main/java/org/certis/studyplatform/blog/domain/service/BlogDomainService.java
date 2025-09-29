@@ -28,12 +28,16 @@ import org.certis.studyplatform.study.domain.vo.StudySummaryVo;
 import org.certis.studyplatform.study.domain.vo.StudyVo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+
 import org.springframework.stereotype.Service;
+
+import org.certis.studyplatform.study.domain.repository.StudyParticipantQueryRepository;
+import org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Blog Domain Service
@@ -59,6 +63,8 @@ public class BlogDomainService {
     private final StudyDomainService studyDomainService;
     private final ProjectDomainService projectDomainService;
     private final BlogViewDomainService blogViewDomainService;
+    private final StudyParticipantQueryRepository studyParticipantQueryRepository;
+    private final ProjectParticipantQueryRepository projectParticipantQueryRepository;
 
     // ================================================================
     // COMMAND OPERATIONS
@@ -84,7 +90,8 @@ public class BlogDomainService {
                 command.referenceId(),
                 referenceTitle, // 조회된 참조 제목 설정
                 command.creatorId(),
-                null // creatorName은 저장 후 조회 시 설정
+                null, // creatorName은 저장 후 조회 시 설정
+                command.isPublic()
         );
 
         // Command Repository를 통한 저장
@@ -126,7 +133,8 @@ public class BlogDomainService {
                 command.category(),
                 command.referenceType(),
                 command.referenceId(),
-                null
+                referenceTitle,
+                command.isPublic()
         );
 
         BlogVo savedBlogVo = commandRepository.save(updatedBlogVo);
@@ -171,8 +179,11 @@ public class BlogDomainService {
                 .orElseThrow(() -> new DomainException(ExceptionStatus.BLOG_DOMAIN_NOT_FOUND,
                         "블로그를 찾을 수 없습니다: " + query.id()));
 
-        // 참조 제목 조회 (referenceType과 referenceId 활용)
-        String referenceTitle = getReferenceTitle(blogVo.referenceType(), blogVo.referenceId());
+        // 참조 제목 조회 (referenceType과 referenceId 활용). 조회 실패 시 기존 값 유지
+        String resolvedReferenceTitle = getReferenceTitle(blogVo.referenceType(), blogVo.referenceId());
+        String referenceTitle = resolvedReferenceTitle != null
+                ? resolvedReferenceTitle
+                : (blogVo.referenceTitle() != null ? blogVo.referenceTitle() : "");
 
         // 조회수 증가 (Redis)
         if (query.viewerId() != null) {
@@ -192,11 +203,12 @@ public class BlogDomainService {
                 blogVo.category(),
                 blogVo.referenceType(),
                 blogVo.referenceId(),
-                referenceTitle, // 조회된 참조 제목
+                referenceTitle, // 조회된 참조 제목 (없으면 기존 값 유지)
                 blogVo.creatorId(),
                 blogVo.creatorName(),
                 currentViewCount,
-                blogVo.createdAt()
+                blogVo.createdAt(),
+                blogVo.isPublic()
         );
 
         log.info("Domain: Blog found - ID: {}, viewCount: {}, reference: {} ({})",
@@ -296,6 +308,70 @@ public class BlogDomainService {
     }
 
 
+    /**
+     * 특정 멤버가 참여(승인)한 Study/Project를 참조 대상으로 조회
+     */
+    public List<BlogEnableReferenceVo> getBlogReferenceByParticipatedMember(Long memberId) {
+        log.info("Domain: Getting blog reference list for participated items by member - {}", memberId);
+
+        List<BlogEnableReferenceVo> referenceList = new ArrayList<>();
+
+        try {
+            // 참여한 Study 목록 조회 (APPROVED 상태만)
+            var studyParticipants = studyParticipantQueryRepository
+                    .findByMemberId(memberId, Pageable.unpaged())
+                    .getContent();
+
+            List<BlogEnableReferenceVo> studyReferences = studyParticipants.stream()
+                    .filter(p -> p.status() == org.certis.studyplatform.study.domain.StudyParticipantStatus.APPROVED)
+                    .map(p -> BlogEnableReferenceVo.of(
+                            ArticleReferenceType.STUDY,
+                            p.studyId(),
+                            p.studyTitle()
+                    ))
+                    .toList();
+
+            // 참여한 Project 목록 조회 (APPROVED 상태만)
+            var projectParticipants = projectParticipantQueryRepository
+                    .findByMemberId(memberId, Pageable.unpaged())
+                    .getContent();
+
+            List<BlogEnableReferenceVo> projectReferences = projectParticipants.stream()
+                    .filter(p -> p.status() == org.certis.studyplatform.project.domain.ProjectParticipantStatus.APPROVED)
+                    .map(p -> BlogEnableReferenceVo.of(
+                            ArticleReferenceType.PROJECT,
+                            p.projectId(),
+                            p.projectTitle()
+                    ))
+                    .toList();
+
+            referenceList.addAll(studyReferences);
+            referenceList.addAll(projectReferences);
+
+            // 중복 제거 및 정렬 (type, title)
+            referenceList = referenceList.stream()
+                    .distinct()
+                    .sorted((a, b) -> {
+                        int typeComparison = a.referenceType().compareTo(b.referenceType());
+                        if (typeComparison != 0) {
+                            return typeComparison;
+                        }
+                        return a.title().compareTo(b.title());
+                    })
+                    .toList();
+
+            log.info("Domain: Participated member's blog reference list retrieved - Member: {}, Studies+Projects: {}",
+                    memberId, referenceList.size());
+
+            return referenceList;
+
+        } catch (Exception e) {
+            log.error("Domain: Error retrieving participated blog reference list for member: {}", memberId, e);
+            return List.of();
+        }
+    }
+
+
 
     // ================================================================
     // PRIVATE HELPER METHODS
@@ -375,15 +451,18 @@ public class BlogDomainService {
             return Map.of();
         }
 
-        // 각 ID별로 제목 조회
-        return referenceIds.stream()
-                .collect(Collectors.toMap(
-                        id -> id,
-                        id -> getReferenceTitle(type, id)
-                ))
-                .entrySet().stream()
-                .filter(entry -> entry.getValue() != null)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        // 각 ID별로 제목 조회 (null 값은 제외) - 안전한 수집 방식 사용
+        Map<Long, String> result = new java.util.HashMap<>();
+        for (Long id : referenceIds) {
+            try {
+                String title = getReferenceTitle(type, id);
+                if (title != null) {
+                    result.put(id, title);
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return result;
     }
 
     /**
@@ -440,9 +519,15 @@ public class BlogDomainService {
                         blog.description(),
                         blog.category(),
                         blog.createdAt(),
+                        blog.updatedAt(),
                         blog.blogCreatorName(),
                         referenceType,
-                        referenceTitle
+                        referenceTitle,
+                        blog.views(), // 기존 views 값 유지
+                        referenceType == ArticleReferenceType.STUDY ? referenceId : null, // studyId 유지
+                        referenceType == ArticleReferenceType.PROJECT ? referenceId : null, // projectId 유지
+                        null, // studyTitle
+                        null  // projectTitle
                 );
             }
 
@@ -520,5 +605,84 @@ public class BlogDomainService {
         log.warn("Domain: Delete permission denied - requesterId: {}, creatorId: {}", requesterId, blogCreatorId);
         throw new DomainException(ExceptionStatus.BLOG_DOMAIN_ACCESS_DENIED,
                 "블로그를 삭제할 권한이 없습니다");
+    }
+
+    /**
+     * Admin용 블로그 공개 유무 토글
+     */
+    public void toggleBlogPublicStatus(Long blogId, Boolean isPublic, Long adminId) {
+        log.info("Domain: Toggling blog public status - ID: {} to {} by admin: {}", blogId, isPublic, adminId);
+
+        // Admin 권한 검증
+        validateAdminPermission(adminId);
+
+        // 기존 블로그 조회
+        BlogVo existingBlog = queryRepository.findById(blogId)
+                .orElseThrow(() -> new DomainException(ExceptionStatus.BLOG_DOMAIN_NOT_FOUND,
+                        "블로그를 찾을 수 없습니다: " + blogId));
+
+        // 공개 유무 업데이트
+        BlogVo updatedBlogVo = BlogVo.updateFrom(
+                existingBlog,
+                existingBlog.title(),
+                existingBlog.description(),
+                existingBlog.content(),
+                existingBlog.category(),
+                existingBlog.referenceType(),
+                existingBlog.referenceId(),
+                existingBlog.referenceTitle(),
+                isPublic
+        );
+
+        commandRepository.save(updatedBlogVo);
+
+        log.info("Domain: Blog public status toggled successfully - ID: {} to {}", blogId, isPublic);
+    }
+
+    /**
+     * 공개 유무에 따른 블로그 조회 (MemberRole 기준 분기)
+     */
+    public Page<BlogSummaryVo> getBlogsByPublicStatus(Boolean isPublic, Pageable pageable, Long memberId, BlogSearchCriteriaVo criteria) {
+        log.info("Domain: Getting blogs by public status - isPublic: {}, memberId: {}", isPublic, memberId);
+
+        // MemberRole 조회
+        MemberVo member = memberDomainService.getMemberVo(new GetMemberByIdQuery(memberId));
+        MemberRole memberRole = member.role();
+
+        // Level별 분기 처리
+        if (MemberRole.isLevel4OrAbove(memberRole)) {
+            // Level 4 이상: 공개/비공개 모두 조회 가능
+            return queryRepository.findByPublicStatus(isPublic, pageable, criteria);
+        } else if (MemberRole.isLevel5(memberRole)) {
+            // Level 5: 공개 블로그만 조회 가능
+            return queryRepository.findByPublicStatus(true, pageable, criteria);
+        } else {
+            // Level 4 미만: 공개 블로그만 조회 가능
+            return queryRepository.findByPublicStatus(true, pageable, criteria);
+        }
+    }
+
+    /**
+     * Admin 권한 검증
+     */
+    private void validateAdminPermission(Long adminId) {
+        log.debug("Domain: Validating admin permission - adminId: {}", adminId);
+
+        try {
+            MemberVo adminMember = memberDomainService.getMemberVo(new GetMemberByIdQuery(adminId));
+            MemberRole adminRole = adminMember.role();
+
+            if (!MemberRole.isStaffOrAbove(adminRole)) {
+                log.warn("Domain: Admin permission denied - adminId: {}, role: {}", adminId, adminRole);
+                throw new DomainException(ExceptionStatus.BLOG_DOMAIN_ACCESS_DENIED,
+                        "관리자 권한이 필요합니다");
+            }
+
+            log.debug("Domain: Admin permission granted - adminId: {}, role: {}", adminId, adminRole);
+        } catch (DomainException e) {
+            log.warn("Domain: Admin not found: {}", adminId);
+            throw new DomainException(ExceptionStatus.BLOG_DOMAIN_ACCESS_DENIED,
+                    "관리자 권한이 필요합니다");
+        }
     }
 }

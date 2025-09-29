@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.blog.domain.repository.BlogRedisRepository;
 import org.certis.studyplatform.blog.domain.vo.BlogIdVo;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.SetOperations;
 import org.springframework.stereotype.Repository;
@@ -24,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class BlogRedisRepositoryImpl implements BlogRedisRepository {
 
+    @Qualifier("redisStringTemplate")
     private final RedisTemplate<String, String> redisTemplate;
 
     // Redis Key Patterns

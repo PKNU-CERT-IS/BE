@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -41,11 +42,21 @@ public class ProjectDetailResponseDto {
 
     private Long creatorId;
 
-    private String creatorName;
+    private String projectCreatorName;
+
+    private String projectCreatorGrade;
+
+    private String semester;
+
+    private String status;
+
+    private ResultSubmitStatus resultSubmitStatus;
 
     private String githubUrl;
 
-    private String externalUrl;
+    private ExternalUrlResponseDto externalUrl;
+
+    private String demoUrl;
 
     private String thumbnailUrl;
 
@@ -55,9 +66,11 @@ public class ProjectDetailResponseDto {
 
     private List<ProjectParticipantSummaryResponseDto> participantSummaries;
 
-    private Integer maxParticipants;
+    private Integer maxParticipantNumber;
 
-    private Integer currentParticipants;
+    private Integer currentParticipantNumber;
+
+    private boolean isParticipantable;
 
 
 
@@ -67,7 +80,7 @@ public class ProjectDetailResponseDto {
         return "ProjectDetailResponseDto{" +
                 "id=" + id +
                 ", title='" + title + '\'' +
-                ", creatorName='" + creatorName + '\'' +
+                ", projectCreatorName='" + projectCreatorName + '\'' +
                 ", startDate=" + startDate +
                 ", endDate=" + endDate +
                 '}';

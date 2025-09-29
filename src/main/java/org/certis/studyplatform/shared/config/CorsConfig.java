@@ -16,11 +16,12 @@ public class CorsConfig {
 
         // 로컬 개발환경 허용 (React 기본 포트)
         configuration.setAllowedOrigins(Arrays.asList(
+                "http://localhost:8080",
                 "http://localhost:3000",      // React 개발 서버
                 "http://127.0.0.1:3000",      // 동일한 주소의 다른 표현
                 "https://localhost:3000",      // HTTPS 로컬
                 "https://www.cert-is.com",
-                "https://cert-is.com", 
+                "https://cert-is.com",
                 "https://cert-is.vercel.app",
                 "https://certis.mooo.com"
         ));

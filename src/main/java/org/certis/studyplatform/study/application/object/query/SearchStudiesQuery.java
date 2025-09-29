@@ -1,6 +1,5 @@
 package org.certis.studyplatform.study.application.object.query;
 
-import org.certis.studyplatform.study.domain.vo.StudyStatus;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
@@ -15,21 +14,23 @@ public record SearchStudiesQuery(
     String keyword,
     String category,
     String subCategory,
-    StudyStatus status,
+    String semester,
+    String status,
     Pageable pageable
 ) {
     public static SearchStudiesQuery of(
         String keyword,
         String category,
         String subCategory,
-        StudyStatus status,
+        String semester,
+        String status,
         Pageable pageable
     ) {
-        return new SearchStudiesQuery(keyword, category, subCategory, status, pageable);
+        return new SearchStudiesQuery(keyword, category, subCategory, semester, status, pageable);
     }
 
     public static SearchStudiesQuery ofKeyword(String keyword, Pageable pageable) {
-        return new SearchStudiesQuery(keyword, null, null, null,  pageable);
+        return new SearchStudiesQuery(keyword, null, null, null, null, pageable);
     }
 
     /**
@@ -39,10 +40,11 @@ public record SearchStudiesQuery(
         String keyword,
         String category,
         String subcategory,
-        StudyStatus status,
+        String semester,
+        String status,
         Pageable pageable
     ) {
-        return new SearchStudiesQuery(keyword, category, subcategory, status, pageable);
+        return new SearchStudiesQuery(keyword, category, subcategory, semester, status, pageable);
     }
 
     /**
@@ -52,6 +54,7 @@ public record SearchStudiesQuery(
         return (keyword == null || keyword.trim().isEmpty()) &&
                (category == null || category.trim().isEmpty()) &&
                (subCategory == null || subCategory.trim().isEmpty()) &&
+               (semester == null || semester.trim().isEmpty()) &&
                (status == null);
     }
 
@@ -74,6 +77,13 @@ public record SearchStudiesQuery(
      */
     public boolean hasSubCategory() {
         return subCategory != null && !subCategory.trim().isEmpty();
+    }
+
+    /**
+     * 학기 필터가 있는지 확인
+     */
+    public boolean hasSemester() {
+        return semester != null && !semester.trim().isEmpty();
     }
 
     /**
