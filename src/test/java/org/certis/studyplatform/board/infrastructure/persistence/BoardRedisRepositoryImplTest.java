@@ -12,6 +12,7 @@ import org.redisson.api.RSet;
 import org.redisson.api.RedissonClient;
 
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.times;
@@ -40,7 +41,7 @@ class BoardRedisRepositoryImplTest {
 
         given(redissonClient.getAtomicLong(anyString())).willReturn(atomicLong);
         given(redissonClient.getSet(anyString())).willReturn(longSet);
-        given(longSet.contains(memberId)).willReturn(false);
+        given(longSet.add(memberId)).willReturn(true);
 
         repository.addLike(boardId, memberId);
 
@@ -72,11 +73,47 @@ class BoardRedisRepositoryImplTest {
 
         given(redissonClient.getAtomicLong(anyString())).willReturn(atomicLong);
         given(redissonClient.getSet(anyString())).willReturn(longSet);
-        given(longSet.contains(viewerId)).willReturn(false);
+        given(longSet.add(viewerId)).willReturn(true);
 
         repository.addView(boardId, viewerId);
 
         then(longSet).should(times(1)).add(viewerId);
+        then(atomicLong).should(times(1)).incrementAndGet();
+    }
+
+    @Test
+    @DisplayName("조회 추가: contains 사전조회 없이 SADD만 호출")
+    void addView_NoContainsPrecheck() {
+        BoardIdVo boardId = BoardIdVo.of(1L);
+        Long viewerId = 10L;
+
+        given(redissonClient.getAtomicLong(anyString())).willReturn(atomicLong);
+        given(redissonClient.getSet(anyString())).willReturn(longSet);
+        given(longSet.add(viewerId)).willReturn(true);
+
+        repository.addView(boardId, viewerId);
+
+        then(longSet).should(times(0)).contains(any());
+        then(longSet).should(times(1)).add(viewerId);
+        then(atomicLong).should(times(1)).incrementAndGet();
+    }
+
+    @Test
+    @DisplayName("좋아요 중복 3회: 한 번만 카운트 증가")
+    void addLike_ThreeTimes_IncrementsOnce() {
+        BoardIdVo boardId = BoardIdVo.of(2L);
+        Long memberId = 20L;
+
+        given(redissonClient.getAtomicLong(anyString())).willReturn(atomicLong);
+        given(redissonClient.getSet(anyString())).willReturn(longSet);
+        // 첫 호출에만 추가되고, 이후 두 번은 이미 존재
+        given(longSet.add(memberId)).willReturn(true, false, false);
+
+        repository.addLike(boardId, memberId);
+        repository.addLike(boardId, memberId);
+        repository.addLike(boardId, memberId);
+
+        then(longSet).should(times(3)).add(memberId);
         then(atomicLong).should(times(1)).incrementAndGet();
     }
 
@@ -104,6 +141,63 @@ class BoardRedisRepositoryImplTest {
         repository.getLikeCount(boardId);
 
         then(atomicLong).should(times(1)).get();
+    }
+
+    @Test
+    @DisplayName("좋아요 추가: contains 사전조회 없이 SADD만 호출")
+    void addLike_NoContainsPrecheck() {
+        BoardIdVo boardId = BoardIdVo.of(3L);
+        Long memberId = 30L;
+
+        given(redissonClient.getAtomicLong(anyString())).willReturn(atomicLong);
+        given(redissonClient.getSet(anyString())).willReturn(longSet);
+        given(longSet.add(memberId)).willReturn(true);
+
+        repository.addLike(boardId, memberId);
+
+        then(longSet).should(times(0)).contains(any());
+        then(longSet).should(times(1)).add(memberId);
+        then(atomicLong).should(times(1)).incrementAndGet();
+    }
+
+    @Test
+    @DisplayName("조회 중복 100회: 한 번만 카운트 증가")
+    void addView_OneHundredTimes_IncrementsOnce() {
+        BoardIdVo boardId = BoardIdVo.of(4L);
+        Long viewerId = 40L;
+
+        given(redissonClient.getAtomicLong(anyString())).willReturn(atomicLong);
+        given(redissonClient.getSet(anyString())).willReturn(longSet);
+
+        final java.util.concurrent.atomic.AtomicInteger callCount = new java.util.concurrent.atomic.AtomicInteger(0);
+        given(longSet.add(viewerId)).willAnswer(invocation -> callCount.getAndIncrement() == 0);
+
+        for (int i = 0; i < 100; i++) {
+            repository.addView(boardId, viewerId);
+        }
+
+        then(longSet).should(times(100)).add(viewerId);
+        then(atomicLong).should(times(1)).incrementAndGet();
+    }
+
+    @Test
+    @DisplayName("좋아요 중복 100회: 한 번만 카운트 증가")
+    void addLike_OneHundredTimes_IncrementsOnce() {
+        BoardIdVo boardId = BoardIdVo.of(5L);
+        Long memberId = 50L;
+
+        given(redissonClient.getAtomicLong(anyString())).willReturn(atomicLong);
+        given(redissonClient.getSet(anyString())).willReturn(longSet);
+
+        final java.util.concurrent.atomic.AtomicInteger callCount = new java.util.concurrent.atomic.AtomicInteger(0);
+        given(longSet.add(memberId)).willAnswer(invocation -> callCount.getAndIncrement() == 0);
+
+        for (int i = 0; i < 100; i++) {
+            repository.addLike(boardId, memberId);
+        }
+
+        then(longSet).should(times(100)).add(memberId);
+        then(atomicLong).should(times(1)).incrementAndGet();
     }
 
     @Test

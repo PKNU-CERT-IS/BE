@@ -87,6 +87,9 @@ public class BoardRedisRepositoryImpl implements BoardRedisRepository {
             // 배치 작업으로 최적화: 한 번의 Redis 호출로 처리
             if (likeMembers.add(memberId)) {
                 likeCount.incrementAndGet();
+                // TTL 갱신으로 불필요한 만료/재생성 방지
+                likeCount.expire(java.time.Duration.ofHours(LIKE_CACHE_TTL_HOURS));
+                likeMembers.expire(java.time.Duration.ofHours(MEMBERS_CACHE_TTL_HOURS));
                 log.debug("✅ Redis: Added like for board: {} by member: {}", boardId.value(), memberId);
             } else {
                 log.debug("Redis: Member {} already liked board: {}", memberId, boardId.value());
@@ -110,6 +113,9 @@ public class BoardRedisRepositoryImpl implements BoardRedisRepository {
             if (likeMembers.contains(memberId)) {
                 likeMembers.remove(memberId);
                 likeCount.decrementAndGet();
+                // 활발한 키의 TTL을 갱신하여 불필요한 만료/재생성 방지
+                likeCount.expire(java.time.Duration.ofHours(LIKE_CACHE_TTL_HOURS));
+                likeMembers.expire(java.time.Duration.ofHours(MEMBERS_CACHE_TTL_HOURS));
             }
 
         } catch (Exception e) {
@@ -157,9 +163,12 @@ public class BoardRedisRepositoryImpl implements BoardRedisRepository {
             RAtomicLong viewCount = redissonClient.getAtomicLong(VIEW_COUNT_PREFIX + boardIdStr);
             RSet<Long> viewMembers = redissonClient.getSet(VIEW_MEMBERS_PREFIX + boardIdStr);
 
-            if (!viewMembers.contains(viewerId)) {
-                viewMembers.add(viewerId);
+            // 단일 호출로 중복 체크 및 추가를 수행하고, 추가된 경우에만 카운트 증가
+            if (viewMembers.add(viewerId)) {
                 viewCount.incrementAndGet();
+                // TTL 갱신
+                viewCount.expire(java.time.Duration.ofHours(VIEW_CACHE_TTL_HOURS));
+                viewMembers.expire(java.time.Duration.ofHours(MEMBERS_CACHE_TTL_HOURS));
             }
 
         } catch (Exception e) {

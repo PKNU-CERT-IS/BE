@@ -82,20 +82,17 @@ public class BlogRedisRepositoryImpl implements BlogRedisRepository {
         try {
             SetOperations<String, String> setOps = redisTemplate.opsForSet();
 
-            // 이미 조회한 사용자인지 확인 (2차 캐시 역할)
-            if (setOps.isMember(viewedMembersKey, viewerIdString)) {
+            // SADD 결과가 1일 때에만 신규 조회로 간주하고 카운트를 증가
+            Long added = setOps.add(viewedMembersKey, viewerIdString);
+            if (added != null && added > 0) {
+                redisTemplate.opsForValue().increment(viewCountKey);
+                // 활발한 키의 TTL을 갱신하여 불필요한 만료/재생성 방지
+                redisTemplate.expire(viewCountKey, VIEW_CACHE_EXPIRE_HOURS, TimeUnit.HOURS);
+                redisTemplate.expire(viewedMembersKey, VIEWED_MEMBERS_EXPIRE_HOURS, TimeUnit.HOURS);
+                log.debug("Redis: Added view for blog: {} by user: {}", blogIdVo.value(), viewerId);
+            } else {
                 log.debug("Redis: User {} already viewed blog: {}", viewerId, blogIdVo.value());
-                return;
             }
-
-            // 조회수 증가
-            redisTemplate.opsForValue().increment(viewCountKey);
-
-            // 조회한 사용자 목록에 추가 (중복 방지)
-            setOps.add(viewedMembersKey, viewerIdString);
-
-            // 조회자 목록 TTL 갱신 (활발한 사용 시 만료 시간 연장)
-            redisTemplate.expire(viewedMembersKey, VIEWED_MEMBERS_EXPIRE_HOURS, TimeUnit.HOURS);
 
             log.debug("Redis: Added view for blog: {} by user: {}", blogIdVo.value(), viewerId);
         } catch (Exception e) {
