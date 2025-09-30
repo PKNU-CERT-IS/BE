@@ -17,6 +17,9 @@ import org.certis.studyplatform.study.domain.vo.StudyParticipantVo;
 import org.certis.studyplatform.study.domain.vo.StudyVo;
 import org.springframework.stereotype.Service;
 
+import org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository;
+import org.certis.studyplatform.member.domain.repository.query.MemberQueryRepository;
+
 import java.time.OffsetDateTime;
 
 /**
@@ -33,8 +36,8 @@ public class StudyParticipantDomainService {
     private final StudyParticipantCommandRepository commandRepository;
     private final StudyParticipantQueryRepository queryRepository;
     private final StudyQueryRepository studyQueryRepository;
-    private final org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository projectParticipantQueryRepository;
-    private final org.certis.studyplatform.member.domain.repository.query.MemberQueryRepository memberQueryRepository;
+    private final ProjectParticipantQueryRepository projectParticipantQueryRepository;
+    private final MemberQueryRepository memberQueryRepository;
 
     // ================================================================
     // COMMAND OPERATIONS
@@ -47,11 +50,11 @@ public class StudyParticipantDomainService {
         log.info("Domain: Creating participant request - studyId: {}, memberId: {}",
                 command.studyId(), command.memberId());
 
-        // 1. 스터디 존재 및 상태 검증
-        StudyVo study = validateStudyForJoin(command.studyId());
-
-        // 2. 중복 신청 검증 (먼저 확인)
+        // 1. 중복 신청 검증 (테스트 기대: 중복일 때 우선적으로 에러 발생)
         validateDuplicateParticipation(command.studyId(), command.memberId());
+
+        // 2. 스터디 존재 및 상태 검증
+        StudyVo study = validateStudyForJoin(command.studyId());
 
         // 3. 신청 제한 규칙 검증 (도메인 상한 규칙을 우선 적용)
         enforceApplicationLimits(command.memberId());
@@ -65,12 +68,65 @@ public class StudyParticipantDomainService {
         // 5. 참가자 수 제한 검증 (동시성 고려를 위해 마지막에 재확인)
         validateParticipantLimit(command.studyId(), study.maxParticipants());
 
-        // 6. 새로운 참가 신청 생성
-        StudyParticipantVo participantVo = StudyParticipantVo.createNew(
-                command.studyId(), command.memberId());
+        // 6. 기존 소프트 삭제(거절/취소) 레코드 복원 시도
+        int restored = commandRepository.restoreByStudyIdAndMemberId(command.studyId(), command.memberId());
 
-        // 7. 저장
-        StudyParticipantCreatedVo result = commandRepository.save(participantVo);
+        StudyParticipantCreatedVo result;
+        if (restored > 0) {
+            // 복원된 레코드 조회 후 상태를 PENDING으로 전환 (가시성 이슈 대비하여 재시도 경로 포함)
+            java.util.Optional<StudyParticipantVo> restoredOpt = queryRepository
+                    .findByStudyIdAndMemberId(command.studyId(), command.memberId());
+
+            if (restoredOpt.isEmpty()) {
+                // 드물게 같은 트랜잭션에서 즉시 조회가 비어 보일 수 있으므로, 저장 시도 → 유니크 충돌 시 재조회
+                try {
+                    StudyParticipantVo participantVo = StudyParticipantVo.createNew(
+                            command.studyId(), command.memberId());
+                    result = commandRepository.save(participantVo);
+                    // 정상적으로 저장되면 그대로 반환
+                    log.warn("Domain: Restored participant not immediately visible; created new instead - studyId: {}, memberId: {}",
+                            command.studyId(), command.memberId());
+                    return result;
+                } catch (DomainException ex) {
+                    // 유니크 충돌로 기존 레코드가 존재함을 의미 → 재조회하여 반환
+                    restoredOpt = queryRepository.findByStudyIdAndMemberId(command.studyId(), command.memberId());
+                    StudyParticipantVo fetched = restoredOpt.orElseThrow(() -> new DomainException(
+                            ExceptionStatus.STUDY_DOMAIN_NOT_FOUND, "복원된 참가 신청을 찾을 수 없습니다."));
+                    if (!fetched.isPending()) {
+                        StudyParticipantVo pendingVo = fetched.updateStatus(StudyParticipantStatus.PENDING);
+                        commandRepository.updateStatus(pendingVo, command.memberId());
+                    }
+                    result = StudyParticipantCreatedVo.of(
+                            fetched.id(),
+                            fetched.studyId(),
+                            fetched.memberId(),
+                            StudyParticipantStatus.PENDING,
+                            fetched.createdAt()
+                    );
+                    return result;
+                }
+            }
+
+            StudyParticipantVo restoredVo = restoredOpt.get();
+            if (!restoredVo.isPending()) {
+                StudyParticipantVo pendingVo = restoredVo.updateStatus(StudyParticipantStatus.PENDING);
+                commandRepository.updateStatus(pendingVo, command.memberId());
+            }
+
+            // 복원된 동일 레코드를 반환 형태로 맞추기 위해 CreatedVo를 구성
+            result = StudyParticipantCreatedVo.of(
+                    restoredVo.id(),
+                    restoredVo.studyId(),
+                    restoredVo.memberId(),
+                    StudyParticipantStatus.PENDING,
+                    restoredVo.createdAt()
+            );
+        } else {
+            // 7. 새로운 참가 신청 생성 및 저장
+            StudyParticipantVo participantVo = StudyParticipantVo.createNew(
+                    command.studyId(), command.memberId());
+            result = commandRepository.save(participantVo);
+        }
 
         log.info("Domain: Participant request created - ID: {}", result.id());
         return result;
@@ -259,10 +315,15 @@ public class StudyParticipantDomainService {
      * 중복 참가 신청 검증
      */
     private void validateDuplicateParticipation(Long studyId, Long memberId) {
-        if (queryRepository.existsByStudyIdAndMemberId(studyId, memberId)) {
-            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_PERMISSION_DENINED,
-                    "이미 참가 신청한 스터디입니다.");
-        }
+        // Prefer checking actual status to be robust across repository implementations/caching
+        queryRepository.findByStudyIdAndMemberId(studyId, memberId)
+                .ifPresent(existing -> {
+                    if (existing.isPending() || existing.isApproved()) {
+                        throw new DomainException(ExceptionStatus.STUDY_DOMAIN_PERMISSION_DENINED,
+                                "이미 참가 신청한 스터디입니다.");
+                    }
+                    // REJECTED/CANCELLED should be allowed to re-apply
+                });
     }
 
     /**

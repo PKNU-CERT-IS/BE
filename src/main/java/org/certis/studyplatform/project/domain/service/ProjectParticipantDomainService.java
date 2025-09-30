@@ -44,17 +44,17 @@ public class ProjectParticipantDomainService {
         log.info("Domain: Creating participant request - projectId: {}, memberId: {}",
                 command.projectId(), command.memberId());
 
-        // 1. 프로젝트 존재 및 상태 검증
+        // 1. 중복 신청 검증 (중복일 때 우선적으로 에러 발생시키도록 순서 조정)
+        validateDuplicateParticipation(command.projectId(), command.memberId());
+
+        // 2. 프로젝트 존재 및 상태 검증
         ProjectVo project = validateProjectForJoin(command.projectId());
 
-        // 2. 프로젝트 생성자가 자신의 프로젝트에 참가 신청하는 것 방지
+        // 3. 프로젝트 생성자가 자신의 프로젝트에 참가 신청하는 것 방지
         if (project.creatorId().equals(command.memberId())) {
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_STATUS,
                     "프로젝트 생성자는 자신의 프로젝트에 참가 신청할 수 없습니다.");
         }
-
-        // 3. 중복 신청 검증
-        validateDuplicateParticipation(command.projectId(), command.memberId());
 
         // 4. 신청 제한 규칙 검증 (프로젝트: 진행 중 1개 초과 금지)
         enforceApplicationLimits(command.memberId());
@@ -62,12 +62,62 @@ public class ProjectParticipantDomainService {
         // 5. 참가자 수 제한 검증
         validateParticipantLimit(command.projectId(), project.maxParticipants());
 
-        // 6. 새로운 참가 신청 생성
-        ProjectParticipantVo participantVo = ProjectParticipantVo.createNew(
-                command.projectId(), command.memberId());
+        // 6. 기존 소프트 삭제(거절/취소) 레코드 복원 시도
+        int restored = commandRepository.restoreByProjectIdAndMemberId(command.projectId(), command.memberId());
 
-        // 7. 저장
-        ProjectParticipantCreatedVo result = commandRepository.save(participantVo);
+        ProjectParticipantCreatedVo result;
+        if (restored > 0) {
+            // 복원된 레코드 조회 후 상태를 PENDING으로 전환 (가시성 이슈 대비하여 재시도 경로 포함)
+            java.util.Optional<ProjectParticipantVo> restoredOpt = queryRepository
+                    .findByProjectIdAndMemberId(command.projectId(), command.memberId());
+
+            if (restoredOpt.isEmpty()) {
+                // 드물게 같은 트랜잭션에서 즉시 조회가 비어 보일 수 있으므로, 저장 시도 → 유니크 충돌 시 재조회
+                try {
+                    ProjectParticipantVo participantVo = ProjectParticipantVo.createNew(
+                            command.projectId(), command.memberId());
+                    result = commandRepository.save(participantVo);
+                    log.warn("Domain: Restored project participant not immediately visible; created new instead - projectId: {}, memberId: {}",
+                            command.projectId(), command.memberId());
+                    return result;
+                } catch (DomainException ex) {
+                    restoredOpt = queryRepository.findByProjectIdAndMemberId(command.projectId(), command.memberId());
+                    ProjectParticipantVo fetched = restoredOpt.orElseThrow(() -> new DomainException(
+                            ExceptionStatus.PROJECT_DOMAIN_NOT_FOUND, "복원된 참가 신청을 찾을 수 없습니다."));
+                    if (!fetched.isPending()) {
+                        ProjectParticipantVo pendingVo = fetched.updateStatus(ProjectParticipantStatus.PENDING);
+                        commandRepository.updateStatus(pendingVo);
+                    }
+                    result = ProjectParticipantCreatedVo.of(
+                            fetched.id(),
+                            fetched.projectId(),
+                            fetched.memberId(),
+                            ProjectParticipantStatus.PENDING,
+                            fetched.createdAt()
+                    );
+                    return result;
+                }
+            }
+
+            ProjectParticipantVo restoredVo = restoredOpt.get();
+            if (!restoredVo.isPending()) {
+                ProjectParticipantVo pendingVo = restoredVo.updateStatus(ProjectParticipantStatus.PENDING);
+                commandRepository.updateStatus(pendingVo);
+            }
+
+            result = ProjectParticipantCreatedVo.of(
+                    restoredVo.id(),
+                    restoredVo.projectId(),
+                    restoredVo.memberId(),
+                    ProjectParticipantStatus.PENDING,
+                    restoredVo.createdAt()
+            );
+        } else {
+            // 7. 새로운 참가 신청 생성 및 저장
+            ProjectParticipantVo participantVo = ProjectParticipantVo.createNew(
+                    command.projectId(), command.memberId());
+            result = commandRepository.save(participantVo);
+        }
 
         log.info("Domain: Participant request created - ID: {}", result.id());
         return result;
@@ -257,10 +307,14 @@ public class ProjectParticipantDomainService {
      * 중복 참가 신청 검증
      */
     private void validateDuplicateParticipation(Long projectId, Long memberId) {
-        if (queryRepository.existsByProjectIdAndMemberId(projectId, memberId)) {
-            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_PERMISSION,
-                    "이미 참가 신청한 프로젝트입니다.");
-        }
+        // Check actual status: only PENDING or APPROVED should block re-application
+        queryRepository.findByProjectIdAndMemberId(projectId, memberId)
+                .ifPresent(existing -> {
+                    if (existing.isPending() || existing.isApproved()) {
+                        throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_PERMISSION,
+                                "이미 참가 신청한 프로젝트입니다.");
+                    }
+                });
     }
 
     /**

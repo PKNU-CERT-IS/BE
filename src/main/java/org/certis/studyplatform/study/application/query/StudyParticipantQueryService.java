@@ -76,4 +76,12 @@ public class StudyParticipantQueryService {
         log.info("Query: Getting pending participant count - studyId: {}", studyId);
         return queryRepository.countPendingParticipantsByStudyId(studyId);
     }
+
+    /**
+     * Find participant by (studyId, memberId)
+     */
+    public Optional<StudyParticipantVo> getByStudyIdAndMemberId(Long studyId, Long memberId) {
+        log.info("Query: Getting participant by studyId and memberId - studyId: {}, memberId: {}", studyId, memberId);
+        return queryRepository.findByStudyIdAndMemberId(studyId, memberId);
+    }
 }

@@ -158,13 +158,32 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
                 return List.of();
             }
 
-            // 스터디 ID 목록 추출
-            List<Long> studyIds = participants.getContent().stream()
+            // 스터디 단위로 그룹핑 후, 각 스터디에 대해 최신 상태를 조회하여 포함 여부 결정
+            java.util.Set<Long> studyIdSet = new java.util.LinkedHashSet<>();
+
+            // 우선 멤버가 연관된 스터디 ID만 집합으로 수집 (중복 제거)
+            java.util.Set<Long> allRelatedStudyIds = participants.getContent().stream()
                     .map(StudyParticipantSummaryVo::studyId)
-                    .toList();
+                    .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
+
+            // 각 스터디에 대해 최신 참가 상태 조회 (UPDATED_AT desc) 후 APPROVED + not-deleted 인 경우만 포함
+            for (Long studyId : allRelatedStudyIds) {
+                var latestOpt = studyParticipantQueryRepository.findByStudyIdAndMemberId(studyId, memberIdVo.toLong());
+                if (latestOpt.isPresent()) {
+                    var latest = latestOpt.get();
+                    if (latest.status() == org.certis.studyplatform.study.domain.StudyParticipantStatus.APPROVED) {
+                        studyIdSet.add(studyId);
+                    }
+                }
+            }
+
+            if (studyIdSet.isEmpty()) {
+                log.debug("No APPROVED studies for member ID: {}", memberIdVo.toLong());
+                return List.of();
+            }
 
             // 개별 스터디 조회
-            List<StudyVo> studies = studyIds.stream()
+            List<StudyVo> studies = studyIdSet.stream()
                     .map(studyId -> studyQueryRepository.findByIdAndDeletedAtIsNull(studyId))
                     .filter(Optional::isPresent)
                     .map(Optional::get)
@@ -197,13 +216,29 @@ public class ProfileQueryRepositoryImpl implements ProfileQueryRepository {
                 return List.of();
             }
 
-            // 프로젝트 ID 목록 추출
-            List<Long> projectIds = participants.getContent().stream()
+            // 프로젝트 단위 중복 제거 후, 각 프로젝트의 최신 참가 상태를 확인하여 APPROVED만 포함
+            java.util.Set<Long> allRelatedProjectIds = participants.getContent().stream()
                     .map(ProjectParticipantSummaryVo::projectId)
-                    .toList();
+                    .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
 
-            // 개별 프로젝트 조회
-            List<ProjectVo> projects = projectIds.stream()
+            java.util.Set<Long> approvedProjectIds = new java.util.LinkedHashSet<>();
+            for (Long projectId : allRelatedProjectIds) {
+                var latestOpt = projectParticipantQueryRepository.findByProjectIdAndMemberId(projectId, memberIdVo.toLong());
+                if (latestOpt.isPresent()) {
+                    var latest = latestOpt.get();
+                    if (latest.status() == org.certis.studyplatform.project.domain.ProjectParticipantStatus.APPROVED) {
+                        approvedProjectIds.add(projectId);
+                    }
+                }
+            }
+
+            if (approvedProjectIds.isEmpty()) {
+                log.debug("No APPROVED projects for member ID: {}", memberIdVo.toLong());
+                return List.of();
+            }
+
+            // 개별 프로젝트 조회 (승인된 프로젝트만)
+            List<ProjectVo> projects = approvedProjectIds.stream()
                     .map(projectId -> projectQueryRepository.findByIdAndDeletedAtIsNull(projectId))
                     .filter(Optional::isPresent)
                     .map(Optional::get)

@@ -37,4 +37,10 @@ public interface StudyParticipantCommandRepository {
      * 참가 신청 단건 소프트 삭제 (거절 등)
      */
     void softDeleteById(Long participantId);
+
+    /**
+     * 소프트 삭제된 참가 신청 복원 (deletedAt → NULL, updatedAt 갱신)
+     * @return 복원된 행 수 (0이면 복원 대상 없음)
+     */
+    int restoreByStudyIdAndMemberId(Long studyId, Long memberId);
 }

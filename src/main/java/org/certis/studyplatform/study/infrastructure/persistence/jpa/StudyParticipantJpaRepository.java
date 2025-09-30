@@ -32,6 +32,18 @@ public interface StudyParticipantJpaRepository extends JpaRepository<StudyPartic
                          @Param("updatedAt") OffsetDateTime updatedAt);
 
     /**
+     * 거절 처리: 상태를 REJECTED로 변경하고 소프트 삭제 표시(deletedAt)까지 함께 설정
+     */
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE StudyParticipantEntity p SET " +
+            "p.status = org.certis.studyplatform.study.domain.StudyParticipantStatus.REJECTED, " +
+            "p.updatedAt = :deletedAt, " +
+            "p.deletedAt = :deletedAt " +
+            "WHERE p.id = :id AND p.deletedAt IS NULL")
+    int bulkRejectWithSoftDelete(@Param("id") Long id,
+                                 @Param("deletedAt") OffsetDateTime deletedAt);
+
+    /**
      * 프로젝트 + 멤버별 참가자 벌크 소프트 삭제
      */
     @Modifying(clearAutomatically = true)
@@ -67,5 +79,25 @@ public interface StudyParticipantJpaRepository extends JpaRepository<StudyPartic
     @Modifying(clearAutomatically = true)
     @Query("UPDATE StudyParticipantEntity p SET p.deletedAt = :deletedAt, p.updatedAt = :deletedAt WHERE p.id = :id AND p.deletedAt IS NULL")
     int softDeleteById(@Param("id") Long id, @Param("deletedAt") OffsetDateTime deletedAt);
+
+    /**
+     * 소프트 삭제된 참가 신청 중 최신 1건만 복원 (deleted_at IS NOT NULL 중 updated_at DESC LIMIT 1)
+     * JPA JPQL은 LIMIT를 지원하지 않으므로 nativeQuery 사용
+     */
+    @Modifying(clearAutomatically = true)
+    @Query(value = "UPDATE study_participant p SET deleted_at = NULL, updated_at = :updatedAt " +
+            "WHERE p.id = (SELECT id FROM study_participant WHERE study_id = :studyId AND member_id = :memberId " +
+            "AND deleted_at IS NOT NULL ORDER BY updated_at DESC LIMIT 1)", nativeQuery = true)
+    int restoreLatestByStudyIdAndMemberId(@Param("studyId") Long studyId,
+                                          @Param("memberId") Long memberId,
+                                          @Param("updatedAt") OffsetDateTime updatedAt);
+
+    /**
+     * 복원 직후 최신 활성 레코드 조회 (deletedAt IS NULL)
+     */
+    java.util.Optional<StudyParticipantEntity> findTopByStudyIdAndMemberIdAndDeletedAtIsNullOrderByUpdatedAtDesc(
+            Long studyId,
+            Long memberId
+    );
 }
 

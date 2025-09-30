@@ -32,6 +32,8 @@ import org.certis.studyplatform.project.presentation.dto.response.ProjectPartici
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.certis.studyplatform.exception.ApplicationException;
+import org.certis.studyplatform.exception.ExceptionStatus;
 
 
 @Service
@@ -92,19 +94,32 @@ public class ProjectParticipantFacadeService {
      * 프로젝트 참가 승인
      */
     public ProjectParticipantStatusUpdateResponseDto approveJoinProject(ProjectJoinApproveRequestDto requestDto,  Long requesterId) {
-        log.info("Facade: Approving project join - participantId: {}", requestDto.getParticipantId());
+        log.info("Facade: Approving project join - projectId: {}, memberId: {}", requestDto.getProjectId(), requestDto.getMemberId());
 
-        // DTO → Command Object 변환
-        UpdateProjectParticipantStatusCommand command = commandMapper
-                .toApproveProjectParticipantCommand(requestDto, requesterId);
+        // 권한 검증: 현재 사용자가 프로젝트 생성자인지 확인
+        ProjectVo projectVo = projectQueryService.getProjectById(GetProjectByIdQuery.of(requestDto.getProjectId()));
+        if (!projectVo.creatorId().equals(requesterId)) {
+            throw new ApplicationException(ExceptionStatus.PROJECT_DOMAIN_PERMISSION_DENINED,
+                    "프로젝트 생성자가 아니므로 승인/거절 권한이 없습니다.");
+        }
 
-        // Command Service 호출
+        // 참가 신청 resolve: (projectId, memberId) → participantId
+        var participantVo = participantQueryService
+                .getByProjectIdAndMemberId(requestDto.getProjectId(), requestDto.getMemberId())
+                .orElseThrow(() -> new ApplicationException(ExceptionStatus.PROJECT_DOMAIN_NOT_FOUND,
+                        "참가 신청을 찾을 수 없습니다."));
+
+        // Command 생성 및 호출
+        UpdateProjectParticipantStatusCommand command = new UpdateProjectParticipantStatusCommand(
+                participantVo.id(),
+                ProjectParticipantStatus.APPROVED,
+                requesterId
+        );
         ProjectParticipantStatusUpdatedVo updatedVo = participantCommandService.approveParticipant(command);
 
-        // VO → Response DTO 변환
+        // Response 변환
         ProjectParticipantStatusUpdateResponseDto responseDto = dtoMapper
                 .toProjectParticipantStatusUpdateResponseDto(updatedVo);
-
         log.info("Facade: Project join approved successfully - participantId: {}", responseDto.getParticipantId());
         return responseDto;
     }
@@ -113,18 +128,32 @@ public class ProjectParticipantFacadeService {
      * 프로젝트 참가 거절
      */
     public ProjectParticipantStatusUpdateResponseDto rejectJoinProject(ProjectJoinRejectRequestDto requestDto, Long requesterId) {
-        log.info("Facade: Rejecting project join - participantId: {}", requestDto.getParticipantId());
-        // DTO → Command Object 변환
-        UpdateProjectParticipantStatusCommand command = commandMapper
-                .toRejectProjectParticipantCommand(requestDto, requesterId);
+        log.info("Facade: Rejecting project join - projectId: {}, memberId: {}", requestDto.getProjectId(), requestDto.getMemberId());
 
-        // Command Service 호출
+        // 권한 검증: 현재 사용자가 프로젝트 생성자인지 확인
+        ProjectVo projectVo = projectQueryService.getProjectById(GetProjectByIdQuery.of(requestDto.getProjectId()));
+        if (!projectVo.creatorId().equals(requesterId)) {
+            throw new ApplicationException(ExceptionStatus.PROJECT_DOMAIN_PERMISSION_DENINED,
+                    "프로젝트 생성자가 아니므로 승인/거절 권한이 없습니다.");
+        }
+
+        // 참가 신청 resolve: (projectId, memberId) → participantId
+        var participantVo = participantQueryService
+                .getByProjectIdAndMemberId(requestDto.getProjectId(), requestDto.getMemberId())
+                .orElseThrow(() -> new ApplicationException(ExceptionStatus.PROJECT_DOMAIN_NOT_FOUND,
+                        "참가 신청을 찾을 수 없습니다."));
+
+        // Command 생성 및 호출
+        UpdateProjectParticipantStatusCommand command = new UpdateProjectParticipantStatusCommand(
+                participantVo.id(),
+                ProjectParticipantStatus.REJECTED,
+                requesterId
+        );
         ProjectParticipantStatusUpdatedVo updatedVo = participantCommandService.rejectParticipant(command);
 
-        // VO → Response DTO 변환
+        // Response 변환
         ProjectParticipantStatusUpdateResponseDto responseDto = dtoMapper
                 .toProjectParticipantStatusUpdateResponseDto(updatedVo);
-
         log.info("Facade: Project join rejected successfully - participantId: {}", responseDto.getParticipantId());
         return responseDto;
     }

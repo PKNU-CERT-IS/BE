@@ -94,8 +94,8 @@ StudyParticipantController {
             @AuthenticationPrincipal CurrentUser currentUser
     ) {
 
-        log.info("Controller: Approve study join request - participantId: {}",
-                requestDto.getParticipantId());
+        log.info("Controller: Approve study join request - studyId: {}, memberId: {}",
+                requestDto.getStudyId(), requestDto.getMemberId());
 
         StudyParticipantStatusUpdateResponseDto responseDto =
                 studyParticipantFacadeService.approveJoinStudy(requestDto, currentUser.getId());
@@ -119,8 +119,8 @@ StudyParticipantController {
             @AuthenticationPrincipal CurrentUser currentUser
     ) {
 
-        log.info("Controller: Reject study join request - participantId: {}",
-                requestDto.getParticipantId());
+        log.info("Controller: Reject study join request - studyId: {}, memberId: {}",
+                requestDto.getStudyId(), requestDto.getMemberId());
 
         StudyParticipantStatusUpdateResponseDto responseDto =
                 studyParticipantFacadeService.rejectJoinStudy(requestDto, currentUser.getId());

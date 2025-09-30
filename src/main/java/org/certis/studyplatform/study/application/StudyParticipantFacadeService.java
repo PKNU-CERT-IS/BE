@@ -3,6 +3,8 @@ package org.certis.studyplatform.study.application;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.study.domain.StudyParticipantStatus;
+import org.certis.studyplatform.exception.ApplicationException;
+import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.member.application.query.MemberQueryService;
 import org.certis.studyplatform.member.application.object.query.GetMemberByIdQuery;
 import org.certis.studyplatform.member.domain.vo.MemberVo;
@@ -90,19 +92,32 @@ public class StudyParticipantFacadeService {
      * 프로젝트 참가 승인
      */
     public StudyParticipantStatusUpdateResponseDto approveJoinStudy(StudyJoinApproveRequestDto requestDto, Long currentUserId) {
-        log.info("Facade: Approving study join - participantId: {}", requestDto.getParticipantId());
+        log.info("Facade: Approving study join - studyId: {}, memberId: {}", requestDto.getStudyId(), requestDto.getMemberId());
 
-        // DTO → Command Object 변환
-        UpdateStudyParticipantStatusCommand command = commandMapper
-                .toApproveStudyParticipantCommand(requestDto, currentUserId);
+        // 권한 검증: 현재 사용자가 스터디 생성자인지 확인
+        StudyVo studyVo = studyQueryService.getStudyById(GetStudyByIdQuery.of(requestDto.getStudyId()));
+        if (!studyVo.creatorId().equals(currentUserId)) {
+            throw new ApplicationException(ExceptionStatus.STUDY_DOMAIN_PERMISSION_DENINED,
+                    "스터디 생성자가 아니므로 승인/거절 권한이 없습니다.");
+        }
 
-        // Command Service 호출
+        // 참가 신청 resolve: (studyId, memberId) → participantId
+        var participantVo = participantQueryService
+                .getByStudyIdAndMemberId(requestDto.getStudyId(), requestDto.getMemberId())
+                .orElseThrow(() -> new ApplicationException(ExceptionStatus.STUDY_DOMAIN_NOT_FOUND,
+                        "참가 신청을 찾을 수 없습니다."));
+
+        // Command 생성 및 호출
+        UpdateStudyParticipantStatusCommand command = new UpdateStudyParticipantStatusCommand(
+                participantVo.id(),
+                StudyParticipantStatus.APPROVED,
+                currentUserId
+        );
         StudyParticipantStatusUpdatedVo updatedVo = participantCommandService.approveParticipant(command);
 
-        // VO → Response DTO 변환
+        // Response 변환
         StudyParticipantStatusUpdateResponseDto responseDto = dtoMapper
                 .toStudyParticipantStatusUpdateResponseDto(updatedVo);
-
         log.info("Facade: Study join approved successfully - participantId: {}", responseDto.getParticipantId());
         return responseDto;
     }
@@ -111,19 +126,32 @@ public class StudyParticipantFacadeService {
      * 프로젝트 참가 거절
      */
     public StudyParticipantStatusUpdateResponseDto rejectJoinStudy(StudyJoinRejectRequestDto requestDto, Long currentUserId) {
-        log.info("Facade: Rejecting study join - participantId: {}", requestDto.getParticipantId());
+        log.info("Facade: Rejecting study join - studyId: {}, memberId: {}", requestDto.getStudyId(), requestDto.getMemberId());
 
-        // DTO → Command Object 변환
-        UpdateStudyParticipantStatusCommand command = commandMapper
-                .toRejectStudyParticipantCommand(requestDto, currentUserId);
+        // 권한 검증: 현재 사용자가 스터디 생성자인지 확인
+        StudyVo studyVo = studyQueryService.getStudyById(GetStudyByIdQuery.of(requestDto.getStudyId()));
+        if (!studyVo.creatorId().equals(currentUserId)) {
+            throw new ApplicationException(ExceptionStatus.STUDY_DOMAIN_PERMISSION_DENINED,
+                    "스터디 생성자가 아니므로 승인/거절 권한이 없습니다.");
+        }
 
-        // Command Service 호출
+        // 참가 신청 resolve: (studyId, memberId) → participantId
+        var participantVo = participantQueryService
+                .getByStudyIdAndMemberId(requestDto.getStudyId(), requestDto.getMemberId())
+                .orElseThrow(() -> new ApplicationException(ExceptionStatus.STUDY_DOMAIN_NOT_FOUND,
+                        "참가 신청을 찾을 수 없습니다."));
+
+        // Command 생성 및 호출
+        UpdateStudyParticipantStatusCommand command = new UpdateStudyParticipantStatusCommand(
+                participantVo.id(),
+                StudyParticipantStatus.REJECTED,
+                currentUserId
+        );
         StudyParticipantStatusUpdatedVo updatedVo = participantCommandService.rejectParticipant(command);
 
-        // VO → Response DTO 변환
+        // Response 변환
         StudyParticipantStatusUpdateResponseDto responseDto = dtoMapper
                 .toStudyParticipantStatusUpdateResponseDto(updatedVo);
-
         log.info("Facade: Study join rejected successfully - participantId: {}", responseDto.getParticipantId());
         return responseDto;
     }

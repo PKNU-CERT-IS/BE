@@ -41,6 +41,18 @@ public interface ProjectParticipantJpaRepository extends JpaRepository<ProjectPa
                          @Param("updatedAt") OffsetDateTime updatedAt);
 
     /**
+     * 거절 처리: 상태를 REJECTED로 변경하고 소프트 삭제 표시(deletedAt)까지 함께 설정
+     */
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE ProjectParticipantEntity p SET " +
+            "p.status = org.certis.studyplatform.project.domain.ProjectParticipantStatus.REJECTED, " +
+            "p.updatedAt = :deletedAt, " +
+            "p.deletedAt = :deletedAt " +
+            "WHERE p.id = :id AND p.deletedAt IS NULL")
+    int bulkRejectWithSoftDelete(@Param("id") Long id,
+                                 @Param("deletedAt") OffsetDateTime deletedAt);
+
+    /**
      * 프로젝트 + 멤버별 참가자 벌크 소프트 삭제
      */
     @Modifying(clearAutomatically = true)
@@ -76,6 +88,26 @@ public interface ProjectParticipantJpaRepository extends JpaRepository<ProjectPa
     @Modifying(clearAutomatically = true)
     @Query("UPDATE ProjectParticipantEntity p SET p.deletedAt = :deletedAt, p.updatedAt = :deletedAt WHERE p.id = :id AND p.deletedAt IS NULL")
     int softDeleteById(@Param("id") Long id, @Param("deletedAt") OffsetDateTime deletedAt);
+
+    /**
+     * 소프트 삭제된 참가 신청 중 최신 1건만 복원 (deleted_at IS NOT NULL 중 updated_at DESC LIMIT 1)
+     */
+    @Modifying(clearAutomatically = true)
+    @Query(value = "UPDATE project_participant p SET deleted_at = NULL, updated_at = :updatedAt " +
+            "WHERE p.id = (SELECT id FROM project_participant WHERE project_id = :projectId AND member_id = :memberId " +
+            "AND deleted_at IS NOT NULL ORDER BY updated_at DESC LIMIT 1)", nativeQuery = true)
+    int restoreLatestByProjectIdAndMemberId(@Param("projectId") Long projectId,
+                                            @Param("memberId") Long memberId,
+                                            @Param("updatedAt") OffsetDateTime updatedAt);
+    /**
+     * 소프트 삭제된 참가 신청 복원 (deletedAt = NULL, updatedAt = NOW())
+     */
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE ProjectParticipantEntity p SET p.deletedAt = NULL, p.updatedAt = :updatedAt " +
+            "WHERE p.projectId = :projectId AND p.memberId = :memberId AND p.deletedAt IS NOT NULL")
+    int restoreByProjectIdAndMemberId(@Param("projectId") Long projectId,
+                                      @Param("memberId") Long memberId,
+                                      @Param("updatedAt") OffsetDateTime updatedAt);
 
 }
 
