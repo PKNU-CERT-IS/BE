@@ -50,7 +50,8 @@ public class MemberPenaltyEntity {
         if (points <= 0) {
             throw new IllegalArgumentException("패널티 점수는 0보다 커야 합니다");
         }
-        this.penaltyPoint += points;
+        // 누적이 아닌, 전달된 점수로 설정합니다
+        this.penaltyPoint = points;
         this.penaltiedAt = OffsetDateTime.now();
     }
 }

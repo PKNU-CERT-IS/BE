@@ -315,7 +315,7 @@ public class MemberCommandRepositoryImpl implements MemberCommandRepository {
                 .orElseThrow(() -> new DomainException(ExceptionStatus.MEMBER_INFRASTRUCTURE_NOT_FOUND,
                         "패널티 정보를 찾을 수 없습니다: " + memberIdVo.value()));
 
-        // 점수 누적 업데이트 (정책: 없으면 예외, 있으면 +=)
+        // 점수 설정 업데이트 (정책: 전달된 점수로 필드를 초기화)
         penaltyEntity.updatePenaltyPoints(penaltyPointsVo.points());
 
         memberPenaltyJpaRepository.save(penaltyEntity);
