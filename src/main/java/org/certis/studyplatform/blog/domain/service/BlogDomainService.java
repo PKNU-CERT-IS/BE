@@ -185,10 +185,8 @@ public class BlogDomainService {
                 ? resolvedReferenceTitle
                 : (blogVo.referenceTitle() != null ? blogVo.referenceTitle() : "");
 
-        // 조회수 증가 (Redis)
-        if (query.viewerId() != null) {
-            blogViewDomainService.incrementViewCountInRedis(query.id(), query.viewerId());
-        }
+        // 조회수 증가 (Redis) - 비로그인 유저도 포함
+        blogViewDomainService.incrementViewCountInRedis(query.id(), query.viewerId());
 
         // ViewCount 조회
         BlogIdVo blogIdVo = BlogIdVo.of(query.id());
@@ -521,6 +519,7 @@ public class BlogDomainService {
                         blog.createdAt(),
                         blog.updatedAt(),
                         blog.blogCreatorName(),
+                        null, // blogCreatorProfileImageUrl - not available in this context
                         referenceType,
                         referenceTitle,
                         blog.views(), // 기존 views 값 유지

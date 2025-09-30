@@ -20,6 +20,9 @@ public interface BlogRedisRepository {
     // 조회수 추가 (중복 방지)
     void addView(BlogIdVo blogId, Long viewerId);
 
+    // 비로그인 유저 조회수 추가 (중복 방지 없음)
+    void addViewForAnonymous(BlogIdVo blogId);
+
     // 조회 여부 확인
     boolean isViewedByMember(BlogIdVo blogId, Long viewerId);
 
