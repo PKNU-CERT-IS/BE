@@ -31,6 +31,7 @@ public record StudyVo(
         Long creatorId,
         String creatorName,
         MemberGrade creatorGrade,
+        String creatorProfileImageUrl,
         String semester,
         String status,
         ResultSubmitStatus resultSubmitStatus,
@@ -66,6 +67,12 @@ public record StudyVo(
         // 기간 검증
         if (startDate == null || endDate == null) {
             throw new DomainException(ExceptionStatus.STUDY_DOMAIN_DATE_INVALID, "스터디 시작일과 종료일은 필수입니다");
+        }
+
+        // 시작일은 월요일이어야 함
+        java.time.DayOfWeek studyStartDayOfWeek = startDate.getDayOfWeek();
+        if (studyStartDayOfWeek != java.time.DayOfWeek.MONDAY) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_INVALID_START_DAY, "스터디 시작일은 월요일이어야 합니다");
         }
 
         // 스터디 종료 시에는 시작일과 종료일 비교를 건너뛰기
@@ -120,6 +127,7 @@ public record StudyVo(
             Long creatorId,
             String creatorName,
             MemberGrade creatorGrade,
+            String creatorProfileImageUrl,
             String semester,
             String status,
             ResultSubmitStatus resultSubmitStatus,
@@ -131,7 +139,7 @@ public record StudyVo(
         return new StudyVo(
                 id, title, description, content, category, subCategory,
                 startDate, endDate, createdAt, updatedAt,
-                creatorId, creatorName, creatorGrade,
+                creatorId, creatorName, creatorGrade, creatorProfileImageUrl,
                 semester, status, resultSubmitStatus,
                 maxParticipants, currentParticipants,
                 isParticipantable,
@@ -155,6 +163,7 @@ public record StudyVo(
             Long creatorId,
             String creatorName,
             MemberGrade creatorGrade,
+            String creatorProfileImageUrl,
             String semester,
             String status,
             Integer maxParticipants,
@@ -163,7 +172,7 @@ public record StudyVo(
             List<StudyAttachedVo> attached
     ) {
         return of(id, title, description, content, category, subCategory, startDate, endDate,
-                createdAt, updatedAt, creatorId, creatorName, creatorGrade, semester, status, null,
+                createdAt, updatedAt, creatorId, creatorName, creatorGrade, creatorProfileImageUrl, semester, status, null,
                 maxParticipants, currentParticipants, isParticipantable, attached);
     }
 
@@ -181,6 +190,7 @@ public record StudyVo(
             Long creatorId,
             String creatorName,
             MemberGrade creatorGrade,
+            String creatorProfileImageUrl,
             Integer maxParticipants
     ) {
         OffsetDateTime now = OffsetDateTime.now();
@@ -188,7 +198,7 @@ public record StudyVo(
                 null, // id는 null (새 생성)
                 title, description, content, category, subCategory,
                 startDate, endDate, now, now, // createdAt, updatedAt
-                creatorId, creatorName, creatorGrade,
+                creatorId, creatorName, creatorGrade, creatorProfileImageUrl,
                 calculateSemester(endDate), // semester 계산
                 calculateStatusWithStartDate(startDate, endDate), // status 계산 (startDate 고려)
                 ResultSubmitStatus.READY, // 새로 생성된 스터디는 READY
@@ -223,8 +233,11 @@ public record StudyVo(
         
         OffsetDateTime newStartDate = startDate != null ? startDate : existing.startDate();
         OffsetDateTime newEndDate = endDate != null ? endDate : existing.endDate();
-        
-        // 기존 상태를 그대로 유지 (재계산하지 않음)
+
+        // 변경된 기간을 기준으로 상태/제출상태 계산 (기존 상태를 고려)
+        StatusAndResultSubmitStatus statusAndSubmit = calculateStatusAndResultSubmitStatus(
+                newStartDate, newEndDate, existing.status(), existing.resultSubmitStatus());
+
         return new StudyVo(
                 existing.id(),
                 title != null ? title : existing.title(),
@@ -239,9 +252,10 @@ public record StudyVo(
                 existing.creatorId(),
                 existing.creatorName(),
                 existing.creatorGrade(), // 기존 creatorGrade 유지
+                existing.creatorProfileImageUrl(), // 기존 creatorProfileImageUrl 유지
                 calculateSemester(newEndDate), // semester 재계산
-                existing.status(), // 기존 상태 유지 (재계산하지 않음)
-                existing.resultSubmitStatus(), // 기존 resultSubmitStatus 유지
+                statusAndSubmit.status(),
+                statusAndSubmit.resultSubmitStatus(),
                 maxParticipants != null ? maxParticipants : existing.maxParticipants(),
                 existing.currentParticipants(),
                 existing.isParticipantable(), // 기존 참여 가능 여부 유지
@@ -267,6 +281,7 @@ public record StudyVo(
             Long creatorId,
             String creatorName,
             MemberGrade creatorGrade,
+            String creatorProfileImageUrl,
             String semester,
             String status,
             Integer maxParticipants,
@@ -277,7 +292,7 @@ public record StudyVo(
             List<StudyParticipantVo> participantVoList
     ) {
         this(id, title, description, content, category, subCategory, startDate, endDate,
-                createdAt, updatedAt, creatorId, creatorName, creatorGrade, semester, status, null,
+                createdAt, updatedAt, creatorId, creatorName, creatorGrade, creatorProfileImageUrl, semester, status, null,
                 maxParticipants, currentParticipants, isParticipantable, attached, summaryVoList, participantVoList);
     }
 

@@ -69,6 +69,12 @@ public record ProjectVo(
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_DATE, "프로젝트 시작일과 종료일은 필수입니다");
         }
 
+        // 시작일은 월요일이어야 함
+        java.time.DayOfWeek projectStartDayOfWeek = startDate.getDayOfWeek();
+        if (projectStartDayOfWeek != java.time.DayOfWeek.MONDAY) {
+            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_START_DAY, "프로젝트 시작일은 월요일이어야 합니다");
+        }
+
         // 프로젝트 종료 시에는 시작일과 종료일 비교를 건너뛰기
         // (ended_at을 현재 시간으로 설정할 때 startDate가 현재 시간보다 늦을 수 있음)
         if (id != null && endDate != null && endDate.isAfter(OffsetDateTime.now().minusMinutes(1))) {
@@ -238,8 +244,11 @@ public record ProjectVo(
         
         OffsetDateTime newStartDate = startDate != null ? startDate : existing.startDate();
         OffsetDateTime newEndDate = endDate != null ? endDate : existing.endDate();
-        
-        // 기존 상태를 그대로 유지 (재계산하지 않음)
+
+        // 변경된 기간을 기준으로 상태/제출상태 계산 (기존 상태를 고려)
+        StatusAndResultSubmitStatus statusAndSubmit = calculateStatusAndResultSubmitStatus(
+                newStartDate, newEndDate, existing.status(), existing.resultSubmitStatus());
+
         return new ProjectVo(
                 existing.id(),
                 title != null ? title : existing.title(),
@@ -253,8 +262,8 @@ public record ProjectVo(
                 existing.creatorName(),
                 existing.creatorGrade(),
                 existing.semester(),
-                existing.status(), // 기존 상태 유지 (재계산하지 않음)
-                existing.resultSubmitStatus(), // 기존 resultSubmitStatus 유지
+                statusAndSubmit.status(),
+                statusAndSubmit.resultSubmitStatus(),
                 githubUrl != null ? githubUrl : existing.githubUrl(),
                 externalUrl != null ? externalUrl : existing.externalUrl(),
                 demoUrl != null ? demoUrl : existing.demoUrl(),

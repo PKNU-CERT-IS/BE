@@ -123,11 +123,7 @@ public class ProjectApplicationCommandMapper {
      */
     public UpdateProjectParticipantStatusCommand toApproveProjectParticipantCommand(
             ProjectJoinApproveRequestDto requestDto, Long requesterId) {
-        return new UpdateProjectParticipantStatusCommand(
-                requestDto.getParticipantId(),
-                org.certis.studyplatform.project.domain.ProjectParticipantStatus.APPROVED,
-                requesterId
-        );
+        throw new UnsupportedOperationException("Facade에서 participantId resolve 후 호출하세요");
     }
 
     /**
@@ -135,11 +131,7 @@ public class ProjectApplicationCommandMapper {
      */
     public UpdateProjectParticipantStatusCommand toRejectProjectParticipantCommand(
             ProjectJoinRejectRequestDto requestDto, Long requesterId) {
-        return new UpdateProjectParticipantStatusCommand(
-                requestDto.getParticipantId(),
-                org.certis.studyplatform.project.domain.ProjectParticipantStatus.REJECTED,
-                requesterId
-        );
+        throw new UnsupportedOperationException("Facade에서 participantId resolve 후 호출하세요");
     }
 
     /**
