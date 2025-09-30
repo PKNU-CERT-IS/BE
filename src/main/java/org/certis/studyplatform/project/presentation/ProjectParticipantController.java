@@ -52,8 +52,8 @@ public class ProjectParticipantController {
 
         ProjectJoinResponseDto responseDto = projectParticipantFacadeService.registerJoinProject(requestDto, currentUser.getId());
 
-        log.info("Controller: Project join registered successfully - participantId: {}",
-                responseDto.getParticipantId());
+        log.info("Controller: Project join registered successfully - projectId: {}",
+                responseDto.getProjectId());
 
         return GlobalResponseHandler.success(ResponseStatus.PROJECT_PARTICIPANT_JOIN_REGISTERED, responseDto);
     }
@@ -98,8 +98,8 @@ public class ProjectParticipantController {
         ProjectParticipantStatusUpdateResponseDto responseDto =
                 projectParticipantFacadeService.approveJoinProject(requestDto, currentUser.getId());
 
-        log.info("Controller: Project join approved successfully - participantId: {}",
-                responseDto.getParticipantId());
+        log.info("Controller: Project join approved successfully - projectId: {}",
+                responseDto.getProjectId());
 
         return GlobalResponseHandler.success(ResponseStatus.PROJECT_PARTICIPANT_JOIN_APPROVED, responseDto);
     }
@@ -122,8 +122,8 @@ public class ProjectParticipantController {
         ProjectParticipantStatusUpdateResponseDto responseDto =
                 projectParticipantFacadeService.rejectJoinProject(requestDto, currentUser.getId());
 
-        log.info("Controller: Project join rejected successfully - participantId: {}",
-                responseDto.getParticipantId());
+        log.info("Controller: Project join rejected successfully - projectId: {}",
+                responseDto.getProjectId());
 
         return GlobalResponseHandler.success(ResponseStatus.PROJECT_PARTICIPANT_JOIN_REJECTED, responseDto);
     }

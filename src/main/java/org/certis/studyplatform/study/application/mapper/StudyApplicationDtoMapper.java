@@ -243,7 +243,6 @@ public class StudyApplicationDtoMapper {
      */
     public StudyJoinResponseDto toStudyJoinResponseDto(StudyParticipantCreatedVo vo) {
         return StudyJoinResponseDto.builder()
-                .participantId(vo.id())
                 .studyId(vo.studyId())
                 .status(vo.status())
                 .createdAt(vo.createdAt())

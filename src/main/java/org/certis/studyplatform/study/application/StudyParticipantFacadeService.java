@@ -68,7 +68,7 @@ public class StudyParticipantFacadeService {
         // VO → Response DTO 변환
         StudyJoinResponseDto responseDto = dtoMapper.toStudyJoinResponseDto(createdVo);
 
-        log.info("Facade: Study join registered successfully - participantId: {}", responseDto.getParticipantId());
+        log.info("Facade: Study join registered successfully - studyId: {}", responseDto.getStudyId());
         return responseDto;
     }
 

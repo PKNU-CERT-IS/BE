@@ -54,8 +54,8 @@ StudyParticipantController {
 
         StudyJoinResponseDto responseDto = studyParticipantFacadeService.registerJoinStudy(requestDto, currentUser.getId());
 
-        log.info("Controller: Study join registered successfully - participantId: {}",
-                responseDto.getParticipantId());
+        log.info("Controller: Study join registered successfully - studyId: {}",
+                responseDto.getStudyId());
 
         return GlobalResponseHandler.success(ResponseStatus.STUDY_PARTICIPANT_JOIN_REGISTERED, responseDto);
     }
@@ -100,8 +100,8 @@ StudyParticipantController {
         StudyParticipantStatusUpdateResponseDto responseDto =
                 studyParticipantFacadeService.approveJoinStudy(requestDto, currentUser.getId());
 
-        log.info("Controller: Study join approved successfully - participantId: {}",
-                responseDto.getParticipantId());
+        log.info("Controller: Study join approved successfully - studyId: {}",
+                responseDto.getStudyId());
 
         return GlobalResponseHandler.success(ResponseStatus.STUDY_PARTICIPANT_JOIN_APPROVED, responseDto);
     }
@@ -125,8 +125,8 @@ StudyParticipantController {
         StudyParticipantStatusUpdateResponseDto responseDto =
                 studyParticipantFacadeService.rejectJoinStudy(requestDto, currentUser.getId());
 
-        log.info("Controller: Study join rejected successfully - participantId: {}",
-                responseDto.getParticipantId());
+        log.info("Controller: Study join rejected successfully - studyId: {}",
+                responseDto.getStudyId());
 
         return GlobalResponseHandler.success(ResponseStatus.STUDY_PARTICIPANT_JOIN_REJECTED, responseDto);
     }

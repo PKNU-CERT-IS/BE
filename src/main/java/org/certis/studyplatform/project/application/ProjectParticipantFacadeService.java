@@ -70,7 +70,7 @@ public class ProjectParticipantFacadeService {
         // VO → Response DTO 변환
         ProjectJoinResponseDto responseDto = dtoMapper.toProjectJoinResponseDto(createdVo);
 
-        log.info("Facade: Project join registered successfully - participantId: {}", responseDto.getParticipantId());
+        log.info("Facade: Project join registered successfully - projectId: {}", responseDto.getProjectId());
         return responseDto;
     }
 
@@ -120,7 +120,7 @@ public class ProjectParticipantFacadeService {
         // Response 변환
         ProjectParticipantStatusUpdateResponseDto responseDto = dtoMapper
                 .toProjectParticipantStatusUpdateResponseDto(updatedVo);
-        log.info("Facade: Project join approved successfully - participantId: {}", responseDto.getParticipantId());
+        log.info("Facade: Project join approved successfully - projectId: {}", responseDto.getProjectId());
         return responseDto;
     }
 
@@ -154,7 +154,7 @@ public class ProjectParticipantFacadeService {
         // Response 변환
         ProjectParticipantStatusUpdateResponseDto responseDto = dtoMapper
                 .toProjectParticipantStatusUpdateResponseDto(updatedVo);
-        log.info("Facade: Project join rejected successfully - participantId: {}", responseDto.getParticipantId());
+        log.info("Facade: Project join rejected successfully - projectId: {}", responseDto.getProjectId());
         return responseDto;
     }
 

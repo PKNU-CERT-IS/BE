@@ -234,7 +234,6 @@ public class ProjectApplicationDtoMapper {
      */
     public ProjectJoinResponseDto toProjectJoinResponseDto(ProjectParticipantCreatedVo vo) {
         return ProjectJoinResponseDto.builder()
-                .participantId(vo.id())
                 .projectId(vo.projectId())
                 .status(vo.status())
                 .createdAt(vo.createdAt())
