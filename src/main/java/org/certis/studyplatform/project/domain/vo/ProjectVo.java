@@ -76,6 +76,12 @@ public record ProjectVo(
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_START_DAY, "프로젝트 시작일은 월요일이어야 합니다");
         }
 
+        // 종료일은 일요일이어야 함
+        java.time.DayOfWeek projectEndDayOfWeek = endDate.getDayOfWeek();
+        if (projectEndDayOfWeek != java.time.DayOfWeek.SUNDAY) {
+            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_END_DAY, "프로젝트 종료일은 일요일이어야 합니다");
+        }
+
         // 프로젝트 종료 시에는 시작일과 종료일 비교를 건너뛰기
         // (ended_at을 현재 시간으로 설정할 때 startDate가 현재 시간보다 늦을 수 있음)
         if (id != null && endDate != null && endDate.isAfter(OffsetDateTime.now().minusMinutes(1))) {

@@ -76,6 +76,12 @@ public record StudyVo(
             throw new DomainException(ExceptionStatus.STUDY_DOMAIN_INVALID_START_DAY, "스터디 시작일은 월요일이어야 합니다");
         }
 
+        // 종료일은 일요일이어야 함
+        java.time.DayOfWeek studyEndDayOfWeek = endDate.getDayOfWeek();
+        if (studyEndDayOfWeek != java.time.DayOfWeek.SUNDAY) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_INVALID_END_DAY, "스터디 종료일은 일요일이어야 합니다");
+        }
+
         // 스터디 종료 시에는 시작일과 종료일 비교를 건너뛰기
         // (ended_at을 현재 시간으로 설정할 때 startDate가 현재 시간보다 늦을 수 있음)
         if (id != null && endDate != null && endDate.isAfter(OffsetDateTime.now().minusMinutes(1))) {
