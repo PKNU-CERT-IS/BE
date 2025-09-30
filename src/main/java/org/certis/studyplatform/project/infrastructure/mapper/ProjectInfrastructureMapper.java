@@ -1,12 +1,13 @@
 package org.certis.studyplatform.project.infrastructure.mapper;
 
 import org.certis.studyplatform.project.domain.vo.*;
+import org.certis.studyplatform.project.domain.ProjectParticipantStatus;
 import org.certis.studyplatform.project.domain.ProjectStatus;
 import org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectEntity;
 import org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectParticipantEntity;
 import org.jooq.Record;
 import org.springframework.stereotype.Component;
-
+import org.certis.studyplatform.project.domain.ProjectParticipantStatus;
 import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 import java.time.OffsetDateTime;
 import java.time.LocalDate;
@@ -14,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
 
 import static org.certis.generated.jooq.Tables.*;
 import org.certis.studyplatform.member.domain.MemberGrade;
@@ -600,7 +602,7 @@ public class ProjectInfrastructureMapper {
                 record.getValue("project_id", Long.class),
                 record.getValue("member_id", Long.class),
                 record.getValue("member_name", String.class),
-                record.getValue("status", org.certis.studyplatform.project.domain.ProjectParticipantStatus.class),
+                record.getValue("status", ProjectParticipantStatus.class),
                 record.getValue("created_at", java.time.OffsetDateTime.class),
                 record.getValue("updated_at", java.time.OffsetDateTime.class)
         );
@@ -615,7 +617,11 @@ public class ProjectInfrastructureMapper {
                 record.getValue("project_id", Long.class),
                 record.getValue("member_id", Long.class),
                 record.getValue("member_name", String.class),
-                record.getValue("member_grade", org.certis.studyplatform.member.domain.MemberGrade.class),
+                // jOOQ MEMBER.GRADE is VARCHAR → convert to enum safely
+                MemberGrade.fromGradeString(
+                        record.getValue("member_grade", String.class)
+                ),
+                record.getValue("member_profile_image_url", String.class),
                 record.getValue("project_title", String.class),
                 record.getValue("status", org.certis.studyplatform.project.domain.ProjectParticipantStatus.class),
                 record.getValue("created_at", java.time.OffsetDateTime.class)
@@ -636,6 +642,7 @@ public class ProjectInfrastructureMapper {
                 entity.getMemberId(),
                 null, // memberName은 별도 조회 필요
                 null, // memberGrade는 별도 조회 필요
+                null, // memberProfileImageUrl은 별도 조회 필요
                 null, // projectTitle은 별도 조회 필요
                 entity.getStatus(),
                 entity.getCreatedAt()

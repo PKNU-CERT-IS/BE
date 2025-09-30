@@ -132,6 +132,7 @@ public class BlogInfrastructureMapper {
         String projectTitle = record.get("project_title", String.class);
         Long memberId = record.get(BLOG.MEMBER_ID);
         String creatorName = record.get("creator_name", String.class);
+        String creatorProfileImage = record.get("creator_profile_image", String.class);
         OffsetDateTime createdAt = record.get(BLOG.CREATED_AT);
         OffsetDateTime updatedAt = record.get(BLOG.UPDATED_AT);
         Boolean isPublic = record.get(BLOG.IS_PUBLIC);
@@ -194,6 +195,7 @@ public class BlogInfrastructureMapper {
         OffsetDateTime createdAt = record.get(BLOG.CREATED_AT);
         OffsetDateTime updatedAt = record.get(BLOG.UPDATED_AT);
         String creatorName = record.get("creator_name", String.class);
+        String creatorProfileImage = record.get("creator_profile_image", String.class);
         
         // 데이터베이스에서 view_count 조회 (JOIN으로 가져온 값)
         Integer views = record.get("view_count", Integer.class);
@@ -227,6 +229,7 @@ public class BlogInfrastructureMapper {
                 createdAt,
                 updatedAt,
                 creatorName,
+                creatorProfileImage,
                 referenceType,
                 referenceTitle,
                 views,
@@ -375,6 +378,7 @@ public class BlogInfrastructureMapper {
                 entity.getCreatedAt(),
                 entity.getUpdatedAt(),
                 null, // blogCreatorName은 별도 조회 필요
+                null, // blogCreatorProfileImageUrl 별도 조회 필요
                 referenceType,
                 null, // referenceTitle은 별도 조회 필요
                 null, // views는 별도 조회 필요
@@ -401,6 +405,7 @@ public class BlogInfrastructureMapper {
                 blogVo.createdAt(),
                 null, // updatedAt은 BlogVo에 없음
                 blogVo.creatorName(),
+                null, // blogCreatorProfileImageUrl 없음
                 blogVo.referenceType(),
                 blogVo.referenceTitle(),
                 null, // views는 BlogVo에 없음

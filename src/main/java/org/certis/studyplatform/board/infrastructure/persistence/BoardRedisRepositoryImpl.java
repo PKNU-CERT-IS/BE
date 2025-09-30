@@ -19,10 +19,15 @@ public class BoardRedisRepositoryImpl implements BoardRedisRepository {
 
     private final RedissonClient redissonClient;
 
-    private static final String LIKE_COUNT_PREFIX = "board:like:count:";
-    private static final String LIKE_MEMBERS_PREFIX = "board:like:members:";
-    private static final String VIEW_COUNT_PREFIX = "board:view:count:";
-    private static final String VIEW_MEMBERS_PREFIX = "board:view:members:";
+    private static final String LIKE_COUNT_PREFIX = "certis:board:like:count:";
+    private static final String LIKE_MEMBERS_PREFIX = "certis:board:like:members:";
+    private static final String VIEW_COUNT_PREFIX = "certis:board:view:count:";
+    private static final String VIEW_MEMBERS_PREFIX = "certis:board:view:members:";
+    
+    // TTL 설정 (24시간 동기화와 호환되도록 조정)
+    private static final int LIKE_CACHE_TTL_HOURS = 25; // 좋아요 관련 캐시 25시간 (동기화 후 1시간 여유)
+    private static final int VIEW_CACHE_TTL_HOURS = 25; // 조회수 관련 캐시 25시간 (동기화 후 1시간 여유)
+    private static final int MEMBERS_CACHE_TTL_HOURS = 2; // 사용자 목록 캐시 2시간 (중복 방지용)
 
     @Override
     public void initializeStats(BoardIdVo boardIdVo) {
@@ -34,12 +39,16 @@ public class BoardRedisRepositoryImpl implements BoardRedisRepository {
 
             likeCount.set(0L);
             likeMembers.clear();
+            likeCount.expire(java.time.Duration.ofHours(LIKE_CACHE_TTL_HOURS));
+            likeMembers.expire(java.time.Duration.ofHours(MEMBERS_CACHE_TTL_HOURS));
 
             RAtomicLong viewCount = redissonClient.getAtomicLong(VIEW_COUNT_PREFIX + boardId);
             RSet<Long> viewMembers = redissonClient.getSet(VIEW_MEMBERS_PREFIX + boardId);
 
             viewCount.set(0L);
             viewMembers.clear();
+            viewCount.expire(java.time.Duration.ofHours(VIEW_CACHE_TTL_HOURS));
+            viewMembers.expire(java.time.Duration.ofHours(MEMBERS_CACHE_TTL_HOURS));
 
         } catch (Exception e) {
             log.error("❌ Redis: Failed to initialize stats for board: {}", boardIdVo.value(), e);
@@ -75,9 +84,12 @@ public class BoardRedisRepositoryImpl implements BoardRedisRepository {
             RAtomicLong likeCount = redissonClient.getAtomicLong(LIKE_COUNT_PREFIX + boardIdStr);
             RSet<Long> likeMembers = redissonClient.getSet(LIKE_MEMBERS_PREFIX + boardIdStr);
 
-            if (!likeMembers.contains(memberId)) {
-                likeMembers.add(memberId);
+            // 배치 작업으로 최적화: 한 번의 Redis 호출로 처리
+            if (likeMembers.add(memberId)) {
                 likeCount.incrementAndGet();
+                log.debug("✅ Redis: Added like for board: {} by member: {}", boardId.value(), memberId);
+            } else {
+                log.debug("Redis: Member {} already liked board: {}", memberId, boardId.value());
             }
 
         } catch (Exception e) {

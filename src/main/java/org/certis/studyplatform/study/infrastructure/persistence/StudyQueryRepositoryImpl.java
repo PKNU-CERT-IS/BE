@@ -120,6 +120,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         s.MEMBER_ID,
                                         m.NAME.as("creator_name"),
                                         m.GRADE.as("creator_grade"),
+                                        m.PROFILE_IMAGE.as("creator_profile_image"),
                                         s.TITLE,
                                         s.DESCRIPTION,
                                         s.CONTENT,
@@ -202,6 +203,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         s.MEMBER_ID,
                                         m.NAME.as("creator_name"),
                                         m.GRADE.as("creator_grade"),
+                                        m.PROFILE_IMAGE.as("creator_profile_image"),
                                         s.MAX_PARTICIPANTS_NUMBER,
                                         s.RESULT_SUBMIT_STATUS.as("result_submit_status"),
                                         s.DELETED_AT.as("deleted_at"),
@@ -283,6 +285,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         s.MEMBER_ID,
                                         m.NAME.as("creator_name"),
                                         m.GRADE.as("creator_grade"),
+                                        m.PROFILE_IMAGE.as("creator_profile_image"),
                                         s.MAX_PARTICIPANTS_NUMBER,
                                         s.RESULT_SUBMIT_STATUS.as("result_submit_status"),
                                         select(count())

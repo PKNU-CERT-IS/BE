@@ -86,6 +86,7 @@ public class StudyDomainService {
                 command.creatorId(),
                 null, // creatorName
                 null, // creatorGrade
+                null, // creatorProfileImageUrl
                 command.maxParticipants()
         );
 

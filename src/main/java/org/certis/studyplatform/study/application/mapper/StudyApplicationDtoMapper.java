@@ -51,6 +51,7 @@ public class StudyApplicationDtoMapper {
                 .creatorId(vo.creatorId())
                 .studyCreatorName(vo.creatorName())
                 .studyCreatorGrade(vo.creatorGrade() != null ? vo.creatorGrade().toString() : null)
+                .studyCreatorProfileImageUrl(normalizeUrl(vo.creatorProfileImageUrl()))
                 .semester(vo.semester())
                 .status(vo.status())
                 .resultSubmitStatus(vo.resultSubmitStatus())
@@ -285,6 +286,7 @@ public class StudyApplicationDtoMapper {
                 .memberGrade(vo.memberGrade())
                 .status(vo.status())
                 .createdAt(vo.createdAt())
+                .profileImageUrl(normalizeUrl(vo.memberProfileImageUrl()))
                 .build();
     }
 

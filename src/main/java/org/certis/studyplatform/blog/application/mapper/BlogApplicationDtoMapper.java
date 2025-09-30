@@ -4,9 +4,11 @@ import org.certis.studyplatform.blog.domain.vo.BlogEnableReferenceVo;
 import org.certis.studyplatform.blog.domain.vo.BlogSummaryVo;
 import org.certis.studyplatform.blog.domain.vo.BlogVo;
 import org.certis.studyplatform.blog.presentation.dto.response.*;
+import org.certis.studyplatform.shared.service.S3FileService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Component;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Collections;
 import java.util.List;
@@ -19,7 +21,10 @@ import java.util.stream.Collectors;
  * VO → DTO 변환 담당 (FacadeService에서만 사용)
  */
 @Component
+@RequiredArgsConstructor
 public class BlogApplicationDtoMapper {
+
+    private final S3FileService s3FileService;
 
     /**
      * BlogVo를 BlogDetailResponseDto로 변환
@@ -64,6 +69,7 @@ public class BlogApplicationDtoMapper {
                 .createdAt(vo.createdAt())
                 .updatedAt(vo.updatedAt())
                 .blogCreatorName(vo.blogCreatorName())
+                .blogCreatorProfileImageUrl(normalizeUrl(vo.blogCreatorProfileImageUrl()))
                 .views(vo.views())
                 .build();
     }
@@ -121,5 +127,9 @@ public class BlogApplicationDtoMapper {
         return vos.stream()
                 .map(this::toBlogEnableReferenceResponseDto)
                 .collect(Collectors.toList());
+    }
+
+    private String normalizeUrl(String url) {
+        return s3FileService.toPresignedUrl(url);
     }
 }

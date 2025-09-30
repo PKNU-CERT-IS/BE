@@ -22,4 +22,5 @@ public class ProjectParticipantSummaryResponseDto {
     private MemberGrade memberGrade;
     private ProjectParticipantStatus status;
     private OffsetDateTime createdAt;
+    private String profileImageUrl;
 }

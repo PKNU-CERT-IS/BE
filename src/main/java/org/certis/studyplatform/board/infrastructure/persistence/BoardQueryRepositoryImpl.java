@@ -189,7 +189,7 @@ public class BoardQueryRepositoryImpl implements BoardQueryRepository {
     @Override
     public BoardAuthorInfoVo getAuthorInfo(BoardIdVo boardIdVo) {
         try {
-            Record record = dsl.select(field("m.name"), field("m.role"))
+            Record record = dsl.select(field("m.name"), field("m.role"), field("m.profile_image"))
                     .from(table("board").as("b"))
                     .leftJoin(table("member").as("m"))
                     .on(field("b.member_id").eq(field("m.id")))
@@ -201,18 +201,20 @@ public class BoardQueryRepositoryImpl implements BoardQueryRepository {
             if (record != null) {
                 String name = record.get(field("m.name"), String.class);
                 String roleString = record.get(field("m.role"), String.class);
+                String profileImageUrl = record.get(field("m.profile_image"), String.class);
                 MemberRole role = roleString != null ? MemberRole.valueOf(roleString) : MemberRole.NONE;
                 
                 return new BoardAuthorInfoVo(
                     name != null ? name : "Unknown",
-                    role
+                    role,
+                    profileImageUrl
                 );
             }
             
-            return new BoardAuthorInfoVo("Unknown", MemberRole.NONE);
+            return new BoardAuthorInfoVo("Unknown", MemberRole.NONE, null);
         } catch (Exception e) {
             log.error("❌ Infrastructure: Failed to get author info for board: {}", boardIdVo.value(), e);
-            return new BoardAuthorInfoVo("Unknown", MemberRole.NONE);
+            return new BoardAuthorInfoVo("Unknown", MemberRole.NONE, null);
         }
     }
 
@@ -268,7 +270,6 @@ public class BoardQueryRepositoryImpl implements BoardQueryRepository {
                     .from(table("board_like").as("bl"))
                     .where(field("bl.board_id").eq(boardIdVo.value()))
                     .and(field("bl.member_id").eq(memberId))
-                    .and(field("bl.deleted_at").isNull())
                     .fetchOne(0, Integer.class);
             return count != null && count > 0;
         } catch (Exception e) {

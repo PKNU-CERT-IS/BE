@@ -28,10 +28,11 @@ public class BlogRedisRepositoryImpl implements BlogRedisRepository {
     @Qualifier("redisStringTemplate")
     private final RedisTemplate<String, String> redisTemplate;
 
-    // Redis Key Patterns
-    private static final String VIEW_COUNT_KEY_PREFIX = "blog:view:count:";
-    private static final String VIEWED_MEMBERS_KEY_PREFIX = "blog:view:members:";
-    private static final long VIEW_CACHE_EXPIRE_HOURS = 25; // 25시간 후 만료
+    // Redis Key Patterns (순환참조 방지를 위한 고유 네임스페이스)
+    private static final String VIEW_COUNT_KEY_PREFIX = "certis:blog:view:count:";
+    private static final String VIEWED_MEMBERS_KEY_PREFIX = "certis:blog:view:members:";
+    private static final long VIEW_CACHE_EXPIRE_HOURS = 25; // 25시간 후 만료 (24시간 동기화와 호환)
+    private static final long VIEWED_MEMBERS_EXPIRE_HOURS = 2; // 조회자 목록은 2시간 후 만료 (중복 방지용)
 
     @Override
     public void initializeStats(BlogIdVo blogIdVo) {
@@ -45,9 +46,9 @@ public class BlogRedisRepositoryImpl implements BlogRedisRepository {
             // 조회한 멤버 목록 초기화 (Set으로 관리)
             redisTemplate.delete(viewedMembersKey);
 
-            // TTL 설정 (25시간 후 만료, 매일 동기화 이후 재설정됨)
+            // TTL 설정 (메모리 효율성을 위해 단축된 만료 시간)
             redisTemplate.expire(viewCountKey, VIEW_CACHE_EXPIRE_HOURS, TimeUnit.HOURS);
-            redisTemplate.expire(viewedMembersKey, VIEW_CACHE_EXPIRE_HOURS, TimeUnit.HOURS);
+            redisTemplate.expire(viewedMembersKey, VIEWED_MEMBERS_EXPIRE_HOURS, TimeUnit.HOURS);
 
             log.debug("Redis: Initialized stats for blog: {}", blogIdVo.value());
         } catch (Exception e) {
@@ -93,14 +94,30 @@ public class BlogRedisRepositoryImpl implements BlogRedisRepository {
             // 조회한 사용자 목록에 추가 (중복 방지)
             setOps.add(viewedMembersKey, viewerIdString);
 
-            // TTL 갱신 (매번 조회할 때마다 24시간 연장)
-            redisTemplate.expire(viewCountKey, VIEW_CACHE_EXPIRE_HOURS, TimeUnit.HOURS);
-            redisTemplate.expire(viewedMembersKey, VIEW_CACHE_EXPIRE_HOURS, TimeUnit.HOURS);
+            // 조회자 목록 TTL 갱신 (활발한 사용 시 만료 시간 연장)
+            redisTemplate.expire(viewedMembersKey, VIEWED_MEMBERS_EXPIRE_HOURS, TimeUnit.HOURS);
 
             log.debug("Redis: Added view for blog: {} by user: {}", blogIdVo.value(), viewerId);
         } catch (Exception e) {
             log.error("Redis: Failed to add view for blog: {} by user: {}", blogIdVo.value(), viewerId, e);
             throw new RuntimeException("Redis 조회수 증가 실패", e);
+        }
+    }
+
+    /**
+     * 비로그인 유저 조회수 증가 (중복 방지 없음)
+     */
+    public void addViewForAnonymous(BlogIdVo blogIdVo) {
+        String viewCountKey = buildViewCountKey(blogIdVo);
+
+        try {
+            // 조회수만 증가 (중복 방지 없음)
+            redisTemplate.opsForValue().increment(viewCountKey);
+
+            log.debug("Redis: Added anonymous view for blog: {}", blogIdVo.value());
+        } catch (Exception e) {
+            log.error("Redis: Failed to add anonymous view for blog: {}", blogIdVo.value(), e);
+            throw new RuntimeException("Redis 비로그인 조회수 증가 실패", e);
         }
     }
 
@@ -151,18 +168,29 @@ public class BlogRedisRepositoryImpl implements BlogRedisRepository {
 
     /**
      * 모든 블로그의 조회수 정보를 한번에 조회 (배치 최적화)
+     * Pipeline을 사용하여 네트워크 라운드트립 최소화
      */
     public java.util.Map<Long, Long> getAllViewCounts(java.util.List<Long> blogIds) {
         java.util.Map<Long, Long> result = new java.util.HashMap<>();
 
         try {
+            // Pipeline을 사용하여 배치 처리
+            redisTemplate.executePipelined((org.springframework.data.redis.core.RedisCallback<Object>) connection -> {
+                for (Long blogId : blogIds) {
+                    String viewCountKey = buildViewCountKey(BlogIdVo.of(blogId));
+                    connection.stringCommands().get(viewCountKey.getBytes());
+                }
+                return null;
+            });
+
+            // 결과 처리
             for (Long blogId : blogIds) {
                 BlogIdVo blogIdVo = BlogIdVo.of(blogId);
                 Long viewCount = getViewCount(blogIdVo);
                 result.put(blogId, viewCount);
             }
 
-            log.debug("Redis: Retrieved view counts for {} blogs", blogIds.size());
+            log.debug("Redis: Retrieved view counts for {} blogs using pipeline", blogIds.size());
             return result;
         } catch (Exception e) {
             log.error("Redis: Failed to get all view counts for blogs: {}", blogIds, e);

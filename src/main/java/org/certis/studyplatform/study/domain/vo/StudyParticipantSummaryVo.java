@@ -16,6 +16,7 @@ public record StudyParticipantSummaryVo(
         Long memberId,
         String memberName,
         MemberGrade memberGrade,
+        String memberProfileImageUrl,
         String studyTitle,
         StudyParticipantStatus status,
         OffsetDateTime createdAt

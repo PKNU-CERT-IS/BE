@@ -68,6 +68,7 @@ public class BlogQueryRepositoryImpl implements BlogQueryRepository {
                         p.TITLE.as("project_title"),
                         b.MEMBER_ID,
                         m.NAME.as("creator_name"),
+                        m.PROFILE_IMAGE.as("creator_profile_image"),
                         b.CREATED_AT,
                         b.UPDATED_AT,
                         b.IS_PUBLIC
@@ -129,6 +130,7 @@ public class BlogQueryRepositoryImpl implements BlogQueryRepository {
                         b.CREATED_AT,
                         b.UPDATED_AT,
                         m.NAME.as("creator_name"),
+                        m.PROFILE_IMAGE.as("creator_profile_image"),
                         b.STUDY_ID,
                         b.PROJECT_ID,
                         s.TITLE.as("study_title"),
@@ -178,6 +180,7 @@ public class BlogQueryRepositoryImpl implements BlogQueryRepository {
                         p.TITLE.as("project_title"),
                         b.MEMBER_ID,
                         m.NAME.as("creator_name"),
+                        m.PROFILE_IMAGE.as("creator_profile_image"),
                         b.CREATED_AT,
                         b.UPDATED_AT,
                         b.IS_PUBLIC

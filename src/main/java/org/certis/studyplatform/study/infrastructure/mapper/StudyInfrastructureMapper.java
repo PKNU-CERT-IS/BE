@@ -12,7 +12,7 @@ import org.jooq.Record;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
-
+import org.certis.studyplatform.study.domain.StudyParticipantStatus;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.*;
@@ -88,6 +88,7 @@ public class StudyInfrastructureMapper {
                 entity.getMemberId(),
                 null, // creatorName은 별도 조회 필요
                 null, // creatorGrade는 별도 조회 필요
+                null, // creatorProfileImageUrl은 별도 조회 필요
                 calculateSemester(entity.getEndedAt()), // semester 계산
                 resolvedStatus, // status 계산 (APPROVED 등 명시 상태 우선)
                 entity.getResultSubmitStatus(),
@@ -173,6 +174,7 @@ public class StudyInfrastructureMapper {
                 firstRecord.get("member_id", Long.class),
                 firstRecord.get("creator_name", String.class),
                 safeParseMemberGrade(firstRecord.get("creator_grade", String.class)),
+                firstRecord.get("creator_profile_image", String.class),
                 calculateSemester(endedAt), // semester 계산
                 resolvedStatusFromRecord, // status 계산 (DB status 우선)
                 submitStatus,
@@ -236,6 +238,7 @@ public class StudyInfrastructureMapper {
                 firstRecord.get("member_id", Long.class),
                 firstRecord.get("creator_name", String.class),
                 safeParseMemberGrade(firstRecord.get("creator_grade", String.class)),
+                firstRecord.get("creator_profile_image", String.class),
                 calculateSemester(endedAt), // semester 계산
                 resolvedStatusFromRecord2, // status 계산 (DB status 우선)
                 submitStatus,
@@ -438,9 +441,13 @@ public class StudyInfrastructureMapper {
                 record.get("study_id", Long.class),
                 record.get("member_id", Long.class),
                 record.get("member_name", String.class),
-                record.get("member_grade", org.certis.studyplatform.member.domain.MemberGrade.class),
+                // MEMBER.GRADE is stored as VARCHAR; convert robustly to enum
+                MemberGrade.fromGradeString(
+                        record.get("member_grade", String.class)
+                ),
+                record.get("member_profile_image_url", String.class),
                 record.get("study_title", String.class),
-                record.get("status", org.certis.studyplatform.study.domain.StudyParticipantStatus.class),
+                record.get("status", StudyParticipantStatus.class),
                 record.get("created_at", OffsetDateTime.class)
         );
     }
@@ -455,7 +462,7 @@ public class StudyInfrastructureMapper {
                 record.get("id", Long.class),
                 record.get("participant_member_id", Long.class),
                 record.get("participant_name", String.class),
-                record.get("participant_status", org.certis.studyplatform.study.domain.StudyParticipantStatus.class),
+                record.get("participant_status", StudyParticipantStatus.class),
                 record.get("participant_created_at", OffsetDateTime.class),
                 record.get("participant_updated_at", OffsetDateTime.class)
         );

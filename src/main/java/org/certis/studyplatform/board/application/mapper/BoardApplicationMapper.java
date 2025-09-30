@@ -184,6 +184,7 @@ public class BoardApplicationMapper {
                         .memberId(boardDetailVo.authorId())
                         .name(boardDetailVo.authorName())
                         .role(boardDetailVo.authorRole())
+                        .profileImageUrl(normalizeUrl(boardDetailVo.authorProfileImageUrl()))
                         .build())
                 .attachments(toAttachmentResponseDtoList(boardDetailVo.attachments()))
                 .likeCount(boardDetailVo.likeCount())

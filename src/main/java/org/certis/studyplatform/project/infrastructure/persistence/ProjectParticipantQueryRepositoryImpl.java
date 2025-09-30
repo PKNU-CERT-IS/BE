@@ -96,6 +96,7 @@ public class ProjectParticipantQueryRepositoryImpl implements ProjectParticipant
                         pp.MEMBER_ID,
                         m.NAME.as("member_name"),
                         m.GRADE.as("member_grade"),
+                        m.PROFILE_IMAGE.as("member_profile_image_url"),
                         p.TITLE.as("project_title"),
                         pp.STATUS,
                         pp.CREATED_AT
@@ -149,6 +150,7 @@ public class ProjectParticipantQueryRepositoryImpl implements ProjectParticipant
                             pp.MEMBER_ID,
                             m.NAME.as("member_name"),
                             m.GRADE.as("member_grade"),
+                            m.PROFILE_IMAGE.as("member_profile_image_url"),
                             p.TITLE.as("project_title"), // 프로젝트 제목을 별도 필드로 저장
                             pp.STATUS,
                             pp.CREATED_AT
@@ -167,6 +169,7 @@ public class ProjectParticipantQueryRepositoryImpl implements ProjectParticipant
                             pp.MEMBER_ID,
                             m.NAME.as("member_name"),
                             m.GRADE.as("member_grade"),
+                            m.PROFILE_IMAGE.as("member_profile_image_url"),
                             p.TITLE.as("project_title"), // 프로젝트 제목을 별도 필드로 저장
                             pp.STATUS,
                             pp.CREATED_AT
@@ -196,6 +199,11 @@ public class ProjectParticipantQueryRepositoryImpl implements ProjectParticipant
                         .from(pp)
                         .where(pp.PROJECT_ID.eq(projectId))
                         .and(pp.MEMBER_ID.eq(memberId))
+                        // Only consider PENDING or APPROVED as existing application/membership
+                        .and(pp.STATUS.in(
+                                inline(ProjectParticipantStatus.PENDING.name()),
+                                inline(ProjectParticipantStatus.APPROVED.name())
+                        ))
                         .and(pp.DELETED_AT.isNull())
         );
 
@@ -225,6 +233,8 @@ public class ProjectParticipantQueryRepositoryImpl implements ProjectParticipant
                 .where(pp.PROJECT_ID.eq(projectId))
                 .and(pp.MEMBER_ID.eq(memberId))
                 .and(pp.DELETED_AT.isNull())
+                .orderBy(pp.UPDATED_AT.desc())
+                .limit(1)
                 .fetchOptional(mapper::toVoFromRecord);
 
         log.info("jOOQ: Participant found - projectId: {}, memberId: {}", projectId, memberId);

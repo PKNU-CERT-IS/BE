@@ -16,6 +16,7 @@ public record ProjectParticipantSummaryVo(
         Long memberId,
         String memberName,
         MemberGrade memberGrade,
+        String memberProfileImageUrl,
         String projectTitle,
         ProjectParticipantStatus status,
         OffsetDateTime createdAt
