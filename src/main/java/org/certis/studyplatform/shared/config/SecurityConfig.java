@@ -53,6 +53,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/v1/member/**",
                                 "/api/v1/auth/login",
+                                "/api/v1/auth/logout",
                                 "/api/v1/auth/register",  // 회원가입 추가
                                 "/api/v1/auth/token/refresh",   // 토큰 갱신
                                 "/api/v1/blog",              // 블로그 목록 조회
