@@ -3,7 +3,6 @@ package org.certis.studyplatform.shared.config;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
-import org.redisson.config.SingleServerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,19 +42,21 @@ public class ElastiCacheRedissonConfig {
     public RedissonClient redissonClient() {
         Config config = new Config();
 
-        // SingleServer 설정 - ElastiCache Serverless
-        SingleServerConfig singleServerConfig = config.useSingleServer()
+        // SingleServer 설정 - ElastiCache Serverless (트래픽 스파이크 대응 최적화)
+        config.useSingleServer()
                 .setAddress("rediss://" + redisHost + ":" + redisPort)
                 .setDatabase(0)
-                .setConnectionPoolSize(20)
-                .setConnectionMinimumIdleSize(5)
-                .setConnectTimeout(15000)  // 연결 타임아웃 증가
-                .setTimeout(10000)
-                .setRetryAttempts(3)
-                .setRetryInterval(1500)
+                .setConnectionPoolSize(100)  // 트래픽 스파이크 대응을 위해 연결 풀 크기 대폭 증가 (50 → 100)
+                .setConnectionMinimumIdleSize(20)  // 최소 유휴 연결 증가 (10 → 20)
+                .setConnectTimeout(5000)  // 연결 타임아웃 최적화 (10초 → 5초)
+                .setTimeout(2000)  // 응답 타임아웃 최적화 (5초 → 2초)
+                .setRetryAttempts(1)  // 재시도 횟수 감소 (2 → 1) - 빠른 실패로 트래픽 감소
+                .setRetryInterval(500)  // 재시도 간격 최적화 (1초 → 0.5초)
                 .setKeepAlive(true)
                 .setTcpNoDelay(true)
-                .setSslEnableEndpointIdentification(true);
+                .setSslEnableEndpointIdentification(true)
+                .setIdleConnectionTimeout(60000)  // 유휴 연결 타임아웃 증가 (30초 → 60초)
+                .setPingConnectionInterval(15000);  // 연결 상태 확인 간격 최적화 (30초 → 15초)
 
         // 중요: 패스워드 관련 설정을 전혀 하지 않음
         // singleServerConfig.setPassword() 호출하지 않음

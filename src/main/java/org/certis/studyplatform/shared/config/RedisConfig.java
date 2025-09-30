@@ -48,8 +48,8 @@ public class RedisConfig {
      * @param objectMapper      다른 곳(JacksonConfiguration)에 이미 등록된 ObjectMapper 빈을 주입받아 사용
      * @return 설정이 완료된 RedisTemplate 객체
      */
-    @Bean
-    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory, ObjectMapper objectMapper) {
+    @Bean("redisObjectTemplate")
+    public RedisTemplate<String, Object> redisObjectTemplate(RedisConnectionFactory connectionFactory, ObjectMapper objectMapper) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
 
@@ -63,4 +63,5 @@ public class RedisConfig {
 
         return template;
     }
+
 }

@@ -51,15 +51,15 @@ public class AuthDomainService {
     public RefreshTokenVo validateRefreshToken(ValidateRefreshTokenQuery validateRefreshTokenQuery){
         MemberIdVo memberIdVo = MemberIdVo.of(validateRefreshTokenQuery.memberId());
 
+        // Redis에서 토큰 조회 (내부적으로 만료 체크 및 자동 삭제 수행)
         RefreshTokenVo refreshTokenVo = refreshTokenRepository.findByMemberId(memberIdVo)
                 .orElseThrow(() -> new InfrastructureException(ExceptionStatus.AUTH_DOMAIN_JWT_TOKEN_PARSE_ERROR)
                 );
 
-        // 이럴수가
-        LogoutCommand logoutCommand = LogoutCommand.of(validateRefreshTokenQuery.memberId());
-
+        // RedisRepository에서 이미 만료 체크를 수행했으므로 추가 검증 불필요
+        // 만약 여전히 만료된 토큰이라면 예외 발생
         if (refreshTokenVo.isExpiredRefreshToken()) {
-            deleteRefreshToken(logoutCommand);
+            log.warn("만료된 RefreshToken 검증 시도: memberId={}", validateRefreshTokenQuery.memberId());
             throw new DomainException(ExceptionStatus.AUTH_DOMAIN_JWT_TOKEN_EXPIRED);
         }
 
