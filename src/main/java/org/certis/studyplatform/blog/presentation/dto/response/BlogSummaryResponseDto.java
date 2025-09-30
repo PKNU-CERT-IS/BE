@@ -44,6 +44,8 @@ public class BlogSummaryResponseDto {
 
     private String blogCreatorName;
 
+    private String blogCreatorProfileImageUrl;
+
     private Integer views;
 
     // toString for logging
