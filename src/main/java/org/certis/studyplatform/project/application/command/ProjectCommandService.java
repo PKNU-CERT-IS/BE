@@ -403,6 +403,7 @@ public class ProjectCommandService {
             case PPTX -> "application/vnd.openxmlformats-officedocument.presentationml.presentation";
             case EXCEL -> "application/vnd.ms-excel";
             case TEXT -> "text/plain";
+            case CSV -> "text/csv";
             case PNG -> "image/png";
             case JPEG, JPG -> "image/jpeg";
             case ZIP -> "application/zip";

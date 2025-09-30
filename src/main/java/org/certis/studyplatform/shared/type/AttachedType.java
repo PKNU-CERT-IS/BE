@@ -10,6 +10,7 @@ public enum AttachedType {
     PPTX,
     EXCEL,
     TEXT,
+    CSV,
 
     // 이미지
     PNG,
@@ -19,3 +20,4 @@ public enum AttachedType {
     // 압축
     ZIP
 }
+

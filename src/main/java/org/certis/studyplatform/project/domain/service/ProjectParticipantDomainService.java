@@ -14,6 +14,7 @@ import org.certis.studyplatform.project.domain.repository.ProjectParticipantQuer
 import org.certis.studyplatform.project.domain.repository.ProjectQueryRepository;
 import org.certis.studyplatform.project.domain.vo.*;
 import org.springframework.stereotype.Service;
+import org.certis.studyplatform.study.domain.repository.StudyQueryRepository;
 
 import java.time.OffsetDateTime;
 
@@ -31,6 +32,7 @@ public class ProjectParticipantDomainService {
     private final ProjectParticipantCommandRepository commandRepository;
     private final ProjectParticipantQueryRepository queryRepository;
     private final ProjectQueryRepository projectQueryRepository;
+    private final StudyQueryRepository studyQueryRepository;
     private final MemberQueryRepository memberQueryRepository;
 
     // ================================================================
@@ -359,7 +361,23 @@ public class ProjectParticipantDomainService {
     }
 
     private void enforceApplicationLimits(Long memberId) {
-        long activeProjects = queryRepository.countActiveProjectsByMemberId(memberId);
+        long activeProjectsJoined = queryRepository.countActiveProjectsByMemberId(memberId);
+
+        // Include projects created by the member that are currently active
+        long activeProjectsCreated = 0L;
+        try {
+            var activeProjectsResult = projectQueryRepository.findActiveProjects(org.springframework.data.domain.Pageable.unpaged());
+            if (activeProjectsResult != null && activeProjectsResult.projects() != null) {
+                activeProjectsCreated = activeProjectsResult.projects().stream()
+                        .filter(p -> p != null && p.id() != null)
+                        .map(p -> projectQueryRepository.findById(p.id()).orElse(null))
+                        .filter(java.util.Objects::nonNull)
+                        .filter(full -> full.creatorId() != null && full.creatorId().equals(memberId))
+                        .count();
+            }
+        } catch (Exception ignored) { }
+
+        long activeProjects = activeProjectsJoined + activeProjectsCreated;
         if (activeProjects >= 1) {
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_PERMISSION,
                     "진행 중인 프로젝트가 1개 있으면 추가 신청이 불가합니다.");
