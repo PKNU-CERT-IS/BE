@@ -54,6 +54,9 @@ public class StudyDomainService {
     private final StudyQueryRepository queryRepository;
     private final MemberDomainService memberDomainService;
     private final S3FileService s3FileService;
+    private final org.certis.studyplatform.study.domain.repository.StudyParticipantQueryRepository studyParticipantQueryRepository;
+    private final org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository projectParticipantQueryRepository;
+    private final org.certis.studyplatform.project.domain.repository.ProjectQueryRepository projectQueryRepository;
 
     // ================================================================
     // COMMAND OPERATIONS
@@ -73,6 +76,9 @@ public class StudyDomainService {
 
         // 중복 검사 (Repository 의존성이 필요한 검증만 수행)
 //        validateStudyTitleDuplication(command.title());
+
+        // Creation limit enforcement: consider created + joined actives
+        enforceCreationLimits(command.creatorId());
 
         // StudyVo.createNew() 사용 - 생성 시 자동으로 나머지 검증 수행
         StudyVo studyVo = StudyVo.createNew(
@@ -98,6 +104,49 @@ public class StudyDomainService {
         log.info("Domain: Study created successfully - ID: {}", savedStudyVo.id());
 
         return savedStudyVo;
+    }
+
+    private void enforceCreationLimits(Long creatorId) {
+        long activeStudiesJoined = studyParticipantQueryRepository.countActiveStudiesByMemberId(creatorId);
+        long activeProjectsJoined = projectParticipantQueryRepository.countActiveProjectsByMemberId(creatorId);
+
+        long activeStudiesCreated = 0L;
+        try {
+            var activeStudies = queryRepository.findActiveStudies(org.springframework.data.domain.Pageable.unpaged());
+            if (activeStudies != null && activeStudies.studies() != null) {
+                activeStudiesCreated = activeStudies.studies().stream()
+                        .filter(s -> s != null && s.id() != null)
+                        .map(s -> queryRepository.findById(s.id()).orElse(null))
+                        .filter(java.util.Objects::nonNull)
+                        .filter(full -> full.creatorId() != null && full.creatorId().equals(creatorId))
+                        .count();
+            }
+        } catch (Exception ignored) { }
+
+        long activeProjectsCreated = 0L;
+        try {
+            var activeProjects = projectQueryRepository.findActiveProjects(org.springframework.data.domain.Pageable.unpaged());
+            if (activeProjects != null && activeProjects.projects() != null) {
+                activeProjectsCreated = activeProjects.projects().stream()
+                        .filter(p -> p != null && p.id() != null)
+                        .map(p -> projectQueryRepository.findById(p.id()).orElse(null))
+                        .filter(java.util.Objects::nonNull)
+                        .filter(full -> full.creatorId() != null && full.creatorId().equals(creatorId))
+                        .count();
+            }
+        } catch (Exception ignored) { }
+
+        long activeStudies = activeStudiesJoined + activeStudiesCreated;
+        long activeProjects = activeProjectsJoined + activeProjectsCreated;
+
+        if (activeProjects == 0 && activeStudies >= 2) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_PERMISSION_DENINED,
+                    "프로젝트 미진행 시 스터디 2개까지 가능합니다.");
+        }
+        if (activeProjects >= 1 && activeStudies >= 1) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_PERMISSION_DENINED,
+                    "프로젝트 진행 중에는 스터디 1개까지만 신청할 수 있습니다.");
+        }
     }
 
     private String mapAttachedTypeToContentType(org.certis.studyplatform.shared.type.AttachedType type) {

@@ -52,6 +52,9 @@ public class ProjectDomainService {
     private final ProjectCommandRepository commandRepository;
     private final ProjectQueryRepository queryRepository;
     private final MemberDomainService memberDomainService;
+    private final org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository projectParticipantQueryRepository;
+    private final org.certis.studyplatform.study.domain.repository.StudyParticipantQueryRepository studyParticipantQueryRepository;
+    private final org.certis.studyplatform.study.domain.repository.StudyQueryRepository studyQueryRepository;
 
     // ================================================================
     // COMMAND OPERATIONS
@@ -71,6 +74,8 @@ public class ProjectDomainService {
 
         // 중복 검사 (Repository 의존성이 필요한 검증만 수행)
 //        validateProjectTitleDuplication(command.title());
+        // Creation limit enforcement: consider created + joined actives
+        enforceCreationLimits(command.creatorId());
 
         // ProjectVo.createNew() 사용 - 생성 시 자동으로 나머지 검증 수행
         ProjectVo projectVo = ProjectVo.createNew(
@@ -99,6 +104,29 @@ public class ProjectDomainService {
         log.info("Domain: Project created successfully - ID: {}", savedProjectVo.id());
 
         return savedProjectVo;
+    }
+
+    private void enforceCreationLimits(Long creatorId) {
+        long activeProjectsJoined = projectParticipantQueryRepository.countActiveProjectsByMemberId(creatorId);
+
+        long activeProjectsCreated = 0L;
+        try {
+            var activeProjects = queryRepository.findActiveProjects(org.springframework.data.domain.Pageable.unpaged());
+            if (activeProjects != null && activeProjects.projects() != null) {
+                activeProjectsCreated = activeProjects.projects().stream()
+                        .filter(p -> p != null && p.id() != null)
+                        .map(p -> queryRepository.findById(p.id()).orElse(null))
+                        .filter(java.util.Objects::nonNull)
+                        .filter(full -> full.creatorId() != null && full.creatorId().equals(creatorId))
+                        .count();
+            }
+        } catch (Exception ignored) { }
+
+        long activeProjects = activeProjectsJoined + activeProjectsCreated;
+        if (activeProjects >= 1) {
+            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_PERMISSION,
+                    "진행 중인 프로젝트가 1개 있으면 추가 신청이 불가합니다.");
+        }
     }
 
     /**

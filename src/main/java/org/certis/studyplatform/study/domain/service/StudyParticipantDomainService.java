@@ -37,6 +37,7 @@ public class StudyParticipantDomainService {
     private final StudyParticipantQueryRepository queryRepository;
     private final StudyQueryRepository studyQueryRepository;
     private final ProjectParticipantQueryRepository projectParticipantQueryRepository;
+    private final org.certis.studyplatform.project.domain.repository.ProjectQueryRepository projectQueryRepository;
     private final MemberQueryRepository memberQueryRepository;
 
     // ================================================================
@@ -340,8 +341,39 @@ public class StudyParticipantDomainService {
      * - 진행 중인 project >= 1 이고 진행 중인 study >= 1 이면 study 추가 신청 불가
      */
     private void enforceApplicationLimits(Long memberId) {
-        long activeStudies = queryRepository.countActiveStudiesByMemberId(memberId);
-        long activeProjects = projectParticipantQueryRepository.countActiveProjectsByMemberId(memberId);
+        long activeStudiesJoined = queryRepository.countActiveStudiesByMemberId(memberId);
+        long activeProjectsJoined = projectParticipantQueryRepository.countActiveProjectsByMemberId(memberId);
+
+        // Include studies created by the member that are currently active
+        long activeStudiesCreated = 0L;
+        try {
+            var activeStudiesResult = studyQueryRepository.findActiveStudies(org.springframework.data.domain.Pageable.unpaged());
+            if (activeStudiesResult != null && activeStudiesResult.studies() != null) {
+                activeStudiesCreated = activeStudiesResult.studies().stream()
+                        .filter(s -> s != null && s.id() != null)
+                        .map(s -> studyQueryRepository.findById(s.id()).orElse(null))
+                        .filter(java.util.Objects::nonNull)
+                        .filter(full -> full.creatorId() != null && full.creatorId().equals(memberId))
+                        .count();
+            }
+        } catch (Exception ignored) { }
+
+        // Include projects created by the member that are currently active
+        long activeProjectsCreated = 0L;
+        try {
+            var activeProjectsResult = projectQueryRepository.findActiveProjects(org.springframework.data.domain.Pageable.unpaged());
+            if (activeProjectsResult != null && activeProjectsResult.projects() != null) {
+                activeProjectsCreated = activeProjectsResult.projects().stream()
+                        .filter(p -> p != null && p.id() != null)
+                        .map(p -> projectQueryRepository.findById(p.id()).orElse(null))
+                        .filter(java.util.Objects::nonNull)
+                        .filter(full -> full.creatorId() != null && full.creatorId().equals(memberId))
+                        .count();
+            }
+        } catch (Exception ignored) { }
+
+        long activeStudies = activeStudiesJoined + activeStudiesCreated;
+        long activeProjects = activeProjectsJoined + activeProjectsCreated;
 
         // 프로젝트 미진행 시: 스터디 2개까지 허용 (즉, 3번째부터 제한)
         if (activeProjects == 0 && activeStudies >= 2) {
