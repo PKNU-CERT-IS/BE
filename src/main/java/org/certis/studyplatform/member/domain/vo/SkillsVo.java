@@ -63,7 +63,8 @@ public record SkillsVo(List<String> values) {
                         "기술 스택 항목은 50자 이하여야 합니다: " + trimmedSkill);
             }
 
-            if (!trimmedSkill.matches("^[가-힣a-zA-Z0-9\\s\\-_.#+]+$")) {
+            // 특수문자 허용 범위 확장: 한글, 영문, 숫자, 공백, 하이픈, 언더스코어, 점, 샵, 플러스, 괄호, 슬래시, 콜론, 세미콜론, 앰퍼샌드, 퍼센트, 달러, 골뱅이, 물결표, 쉼표 등
+            if (!trimmedSkill.matches("^[가-힣a-zA-Z0-9\\s\\-_.#+()/;:&%@~!?*^|\\\\,]+$")) {
                 throw new DomainException(ExceptionStatus.MEMBER_DOMAIN_INVALID_SKILLS,
                         "기술 스택 항목에 허용되지 않는 문자가 포함되어 있습니다: " + trimmedSkill);
             }

@@ -5,6 +5,7 @@ import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.study.domain.StudyStatus;
 import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
+import org.certis.studyplatform.shared.util.DateTimeUtils;
 
 import java.time.OffsetDateTime;
 import java.util.Collections;

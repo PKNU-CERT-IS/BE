@@ -23,6 +23,29 @@ public class S3FileService {
     private final S3AttachmentService s3AttachmentService;
 
     /**
+     * 프로필 이미지 전용 업로드 (10MB 제한)
+     * @param file 업로드할 이미지 파일
+     * @param domain 도메인 폴더명
+     * @param entityId 엔티티 ID
+     * @return S3 URL
+     */
+    public String uploadProfileImage(MultipartFile file, String domain, Long entityId) {
+        return s3AttachmentService.uploadProfileImage(file, domain, entityId);
+    }
+
+    /**
+     * 프로필 이미지 전용 업로드 (10MB 제한, 임시 entityId 사용)
+     * @param file 업로드할 이미지 파일
+     * @param domain 도메인 폴더명
+     * @return S3 URL
+     */
+    public String uploadProfileImage(MultipartFile file, String domain) {
+        // 임시 entityId로 타임스탬프 사용 (고유성 보장)
+        Long temporaryEntityId = System.currentTimeMillis();
+        return s3AttachmentService.uploadProfileImage(file, domain, temporaryEntityId);
+    }
+
+    /**
      * 파일을 S3에 업로드하고 URL 반환
      * @param file 업로드할 파일
      * @param domain 도메인 폴더명 (예: "schedule-attachments")

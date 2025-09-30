@@ -214,9 +214,17 @@ public class StudyParticipantDomainService {
         // 3. 스터디 생성자 권한 확인
         validateStudyLeaderPermission(participant.studyId(), command.requesterId());
 
-        // 4. 거절 처리 (상태 업데이트)
-        StudyParticipantVo updatedParticipant = participant.updateStatus(StudyParticipantStatus.REJECTED);
-        StudyParticipantStatusUpdatedVo result = commandRepository.updateStatus(updatedParticipant, command.requesterId());
+        // 4. 거절 처리 (소프트 삭제)
+        commandRepository.softDeleteById(command.participantId());
+
+        // 5. 결과 VO 생성 (거절된 상태로 반환)
+        StudyParticipantStatusUpdatedVo result = StudyParticipantStatusUpdatedVo.of(
+                participant.id(),
+                participant.studyId(),
+                participant.memberId(),
+                participant.status(), // 이전 상태 (PENDING)
+                StudyParticipantStatus.REJECTED, // 현재 상태 (REJECTED)
+                command.requesterId());
 
         log.info("Domain: Participant rejected (soft deleted) - ID: {}", result.id());
         return result;

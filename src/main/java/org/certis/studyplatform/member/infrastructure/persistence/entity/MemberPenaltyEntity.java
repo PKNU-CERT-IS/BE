@@ -44,11 +44,11 @@ public class MemberPenaltyEntity {
     }
 
     /**
-     * 패널티 점수 갱신
+     * 패널티 점수 갱신 (초기화 방식)
      */
     public void updatePenaltyPoints(Integer points) {
-        if (points <= 0) {
-            throw new IllegalArgumentException("패널티 점수는 0보다 커야 합니다");
+        if (points < 0) {
+            throw new IllegalArgumentException("패널티 점수는 0 이상이어야 합니다");
         }
         // 누적이 아닌, 전달된 점수로 설정합니다
         this.penaltyPoint = points;

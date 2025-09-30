@@ -217,7 +217,6 @@ class StudyParticipantDomainServiceTest {
                     .thenReturn(Optional.of(createStudyVo(studyId, requesterId)));
             when(memberQueryRepository.findRoleByMemberId(new org.certis.studyplatform.member.domain.vo.MemberIdVo(requesterId)))
                     .thenReturn(Optional.of(org.certis.studyplatform.member.domain.MemberRole.PLAYER));
-            when(commandRepository.updateStatus(any(), any())).thenReturn(createStudyParticipantStatusUpdatedVo());
 
             // When
             StudyParticipantStatusUpdatedVo result = domainService.rejectParticipant(
@@ -226,7 +225,7 @@ class StudyParticipantDomainServiceTest {
             // Then
             assertThat(result).isNotNull();
             assertThat(result.currentStatus()).isEqualTo(StudyParticipantStatus.REJECTED);
-            verify(commandRepository).updateStatus(any(), any());
+            verify(commandRepository).softDeleteById(participantId);
         }
 
         @Test

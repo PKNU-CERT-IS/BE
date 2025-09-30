@@ -4,6 +4,7 @@ public enum AttachedType {
     // 문서
     PDF,
     HWP,
+    HWPX,
     WORD,
     PPT,
     PPTX,
