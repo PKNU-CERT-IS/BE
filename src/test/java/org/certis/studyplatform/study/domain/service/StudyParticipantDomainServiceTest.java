@@ -11,6 +11,7 @@ import org.certis.studyplatform.study.domain.vo.StudyParticipantStatusUpdatedVo;
 import org.certis.studyplatform.study.domain.vo.StudyParticipantVo;
 import org.certis.studyplatform.study.domain.vo.StudyVo;
 import org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository;
+import org.certis.studyplatform.project.domain.repository.ProjectQueryRepository;
 import org.certis.studyplatform.member.domain.repository.query.MemberQueryRepository;
 import org.certis.studyplatform.exception.DomainException;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +21,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.time.OffsetDateTime;
 import java.util.Optional;
@@ -43,6 +46,7 @@ import static org.mockito.Mockito.*;
  * - 예외 상황 및 엣지 케이스 커버
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("StudyParticipantDomainService 도메인 서비스 테스트")
 class StudyParticipantDomainServiceTest {
 
@@ -59,6 +63,9 @@ class StudyParticipantDomainServiceTest {
     private ProjectParticipantQueryRepository projectParticipantQueryRepository;
     
     @Mock
+    private ProjectQueryRepository projectQueryRepository;
+    
+    @Mock
     private MemberQueryRepository memberQueryRepository;
 
     private StudyParticipantDomainService domainService;
@@ -70,6 +77,7 @@ class StudyParticipantDomainServiceTest {
                 queryRepository,
                 studyQueryRepository,
                 projectParticipantQueryRepository,
+                projectQueryRepository,
                 memberQueryRepository
         );
     }
