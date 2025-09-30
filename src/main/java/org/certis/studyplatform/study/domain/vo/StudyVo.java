@@ -5,6 +5,7 @@ import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.study.domain.StudyStatus;
 import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
+import org.certis.studyplatform.shared.util.DateTimeUtils;
 
 import java.time.OffsetDateTime;
 import java.util.Collections;
@@ -67,6 +68,9 @@ public record StudyVo(
         if (startDate == null || endDate == null) {
             throw new DomainException(ExceptionStatus.STUDY_DOMAIN_DATE_INVALID, "스터디 시작일과 종료일은 필수입니다");
         }
+
+        // 시작일이 월요일인지 검증
+        DateTimeUtils.validateIsMonday(startDate);
 
         // 스터디 종료 시에는 시작일과 종료일 비교를 건너뛰기
         // (ended_at을 현재 시간으로 설정할 때 startDate가 현재 시간보다 늦을 수 있음)

@@ -152,13 +152,25 @@ public final class DateTimeUtils {
     }
 
     /**
-     * 현재 시간이 특정 날짜 이전인지 확인
+     * 주어진 날짜가 월요일인지 확인
      *
-     * @param dateTime 비교할 날짜시간
-     * @return 이전이면 true
+     * @param dateTime 확인할 날짜시간
+     * @return 월요일이면 true
      */
-    public static boolean isBefore(OffsetDateTime dateTime) {
-        return OffsetDateTime.now().isBefore(dateTime);
+    public static boolean isMonday(OffsetDateTime dateTime) {
+        return dateTime.getDayOfWeek() == DayOfWeek.MONDAY;
+    }
+
+    /**
+     * 주어진 날짜가 월요일인지 검증하고, 아니면 예외를 던짐
+     *
+     * @param dateTime 확인할 날짜시간
+     * @throws IllegalArgumentException 월요일이 아닌 경우
+     */
+    public static void validateIsMonday(OffsetDateTime dateTime) {
+        if (!isMonday(dateTime)) {
+            throw new IllegalArgumentException("시작일은 월요일이어야 합니다. 현재 요일: " + dateTime.getDayOfWeek());
+        }
     }
 
     /**

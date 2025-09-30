@@ -32,14 +32,9 @@ public record MajorVo(String value) {
 
         String trimmedMajor = major.trim();
 
-        if (trimmedMajor.length() < 2 || trimmedMajor.length() > 100) {
+        if (!trimmedMajor.matches("^[가-힣a-zA-Z0-9 \\-(){}<>,.&/+:;_|]+$")) {
             throw new DomainException(ExceptionStatus.MEMBER_DOMAIN_INVALID_MAJOR,
-                    "전공은 2자 이상 100자 이하여야 합니다");
-        }
-
-        if (!trimmedMajor.matches("^[가-힣a-zA-Z\\s\\-()]+$")) {
-            throw new DomainException(ExceptionStatus.MEMBER_DOMAIN_INVALID_MAJOR,
-                    "전공은 한글, 영문, 공백, 하이픈, 괄호만 포함할 수 있습니다");
+                    "전공은 허용되지 않는 문자를 포함할 수 없습니다");
         }
     }
 }

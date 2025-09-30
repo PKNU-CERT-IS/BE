@@ -35,7 +35,7 @@ public enum ExceptionStatus {
     AUTH_APPLICATION_PASSWORD_MISMATCH(HttpStatus.UNAUTHORIZED, "비밀번호가 일치하지 않습니다"),
     AUTH_REFRESH_TOKEN_NOT_FOUND(HttpStatus.UNAUTHORIZED,"리프레시 토큰을 찾을 수 없습니다"),
     // Auth - Domain Layer
-    AUTH_DOMAIN_INVALID_ACCOUNT_NUMBER_LENGTH(HttpStatus.BAD_REQUEST, "계정번호는 6자 이상 20자 이하여야 합니다"),
+    AUTH_DOMAIN_INVALID_ACCOUNT_NUMBER_LENGTH(HttpStatus.BAD_REQUEST, "계정번호는 필수입니다"),
     AUTH_DOMAIN_DUPLICATE_ACCOUNT_NUMBER(HttpStatus.CONFLICT, "이미 존재하는 계정번호입니다"),
     AUTH_DOMAIN_WEAK_PASSWORD(HttpStatus.BAD_REQUEST, "비밀번호 정책을 만족하지 않습니다"),
     AUTH_DOMAIN_ACCOUNT_NOT_APPROVED(HttpStatus.FORBIDDEN, "승인되지 않은 계정입니다"),

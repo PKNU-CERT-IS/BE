@@ -108,6 +108,32 @@ class AdminMemberControllerTest {
 
     @Test
     @Order(2)
+    @DisplayName("👑 관리자 회원 필드 수정 - 같은 등급 권한 변경 성공")
+    void updateMemberAdminFields_ChangeSameLevelRole_Success() throws Exception {
+        // Given: STAFF가 다른 STAFF의 권한을 변경하는 요청
+        AdminMemberUpdateRequestDto request = new AdminMemberUpdateRequestDto(
+                TEST_TARGET_MEMBER_ID,
+                MemberRole.STAFF, // 같은 등급의 권한으로 변경
+                MemberGrade.JUNIOR
+        );
+
+        // When: STAFF 권한으로 회원 필드 수정 API 호출
+        mockMvc.perform(post(BASE_URL + "/update")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.message").value("관리자권한으로 회원 프로필이 성공적으로 갱신되었습니다"))
+                .andExpect(jsonPath("$.data.memberId").value(TEST_TARGET_MEMBER_ID))
+                .andExpect(jsonPath("$.data.newRole").value("STAFF"));
+
+        // Then: 데이터베이스에서 실제 수정 확인
+        verifyMemberRoleUpdatedInDatabase(TEST_TARGET_MEMBER_ID, MemberRole.STAFF);
+    }
+
+    @Test
+    @Order(3)
     @DisplayName("🔍 관리자 회원 검색 - 키워드 검색 성공")
     void searchMembersForAdmin_Success() throws Exception {
         // Given: 검색할 회원이 존재함
@@ -126,7 +152,7 @@ class AdminMemberControllerTest {
     }
 
     @Test
-    @Order(3)
+    @Order(4)
     @DisplayName("⏰ 유예기간 부여 - 성공")
     void grantGracePeriod_Success() throws Exception {
         // Given: 유예기간 부여 요청이 준비됨
@@ -151,7 +177,7 @@ class AdminMemberControllerTest {
     }
 
     @Test
-    @Order(4)
+    @Order(5)
     @DisplayName("⚠️ 벌점 부여 - 성공")
     void assignPenalty_Success() throws Exception {
         // Given: 벌점 부여 요청이 준비됨
@@ -176,7 +202,7 @@ class AdminMemberControllerTest {
     }
 
     @Test
-    @Order(5)
+    @Order(6)
     @DisplayName("🗑️ 회원 삭제 - 성공")
     void deleteMember_Success() throws Exception {
         // Given: 삭제할 회원이 존재함

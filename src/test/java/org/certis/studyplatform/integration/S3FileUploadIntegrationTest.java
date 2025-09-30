@@ -329,6 +329,40 @@ class S3FileUploadIntegrationTest {
 
     @Test
     @Order(9)
+    @DisplayName("📝 HWPX 파일 업로드 테스트")
+    void uploadHwpxFile() throws IOException {
+        // Given: 테스트용 HWPX 파일 생성
+        byte[] hwpxData = createMockHwpxData();
+        String hwpxFileKey = String.format("test-files/%s/test-document.hwpx",
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")));
+
+        try {
+            // When: S3에 HWPX 파일 업로드
+            String uploadedUrl = uploadFile(hwpxData, "application/vnd.hancom.hwpx", hwpxFileKey);
+
+            // Then: 업로드 성공 확인
+            assertThat(uploadedUrl).isNotNull();
+            assertThat(uploadedUrl).contains(bucketName);
+            assertThat(uploadedUrl).contains(hwpxFileKey);
+            log.info("✅ HWPX 파일 업로드 성공: {}", uploadedUrl);
+
+            // When: 업로드된 파일의 메타데이터 확인
+            HeadObjectResponse metadata = getFileMetadata(hwpxFileKey);
+
+            // Then: 파일 크기와 타입 확인
+            assertThat(metadata.contentLength()).isEqualTo(hwpxData.length);
+            assertThat(metadata.contentType()).isEqualTo("application/vnd.hancom.hwpx");
+            log.info("✅ HWPX 파일 메타데이터 검증 성공 - 크기: {}바이트, 타입: {}",
+                    metadata.contentLength(), metadata.contentType());
+
+        } finally {
+            // HWPX 파일 정리 (필요시)
+            // deleteFileIfExists(hwpxFileKey);
+        }
+    }
+
+    @Test
+    @Order(10)
     @DisplayName("📁 다중 파일 타입 업로드 테스트")
     void uploadMultipleFileTypes() throws IOException {
         // Given: 여러 파일 타입 준비
@@ -338,48 +372,56 @@ class S3FileUploadIntegrationTest {
         byte[] zipData = createMockZipData();
         byte[] pdfData = createMockPdfData();
         byte[] hwpData = createMockHwpData();
+        byte[] hwpxData = createMockHwpxData();
 
         // 파일 키 생성
         String zipKey = String.format("multi-test/%s/archive.zip", timestamp);
         String pdfKey = String.format("multi-test/%s/document.pdf", timestamp);
         String hwpKey = String.format("multi-test/%s/document.hwp", timestamp);
+        String hwpxKey = String.format("multi-test/%s/document.hwpx", timestamp);
 
         try {
             // When: 여러 파일 타입 동시 업로드
             String zipUrl = uploadFile(zipData, "application/zip", zipKey);
             String pdfUrl = uploadFile(pdfData, "application/pdf", pdfKey);
             String hwpUrl = uploadFile(hwpData, "application/haansofthwp", hwpKey);
+            String hwpxUrl = uploadFile(hwpxData, "application/vnd.hancom.hwpx", hwpxKey);
 
             // Then: 모든 파일 업로드 성공 확인
             assertThat(zipUrl).contains(zipKey);
             assertThat(pdfUrl).contains(pdfKey);
             assertThat(hwpUrl).contains(hwpKey);
+            assertThat(hwpxUrl).contains(hwpxKey);
 
             // When: 모든 파일 존재 여부 확인
             boolean zipExists = checkFileExists(zipKey);
             boolean pdfExists = checkFileExists(pdfKey);
             boolean hwpExists = checkFileExists(hwpKey);
+            boolean hwpxExists = checkFileExists(hwpxKey);
 
             // Then: 모든 파일이 존재함을 확인
             assertThat(zipExists).isTrue();
             assertThat(pdfExists).isTrue();
             assertThat(hwpExists).isTrue();
+            assertThat(hwpxExists).isTrue();
 
             log.info("✅ 다중 파일 타입 업로드 테스트 성공");
             log.info("   ZIP: {}", zipUrl);
             log.info("   PDF: {}", pdfUrl);
             log.info("   HWP: {}", hwpUrl);
+            log.info("   HWPX: {}", hwpxUrl);
 
         } finally {
             // 테스트 파일 정리 (필요시)
             // deleteFileIfExists(zipKey);
             // deleteFileIfExists(pdfKey);
             // deleteFileIfExists(hwpKey);
+            // deleteFileIfExists(hwpxKey);
         }
     }
 
     @Test
-    @Order(10)
+    @Order(11)
     @DisplayName("📚 모든 AttachedType 유사 MIME 업로드 스모크 테스트")
     void uploadAllAttachedTypeLikeFiles() throws IOException {
         String ts = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
@@ -387,6 +429,7 @@ class S3FileUploadIntegrationTest {
         // 문서류
         assertThat(uploadFile(createMockPdfData(), "application/pdf", String.format("types/%s/doc.pdf", ts))).contains("doc.pdf");
         assertThat(uploadFile(createMockHwpData(), "application/haansofthwp", String.format("types/%s/doc.hwp", ts))).contains("doc.hwp");
+        assertThat(uploadFile(createMockHwpxData(), "application/vnd.hancom.hwpx", String.format("types/%s/doc.hwpx", ts))).contains("doc.hwpx");
         assertThat(uploadFile("hello".getBytes(StandardCharsets.UTF_8), "text/plain", String.format("types/%s/readme.txt", ts))).contains("readme.txt");
         assertThat(uploadFile("excel".getBytes(StandardCharsets.UTF_8), "application/vnd.ms-excel", String.format("types/%s/sheet.xls", ts))).contains("sheet.xls");
         assertThat(uploadFile("excelx".getBytes(StandardCharsets.UTF_8), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", String.format("types/%s/sheet.xlsx", ts))).contains("sheet.xlsx");
@@ -616,5 +659,25 @@ class S3FileUploadIntegrationTest {
         }
 
         return mockHwpData;
+    }
+
+    private byte[] createMockHwpxData() {
+        // HWPX 파일은 XML 기반의 한글 문서 형식
+        // 테스트용으로 간단한 XML 구조 생성
+        String hwpxContent = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <office:document xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
+                                xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0"
+                                xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0"
+                                office:version="1.2">
+                    <office:body>
+                        <office:text>
+                            <text:p>테스트 HWPX 문서입니다.</text:p>
+                        </office:text>
+                    </office:body>
+                </office:document>
+                """;
+
+        return hwpxContent.getBytes(StandardCharsets.UTF_8);
     }
 }

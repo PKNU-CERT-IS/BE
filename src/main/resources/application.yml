@@ -212,7 +212,7 @@ app:
 
   # 파일 업로드 기본 설정
   file:
-    allowed-types: ${FILE_ALLOWED_TYPES:jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx,ppt,pptx}
+    allowed-types: ${FILE_ALLOWED_TYPES:jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx,ppt,pptx,hwp,hwpx}
 
   # 성능 모니터링 설정
   monitoring:

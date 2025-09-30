@@ -108,6 +108,8 @@ public class SecurityConfig {
                                 "/favicon.ico",
                                 "/error"
                         ).permitAll()
+                        // Admin API는 STAFF 이상 권한 필요
+                        .requestMatchers("/api/v1/admin/**").hasAnyRole("STAFF", "VICECHAIRMAN", "CHAIRMAN", "ADMIN")
                         // 그 외 모든 요청은 인증 필요
                         .anyRequest().authenticated()
                 )

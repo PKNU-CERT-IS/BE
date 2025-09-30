@@ -272,8 +272,8 @@ public class ProfileCommandRepositoryImpl implements ProfileCommandRepository {
         log.debug("Command Infrastructure: Uploading profile image for member ID: {}", memberIdVo.toLong());
 
         try {
-            // S3에 이미지 업로드
-            String imageUrl = s3FileService.uploadFile(file, "profile");
+            // S3에 프로필 이미지 업로드 (10MB 제한)
+            String imageUrl = s3FileService.uploadProfileImage(file, "profile", memberIdVo.toLong());
 
             // 프로필에 이미지 URL 업데이트
             memberJpaRepository.findById(memberIdVo.toLong())
