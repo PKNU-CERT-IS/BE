@@ -32,7 +32,7 @@ public record MajorVo(String value) {
 
         String trimmedMajor = major.trim();
 
-        if (!trimmedMajor.matches("^[가-힣a-zA-Z0-9 \\-(){}<>,.&/+:;_|]+$")) {
+        if (!trimmedMajor.matches("^[가-힣a-zA-Z0-9 \\-(){}<>,.·&/+:;_|]+$")) {
             throw new DomainException(ExceptionStatus.MEMBER_DOMAIN_INVALID_MAJOR,
                     "전공은 허용되지 않는 문자를 포함할 수 없습니다");
         }
