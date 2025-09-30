@@ -322,7 +322,7 @@ import static org.mockito.Mockito.times;
                 GetBoardDetailQuery query = new GetBoardDetailQuery(boardId, memberId);
                 
                 BoardVo boardVo = createMockBoard(boardId, 200L);
-                BoardAuthorInfoVo authorInfo = new BoardAuthorInfoVo("작성자", MemberRole.UPSOLVER);
+                BoardAuthorInfoVo authorInfo = new BoardAuthorInfoVo("작성자", MemberRole.UPSOLVER, null);
                 
                 given(boardQueryRepository.findByIdWithAttachments(any(BoardIdVo.class))).willReturn(Optional.of(boardVo));
                 given(boardQueryRepository.getAuthorInfo(any(BoardIdVo.class))).willReturn(authorInfo);
@@ -376,6 +376,67 @@ import static org.mockito.Mockito.times;
 
                 // When & Then
                 assertThatNoException().isThrownBy(() -> boardDomainService.createBoard(command));
+            }
+
+            @Test
+            @DisplayName("동일 사용자의 중복 조회는 증가하지 않음")
+            void getBoardDetail_DuplicateView_NoIncrement() {
+                // Given
+                Long boardId = 1L;
+                Long memberId = 100L;
+                GetBoardDetailQuery query = new GetBoardDetailQuery(boardId, memberId);
+
+                BoardVo boardVo = createMockBoard(boardId, 200L);
+                BoardAuthorInfoVo authorInfo = new BoardAuthorInfoVo("작성자", MemberRole.UPSOLVER, null);
+
+                given(boardQueryRepository.findByIdWithAttachments(any(BoardIdVo.class))).willReturn(Optional.of(boardVo));
+                given(boardQueryRepository.getAuthorInfo(any(BoardIdVo.class))).willReturn(authorInfo);
+                // 이미 본 사용자라면 addView 호출 없이 통계만 읽음
+                given(boardRedisRepository.isViewedByMember(any(BoardIdVo.class), eq(memberId))).willReturn(true);
+                given(boardRedisRepository.getLikeCount(any(BoardIdVo.class))).willReturn(5L);
+                given(boardRedisRepository.getViewCount(any(BoardIdVo.class))).willReturn(100L);
+                given(boardRedisRepository.isLikedByMember(any(BoardIdVo.class), any())).willReturn(false);
+
+                // When
+                BoardDetailVo result = boardDomainService.getBoardDetail(query);
+
+                // Then
+                assertAll(
+                        () -> assertThat(result.viewCount()).isEqualTo(100L),
+                        () -> assertThat(result.likeCount()).isEqualTo(5L)
+                );
+                // addView 호출되지 않음
+                then(boardRedisRepository).should(times(0)).addView(any(BoardIdVo.class), any());
+                then(boardRedisRepository).should(times(1)).isViewedByMember(any(BoardIdVo.class), eq(memberId));
+            }
+        }
+
+        @Nested
+        @DisplayName("좋아요 선동기화(DB→Redis) 테스트")
+        class LikePreSyncTest {
+
+            @Test
+            @DisplayName("Redis에 없고 DB에 있으면 pre-sync로 addLike 호출")
+            void toggleLike_PreSync_AddsLikeFromDb() {
+                Long boardId = 1L; Long authorId = 100L; Long likerId = 200L;
+                var cmd = ToggleLikeCommand.of(boardId, likerId);
+
+                var existing = createMockBoard(boardId, authorId);
+                given(boardQueryRepository.findById(any())).willReturn(Optional.of(existing));
+
+                // Redis에는 아직 없는 상태
+                given(boardRedisRepository.isLikedByMember(any(BoardIdVo.class), eq(likerId))).willReturn(false);
+                // DB에는 과거 like 기록 존재
+                given(boardQueryRepository.hasMemberLiked(any(BoardIdVo.class), eq(likerId))).willReturn(true);
+                // 토글 이후 count 조회
+                given(boardRedisRepository.getLikeCount(any(BoardIdVo.class))).willReturn(6L);
+
+                // When
+                BoardLikeVo result = boardDomainService.toggleLike(cmd);
+
+                // Then
+                assertThat(result.isLiked()).isTrue();
+                then(boardRedisRepository).should(times(2)).addLike(any(BoardIdVo.class), eq(likerId)); // pre-sync 1회 + 토글 1회
             }
         }
 

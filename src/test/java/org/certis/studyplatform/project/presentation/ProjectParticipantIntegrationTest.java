@@ -164,7 +164,8 @@ class ProjectParticipantIntegrationTest {
 
             // When & Then: 관리자가 승인
             var approveReq = new ProjectJoinApproveRequestDto();
-            approveReq.setParticipantId(TEST_PROJECT_PARTICIPANT_ID);
+            approveReq.setProjectId(TEST_PROJECT_ID);
+            approveReq.setMemberId(TEST_MEMBER_ID);
             mockMvc.perform(post("/api/v1/project/participant/join/approve")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(approveReq)))
@@ -188,7 +189,8 @@ class ProjectParticipantIntegrationTest {
 
             // When & Then: 권한 없는 사용자가 승인 시도
             var approveReq2 = new ProjectJoinApproveRequestDto();
-            approveReq2.setParticipantId(TEST_PROJECT_PARTICIPANT_ID);
+            approveReq2.setProjectId(TEST_PROJECT_ID);
+            approveReq2.setMemberId(TEST_MEMBER_ID);
             mockMvc.perform(post("/api/v1/project/participant/join/approve")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(approveReq2)))
@@ -208,7 +210,8 @@ class ProjectParticipantIntegrationTest {
 
             // When & Then: CHAIRMAN이 승인
             var approveReq3 = new ProjectJoinApproveRequestDto();
-            approveReq3.setParticipantId(TEST_PROJECT_PARTICIPANT_ID);
+            approveReq3.setProjectId(TEST_PROJECT_ID);
+            approveReq3.setMemberId(TEST_MEMBER_ID);
             mockMvc.perform(post("/api/v1/project/participant/join/approve")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(approveReq3)))
@@ -237,7 +240,8 @@ class ProjectParticipantIntegrationTest {
 
             // When: 거절 요청
             var rejectReq = new ProjectJoinRejectRequestDto();
-            rejectReq.setParticipantId(TEST_PROJECT_PARTICIPANT_ID);
+            rejectReq.setProjectId(TEST_PROJECT_ID);
+            rejectReq.setMemberId(TEST_MEMBER_ID);
             mockMvc.perform(post("/api/v1/project/participant/join/reject")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(rejectReq)))

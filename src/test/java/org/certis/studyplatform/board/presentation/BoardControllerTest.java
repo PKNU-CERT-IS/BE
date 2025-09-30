@@ -110,7 +110,12 @@ public class BoardControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value(ResponseStatus.BOARD_FIND_SUCCESS.getMessage()))
-                .andExpect(jsonPath("$.data.boardId").value(TEST_BOARD_ID));
+                .andExpect(jsonPath("$.data.boardId").value(TEST_BOARD_ID))
+                .andExpect(jsonPath("$.data.author").exists())
+                .andExpect(jsonPath("$.data.author.memberId").exists())
+                .andExpect(jsonPath("$.data.author.name").exists())
+                .andExpect(jsonPath("$.data.author.role").exists())
+                .andExpect(jsonPath("$.data.author.profileImageUrl").exists());
     }
 
     @Test

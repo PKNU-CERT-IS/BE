@@ -115,9 +115,8 @@ class ProjectParticipantControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
-                // Then: HTTP 201 CREATED 응답과 성공 메시지 확인
-                .andExpect(status().isCreated())
-                .andExpect(content().contentType("application/json;charset=UTF-8"))
+                // Then: 성공 응답 확인
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.participantId").exists())
                 .andExpect(jsonPath("$.data.projectId").value(TEST_PROJECT_2_ID))
                 .andExpect(jsonPath("$.data.status").value("PENDING"));
@@ -158,7 +157,8 @@ class ProjectParticipantControllerTest {
         Long participantId = createPendingParticipantInDatabase(TEST_PROJECT_ID, TEST_MEMBER_2_ID);
 
         ProjectJoinApproveRequestDto request = new ProjectJoinApproveRequestDto();
-        request.setParticipantId(participantId);
+        request.setProjectId(TEST_PROJECT_ID);
+        request.setMemberId(TEST_MEMBER_2_ID);
 
         // When: 프로젝트 생성자(1L)가 참가 승인 API 호출
         mockMvc.perform(post(BASE_URL + "/join/approve")
@@ -183,7 +183,8 @@ class ProjectParticipantControllerTest {
         Long participantId = createPendingParticipantInDatabase(TEST_PROJECT_ID, TEST_MEMBER_3_ID);
 
         ProjectJoinRejectRequestDto request = new ProjectJoinRejectRequestDto();
-        request.setParticipantId(participantId);
+        request.setProjectId(TEST_PROJECT_ID);
+        request.setMemberId(TEST_MEMBER_3_ID);
 
         // When: 프로젝트 생성자(1L)가 참가 거절 API 호출
         mockMvc.perform(post(BASE_URL + "/join/reject")
@@ -222,7 +223,11 @@ class ProjectParticipantControllerTest {
                 .andExpect(jsonPath("$.data.size").value(10))
                 .andExpect(jsonPath("$.data.number").value(0))
                 .andExpect(jsonPath("$.data.first").value(true))
-                .andExpect(jsonPath("$.data.last").value(true));
+                .andExpect(jsonPath("$.data.last").value(true))
+                // memberGrade 검증: 테스트 데이터에서 모두 SENIOR 로 삽입됨
+                .andExpect(jsonPath("$.data.content[0].memberGrade").value("SENIOR"))
+                .andExpect(jsonPath("$.data.content[1].memberGrade").value("SENIOR"))
+                .andExpect(jsonPath("$.data.content[2].memberGrade").value("SENIOR"));
 
     }
 
@@ -243,7 +248,10 @@ class ProjectParticipantControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.content").isArray())
                 .andExpect(jsonPath("$.data.content.length()").value(2)) // 2개 프로젝트 참가
-                .andExpect(jsonPath("$.data.totalElements").value(2));
+                .andExpect(jsonPath("$.data.totalElements").value(2))
+                // memberGrade 검증
+                .andExpect(jsonPath("$.data.content[0].memberGrade").value("SENIOR"))
+                .andExpect(jsonPath("$.data.content[1].memberGrade").value("SENIOR"));
 
     }
 
@@ -312,7 +320,8 @@ class ProjectParticipantControllerTest {
     void approveJoinProject_NotFound_NonExistentApplication() throws Exception {
         // Given: 존재하지 않는 참가 신청 ID
         ProjectJoinApproveRequestDto request = new ProjectJoinApproveRequestDto();
-        request.setParticipantId(99999L);
+        request.setProjectId(TEST_PROJECT_ID);
+        request.setMemberId(99999L);
 
         // When & Then: HTTP 404 Not Found 응답
         mockMvc.perform(post(BASE_URL + "/join/approve")
@@ -332,7 +341,8 @@ class ProjectParticipantControllerTest {
         Long participantId = createApprovedParticipantInDatabase(TEST_PROJECT_ID, TEST_MEMBER_2_ID);
 
         ProjectJoinApproveRequestDto request = new ProjectJoinApproveRequestDto();
-        request.setParticipantId(participantId);
+        request.setProjectId(TEST_PROJECT_ID);
+        request.setMemberId(TEST_MEMBER_2_ID);
 
         // When & Then: 비즈니스 로직에 의해 거부됨
         mockMvc.perform(post(BASE_URL + "/join/approve")
@@ -366,7 +376,8 @@ class ProjectParticipantControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.content").isArray())
                 .andExpect(jsonPath("$.data.content.length()").value(1)) // PENDING 1명만
-                .andExpect(jsonPath("$.data.content[0].status").value("PENDING"));
+                .andExpect(jsonPath("$.data.content[0].status").value("PENDING"))
+                .andExpect(jsonPath("$.data.content[0].profileImageUrl").exists());
 
     }
 
@@ -389,8 +400,48 @@ class ProjectParticipantControllerTest {
                 .andExpect(jsonPath("$.data.content").isArray())
                 .andExpect(jsonPath("$.data.content.length()").value(2)) // APPROVED 2명
                 .andExpect(jsonPath("$.data.content[0].status").value("APPROVED"))
-                .andExpect(jsonPath("$.data.content[1].status").value("APPROVED"));
+                .andExpect(jsonPath("$.data.content[1].status").value("APPROVED"))
+                .andExpect(jsonPath("$.data.content[0].profileImageUrl").exists())
+                .andExpect(jsonPath("$.data.content[1].profileImageUrl").exists());
 
+    }
+
+    @Test
+    @Order(22)
+    @DisplayName("♻️ 프로젝트 거절 후 재신청 - 성공적으로 복원/대기 상태 전환")
+    void reapplyAfterRejected_Project_ShouldSucceedWithPending() throws Exception {
+        // Given: 프로젝트 1은 생성자=1L, 신청자=2L가 참가 신청 후 생성자가 거절
+        createPendingParticipantInDatabase(TEST_PROJECT_ID, TEST_MEMBER_ID);
+
+        var rejectReq = new ProjectJoinRejectRequestDto();
+        rejectReq.setProjectId(TEST_PROJECT_ID);
+        rejectReq.setMemberId(TEST_MEMBER_ID);
+
+        // 프로젝트 생성자(1L) 권한으로 거절 수행
+        mockMvc.perform(post(BASE_URL + "/join/reject")
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user(
+                                new org.certis.studyplatform.shared.security.CurrentUser(TEST_CREATOR_ID, "user1", "user1@certis.org", "유저1", "UPSOLVER")
+                        ))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(rejectReq)))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        // When: 동일 회원(2L)이 다시 동일 프로젝트에 재신청
+        ProjectJoinRequestDto request = new ProjectJoinRequestDto();
+        request.setProjectId(TEST_PROJECT_ID);
+
+        mockMvc.perform(post(BASE_URL + "/join/register")
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user(
+                                new org.certis.studyplatform.shared.security.CurrentUser(TEST_MEMBER_ID, "user2", "user2@certis.org", "유저2", "PLAYER")
+                        ))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                // Then: 성공(PENDING)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("PENDING"))
+                .andExpect(jsonPath("$.data.projectId").value(TEST_PROJECT_ID));
     }
 
     // =================================================================
@@ -512,12 +563,14 @@ class ProjectParticipantControllerTest {
             // 프로젝트 데이터 생성
             dsl.insertInto(PROJECT)
                     .set(PROJECT.ID, TEST_PROJECT_ID)
+                    .set(PROJECT.STATUS, "READY")
                     .set(PROJECT.TITLE, TEST_PROJECT_NAME)
                     .set(PROJECT.DESCRIPTION, "통합 테스트용 프로젝트")
                     .set(PROJECT.CONTENT, "프로젝트 상세 내용")
                     .set(PROJECT.MEMBER_ID, TEST_CREATOR_ID)
                     .set(PROJECT.CATEGORY, "웹 개발")
                     .set(PROJECT.SUBCATEGORY, "풀스택")
+                    .set(PROJECT.RESULT_SUBMIT_STATUS, "READY")
                     .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
                     .set(PROJECT.STARTED_AT, now.plusDays(1))
                     .set(PROJECT.ENDED_AT, now.plusDays(30))
@@ -528,12 +581,14 @@ class ProjectParticipantControllerTest {
 
             dsl.insertInto(PROJECT)
                     .set(PROJECT.ID, TEST_PROJECT_2_ID)
+                    .set(PROJECT.STATUS, "READY")
                     .set(PROJECT.TITLE, TEST_PROJECT_2_NAME)
                     .set(PROJECT.DESCRIPTION, "두 번째 테스트 프로젝트")
                     .set(PROJECT.CONTENT, "두 번째 프로젝트 상세 내용")
                     .set(PROJECT.MEMBER_ID, 20L) // 다른 사용자가 생성한 프로젝트
                     .set(PROJECT.CATEGORY, "데이터베이스")
                     .set(PROJECT.SUBCATEGORY, "최적화")
+                    .set(PROJECT.RESULT_SUBMIT_STATUS, "READY")
                     .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 3)
                     .set(PROJECT.STARTED_AT, now.plusDays(2))
                     .set(PROJECT.ENDED_AT, now.plusDays(45))

@@ -24,15 +24,15 @@ class StudyVoTest {
     void updateFrom_whenStartDateIsAfterCurrentTime_shouldSetStatusToApproved() {
         // Given
         OffsetDateTime now = OffsetDateTime.now();
-        OffsetDateTime futureStartDate = now.plusDays(7); // 7일 후
-        OffsetDateTime futureEndDate = now.plusDays(30); // 30일 후
+        OffsetDateTime futureStartDate = alignToNextMonday(now.plusDays(7));
+        OffsetDateTime futureEndDate = futureStartDate.plusDays(30);
         
         // READY 상태인 스터디 (startDate 변경이 허용되는 상태)
         StudyVo existingStudy = createTestStudyVo(
             "READY", 
             ResultSubmitStatus.READY,
-            now.plusDays(1), // 미래 시작일 (READY 상태 유지)
-            now.plusDays(10)  // 미래 종료일
+            alignToNextMonday(now.plusDays(1)), // 미래 시작일 (READY 상태 유지)
+            alignToNextMonday(now.plusDays(1)).plusDays(10)  // 미래 종료일
         );
 
         // When
@@ -61,14 +61,14 @@ class StudyVoTest {
     void updateFrom_whenStartDateIsBeforeCurrentTime_shouldApplyExistingLogic() {
         // Given
         OffsetDateTime now = OffsetDateTime.now();
-        OffsetDateTime pastStartDate = now.minusDays(1); // 1일 전
-        OffsetDateTime futureEndDate = now.plusDays(10); // 10일 후
+        OffsetDateTime pastStartDate = alignToNextMonday(now.minusDays(8)); // 이전 주 월요일
+        OffsetDateTime futureEndDate = pastStartDate.plusDays(10);
         
         StudyVo existingStudy = createTestStudyVo(
             "READY", 
             ResultSubmitStatus.READY,
-            now.minusDays(2), // 과거 시작일
-            now.plusDays(5)   // 미래 종료일
+            alignToNextMonday(now.minusDays(9)), // 더 과거 시작일
+            alignToNextMonday(now.minusDays(9)).plusDays(12)   // 미래 종료일
         );
 
         // When
@@ -97,15 +97,15 @@ class StudyVoTest {
     void updateFrom_whenEndDateIsBeforeCurrentTime_shouldSetStatusToCompleted() {
         // Given
         OffsetDateTime now = OffsetDateTime.now();
-        OffsetDateTime pastStartDate = now.minusDays(10); // 10일 전
-        OffsetDateTime pastEndDate = now.minusDays(1);    // 1일 전
+        OffsetDateTime pastStartDate = alignToNextMonday(now.minusDays(14)); // 2주 전 월요일
+        OffsetDateTime pastEndDate = pastStartDate.plusDays(1);
         
         // READY 상태인 스터디 (startDate 변경이 허용되는 상태)
         StudyVo existingStudy = createTestStudyVo(
             "READY", 
             ResultSubmitStatus.READY,
-            now.plusDays(1), // 미래 시작일 (READY 상태 유지)
-            now.plusDays(5)  // 미래 종료일
+            alignToNextMonday(now.plusDays(1)), // 미래 시작일 (READY 상태 유지)
+            alignToNextMonday(now.plusDays(1)).plusDays(5)  // 미래 종료일
         );
 
         // When
@@ -177,7 +177,7 @@ class StudyVoTest {
     void updateFrom_whenStatusIsNotReadyAndStartDateChanged_shouldThrowException() {
         // Given
         OffsetDateTime now = OffsetDateTime.now();
-        OffsetDateTime newStartDate = now.plusDays(7);
+        OffsetDateTime newStartDate = alignToNextMonday(now.plusDays(7));
         
         // INPROGRESS 상태인 스터디
         StudyVo existingStudy = createTestStudyVo(
@@ -209,15 +209,15 @@ class StudyVoTest {
     void updateFrom_whenStatusIsReadyAndStartDateChanged_shouldAllowChange() {
         // Given
         OffsetDateTime now = OffsetDateTime.now();
-        OffsetDateTime newStartDate = now.plusDays(7);
-        OffsetDateTime newEndDate = now.plusDays(30);
+        OffsetDateTime newStartDate = alignToNextMonday(now.plusDays(7));
+        OffsetDateTime newEndDate = newStartDate.plusDays(30);
         
         // READY 상태인 스터디
         StudyVo existingStudy = createTestStudyVo(
             "READY", 
             ResultSubmitStatus.READY,
-            now.plusDays(1), // 미래 시작일
-            now.plusDays(10)  // 미래 종료일
+            alignToNextMonday(now.plusDays(1)), // 미래 시작일
+            alignToNextMonday(now.plusDays(1)).plusDays(10)  // 미래 종료일
         );
 
         // When
@@ -318,8 +318,8 @@ class StudyVoTest {
     void updateFrom_whenStatusIsCompleted_shouldMaintainStatus() {
         // Given
         OffsetDateTime now = OffsetDateTime.now();
-        OffsetDateTime pastStartDate = now.minusDays(10);
-        OffsetDateTime pastEndDate = now.minusDays(1);
+        OffsetDateTime pastStartDate = alignToNextMonday(now.minusDays(14));
+        OffsetDateTime pastEndDate = pastStartDate.plusDays(1);
         
         // COMPLETED 상태인 스터디
         StudyVo existingStudy = createTestStudyVo(
@@ -386,6 +386,9 @@ class StudyVoTest {
 
     private StudyVo createTestStudyVo(String status, ResultSubmitStatus resultSubmitStatus, 
                                     OffsetDateTime startDate, OffsetDateTime endDate) {
+        // Align start to Monday to satisfy domain rule
+        OffsetDateTime mondayStart = alignToNextMonday(startDate);
+        OffsetDateTime safeEnd = endDate.isAfter(mondayStart) ? endDate : mondayStart.plusDays(7);
         return new StudyVo(
             1L,
             "Test Study",
@@ -393,13 +396,14 @@ class StudyVoTest {
             "Test Content",
             "SECURITY",
             "WEB",
-            startDate,
-            endDate,
+            mondayStart,
+            safeEnd,
             OffsetDateTime.now().minusDays(30),
             OffsetDateTime.now().minusDays(1),
             1L,
             "Test Creator",
             MemberGrade.FRESHMAN,
+            null, // creatorProfileImageUrl
             "2024-1",
             status,
             resultSubmitStatus,
@@ -410,6 +414,89 @@ class StudyVoTest {
             Collections.emptyList(),
             Collections.emptyList()
         );
+    }
+
+    private OffsetDateTime alignToNextMonday(OffsetDateTime source) {
+        java.time.DayOfWeek dow = source.getDayOfWeek();
+        int shift = java.time.DayOfWeek.MONDAY.getValue() - dow.getValue();
+        if (shift < 0) {
+            shift += 7;
+        }
+        return source.plusDays(shift);
+    }
+
+    @Test
+    @DisplayName("create - 시작일이 월요일이 아니면 예외")
+    void create_whenStartDateIsNotMonday_shouldThrow() {
+        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime nonMondayStart = now.plusDays(1);
+        OffsetDateTime end = nonMondayStart.plusDays(7);
+
+        assertThatThrownBy(() -> new StudyVo(
+            null,
+            "title",
+            "desc",
+            "content",
+            "SECURITY",
+            "WEB",
+            nonMondayStart,
+            end,
+            now.minusDays(1),
+            now,
+            1L,
+            "creator",
+            MemberGrade.FRESHMAN,
+            null, // creatorProfileImageUrl
+            "2024-1",
+            StudyStatus.READY.name(),
+            ResultSubmitStatus.READY,
+            5,
+            0,
+            true,
+            Collections.emptyList(),
+            Collections.emptyList(),
+            Collections.emptyList()
+        ))
+        .isInstanceOf(DomainException.class)
+        .hasFieldOrPropertyWithValue("status", ExceptionStatus.STUDY_DOMAIN_INVALID_START_DAY);
+    }
+
+    @Test
+    @DisplayName("create - 시작일이 종료일보다 늦으면 예외")
+    void create_whenStartAfterEnd_shouldThrow() {
+        OffsetDateTime start = OffsetDateTime.now().plusDays(8);
+        start = start.plusDays(java.time.DayOfWeek.MONDAY.getValue() - start.getDayOfWeek().getValue());
+        OffsetDateTime end = start.minusDays(1);
+
+        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime finalStart = start;
+        assertThatThrownBy(() -> new StudyVo(
+            null,
+            "title",
+            "desc",
+            "content",
+            "SECURITY",
+            "WEB",
+            finalStart,
+            end,
+            now.minusDays(1),
+            now,
+            1L,
+            "creator",
+            MemberGrade.FRESHMAN,
+            null, // creatorProfileImageUrl
+            "2024-1",
+            StudyStatus.READY.name(),
+            ResultSubmitStatus.READY,
+            5,
+            0,
+            true,
+            Collections.emptyList(),
+            Collections.emptyList(),
+            Collections.emptyList()
+        ))
+        .isInstanceOf(DomainException.class)
+        .hasFieldOrPropertyWithValue("status", ExceptionStatus.STUDY_DOMAIN_DATE_INVALID);
     }
 
     @Test

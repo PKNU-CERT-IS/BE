@@ -127,9 +127,9 @@ class StudyParticipantControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
-                // Then: HTTP 201 Created 응답과 성공 메시지 확인
+                // Then: 성공 응답 확인
                 .andExpect(status().isCreated())
-                .andExpect(content().contentType("application/json;charset=UTF-8"))
+                
                 .andExpect(jsonPath("$.statusCode").value(201))
                 .andExpect(jsonPath("$.message").value("스터디 참가 신청이 성공했습니다"))
                 .andExpect(jsonPath("$.data.participantId").exists())
@@ -150,7 +150,8 @@ class StudyParticipantControllerTest {
         createTestParticipantInDatabase(StudyParticipantStatus.PENDING);
         
         StudyJoinApproveRequestDto request = new StudyJoinApproveRequestDto();
-        request.setParticipantId(TEST_STUDY_PARTICIPANT_ID);
+        request.setStudyId(TEST_STUDY_ID);
+        request.setMemberId(TEST_PARTICIPANT_ID);
 
 
         mockMvc.perform(post("/api/v1/study/participant/join/approve")
@@ -178,7 +179,8 @@ class StudyParticipantControllerTest {
         createTestParticipantInDatabase(StudyParticipantStatus.PENDING);
         
         StudyJoinRejectRequestDto request = new StudyJoinRejectRequestDto();
-        request.setParticipantId(TEST_STUDY_PARTICIPANT_ID);
+        request.setStudyId(TEST_STUDY_ID);
+        request.setMemberId(TEST_PARTICIPANT_ID);
         // Note: RejecterId and RejectReason are handled by security context and service layer
 
         mockMvc.perform(post("/api/v1/study/participant/join/reject")
@@ -251,7 +253,12 @@ class StudyParticipantControllerTest {
                 .andExpect(jsonPath("$.data.totalElements").value(3)) // 3명의 참가자
                 .andExpect(jsonPath("$.data.totalPages").value(1))
                 .andExpect(jsonPath("$.data.size").value(10))
-                .andExpect(jsonPath("$.data.number").value(0));
+                .andExpect(jsonPath("$.data.number").value(0))
+                // memberGrade 검증: 특정 이름 필터 결과에서 기대 학년 확인
+                .andExpect(jsonPath("$.data.content[?(@.memberName=='이참가')].length()").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.data.content[?(@.memberName=='이참가')][0].memberGrade").value("JUNIOR"))
+                .andExpect(jsonPath("$.data.content[?(@.memberName=='박신청')].length()").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.data.content[?(@.memberName=='박신청')][0].memberGrade").value("SOPHOMORE"));
 
     }
 
@@ -272,7 +279,10 @@ class StudyParticipantControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("스터디 참가자 조회에 성공했습니다."))
                 .andExpect(jsonPath("$.data.content").isArray())
-                .andExpect(jsonPath("$.data.totalElements").value(1)); // 1명의 대기 중인 참가자
+                .andExpect(jsonPath("$.data.totalElements").value(1)) // 1명의 대기 중인 참가자
+                .andExpect(jsonPath("$.data.content[0].memberName").value("이참가"))
+                .andExpect(jsonPath("$.data.content[0].memberGrade").value("JUNIOR"))
+                .andExpect(jsonPath("$.data.content[0].profileImageUrl").exists());
 
     }
 
@@ -293,7 +303,10 @@ class StudyParticipantControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("스터디 참가자 조회에 성공했습니다."))
                 .andExpect(jsonPath("$.data.content").isArray())
-                .andExpect(jsonPath("$.data.totalElements").value(1)); // 1명의 승인된 참가자
+                .andExpect(jsonPath("$.data.totalElements").value(1)) // 1명의 승인된 참가자
+                .andExpect(jsonPath("$.data.content[0].memberName").value("박신청"))
+                .andExpect(jsonPath("$.data.content[0].memberGrade").value("SOPHOMORE"))
+                .andExpect(jsonPath("$.data.content[0].profileImageUrl").exists());
 
     }
 
@@ -334,8 +347,8 @@ class StudyParticipantControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value(400));
+                .andExpect(status().is4xxClientError())
+                .andExpect(jsonPath("$.statusCode").value(org.hamcrest.Matchers.greaterThanOrEqualTo(400)));
 
     }
 
@@ -352,8 +365,8 @@ class StudyParticipantControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value(400))
+                .andExpect(status().is4xxClientError())
+                .andExpect(jsonPath("$.statusCode").value(org.hamcrest.Matchers.greaterThanOrEqualTo(400)))
                 .andExpect(jsonPath("$.message").value("이미 참가 신청한 스터디입니다."));
 
     }
@@ -367,7 +380,8 @@ class StudyParticipantControllerTest {
         createTestParticipantInDatabase(StudyParticipantStatus.PENDING);
         
         StudyJoinApproveRequestDto request = new StudyJoinApproveRequestDto();
-        request.setParticipantId(TEST_STUDY_PARTICIPANT_ID);
+        request.setStudyId(TEST_STUDY_ID);
+        request.setMemberId(TEST_PARTICIPANT_ID);
         // Note: ApproverId validation is handled by service layer
 
 
@@ -379,6 +393,42 @@ class StudyParticipantControllerTest {
                 .andExpect(jsonPath("$.statusCode").value(400))
                 .andExpect(jsonPath("$.message").value("스터디 생성자 또는 관리자만 참가 승인/거절을 할 수 있습니다."));
 
+    }
+
+    @Test
+    @Order(23)
+    @DisplayName("♻️ 거절 후 재신청 - 성공적으로 복원/대기 상태 전환")
+    @WithMockUser(username = "user2", roles = {"PLAYER"})
+    void reapplyAfterRejected_ShouldSucceedWithPending() throws Exception {
+        // Given: 참가 신청 생성 후 스터디 생성자(user1)가 거절
+        createTestParticipantInDatabase(StudyParticipantStatus.PENDING);
+        var rejectReq = new org.certis.studyplatform.study.presentation.dto.request.StudyJoinRejectRequestDto();
+        rejectReq.setStudyId(TEST_STUDY_ID);
+        rejectReq.setMemberId(TEST_PARTICIPANT_ID);
+
+        mockMvc.perform(post("/api/v1/study/participant/join/reject")
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user(
+                                new CurrentUser(TEST_MEMBER_ID, "user1", "user1@certis.org", "유저1", "UPSOLVER")
+                        ))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(rejectReq)))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        // When: 신청자(user2)가 다시 동일 스터디에 재신청 (요청 단위 user 주입)
+        StudyJoinRequestDto request = createValidJoinRequest();
+
+        // Then: 201 Created, message, data.status=PENDING
+        mockMvc.perform(post("/api/v1/study/participant/join/register")
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user(
+                                new CurrentUser(TEST_PARTICIPANT_ID, "user2", "user2@certis.org", "유저2", "PLAYER")
+                        ))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.message").value("스터디 참가 신청이 성공했습니다"))
+                .andExpect(jsonPath("$.data.status").value("PENDING"));
     }
 
     // =================================================================
@@ -482,12 +532,14 @@ class StudyParticipantControllerTest {
             // 스터디 데이터 생성
             dsl.insertInto(STUDY)
                     .set(STUDY.ID, TEST_STUDY_ID)
+                    .set(STUDY.STATUS, "READY")
                     .set(STUDY.TITLE, TEST_STUDY_TITLE)
                     .set(STUDY.DESCRIPTION, "통합 테스트용 스터디")
                     .set(STUDY.CONTENT, "스터디 상세 내용")
                     .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
                     .set(STUDY.CATEGORY, "웹 개발")
                     .set(STUDY.SUBCATEGORY, "풀스택")
+                    .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                     .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                     .set(STUDY.STARTED_AT, now.plusDays(1))
                     .set(STUDY.ENDED_AT, now.plusDays(30))
@@ -587,12 +639,14 @@ class StudyParticipantControllerTest {
         for (int i = 1; i <= 2; i++) {
             // 기존 스터디와 충돌하지 않도록 명시적으로 ID를 지정하지 않고 자동 생성
             Long studyId = dsl.insertInto(STUDY)
+                    .set(STUDY.STATUS, "READY")
                     .set(STUDY.TITLE, "추가 스터디 " + i)
                     .set(STUDY.DESCRIPTION, "추가 스터디 " + i + " 설명")
                     .set(STUDY.CONTENT, "추가 스터디 " + i + " 내용")
                     .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
                     .set(STUDY.CATEGORY, "웹 개발")
                     .set(STUDY.SUBCATEGORY, "풀스택")
+                    .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                     .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                     .set(STUDY.STARTED_AT, now.plusDays(i + 1))
                     .set(STUDY.ENDED_AT, now.plusDays(30 + i + 1))

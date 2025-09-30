@@ -386,13 +386,15 @@ class StudyParticipantIntegrationTest {
 
     private StudyJoinApproveRequestDto createStudyJoinApproveRequest() {
         StudyJoinApproveRequestDto request = new StudyJoinApproveRequestDto();
-        request.setParticipantId(TEST_STUDY_PARTICIPANT_ID);
+        request.setStudyId(TEST_STUDY_ID);
+        request.setMemberId(TEST_MEMBER_ID);
         return request;
     }
 
     private StudyJoinRejectRequestDto createStudyJoinRejectRequest() {
         StudyJoinRejectRequestDto request = new StudyJoinRejectRequestDto();
-        request.setParticipantId(TEST_STUDY_PARTICIPANT_ID);
+        request.setStudyId(TEST_STUDY_ID);
+        request.setMemberId(TEST_MEMBER_ID);
         return request;
     }
 

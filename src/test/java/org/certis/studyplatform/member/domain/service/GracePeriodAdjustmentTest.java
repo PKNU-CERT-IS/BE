@@ -68,7 +68,7 @@ class GracePeriodAdjustmentTest {
         Long memberId = 1L;
         
         StudyParticipantSummaryVo participant = new StudyParticipantSummaryVo(
-            1L, studyId, memberId, "테스트 사용자", MemberGrade.FRESHMAN, "Study Title", StudyParticipantStatus.APPROVED, now
+            1L, studyId, memberId, "테스트 사용자", MemberGrade.FRESHMAN, null, "Study Title", StudyParticipantStatus.APPROVED, now
         );
         
         when(studyParticipantQueryRepository.findAllApprovedByStudyId(studyId))
@@ -103,7 +103,7 @@ class GracePeriodAdjustmentTest {
         Long memberId = 1L;
         
         ProjectParticipantSummaryVo participant = new ProjectParticipantSummaryVo(
-            1L, projectId, memberId, "테스트 사용자", MemberGrade.FRESHMAN, "Project Title", ProjectParticipantStatus.APPROVED, now
+            1L, projectId, memberId, "테스트 사용자", MemberGrade.FRESHMAN, null, "Project Title", ProjectParticipantStatus.APPROVED, now
         );
         
         when(projectParticipantQueryRepository.findAllApprovedByProjectId(projectId))
@@ -162,7 +162,7 @@ class GracePeriodAdjustmentTest {
         Long memberId = 1L;
         
         StudyParticipantSummaryVo participant = new StudyParticipantSummaryVo(
-            1L, studyId, memberId, "테스트 사용자", MemberGrade.FRESHMAN, "Study Title", StudyParticipantStatus.APPROVED, now
+            1L, studyId, memberId, "테스트 사용자", MemberGrade.FRESHMAN, null, "Study Title", StudyParticipantStatus.APPROVED, now
         );
         
         when(studyParticipantQueryRepository.findAllApprovedByStudyId(studyId))
@@ -194,7 +194,7 @@ class GracePeriodAdjustmentTest {
         Long memberId = 1L;
         
         StudyParticipantSummaryVo participant = new StudyParticipantSummaryVo(
-            1L, studyId, memberId, "테스트 사용자", MemberGrade.FRESHMAN, "Study Title", StudyParticipantStatus.APPROVED, now
+            1L, studyId, memberId, "테스트 사용자", MemberGrade.FRESHMAN, null, "Study Title", StudyParticipantStatus.APPROVED, now
         );
         
         when(studyParticipantQueryRepository.findAllApprovedByStudyId(studyId))

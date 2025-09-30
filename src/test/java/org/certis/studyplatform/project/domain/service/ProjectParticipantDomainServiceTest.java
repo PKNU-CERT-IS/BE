@@ -1,7 +1,6 @@
 package org.certis.studyplatform.project.domain.service;
 
 import org.certis.studyplatform.member.domain.MemberRole;
-import org.certis.studyplatform.member.domain.vo.MemberVo;
 import org.certis.studyplatform.project.domain.ProjectParticipantStatus;
 import org.certis.studyplatform.project.domain.repository.ProjectParticipantCommandRepository;
 import org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository;
@@ -12,7 +11,6 @@ import org.certis.studyplatform.project.domain.vo.ProjectParticipantVo;
 import org.certis.studyplatform.project.domain.vo.ProjectVo;
 import org.certis.studyplatform.member.domain.repository.query.MemberQueryRepository;
 import org.certis.studyplatform.exception.DomainException;
-import org.certis.studyplatform.exception.ExceptionStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -84,7 +82,7 @@ class ProjectParticipantDomainServiceTest {
             when(queryRepository.countActiveProjectsByMemberId(memberId)).thenReturn(1L);
             when(projectQueryRepository.findByIdAndDeletedAtIsNull(projectId))
                     .thenReturn(Optional.of(createProjectVo(projectId)));
-            when(queryRepository.existsByProjectIdAndMemberId(projectId, memberId)).thenReturn(false);
+            when(queryRepository.findByProjectIdAndMemberId(projectId, memberId)).thenReturn(Optional.empty());
 
             // When & Then
             assertThatThrownBy(() -> domainService.createParticipant(
@@ -103,7 +101,7 @@ class ProjectParticipantDomainServiceTest {
             when(queryRepository.countActiveProjectsByMemberId(memberId)).thenReturn(0L);
             when(projectQueryRepository.findByIdAndDeletedAtIsNull(projectId))
                     .thenReturn(Optional.of(createProjectVo(projectId)));
-            when(queryRepository.existsByProjectIdAndMemberId(projectId, memberId)).thenReturn(false);
+            when(queryRepository.findByProjectIdAndMemberId(projectId, memberId)).thenReturn(Optional.empty());
             when(commandRepository.save(any())).thenReturn(createProjectParticipantCreatedVo());
 
             // When
@@ -147,7 +145,7 @@ class ProjectParticipantDomainServiceTest {
             Long participantId = 1L;
             
             ProjectVo project = createProjectVo(projectId, 1L); // 다른 사용자가 생성자
-            MemberVo admin = createMemberVo(adminId, MemberRole.STAFF);
+            // admin variable not needed; role lookup is mocked below
             
             when(projectQueryRepository.findByIdAndDeletedAtIsNull(projectId))
                     .thenReturn(Optional.of(project));
@@ -208,7 +206,7 @@ class ProjectParticipantDomainServiceTest {
             Long participantId = 1L;
             
             ProjectVo project = createProjectVo(projectId, 1L); // 다른 사용자가 생성자
-            MemberVo chairman = createMemberVo(chairmanId, MemberRole.CHAIRMAN);
+            // chairman variable not needed; role lookup is mocked below
             
             when(projectQueryRepository.findByIdAndDeletedAtIsNull(projectId))
                     .thenReturn(Optional.of(project));
@@ -353,7 +351,9 @@ class ProjectParticipantDomainServiceTest {
 
             when(projectQueryRepository.findByIdAndDeletedAtIsNull(projectId))
                     .thenReturn(Optional.of(createProjectVo(projectId)));
-            when(queryRepository.existsByProjectIdAndMemberId(projectId, memberId)).thenReturn(true);
+            when(queryRepository.findByProjectIdAndMemberId(projectId, memberId)).thenReturn(Optional.of(
+                    new ProjectParticipantVo(1L, projectId, memberId, "", ProjectParticipantStatus.PENDING, OffsetDateTime.now(), OffsetDateTime.now())
+            ));
 
             // When & Then
             assertThatThrownBy(() -> domainService.createParticipant(
@@ -377,6 +377,28 @@ class ProjectParticipantDomainServiceTest {
                     createProjectParticipantCommand(projectId, memberId)))
                     .isInstanceOf(DomainException.class)
                     .hasMessage("프로젝트 생성자는 자신의 프로젝트에 참가 신청할 수 없습니다.");
+        }
+
+        @Test
+        @DisplayName("REJECTED 이후 재신청 가능")
+        void shouldAllowReapplyAfterRejected() {
+            // Given
+            Long projectId = 1L;
+            Long memberId = 2L;
+
+            when(projectQueryRepository.findByIdAndDeletedAtIsNull(projectId))
+                    .thenReturn(Optional.of(createProjectVo(projectId)));
+            // existsBy는 PENDING/APPROVED만 true -> REJECTED만 있던 경우 false
+            when(queryRepository.findByProjectIdAndMemberId(projectId, memberId)).thenReturn(Optional.empty());
+            when(commandRepository.save(any())).thenReturn(createProjectParticipantCreatedVo());
+
+            // When
+            ProjectParticipantCreatedVo result = domainService.createParticipant(
+                    createProjectParticipantCommand(projectId, memberId));
+
+            // Then
+            assertThat(result).isNotNull();
+            verify(commandRepository).save(any());
         }
     }
 
@@ -418,7 +440,7 @@ class ProjectParticipantDomainServiceTest {
 
             when(projectQueryRepository.findByIdAndDeletedAtIsNull(projectId))
                     .thenReturn(Optional.of(project));
-            when(queryRepository.existsByProjectIdAndMemberId(projectId, memberId)).thenReturn(false);
+            when(queryRepository.findByProjectIdAndMemberId(projectId, memberId)).thenReturn(Optional.empty());
             when(queryRepository.countApprovedParticipantsByProjectId(projectId)).thenReturn(2L);
 
             // When & Then
@@ -498,19 +520,5 @@ class ProjectParticipantDomainServiceTest {
         );
     }
 
-    private MemberVo createMemberVo(Long memberId, MemberRole role) {
-        return new MemberVo(
-                memberId,
-                "테스트 사용자",
-                "20240001",
-                null,
-                org.certis.studyplatform.member.domain.MemberGrade.FRESHMAN,
-                role,
-                java.util.Collections.emptyList(),
-                "컴퓨터공학과",
-                "테스트 설명",
-                OffsetDateTime.now(),
-                OffsetDateTime.now()
-        );
-    }
+    // createMemberVo removed as unused
 }

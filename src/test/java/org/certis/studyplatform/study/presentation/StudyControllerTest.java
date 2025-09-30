@@ -151,6 +151,8 @@ class StudyControllerTest {
                 .andExpect(jsonPath("$.data.resultSubmitStatus").exists())
                 .andExpect(jsonPath("$.data.createdAt").exists())
                 .andExpect(jsonPath("$.data.updatedAt").exists())
+                // 프로필 이미지 URL 검증
+                .andExpect(jsonPath("$.data.studyCreatorProfileImageUrl").exists())
                 .andReturn();
 
         // And: DB의 member_id와 응답의 creatorId가 일치하는지 검증
