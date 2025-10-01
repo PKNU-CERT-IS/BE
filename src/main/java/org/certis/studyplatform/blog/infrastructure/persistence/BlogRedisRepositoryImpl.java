@@ -82,19 +82,18 @@ public class BlogRedisRepositoryImpl implements BlogRedisRepository {
         try {
             SetOperations<String, String> setOps = redisTemplate.opsForSet();
 
-            // SADD 결과가 1일 때에만 신규 조회로 간주하고 카운트를 증가
-            Long added = setOps.add(viewedMembersKey, viewerIdString);
-            if (added != null && added > 0) {
-                redisTemplate.opsForValue().increment(viewCountKey);
-                // 활발한 키의 TTL을 갱신하여 불필요한 만료/재생성 방지
-                redisTemplate.expire(viewCountKey, VIEW_CACHE_EXPIRE_HOURS, TimeUnit.HOURS);
-                redisTemplate.expire(viewedMembersKey, VIEWED_MEMBERS_EXPIRE_HOURS, TimeUnit.HOURS);
-                log.debug("Redis: Added view for blog: {} by user: {}", blogIdVo.value(), viewerId);
-            } else {
-                log.debug("Redis: User {} already viewed blog: {}", viewerId, blogIdVo.value());
+            // 항상 조회수를 증가시켜 중복 조회를 허용
+            redisTemplate.opsForValue().increment(viewCountKey);
+            // 고유 조회자 집합은 통계용으로만 관리 (증가 여부와 무관)
+            try {
+                setOps.add(viewedMembersKey, viewerIdString);
+            } catch (Exception ignored) {
+                // 집합 추가 실패는 조회수 증가에 영향 주지 않음
             }
-
-            log.debug("Redis: Added view for blog: {} by user: {}", blogIdVo.value(), viewerId);
+            // 활발한 키의 TTL을 갱신하여 불필요한 만료/재생성 방지
+            redisTemplate.expire(viewCountKey, VIEW_CACHE_EXPIRE_HOURS, TimeUnit.HOURS);
+            redisTemplate.expire(viewedMembersKey, VIEWED_MEMBERS_EXPIRE_HOURS, TimeUnit.HOURS);
+            log.debug("Redis: Added view (allowing duplicates) for blog: {} by user: {}", blogIdVo.value(), viewerId);
         } catch (Exception e) {
             log.error("Redis: Failed to add view for blog: {} by user: {}", blogIdVo.value(), viewerId, e);
             throw new RuntimeException("Redis 조회수 증가 실패", e);

@@ -263,7 +263,7 @@ public class StudyParticipantFacadeService {
         return responseDto;
     }
 
-    /**}}}}}$
+    /**
      * 관리자가 스터디 참가 신청을 거절
      */
     public AdminStudyParticipantApprovalResponseDto rejectParticipantByAdmin(
