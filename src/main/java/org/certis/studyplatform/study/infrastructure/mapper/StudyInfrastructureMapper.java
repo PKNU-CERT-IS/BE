@@ -553,7 +553,7 @@ public class StudyInfrastructureMapper {
         if (now.isBefore(endDate)) {
             return StudyStatus.INPROGRESS.name();
         }
-        return StudyStatus.INPROGRESS.name();
+        return StudyStatus.COMPLETED.name();
     }
 
     /**

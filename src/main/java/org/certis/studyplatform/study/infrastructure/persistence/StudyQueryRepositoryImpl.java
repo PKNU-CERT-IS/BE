@@ -40,7 +40,7 @@ import static org.jooq.impl.DSL.*;
 @Repository
 @RequiredArgsConstructor
 @Slf4j
-@Transactional(readOnly = true)
+//@Transactional(readOnly = true)
 public class StudyQueryRepositoryImpl implements StudyQueryRepository {
 
     @Qualifier("jooqDataSource")
@@ -154,7 +154,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .fetch()
                                 .stream()
                                 .map(record -> (Record) record)
-                                .toList()
+                                .collect(java.util.stream.Collectors.toList())
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.toStudyVoFromRecordsWithAttachments(records));
 
@@ -232,7 +232,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .fetch()
                                 .stream()
                                 .map(record -> (Record) record)
-                                .toList()
+                                .collect(java.util.stream.Collectors.toList())
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.groupRecordsByStudyIdToSummaryVos(records))
                 .orElse(List.of());
@@ -310,7 +310,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .fetch()
                                 .stream()
                                 .map(record -> (Record) record)
-                                .toList()
+                                .collect(java.util.stream.Collectors.toList())
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.groupRecordsByStudyIdToSummaryVos(records))
                 .orElse(List.of());
@@ -374,7 +374,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .fetch()
                                 .stream()
                                 .map(record -> (Record) record)
-                                .toList()
+                                .collect(java.util.stream.Collectors.toList())
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.groupRecordsByStudyIdToSummaryVos(records))
                 .orElse(List.of());
@@ -440,12 +440,30 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .fetch()
                                 .stream()
                                 .map(record -> (Record) record)
-                                .toList()
+                                .collect(java.util.stream.Collectors.toList())
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.groupRecordsByStudyIdToSummaryVos(records))
                 .orElse(List.of());
 
         return createSearchResult(studySummaries, total, pageable);
+    }
+
+    @Override
+    public long countActiveStudiesCreatedByMemberId(Long memberId) {
+        log.info("jOOQ: Counting active studies created by member - memberId: {}", memberId);
+
+        var s = STUDY.as("s");
+
+        OffsetDateTime now = OffsetDateTime.now();
+        Condition condition = s.STARTED_AT.lessOrEqual(now)
+                .and(s.ENDED_AT.greaterOrEqual(now))
+                .and(s.MEMBER_ID.eq(memberId))
+                .and(s.DELETED_AT.isNull());
+
+        return dsl.selectCount()
+                .from(s)
+                .where(condition)
+                .fetchOne(0, long.class);
     }
 
     @Override
@@ -561,7 +579,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .fetch()
                                 .stream()
                                 .map(record -> (Record) record)
-                                .toList()
+                                .collect(java.util.stream.Collectors.toList())
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.groupRecordsByStudyIdToSummaryVos(records))
                 .orElse(List.of());
@@ -627,7 +645,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .fetch()
                                 .stream()
                                 .map(record -> (Record) record)
-                                .toList()
+                                .collect(java.util.stream.Collectors.toList())
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.groupRecordsByStudyIdToSummaryVos(records))
                 .orElse(List.of());
@@ -694,7 +712,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .fetch()
                                 .stream()
                                 .map(record -> (Record) record)
-                                .toList()
+                                .collect(java.util.stream.Collectors.toList())
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.groupRecordsByStudyIdToSummaryVos(records))
                 .orElse(List.of());
@@ -746,7 +764,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .fetch()
                                 .stream()
                                 .map(record -> (Record) record)
-                                .toList()
+                                .collect(java.util.stream.Collectors.toList())
                 ).filter(records -> !records.isEmpty())
                 .map(mapper::groupRecordsByStudyIdToSummaryVos)
                 .orElse(List.of());
@@ -809,7 +827,9 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         s.MEMBER_ID,
                                         m.NAME.as("creator_name"),
                                         m.GRADE.as("creator_grade"),
+                                        m.PROFILE_IMAGE.as("creator_profile_image"),
                                         s.MAX_PARTICIPANTS_NUMBER,
+                                        s.RESULT_SUBMIT_STATUS.as("result_submit_status"),
                                         s.DELETED_AT.as("deleted_at"),
                                         s.CREATED_AT,
                                         s.UPDATED_AT,
@@ -833,7 +853,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .fetch()
                                 .stream()
                                 .map(record -> (Record) record)
-                                .toList()
+                                .collect(java.util.stream.Collectors.toList())
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.toStudyVoFromRecordsWithAttachments(records));
 
@@ -863,7 +883,9 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         s.MEMBER_ID,
                                         m.NAME.as("creator_name"),
                                         m.GRADE.as("creator_grade"),
+                                        m.PROFILE_IMAGE.as("creator_profile_image"),
                                         s.MAX_PARTICIPANTS_NUMBER,
+                                        s.RESULT_SUBMIT_STATUS.as("result_submit_status"),
                                         s.DELETED_AT.as("deleted_at"),
                                         s.CREATED_AT,
                                         s.UPDATED_AT,
@@ -888,7 +910,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .fetch()
                                 .stream()
                                 .map(record -> (Record) record)
-                                .toList()
+                                .collect(java.util.stream.Collectors.toList())
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.toStudyVoFromRecordsWithAttachments(records));
 
@@ -1083,7 +1105,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                         record.get(sa.SIZE),
                         record.get(sa.ATTACHED_URL)
                 ))
-                .toList();
+                .collect(java.util.stream.Collectors.toList());
 
         log.info("jOOQ: Found {} attachments for study ID: {}", attachments.size(), studyId);
         return attachments;
@@ -1101,7 +1123,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                 .fetch()
                 .stream()
                 .map(record -> record.get(STUDY.ID))
-                .toList();
+                .collect(java.util.stream.Collectors.toList());
 
         log.info("jOOQ: Found {} approved studies started before {}", studyIds.size(), currentTime);
         return studyIds;

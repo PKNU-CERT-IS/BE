@@ -51,8 +51,11 @@ public class ProjectParticipantCommandRepositoryImpl implements ProjectParticipa
         try {
             savedEntity = jpaRepository.save(entity);
         } catch (DataIntegrityViolationException ex) {
+            // DB 제약(유니크 등)으로 인한 중복 저장 - 원래 예외를 그대로 던져서 트랜잭션 롤백 방지
+            log.warn("Command: Data integrity violation - projectId: {}, memberId: {}, error: {}",
+                    participantVo.projectId(), participantVo.memberId(), ex.getMessage());
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION,
-                    "이미 참가 신청한 프로젝트입니다.");
+                    "이미 참가 신청한 프로젝트입니다.", ex);
         }
 
         // Entity → CreatedVo 변환

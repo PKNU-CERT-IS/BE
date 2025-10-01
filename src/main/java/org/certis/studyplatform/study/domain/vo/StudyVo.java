@@ -5,7 +5,6 @@ import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.study.domain.StudyStatus;
 import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
-import org.certis.studyplatform.shared.util.DateTimeUtils;
 
 import java.time.OffsetDateTime;
 import java.util.Collections;
@@ -70,30 +69,7 @@ public record StudyVo(
             throw new DomainException(ExceptionStatus.STUDY_DOMAIN_DATE_INVALID, "스터디 시작일과 종료일은 필수입니다");
         }
 
-        // 시작일은 월요일이어야 함
-        java.time.DayOfWeek studyStartDayOfWeek = startDate.getDayOfWeek();
-        if (studyStartDayOfWeek != java.time.DayOfWeek.MONDAY) {
-            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_INVALID_START_DAY, "스터디 시작일은 월요일이어야 합니다");
-        }
-
-        // 종료일은 일요일이어야 함
-        java.time.DayOfWeek studyEndDayOfWeek = endDate.getDayOfWeek();
-        if (studyEndDayOfWeek != java.time.DayOfWeek.SUNDAY) {
-            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_INVALID_END_DAY, "스터디 종료일은 일요일이어야 합니다");
-        }
-
-        // 스터디 종료 시에는 시작일과 종료일 비교를 건너뛰기
-        // (ended_at을 현재 시간으로 설정할 때 startDate가 현재 시간보다 늦을 수 있음)
-        if (id != null && endDate != null && endDate.isAfter(OffsetDateTime.now().minusMinutes(1))) {
-            // 스터디 종료 중인 경우 validation 건너뛰기
-        } else if (startDate.isAfter(endDate)) {
-            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_DATE_INVALID, "시작일은 종료일보다 빨라야 합니다");
-        }
-
-        // 과거 날짜 검증 (id가 null인 경우만 - 새로 생성하는 경우)
-        if (id == null && startDate.isBefore(OffsetDateTime.now())) {
-            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_DATE_INVALID, "스터디 시작일은 현재보다 미래여야 합니다");
-        }
+        // 읽기 컨텍스트를 고려하여 날짜 제약은 생성/갱신 팩토리에서 검증합니다
 
         // 최대 참가자 수 검증
         if (maxParticipants == null || maxParticipants < 1) {
@@ -201,6 +177,9 @@ public record StudyVo(
             Integer maxParticipants
     ) {
         OffsetDateTime now = OffsetDateTime.now();
+        // 생성 시에만 강한 날짜 제약 검증 수행
+        validateNewStudyDates(startDate, endDate);
+
         return new StudyVo(
                 null, // id는 null (새 생성)
                 title, description, content, category, subCategory,
@@ -215,6 +194,30 @@ public record StudyVo(
                 Collections.emptyList(), // 초기 회의록 목록은 비어 있음
                 Collections.emptyList()  // 초기 참가자 목록은 비어 있음
         );
+    }
+
+    private static void validateNewStudyDates(OffsetDateTime startDate, OffsetDateTime endDate) {
+        if (startDate == null || endDate == null) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_DATE_INVALID, "스터디 시작일과 종료일은 필수입니다");
+        }
+        java.time.DayOfWeek startDow = startDate
+                .atZoneSameInstant(java.time.ZoneId.of("Asia/Seoul"))
+                .getDayOfWeek();
+        if (startDow != java.time.DayOfWeek.MONDAY) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_INVALID_START_DAY, "스터디 시작일은 월요일이어야 합니다");
+        }
+        java.time.DayOfWeek endDow = endDate
+                .atZoneSameInstant(java.time.ZoneId.of("Asia/Seoul"))
+                .getDayOfWeek();
+        if (endDow != java.time.DayOfWeek.SUNDAY) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_INVALID_END_DAY, "스터디 종료일은 일요일이어야 합니다");
+        }
+        if (startDate.isAfter(endDate)) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_DATE_INVALID, "시작일은 종료일보다 빨라야 합니다");
+        }
+        if (startDate.isBefore(OffsetDateTime.now())) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_DATE_INVALID, "스터디 시작일은 현재보다 미래여야 합니다");
+        }
     }
 
     /**
@@ -240,6 +243,11 @@ public record StudyVo(
         
         OffsetDateTime newStartDate = startDate != null ? startDate : existing.startDate();
         OffsetDateTime newEndDate = endDate != null ? endDate : existing.endDate();
+
+        // 업데이트 시에는 날짜 제약을 완화하되, 역순 방지는 유지
+        if (newStartDate != null && newEndDate != null && newStartDate.isAfter(newEndDate)) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_DATE_INVALID, "시작일은 종료일보다 빨라야 합니다");
+        }
 
         // 변경된 기간을 기준으로 상태/제출상태 계산 (기존 상태를 고려)
         StatusAndResultSubmitStatus statusAndSubmit = calculateStatusAndResultSubmitStatus(
@@ -273,8 +281,11 @@ public record StudyVo(
         );
     }
 
-    // Backward-compatible auxiliary constructor for tests using new StudyVo(...) without resultSubmitStatus
-    public StudyVo(
+    /**
+     * Backward-compatible factory method for tests using old constructor signature
+     * without resultSubmitStatus parameter
+     */
+    public static StudyVo createForTest(
             Long id,
             String title,
             String description,
@@ -298,9 +309,14 @@ public record StudyVo(
             List<StudyMeetingSummaryVo> summaryVoList,
             List<StudyParticipantVo> participantVoList
     ) {
-        this(id, title, description, content, category, subCategory, startDate, endDate,
-                createdAt, updatedAt, creatorId, creatorName, creatorGrade, creatorProfileImageUrl, semester, status, null,
-                maxParticipants, currentParticipants, isParticipantable, attached, summaryVoList, participantVoList);
+        return new StudyVo(
+                id, title, description, content, category, subCategory,
+                startDate, endDate, createdAt, updatedAt,
+                creatorId, creatorName, creatorGrade, creatorProfileImageUrl,
+                semester, status, ResultSubmitStatus.READY, // Default to READY for backward compatibility
+                maxParticipants, currentParticipants, isParticipantable,
+                attached, summaryVoList, participantVoList
+        );
     }
 
     // ================================================================
@@ -332,14 +348,7 @@ public record StudyVo(
      * ended_at을 기준으로 status 계산
      * ended_at이 현재 시간보다 지났으면 COMPLETED, 아니면 INPROGRESS
      */
-    private static String calculateStatus(OffsetDateTime endedAt) {
-        if (endedAt == null) {
-            return StudyStatus.INPROGRESS.name(); // 종료일이 없으면 진행 중 상태
-        }
-        
-        OffsetDateTime now = OffsetDateTime.now();
-        return endedAt.isBefore(now) ? StudyStatus.COMPLETED.name() : StudyStatus.INPROGRESS.name();
-    }
+    private static String calculateStatus(OffsetDateTime endedAt) { return endedAt == null ? StudyStatus.INPROGRESS.name() : (endedAt.isBefore(OffsetDateTime.now()) ? StudyStatus.COMPLETED.name() : StudyStatus.INPROGRESS.name()); }
 
     /**
      * startedAt과 endedAt을 고려하여 상태 계산 (새로 생성할 때 사용)

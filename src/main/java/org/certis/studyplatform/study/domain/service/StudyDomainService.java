@@ -110,31 +110,9 @@ public class StudyDomainService {
         long activeStudiesJoined = studyParticipantQueryRepository.countActiveStudiesByMemberId(creatorId);
         long activeProjectsJoined = projectParticipantQueryRepository.countActiveProjectsByMemberId(creatorId);
 
-        long activeStudiesCreated = 0L;
-        try {
-            var activeStudies = queryRepository.findActiveStudies(org.springframework.data.domain.Pageable.unpaged());
-            if (activeStudies != null && activeStudies.studies() != null) {
-                activeStudiesCreated = activeStudies.studies().stream()
-                        .filter(s -> s != null && s.id() != null)
-                        .map(s -> queryRepository.findById(s.id()).orElse(null))
-                        .filter(java.util.Objects::nonNull)
-                        .filter(full -> full.creatorId() != null && full.creatorId().equals(creatorId))
-                        .count();
-            }
-        } catch (Exception ignored) { }
-
-        long activeProjectsCreated = 0L;
-        try {
-            var activeProjects = projectQueryRepository.findActiveProjects(org.springframework.data.domain.Pageable.unpaged());
-            if (activeProjects != null && activeProjects.projects() != null) {
-                activeProjectsCreated = activeProjects.projects().stream()
-                        .filter(p -> p != null && p.id() != null)
-                        .map(p -> projectQueryRepository.findById(p.id()).orElse(null))
-                        .filter(java.util.Objects::nonNull)
-                        .filter(full -> full.creatorId() != null && full.creatorId().equals(creatorId))
-                        .count();
-            }
-        } catch (Exception ignored) { }
+        // Lightweight counts to avoid nested transactional reads marking rollback-only
+        long activeStudiesCreated = queryRepository.countActiveStudiesCreatedByMemberId(creatorId);
+        long activeProjectsCreated = projectQueryRepository.countActiveProjectsCreatedByMemberId(creatorId);
 
         long activeStudies = activeStudiesJoined + activeStudiesCreated;
         long activeProjects = activeProjectsJoined + activeProjectsCreated;
@@ -181,9 +159,13 @@ public class StudyDomainService {
         // 권한 검증: STAFF 이상이거나 작성자 본인인지 확인
         validateStudyUpdatePermission(command.requesterId(), existingStudy.creatorId());
 
-        // 제목 중복 검사 (자신 제외)
+        // 제목 중복 검사 (자신 제외) - 실제로 제목이 변경되는 경우에만 검사
         if (command.title() != null) {
-            validateStudyTitleDuplicationForUpdate(command.title(), command.id());
+            String incomingTitle = command.title() != null ? command.title().trim() : null;
+            String existingTitle = existingStudy.title() != null ? existingStudy.title().trim() : null;
+            if (incomingTitle != null && (existingTitle == null || !existingTitle.equalsIgnoreCase(incomingTitle))) {
+                validateStudyTitleDuplicationForUpdate(incomingTitle, command.id());
+            }
         }
 
         // StudyVo.updateFrom() 사용 - 업데이트 시 자동으로 검증 수행

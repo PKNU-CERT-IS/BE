@@ -177,6 +177,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                                         p.MEMBER_ID,
                                         m.NAME,
                                         m.GRADE,
+                                        m.PROFILE_IMAGE.as("creator_profile_image"),
                                         p.TITLE,
                                         p.DESCRIPTION,
                                         p.CONTENT,
@@ -251,7 +252,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.MEMBER_ID,
                         m.NAME,
                         m.GRADE,
-                        m.GRADE,
+                        m.PROFILE_IMAGE.as("creator_profile_image"),
                         p.TITLE,
                         p.DESCRIPTION,
                         p.CATEGORY,
@@ -306,7 +307,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                     vo.resultSubmitStatus(),
                     attachments
             );
-        }).toList();
+        }).collect(java.util.stream.Collectors.toList());
 
         log.debug("jOOQ: Data query executed successfully, found {} project summaries",
                 projectSummaries.size());
@@ -380,7 +381,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                     vo.thumbnailUrl(), vo.demoUrl(), vo.maxParticipantNumber(), vo.currentParticipantNumber(),
                     vo.resultSubmitStatus(), attachments
             );
-        }).toList();
+        }).collect(java.util.stream.Collectors.toList());
 
         return createSearchResult(projectSummaries, total, pageable);
     }
@@ -440,7 +441,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                     vo.thumbnailUrl(), vo.demoUrl(), vo.maxParticipantNumber(), vo.currentParticipantNumber(),
                     vo.resultSubmitStatus(), attachments
             );
-        }).toList();
+        }).collect(java.util.stream.Collectors.toList());
 
         return createSearchResult(projectSummaries, total, pageable);
     }
@@ -502,9 +503,27 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                     vo.thumbnailUrl(), vo.demoUrl(), vo.maxParticipantNumber(), vo.currentParticipantNumber(),
                     vo.resultSubmitStatus(), attachments
             );
-        }).toList();
+        }).collect(java.util.stream.Collectors.toList());
 
         return createSearchResult(projectSummaries, total, pageable);
+    }
+
+    @Override
+    public long countActiveProjectsCreatedByMemberId(Long memberId) {
+        log.info("jOOQ: Counting active projects created by member - memberId: {}", memberId);
+
+        var p = PROJECT.as("p");
+
+        OffsetDateTime now = OffsetDateTime.now();
+        Condition condition = p.STARTED_AT.lessOrEqual(now)
+                .and(p.ENDED_AT.greaterOrEqual(now))
+                .and(p.MEMBER_ID.eq(memberId))
+                .and(p.DELETED_AT.isNull());
+
+        return dsl.selectCount()
+                .from(p)
+                .where(condition)
+                .fetchOne(0, long.class);
     }
 
     @Override
@@ -582,6 +601,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.MEMBER_ID,
                         m.NAME,
                         m.GRADE,
+                        m.PROFILE_IMAGE.as("creator_profile_image"),
                         p.TITLE,
                         p.DESCRIPTION,
                         p.CATEGORY,
@@ -674,6 +694,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         p.MEMBER_ID,
                         m.NAME,
                         m.GRADE,
+                        m.PROFILE_IMAGE.as("creator_profile_image"),
                         p.MAX_PARTICIPANTS_NUMBER,
                         p.THUMBNAIL_URL,
                         p.GITHUB_URL,
@@ -1163,7 +1184,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         record.get(pa.SIZE),
                         record.get(pa.ATTACHED_URL)
                 ))
-                .toList();
+                .collect(java.util.stream.Collectors.toList());
     }
 
     /**
@@ -1195,7 +1216,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                 .fetch()
                 .stream()
                 .map(record -> record.get(PROJECT.ID))
-                .toList();
+                .collect(java.util.stream.Collectors.toList());
 
         log.info("jOOQ: Found {} approved projects started before {}", projectIds.size(), currentTime);
         return projectIds;

@@ -10,6 +10,8 @@ import org.certis.studyplatform.study.application.object.command.CreateStudyPart
 import org.certis.studyplatform.study.application.object.command.UpdateStudyParticipantStatusCommand;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.UnexpectedRollbackException;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 /**
  * Study Participant Command Service

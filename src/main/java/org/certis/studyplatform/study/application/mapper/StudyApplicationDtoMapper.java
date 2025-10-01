@@ -36,6 +36,20 @@ public class StudyApplicationDtoMapper {
         }
 
         String thumbnailUrl = null;
+        if (vo.attached() != null) {
+            thumbnailUrl = vo.attached().stream()
+                    .filter(a -> a.type() != null && (
+                            a.type().toLowerCase().startsWith("image/") ||
+                            a.type().equalsIgnoreCase("png") ||
+                            a.type().equalsIgnoreCase("jpg") ||
+                            a.type().equalsIgnoreCase("jpeg")
+                    ))
+                    .map(StudyAttachedVo::attachedUrl)
+                    .filter(Objects::nonNull)
+                    .findFirst()
+                    .map(this::normalizeUrl)
+                    .orElse(null);
+        }
 
         return StudyDetailResponseDto.builder()
                 .id(vo.id())
@@ -263,7 +277,6 @@ public class StudyApplicationDtoMapper {
         };
 
         return StudyParticipantStatusUpdateResponseDto.builder()
-                .participantId(vo.id())
                 .studyId(vo.studyId())
                 .memberId(vo.memberId())
                 .previousStatus(vo.previousStatus())
@@ -375,7 +388,6 @@ public class StudyApplicationDtoMapper {
             String reason
     ) {
         return AdminStudyParticipantApprovalResponseDto.builder()
-                .participantId(vo.id())
                 .studyId(vo.studyId())
                 .studyTitle(studyTitle)
                 .memberId(vo.memberId())

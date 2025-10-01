@@ -30,7 +30,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 @Repository
 @RequiredArgsConstructor
 @Slf4j
-@Transactional
 public class StudyParticipantCommandRepositoryImpl implements StudyParticipantCommandRepository {
 
     private final StudyParticipantJpaRepository jpaRepository;
@@ -52,9 +51,11 @@ public class StudyParticipantCommandRepositoryImpl implements StudyParticipantCo
         try {
             savedEntity = jpaRepository.save(entity);
         } catch (DataIntegrityViolationException ex) {
-            // DB 제약(유니크 등)으로 인한 중복 저장을 도메인 예외로 변환
+            // DB 제약(유니크 등)으로 인한 중복 저장 - 원래 예외를 그대로 던져서 트랜잭션 롤백 방지
+            log.warn("Command: Data integrity violation - studyId: {}, memberId: {}, error: {}",
+                    participantVo.studyId(), participantVo.memberId(), ex.getMessage());
             throw new DomainException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION,
-                    "이미 참가 신청한 스터디입니다.");
+                    "이미 참가 신청한 스터디입니다.", ex);
         }
 
         // Entity → CreatedVo 변환

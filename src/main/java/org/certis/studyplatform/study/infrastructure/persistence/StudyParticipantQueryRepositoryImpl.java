@@ -324,6 +324,7 @@ public class StudyParticipantQueryRepositoryImpl implements StudyParticipantQuer
                             s.MEMBER_ID,
                             m.NAME.as("member_name"),
                             m.GRADE.as("member_grade"),
+                            m.PROFILE_IMAGE.as("member_profile_image_url"),
                             st.TITLE.as("study_title"),
                             s.STATUS,
                             s.CREATED_AT

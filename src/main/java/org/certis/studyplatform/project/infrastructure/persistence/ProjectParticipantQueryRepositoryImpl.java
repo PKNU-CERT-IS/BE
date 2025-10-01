@@ -317,6 +317,7 @@ public class ProjectParticipantQueryRepositoryImpl implements ProjectParticipant
                         pp.MEMBER_ID,
                         m.NAME.as("member_name"),
                         m.GRADE.as("member_grade"),
+                        m.PROFILE_IMAGE.as("member_profile_image_url"),
                         p.TITLE.as("project_title"),
                         pp.STATUS,
                         pp.CREATED_AT

@@ -69,65 +69,11 @@ public class StudyParticipantDomainService {
         // 5. 참가자 수 제한 검증 (동시성 고려를 위해 마지막에 재확인)
         validateParticipantLimit(command.studyId(), study.maxParticipants());
 
-        // 6. 기존 소프트 삭제(거절/취소) 레코드 복원 시도
-        int restored = commandRepository.restoreByStudyIdAndMemberId(command.studyId(), command.memberId());
-
-        StudyParticipantCreatedVo result;
-        if (restored > 0) {
-            // 복원된 레코드 조회 후 상태를 PENDING으로 전환 (가시성 이슈 대비하여 재시도 경로 포함)
-            java.util.Optional<StudyParticipantVo> restoredOpt = queryRepository
-                    .findByStudyIdAndMemberId(command.studyId(), command.memberId());
-
-            if (restoredOpt.isEmpty()) {
-                // 드물게 같은 트랜잭션에서 즉시 조회가 비어 보일 수 있으므로, 저장 시도 → 유니크 충돌 시 재조회
-                try {
-                    StudyParticipantVo participantVo = StudyParticipantVo.createNew(
-                            command.studyId(), command.memberId());
-                    result = commandRepository.save(participantVo);
-                    // 정상적으로 저장되면 그대로 반환
-                    log.warn("Domain: Restored participant not immediately visible; created new instead - studyId: {}, memberId: {}",
-                            command.studyId(), command.memberId());
-                    return result;
-                } catch (DomainException ex) {
-                    // 유니크 충돌로 기존 레코드가 존재함을 의미 → 재조회하여 반환
-                    restoredOpt = queryRepository.findByStudyIdAndMemberId(command.studyId(), command.memberId());
-                    StudyParticipantVo fetched = restoredOpt.orElseThrow(() -> new DomainException(
-                            ExceptionStatus.STUDY_DOMAIN_NOT_FOUND, "복원된 참가 신청을 찾을 수 없습니다."));
-                    if (!fetched.isPending()) {
-                        StudyParticipantVo pendingVo = fetched.updateStatus(StudyParticipantStatus.PENDING);
-                        commandRepository.updateStatus(pendingVo, command.memberId());
-                    }
-                    result = StudyParticipantCreatedVo.of(
-                            fetched.id(),
-                            fetched.studyId(),
-                            fetched.memberId(),
-                            StudyParticipantStatus.PENDING,
-                            fetched.createdAt()
-                    );
-                    return result;
-                }
-            }
-
-            StudyParticipantVo restoredVo = restoredOpt.get();
-            if (!restoredVo.isPending()) {
-                StudyParticipantVo pendingVo = restoredVo.updateStatus(StudyParticipantStatus.PENDING);
-                commandRepository.updateStatus(pendingVo, command.memberId());
-            }
-
-            // 복원된 동일 레코드를 반환 형태로 맞추기 위해 CreatedVo를 구성
-            result = StudyParticipantCreatedVo.of(
-                    restoredVo.id(),
-                    restoredVo.studyId(),
-                    restoredVo.memberId(),
-                    StudyParticipantStatus.PENDING,
-                    restoredVo.createdAt()
-            );
-        } else {
-            // 7. 새로운 참가 신청 생성 및 저장
-            StudyParticipantVo participantVo = StudyParticipantVo.createNew(
-                    command.studyId(), command.memberId());
-            result = commandRepository.save(participantVo);
-        }
+        // 6. 새로운 참가 신청 생성 및 저장
+        StudyParticipantVo participantVo = StudyParticipantVo.createNew(
+                command.studyId(), command.memberId());
+        
+        StudyParticipantCreatedVo result = commandRepository.save(participantVo);
 
         log.info("Domain: Participant request created - ID: {}", result.id());
         return result;
@@ -344,33 +290,9 @@ public class StudyParticipantDomainService {
         long activeStudiesJoined = queryRepository.countActiveStudiesByMemberId(memberId);
         long activeProjectsJoined = projectParticipantQueryRepository.countActiveProjectsByMemberId(memberId);
 
-        // Include studies created by the member that are currently active
-        long activeStudiesCreated = 0L;
-        try {
-            var activeStudiesResult = studyQueryRepository.findActiveStudies(org.springframework.data.domain.Pageable.unpaged());
-            if (activeStudiesResult != null && activeStudiesResult.studies() != null) {
-                activeStudiesCreated = activeStudiesResult.studies().stream()
-                        .filter(s -> s != null && s.id() != null)
-                        .map(s -> studyQueryRepository.findById(s.id()).orElse(null))
-                        .filter(java.util.Objects::nonNull)
-                        .filter(full -> full.creatorId() != null && full.creatorId().equals(memberId))
-                        .count();
-            }
-        } catch (Exception ignored) { }
-
-        // Include projects created by the member that are currently active
-        long activeProjectsCreated = 0L;
-        try {
-            var activeProjectsResult = projectQueryRepository.findActiveProjects(org.springframework.data.domain.Pageable.unpaged());
-            if (activeProjectsResult != null && activeProjectsResult.projects() != null) {
-                activeProjectsCreated = activeProjectsResult.projects().stream()
-                        .filter(p -> p != null && p.id() != null)
-                        .map(p -> projectQueryRepository.findById(p.id()).orElse(null))
-                        .filter(java.util.Objects::nonNull)
-                        .filter(full -> full.creatorId() != null && full.creatorId().equals(memberId))
-                        .count();
-            }
-        } catch (Exception ignored) { }
+        // Use dedicated aggregate counts instead of heavy list queries (prevents hidden rollback-only)
+        long activeStudiesCreated = studyQueryRepository.countActiveStudiesCreatedByMemberId(memberId);
+        long activeProjectsCreated = projectQueryRepository.countActiveProjectsCreatedByMemberId(memberId);
 
         long activeStudies = activeStudiesJoined + activeStudiesCreated;
         long activeProjects = activeProjectsJoined + activeProjectsCreated;

@@ -254,7 +254,6 @@ public class ProjectApplicationDtoMapper {
         };
 
         return ProjectParticipantStatusUpdateResponseDto.builder()
-                .participantId(vo.id())
                 .projectId(vo.projectId())
                 .memberId(vo.memberId())
                 .previousStatus(vo.previousStatus())
@@ -357,7 +356,6 @@ public class ProjectApplicationDtoMapper {
         }
 
         return AdminProjectParticipantApprovalResponseDto.builder()
-                .participantId(participantVo.id())
                 .projectId(participantVo.projectId())
                 .projectTitle(projectVo.title())
                 .memberId(participantVo.memberId())
@@ -396,7 +394,6 @@ public class ProjectApplicationDtoMapper {
         }
 
         return AdminProjectParticipantApprovalResponseDto.builder()
-                .participantId(participantVo.id())
                 .projectId(participantVo.projectId())
                 .projectTitle(projectVo.title())
                 .memberId(participantVo.memberId())

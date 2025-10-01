@@ -109,18 +109,7 @@ public class ProjectDomainService {
     private void enforceCreationLimits(Long creatorId) {
         long activeProjectsJoined = projectParticipantQueryRepository.countActiveProjectsByMemberId(creatorId);
 
-        long activeProjectsCreated = 0L;
-        try {
-            var activeProjects = queryRepository.findActiveProjects(org.springframework.data.domain.Pageable.unpaged());
-            if (activeProjects != null && activeProjects.projects() != null) {
-                activeProjectsCreated = activeProjects.projects().stream()
-                        .filter(p -> p != null && p.id() != null)
-                        .map(p -> queryRepository.findById(p.id()).orElse(null))
-                        .filter(java.util.Objects::nonNull)
-                        .filter(full -> full.creatorId() != null && full.creatorId().equals(creatorId))
-                        .count();
-            }
-        } catch (Exception ignored) { }
+        long activeProjectsCreated = queryRepository.countActiveProjectsCreatedByMemberId(creatorId);
 
         long activeProjects = activeProjectsJoined + activeProjectsCreated;
         if (activeProjects >= 1) {
@@ -143,9 +132,13 @@ public class ProjectDomainService {
         // 권한 검증: STAFF 이상이거나 작성자 본인인지 확인
         validateProjectUpdatePermission(command.requesterId(), existingProject.creatorId());
 
-        // 제목 중복 검사 (자신 제외)
+        // 제목 중복 검사 (자신 제외) - 실제로 제목이 변경되는 경우에만 검사
         if (command.title() != null) {
-            validateProjectTitleDuplicationForUpdate(command.title(), command.id());
+            String incomingTitle = command.title() != null ? command.title().trim() : null;
+            String existingTitle = existingProject.title() != null ? existingProject.title().trim() : null;
+            if (incomingTitle != null && (existingTitle == null || !existingTitle.equalsIgnoreCase(incomingTitle))) {
+                validateProjectTitleDuplicationForUpdate(incomingTitle, command.id());
+            }
         }
 
         // ProjectVo.updateFrom() 사용 - 업데이트 시 자동으로 검증 수행

@@ -70,14 +70,18 @@ public record ProjectVo(
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_DATE, "프로젝트 시작일과 종료일은 필수입니다");
         }
 
-        // 시작일은 월요일이어야 함
-        java.time.DayOfWeek projectStartDayOfWeek = startDate.getDayOfWeek();
+        // 시작일은 월요일이어야 함 (KST 기준)
+        java.time.DayOfWeek projectStartDayOfWeek = startDate
+                .atZoneSameInstant(java.time.ZoneId.of("Asia/Seoul"))
+                .getDayOfWeek();
         if (projectStartDayOfWeek != java.time.DayOfWeek.MONDAY) {
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_START_DAY, "프로젝트 시작일은 월요일이어야 합니다");
         }
 
-        // 종료일은 일요일이어야 함
-        java.time.DayOfWeek projectEndDayOfWeek = endDate.getDayOfWeek();
+        // 종료일은 일요일이어야 함 (KST 기준)
+        java.time.DayOfWeek projectEndDayOfWeek = endDate
+                .atZoneSameInstant(java.time.ZoneId.of("Asia/Seoul"))
+                .getDayOfWeek();
         if (projectEndDayOfWeek != java.time.DayOfWeek.SUNDAY) {
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_END_DAY, "프로젝트 종료일은 일요일이어야 합니다");
         }

@@ -244,8 +244,8 @@ public class ProjectParticipantFacadeService {
                         participantVo, projectVo, updatedVo.currentStatus(), adminId, adminName, 
                         request.getReason(), updatedVo.updatedAt());
 
-        log.info("Facade: Admin approved project participant successfully - participantId: {}", 
-                responseDto.getParticipantId());
+        log.info("Facade: Admin approved project participant successfully - memberId: {}",
+                responseDto.getMemberId());
         return responseDto;
     }
 
@@ -281,8 +281,86 @@ public class ProjectParticipantFacadeService {
                         participantVo, projectVo, updatedVo.currentStatus(), adminId, adminName,
                         request.getReason(), updatedVo.updatedAt());
 
-        log.info("Facade: Admin rejected project participant successfully - participantId: {}", 
-                responseDto.getParticipantId());
+        log.info("Facade: Admin rejected project participant successfully - memberId: {}",
+                responseDto.getMemberId());
+        return responseDto;
+    }
+
+    /**
+     * 관리자가 프로젝트 참가 신청을 승인 (projectId, memberId 사용)
+     */
+    public AdminProjectParticipantApprovalResponseDto approveParticipantByAdminWithProjectAndMember(
+            ProjectJoinApproveRequestDto request, Long adminId) {
+        log.info("Facade: Admin approving project participant with projectId and memberId - projectId: {}, memberId: {}, adminId: {}", 
+                request.getProjectId(), request.getMemberId(), adminId);
+
+        // 1. 참가자 정보 조회 (projectId, memberId로)
+        ProjectParticipantVo participantVo = participantQueryService
+                .getByProjectIdAndMemberId(request.getProjectId(), request.getMemberId())
+                .orElseThrow(() -> new IllegalArgumentException("참가 신청을 찾을 수 없습니다: projectId=" + request.getProjectId() + ", memberId=" + request.getMemberId()));
+
+        // 2. 프로젝트 정보 조회
+        ProjectVo projectVo = projectQueryService.getProjectById(GetProjectByIdQuery.of(participantVo.projectId()));
+
+        // 3. 관리자 정보 조회
+        MemberVo adminMember = memberQueryService.getMemberById(new GetMemberByIdQuery(adminId));
+        String adminName = adminMember.name();
+
+        // 4. Command 생성 및 호출
+        UpdateProjectParticipantStatusCommand command = new UpdateProjectParticipantStatusCommand(
+                participantVo.id(),
+                ProjectParticipantStatus.APPROVED,
+                adminId
+        );
+        ProjectParticipantStatusUpdatedVo updatedVo = participantCommandService.approveParticipant(command);
+
+        // 5. Response DTO 변환
+        AdminProjectParticipantApprovalResponseDto responseDto = dtoMapper
+                .toAdminProjectParticipantApprovalResponseDto(
+                        participantVo, projectVo, updatedVo.currentStatus(), adminId, adminName,
+                        null, updatedVo.updatedAt());
+
+        log.info("Facade: Admin approved project participant successfully with projectId and memberId - projectId: {}, memberId: {}", 
+                request.getProjectId(), request.getMemberId());
+        return responseDto;
+    }
+
+    /**
+     * 관리자가 프로젝트 참가 신청을 거절 (projectId, memberId 사용)
+     */
+    public AdminProjectParticipantApprovalResponseDto rejectParticipantByAdminWithProjectAndMember(
+            ProjectJoinRejectRequestDto request, Long adminId) {
+        log.info("Facade: Admin rejecting project participant with projectId and memberId - projectId: {}, memberId: {}, adminId: {}", 
+                request.getProjectId(), request.getMemberId(), adminId);
+
+        // 1. 참가자 정보 조회 (projectId, memberId로)
+        ProjectParticipantVo participantVo = participantQueryService
+                .getByProjectIdAndMemberId(request.getProjectId(), request.getMemberId())
+                .orElseThrow(() -> new IllegalArgumentException("참가 신청을 찾을 수 없습니다: projectId=" + request.getProjectId() + ", memberId=" + request.getMemberId()));
+
+        // 2. 프로젝트 정보 조회
+        ProjectVo projectVo = projectQueryService.getProjectById(GetProjectByIdQuery.of(participantVo.projectId()));
+
+        // 3. 관리자 정보 조회
+        MemberVo adminMember = memberQueryService.getMemberById(new GetMemberByIdQuery(adminId));
+        String adminName = adminMember.name();
+
+        // 4. Command 생성 및 호출
+        UpdateProjectParticipantStatusCommand command = new UpdateProjectParticipantStatusCommand(
+                participantVo.id(),
+                ProjectParticipantStatus.REJECTED,
+                adminId
+        );
+        ProjectParticipantStatusUpdatedVo updatedVo = participantCommandService.rejectParticipant(command);
+
+        // 5. Response DTO 변환
+        AdminProjectParticipantApprovalResponseDto responseDto = dtoMapper
+                .toAdminProjectParticipantApprovalResponseDto(
+                        participantVo, projectVo, updatedVo.currentStatus(), adminId, adminName,
+                        null, updatedVo.updatedAt());
+
+        log.info("Facade: Admin rejected project participant successfully with projectId and memberId - projectId: {}, memberId: {}", 
+                request.getProjectId(), request.getMemberId());
         return responseDto;
     }
 }

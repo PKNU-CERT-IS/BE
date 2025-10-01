@@ -64,62 +64,11 @@ public class ProjectParticipantDomainService {
         // 5. 참가자 수 제한 검증
         validateParticipantLimit(command.projectId(), project.maxParticipants());
 
-        // 6. 기존 소프트 삭제(거절/취소) 레코드 복원 시도
-        int restored = commandRepository.restoreByProjectIdAndMemberId(command.projectId(), command.memberId());
-
-        ProjectParticipantCreatedVo result;
-        if (restored > 0) {
-            // 복원된 레코드 조회 후 상태를 PENDING으로 전환 (가시성 이슈 대비하여 재시도 경로 포함)
-            java.util.Optional<ProjectParticipantVo> restoredOpt = queryRepository
-                    .findByProjectIdAndMemberId(command.projectId(), command.memberId());
-
-            if (restoredOpt.isEmpty()) {
-                // 드물게 같은 트랜잭션에서 즉시 조회가 비어 보일 수 있으므로, 저장 시도 → 유니크 충돌 시 재조회
-                try {
-                    ProjectParticipantVo participantVo = ProjectParticipantVo.createNew(
-                            command.projectId(), command.memberId());
-                    result = commandRepository.save(participantVo);
-                    log.warn("Domain: Restored project participant not immediately visible; created new instead - projectId: {}, memberId: {}",
-                            command.projectId(), command.memberId());
-                    return result;
-                } catch (DomainException ex) {
-                    restoredOpt = queryRepository.findByProjectIdAndMemberId(command.projectId(), command.memberId());
-                    ProjectParticipantVo fetched = restoredOpt.orElseThrow(() -> new DomainException(
-                            ExceptionStatus.PROJECT_DOMAIN_NOT_FOUND, "복원된 참가 신청을 찾을 수 없습니다."));
-                    if (!fetched.isPending()) {
-                        ProjectParticipantVo pendingVo = fetched.updateStatus(ProjectParticipantStatus.PENDING);
-                        commandRepository.updateStatus(pendingVo);
-                    }
-                    result = ProjectParticipantCreatedVo.of(
-                            fetched.id(),
-                            fetched.projectId(),
-                            fetched.memberId(),
-                            ProjectParticipantStatus.PENDING,
-                            fetched.createdAt()
-                    );
-                    return result;
-                }
-            }
-
-            ProjectParticipantVo restoredVo = restoredOpt.get();
-            if (!restoredVo.isPending()) {
-                ProjectParticipantVo pendingVo = restoredVo.updateStatus(ProjectParticipantStatus.PENDING);
-                commandRepository.updateStatus(pendingVo);
-            }
-
-            result = ProjectParticipantCreatedVo.of(
-                    restoredVo.id(),
-                    restoredVo.projectId(),
-                    restoredVo.memberId(),
-                    ProjectParticipantStatus.PENDING,
-                    restoredVo.createdAt()
-            );
-        } else {
-            // 7. 새로운 참가 신청 생성 및 저장
-            ProjectParticipantVo participantVo = ProjectParticipantVo.createNew(
-                    command.projectId(), command.memberId());
-            result = commandRepository.save(participantVo);
-        }
+        // 6. 새로운 참가 신청 생성 및 저장
+        ProjectParticipantVo participantVo = ProjectParticipantVo.createNew(
+                command.projectId(), command.memberId());
+        
+        ProjectParticipantCreatedVo result = commandRepository.save(participantVo);
 
         log.info("Domain: Participant request created - ID: {}", result.id());
         return result;
@@ -363,19 +312,8 @@ public class ProjectParticipantDomainService {
     private void enforceApplicationLimits(Long memberId) {
         long activeProjectsJoined = queryRepository.countActiveProjectsByMemberId(memberId);
 
-        // Include projects created by the member that are currently active
-        long activeProjectsCreated = 0L;
-        try {
-            var activeProjectsResult = projectQueryRepository.findActiveProjects(org.springframework.data.domain.Pageable.unpaged());
-            if (activeProjectsResult != null && activeProjectsResult.projects() != null) {
-                activeProjectsCreated = activeProjectsResult.projects().stream()
-                        .filter(p -> p != null && p.id() != null)
-                        .map(p -> projectQueryRepository.findById(p.id()).orElse(null))
-                        .filter(java.util.Objects::nonNull)
-                        .filter(full -> full.creatorId() != null && full.creatorId().equals(memberId))
-                        .count();
-            }
-        } catch (Exception ignored) { }
+        // Use lightweight aggregate count to avoid nested reads causing rollback-only
+        long activeProjectsCreated = projectQueryRepository.countActiveProjectsCreatedByMemberId(memberId);
 
         long activeProjects = activeProjectsJoined + activeProjectsCreated;
         if (activeProjects >= 1) {
