@@ -11,17 +11,14 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.certis.studyplatform.shared.security.CurrentUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.OffsetDateTime;
+import org.certis.studyplatform.shared.util.DateTimeUtils;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.certis.generated.jooq.Tables.*;
@@ -373,6 +370,41 @@ class StudyControllerTest {
     }
 
     @Test
+    @Order(12)
+    @DisplayName("❌ 스터디 생성 실패 - attachments.type 가 잘못된 Enum 값이면 400 반환")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
+    void createStudy_InvalidAttachmentType_ShouldReturnBadRequest() throws Exception {
+        // Given: 잘못된 Enum 값을 포함한 원시 JSON 요청
+        String nowStart = OffsetDateTime.now().plusDays(1).toString();
+        String nowEnd = OffsetDateTime.now().plusDays(30).toString();
+        String payload = "{" +
+                "\"title\":\"INVALID TYPE TEST\"," +
+                "\"subCategory\":\"NUMBER_THERORY\"," +
+                "\"maxParticipants\":3," +
+                "\"description\":\"desc\"," +
+                "\"content\":\"content\"," +
+                "\"category\":\"CS\"," +
+                "\"startDate\":\"" + nowStart + "\"," +
+                "\"endDate\":\"" + nowEnd + "\"," +
+                "\"attachments\":[{" +
+                "\"name\":\"bad.pdf\"," +
+                "\"type\":\"PDFX\"," + // 존재하지 않는 Enum 값
+                "\"size\":12345," +
+                "\"attachedUrl\":\"data:application/pdf;base64,AAA\"" +
+                "}]" +
+                "}";
+
+        // When & Then: Jackson이 Enum 변환 실패 → GlobalExceptionHandler 가 400으로 매핑
+        mockMvc.perform(post("/api/v1/study/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.statusCode").value(400))
+                .andExpect(jsonPath("$.data.type").value("ENUM_VALUE_INVALID"));
+    }
+
+    @Test
     @Order(11)
     @DisplayName("❌ 스터디 조회 실패 - 존재하지 않는 스터디")
     void getStudyDetail_NotFound_NonExistentStudy() throws Exception {
@@ -453,6 +485,7 @@ class StudyControllerTest {
                 .set(STUDY.CATEGORY, "웹 개발")
                 .set(STUDY.SUBCATEGORY, "풀스택")
                 .set(STUDY.STATUS, "READY")
+                .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 5)
                 .set(STUDY.STARTED_AT, now.plusDays(1))
                 .set(STUDY.ENDED_AT, now.plusDays(30))
@@ -490,6 +523,7 @@ class StudyControllerTest {
                     .set(STUDY.CATEGORY, "웹 개발")
                     .set(STUDY.SUBCATEGORY, "풀스택")
                     .set(STUDY.STATUS, "READY")
+                    .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                     .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                     .set(STUDY.STARTED_AT, now.plusDays(i))
                     .set(STUDY.ENDED_AT, now.plusDays(30 + i))
@@ -529,6 +563,7 @@ class StudyControllerTest {
                 .set(STUDY.CATEGORY, "웹 개발")
                 .set(STUDY.SUBCATEGORY, "풀스택")
                 .set(STUDY.STATUS, "READY")
+                .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 5)
                 .set(STUDY.STARTED_AT, now.plusDays(1))
                 .set(STUDY.ENDED_AT, now.plusDays(30))
@@ -565,6 +600,7 @@ class StudyControllerTest {
                     .set(STUDY.CATEGORY, "웹 개발")
                     .set(STUDY.SUBCATEGORY, "풀스택")
                     .set(STUDY.STATUS, "READY")
+                    .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                     .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                     .set(STUDY.STARTED_AT, now.plusDays(i))
                     .set(STUDY.ENDED_AT, now.plusDays(30 + i))
@@ -602,8 +638,13 @@ class StudyControllerTest {
         request.setContent(TEST_STUDY_CONTENT);
         request.setCategory("웹 개발");
         request.setSubCategory("풀스택");
-        request.setStartDate(OffsetDateTime.now().plusDays(1));
-        request.setEndDate(OffsetDateTime.now().plusDays(30));
+        // 도메인 규칙: 시작일은 월요일이어야 함 → 다음 월요일로 지정
+        // 도메인 유틸과 동일한 규칙을 사용해 시작/종료일 계산
+        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime startMonday = DateTimeUtils.calculateStudyStartWeek(now);
+        OffsetDateTime endSunday = DateTimeUtils.calculateEndWeek(startMonday, 4);
+        request.setStartDate(startMonday);
+        request.setEndDate(endSunday);
         request.setMaxParticipants(10);
         return request;
     }
@@ -625,6 +666,7 @@ class StudyControllerTest {
                     .set(MEMBER.GENDER, "MALE")
                     .set(MEMBER.GRADE, "SENIOR")
                     .set(MEMBER.MAJOR, "컴퓨터공학과")
+                    .set(MEMBER.PROFILE_IMAGE, "https://example.com/profile1.jpg")
                     .set(MEMBER.CREATED_AT, now)
                     .set(MEMBER.UPDATED_AT, now)
                     .onDuplicateKeyIgnore()
@@ -639,6 +681,7 @@ class StudyControllerTest {
                     .set(MEMBER.GENDER, "FEMALE")
                     .set(MEMBER.GRADE, "JUNIOR")
                     .set(MEMBER.MAJOR, "정보보안학과")
+                    .set(MEMBER.PROFILE_IMAGE, "https://example.com/profile2.jpg")
                     .set(MEMBER.CREATED_AT, now)
                     .set(MEMBER.UPDATED_AT, now)
                     .onDuplicateKeyIgnore()
@@ -675,6 +718,7 @@ class StudyControllerTest {
                 .set(STUDY.CATEGORY, "웹 개발")
                 .set(STUDY.SUBCATEGORY, "풀스택")
                 .set(STUDY.STATUS, "READY")
+                .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                 .set(STUDY.STARTED_AT, now.plusDays(1))
                 .set(STUDY.ENDED_AT, now.plusDays(30))
@@ -699,6 +743,7 @@ class StudyControllerTest {
                     .set(STUDY.CATEGORY, "웹 개발")
                     .set(STUDY.SUBCATEGORY, "풀스택")
                     .set(STUDY.STATUS, "READY")
+                    .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                     .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                     .set(STUDY.STARTED_AT, now.plusDays(i))
                     .set(STUDY.ENDED_AT, now.plusDays(30 + i))
@@ -724,6 +769,7 @@ class StudyControllerTest {
                     .set(STUDY.CATEGORY, "웹 개발")
                     .set(STUDY.SUBCATEGORY, "풀스택")
                     .set(STUDY.STATUS, "READY")
+                    .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                     .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                     .set(STUDY.STARTED_AT, now.plusDays(i))
                     .set(STUDY.ENDED_AT, now.plusDays(30 + i))
@@ -845,7 +891,7 @@ class StudyControllerTest {
 
     @Test
     @Order(103)
-    @DisplayName("✅ 스터디 고급 검색 시 semester 필드로 필터링이 가능하다")
+    @DisplayName("✅ 스터디 고급 검색 - semester 필드로 필터링이 가능하다")
     @WithMockUser(username = "testuser", roles = {"PLAYER"})
     void should_filter_by_semester_in_advanced_search() throws Exception {
         // Given: 특정 학기의 스터디가 존재하는 상태
@@ -886,8 +932,7 @@ class StudyControllerTest {
                 .set(STUDY.ENDED_AT, OffsetDateTime.now().plusDays(30))
                 .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
-                // .set(STUDY.CURRENT_PARTICIPANTS, 0) // CURRENT_PARTICIPANTS 필드가 없음
-                // .set(STUDY.SEMESTER, "2024-1") // SEMESTER 필드가 없음
+                .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                 .set(STUDY.CREATED_AT, OffsetDateTime.now())
                 .set(STUDY.UPDATED_AT, OffsetDateTime.now())
                 .execute();
@@ -925,6 +970,7 @@ class StudyControllerTest {
                 .set(STUDY.CATEGORY, "CS")
                 .set(STUDY.SUBCATEGORY, "백엔드")
                 .set(STUDY.STATUS, "READY")
+                .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                 .set(STUDY.STARTED_AT, now.minusDays(1)) // 1일 전 시작
                 .set(STUDY.ENDED_AT, now.plusDays(30))   // 30일 후 종료
@@ -959,6 +1005,7 @@ class StudyControllerTest {
                 .set(STUDY.CATEGORY, "CS")
                 .set(STUDY.SUBCATEGORY, "백엔드")
                 .set(STUDY.STATUS, "READY")
+                .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                 .set(STUDY.STARTED_AT, now.minusDays(1)) // 1일 전 시작
                 .set(STUDY.ENDED_AT, now.plusDays(30))   // 30일 후 종료
@@ -994,6 +1041,7 @@ class StudyControllerTest {
                 .set(STUDY.CATEGORY, "CS")
                 .set(STUDY.SUBCATEGORY, "백엔드")
                 .set(STUDY.STATUS, "READY")
+                .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                 .set(STUDY.STARTED_AT, now.minusDays(10)) // 10일 전 시작
                 .set(STUDY.ENDED_AT, now.minusDays(1))    // 1일 전 종료
@@ -1029,6 +1077,8 @@ class StudyControllerTest {
                 .set(STUDY.SUBCATEGORY, "백엔드")
                 .set(STUDY.MEMBER_ID, 1L)
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(STUDY.STATUS, "READY")
+                .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                 .set(STUDY.STARTED_AT, now.plusDays(10)) // 10일 후 시작
                 .set(STUDY.ENDED_AT, now.plusDays(40))   // 40일 후 종료
                 .set(STUDY.CREATED_AT, now)
@@ -1062,6 +1112,7 @@ class StudyControllerTest {
                 .set(STUDY.CATEGORY, "CS")
                 .set(STUDY.SUBCATEGORY, "백엔드")
                 .set(STUDY.STATUS, "READY")
+                .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                 .set(STUDY.STARTED_AT, now.plusDays(5))
                 .set(STUDY.ENDED_AT, now.plusDays(35))
@@ -1079,6 +1130,7 @@ class StudyControllerTest {
                 .set(STUDY.CATEGORY, "CS")
                 .set(STUDY.SUBCATEGORY, "백엔드")
                 .set(STUDY.STATUS, "READY")
+                .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                 .set(STUDY.STARTED_AT, now.minusDays(1))
                 .set(STUDY.ENDED_AT, now.plusDays(20))
@@ -1096,6 +1148,7 @@ class StudyControllerTest {
                 .set(STUDY.CATEGORY, "CS")
                 .set(STUDY.SUBCATEGORY, "백엔드")
                 .set(STUDY.STATUS, "READY")
+                .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                 .set(STUDY.STARTED_AT, now.minusDays(10))
                 .set(STUDY.ENDED_AT, now.minusDays(1))
@@ -1181,6 +1234,7 @@ class StudyControllerTest {
                 .set(STUDY.CATEGORY, "CS")
                 .set(STUDY.SUBCATEGORY, "백엔드")
                 .set(STUDY.STATUS, "READY")
+                .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                 .set(STUDY.STARTED_AT, now.plusDays(5))
                 .set(STUDY.ENDED_AT, now.plusDays(35))
@@ -1198,6 +1252,7 @@ class StudyControllerTest {
                 .set(STUDY.CATEGORY, "CS")
                 .set(STUDY.SUBCATEGORY, "백엔드")
                 .set(STUDY.STATUS, "APPROVED")
+                .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                 .set(STUDY.STARTED_AT, now.minusDays(1))
                 .set(STUDY.ENDED_AT, now.plusDays(20))
@@ -1215,6 +1270,7 @@ class StudyControllerTest {
                 .set(STUDY.CATEGORY, "CS")
                 .set(STUDY.SUBCATEGORY, "백엔드")
                 .set(STUDY.STATUS, "INPROGRESS")
+                .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                 .set(STUDY.STARTED_AT, now.minusDays(1))
                 .set(STUDY.ENDED_AT, now.plusDays(20))
@@ -1232,6 +1288,7 @@ class StudyControllerTest {
                 .set(STUDY.CATEGORY, "CS")
                 .set(STUDY.SUBCATEGORY, "백엔드")
                 .set(STUDY.STATUS, "COMPLETED")
+                .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                 .set(STUDY.STARTED_AT, now.minusDays(10))
                 .set(STUDY.ENDED_AT, now.minusDays(1))
@@ -1278,19 +1335,20 @@ class StudyControllerTest {
 
     @Test
     @Order(108)
-    @DisplayName("❌ 스터디 고급 검색 - 잘못된 필드명 사용 시 에러 발생")
-    void should_throw_error_when_using_wrong_field_name() throws Exception {
+    @DisplayName("✅ 스터디 고급 검색 - 올바른 필드명 사용 시 성공")
+    void should_succeed_when_using_correct_field_name() throws Exception {
         // Given: 테스트 데이터 생성
         createMultipleStudiesInDatabase();
 
-        // When & Then: 잘못된 필드명 'status' 사용 시 에러 발생
+        // When & Then: 올바른 필드명 'studyStatus' 사용 시 성공
         mockMvc.perform(get("/api/v1/study/search")
-                        .param("status", "READY")  // 잘못된 필드명
+                        .param("studyStatus", "READY")  // 올바른 필드명
                         .param("page", "0")
                         .param("size", "10"))
                 .andDo(print())
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value(containsString("Invalid status parameter")));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(jsonPath("$.data.content").isArray());
     }
 
     @Test

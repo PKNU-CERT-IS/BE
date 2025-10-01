@@ -408,7 +408,7 @@ class CreationVsParticipationLimitsTest {
 
     private StudyVo createStudyVo(Long studyId, Long creatorId) {
         OffsetDateTime endDate = OffsetDateTime.now().plusDays(30);
-        return new StudyVo(
+        return StudyVo.createForTest(
                 studyId,
                 "테스트 스터디",
                 "테스트 설명",

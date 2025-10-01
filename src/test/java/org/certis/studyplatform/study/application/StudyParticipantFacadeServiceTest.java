@@ -45,7 +45,7 @@ public class StudyParticipantFacadeServiceTest {
     );
 
     private StudyVo studyVo(Long studyId, Long creatorId) {
-        return new StudyVo(
+        return StudyVo.createForTest(
                 studyId,
                 "title",
                 "desc",

@@ -376,6 +376,7 @@ class StudyParticipantDomainServiceTest {
                 null, // creatorProfileImageUrl
                 calculateSemester(endDate), // semester 계산
                 calculateStatus(endDate), // status 계산
+                org.certis.studyplatform.shared.domain.ResultSubmitStatus.READY, // resultSubmitStatus 추가
                 10,
                 0,
                 true, // isParticipantable
