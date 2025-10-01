@@ -122,7 +122,7 @@ public class AuthFacadeService {
         RefreshTokenVo newRefreshToken = authQueryService.validateRefreshToken(newTokenQuery);
 
         log.info("안전한 토큰 갱신 완료: memberId={}, role={}", memberInfo.memberId(), memberInfo.role());
-        return new RefreshAccessTokenResponseDto(newAccessToken.value(), newRefreshToken.value());
+        return new RefreshAccessTokenResponseDto(newAccessToken.value());
     }
 
     @Transactional
