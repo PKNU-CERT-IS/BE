@@ -76,4 +76,12 @@ public class ProjectParticipantQueryService {
         log.info("Query: Getting pending participant count - projectId: {}", projectId);
         return queryRepository.countPendingParticipantsByProjectId(projectId);
     }
+
+    /**
+     * Find participant by (projectId, memberId)
+     */
+    public Optional<ProjectParticipantVo> getByProjectIdAndMemberId(Long projectId, Long memberId) {
+        log.info("Query: Getting participant by projectId and memberId - projectId: {}, memberId: {}", projectId, memberId);
+        return queryRepository.findByProjectIdAndMemberId(projectId, memberId);
+    }
 }

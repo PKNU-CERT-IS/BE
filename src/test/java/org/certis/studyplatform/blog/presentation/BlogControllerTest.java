@@ -397,7 +397,8 @@ class BlogControllerTest {
                 .andExpect(jsonPath("$.data.content").isArray())
                 .andExpect(jsonPath("$.data.content[0].referenceType").exists())
                 .andExpect(jsonPath("$.data.content[0].referenceId").exists())
-                .andExpect(jsonPath("$.data.content[0].referenceTitle").exists());
+                .andExpect(jsonPath("$.data.content[0].referenceTitle").exists())
+                .andExpect(jsonPath("$.data.content[0].blogCreatorProfileImageUrl").exists());
 
     }
 

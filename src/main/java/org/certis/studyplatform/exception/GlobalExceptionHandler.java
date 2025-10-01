@@ -8,6 +8,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.transaction.TransactionSystemException;
+import org.springframework.transaction.UnexpectedRollbackException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -119,12 +121,34 @@ public class GlobalExceptionHandler {
             HttpMessageNotReadableException ex, WebRequest request) {
         log.warn("HTTP message not readable: {}", ex.getMessage());
 
+        // Enum 타입 변환 실패(예: AttachedType) 케이스를 구체적으로 처리
+        Throwable cause = ex.getCause();
+        if (cause instanceof com.fasterxml.jackson.databind.exc.InvalidFormatException ife) {
+            Class<?> targetType = ife.getTargetType();
+            if (targetType != null && targetType.isEnum()) {
+                String invalidValue = String.valueOf(ife.getValue());
+                String[] allowed = java.util.Arrays.stream(targetType.getEnumConstants())
+                        .map(Object::toString)
+                        .toArray(String[]::new);
+
+                String enumName = targetType.getSimpleName();
+                String message = String.format("'%s' 값 '%s'은(는) 유효하지 않습니다. 허용값: %s",
+                        enumName, invalidValue, String.join(", ", allowed));
+
+                return GlobalResponseHandler.error(
+                        HttpStatus.BAD_REQUEST.value(),
+                        message,
+                        createErrorDetails("ENUM_VALUE_INVALID", request)
+                );
+            }
+        }
+
         String message = "요청 본문이 누락되었거나 올바르지 않습니다";
 
         // 구체적인 에러 메시지 제공
-        if (ex.getMessage().contains("Required request body is missing")) {
+        if (ex.getMessage() != null && ex.getMessage().contains("Required request body is missing")) {
             message = "요청 본문이 필요합니다";
-        } else if (ex.getMessage().contains("JSON parse error")) {
+        } else if (ex.getMessage() != null && ex.getMessage().contains("JSON parse error")) {
             message = "JSON 형식이 올바르지 않습니다";
         }
 
@@ -194,8 +218,9 @@ public class GlobalExceptionHandler {
             MethodArgumentTypeMismatchException ex, WebRequest request) {
         log.warn("Method argument type mismatch: {}", ex.getMessage());
 
+        String requiredTypeName = ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "required type";
         String message = String.format("'%s' 파라미터의 값 '%s'을(를) %s 타입으로 변환할 수 없습니다",
-                ex.getName(), ex.getValue(), ex.getRequiredType().getSimpleName());
+                ex.getName(), ex.getValue(), requiredTypeName);
 
         return GlobalResponseHandler.error(
                 HttpStatus.BAD_REQUEST.value(),
@@ -307,13 +332,14 @@ public class GlobalExceptionHandler {
         log.error("Data integrity violation: {}", ex.getMessage(), ex);
 
         String message = "데이터 무결성 제약 조건 위반입니다";
+        String raw = ex.getMessage() != null ? ex.getMessage().toLowerCase() : "";
 
         // 일반적인 제약 조건 위반 메시지 변환
-        if (ex.getMessage().contains("unique")) {
+        if (raw.contains("unique")) {
             message = "중복된 데이터로 인해 처리할 수 없습니다";
-        } else if (ex.getMessage().contains("foreign key")) {
+        } else if (raw.contains("foreign key")) {
             message = "참조 무결성 제약으로 인해 처리할 수 없습니다";
-        } else if (ex.getMessage().contains("not null")) {
+        } else if (raw.contains("not null")) {
             message = "필수 데이터가 누락되어 처리할 수 없습니다";
         }
 
@@ -374,6 +400,29 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 트랜잭션 롤백 예외 처리
+     * - 내부에서 예외가 발생해 트랜잭션이 rollback-only가 되었는데 외부에서 commit을 시도할 때 발생
+     * - 가능한 경우 원인 예외를 언랩해서 보다 적절한 상태코드로 응답
+     */
+    @ExceptionHandler({UnexpectedRollbackException.class, TransactionSystemException.class})
+    public ResponseEntity<GlobalResponseHandler<Object>> handleTransactionRollback(Exception ex, WebRequest request) {
+        Throwable cause = ex.getCause();
+        // 가능한 경우 원인 예외로 위임 처리
+        if (cause != null) {
+            return delegateToSpecificHandler(cause, request);
+        }
+
+        // 원인 예외가 없는 경우 스택 포함 상세 로그로 추적성 강화
+        log.warn("Transaction rolled back without cause. Message={}, path={}, thread={}",
+                ex.getMessage(), getPath(request), Thread.currentThread().getName(), ex);
+        return GlobalResponseHandler.error(
+                HttpStatus.CONFLICT.value(),
+                "요청 처리 중 트랜잭션이 롤백되었습니다",
+                createErrorDetails("TRANSACTION_ROLLBACK", request)
+        );
+    }
+
+    /**
      * 모든 예외의 최종 처리
      */
     @ExceptionHandler(Exception.class)
@@ -396,9 +445,15 @@ public class GlobalExceptionHandler {
         log.warn("CompletionException caught, unwrapping cause: {}",
                 cause != null ? cause.getClass().getSimpleName() : "null");
 
-        // 원본 예외가 있는 경우 해당 예외로 처리
+        // 원본 예외가 있는 경우 해당 예외로 처리 (안전 언랩: CompletionException 연쇄 방지)
         if (cause != null) {
-            return delegateToSpecificHandler(cause, request);
+            Throwable root = cause;
+            int guard = 0;
+            while (root instanceof CompletionException && root.getCause() != null && guard < 10) {
+                root = root.getCause();
+                guard++;
+            }
+            return delegateToSpecificHandler(root, request);
         }
 
         // 원본 예외가 없는 경우 일반 처리
@@ -409,6 +464,8 @@ public class GlobalExceptionHandler {
                 createErrorDetails("COMPLETION_ERROR", request)
         );
     }
+
+    
 
     @ExceptionHandler(AuthorizationDeniedException.class)
     public ResponseEntity<GlobalResponseHandler<Object>> handleAuthorizationDenied(
@@ -446,57 +503,121 @@ public class GlobalExceptionHandler {
 
         // Domain Layer 예외
         if (cause instanceof DomainException domainEx) {
-            return handleDomainException(domainEx, request);
+            return GlobalResponseHandler.error(
+                    domainEx.getStatus().getStatusCode(),
+                    domainEx.getMessage(),
+                    createErrorDetails("DOMAIN_ERROR", request)
+            );
         }
 
         // Application Layer 예외
         if (cause instanceof ApplicationException appEx) {
-            return handleApplicationException(appEx, request);
+            return GlobalResponseHandler.error(
+                    appEx.getStatus().getStatusCode(),
+                    appEx.getMessage(),
+                    createErrorDetails("APPLICATION_ERROR", request)
+            );
         }
 
         // Infrastructure Layer 예외
         if (cause instanceof InfrastructureException infraEx) {
-            return handleInfrastructureException(infraEx, request);
+            log.error("Infrastructure layer exception (async): {}", infraEx.getMessage(), infraEx);
+            return GlobalResponseHandler.error(
+                    infraEx.getStatus().getStatusCode(),
+                    infraEx.getMessage(),
+                    createErrorDetails("INFRASTRUCTURE_ERROR", request)
+            );
         }
 
         // Presentation Layer 예외
         if (cause instanceof PresentationException presEx) {
-            return handlePresentationException(presEx, request);
+            return GlobalResponseHandler.error(
+                    presEx.getStatus().getStatusCode(),
+                    presEx.getMessage(),
+                    createErrorDetails("PRESENTATION_ERROR", request)
+            );
         }
 
         // DTO 예외
         if (cause instanceof DtoException dtoEx) {
-            return handleDtoException(dtoEx, request);
+            return GlobalResponseHandler.error(
+                    HttpStatus.BAD_REQUEST.value(),
+                    dtoEx.getMessage(),
+                    createErrorDetails("DTO_VALIDATION_ERROR", request)
+            );
         }
 
         // 데이터 무결성 위반
         if (cause instanceof DataIntegrityViolationException dataEx) {
-            return handleDataIntegrityViolation(dataEx, request);
+            String message = "데이터 무결성 제약 조건 위반입니다";
+            String msg = dataEx.getMessage() != null ? dataEx.getMessage().toLowerCase() : "";
+            if (msg.contains("unique")) {
+                message = "중복된 데이터로 인해 처리할 수 없습니다";
+            } else if (msg.contains("foreign key")) {
+                message = "참조 무결성 제약으로 인해 처리할 수 없습니다";
+            } else if (msg.contains("not null")) {
+                message = "필수 데이터가 누락되어 처리할 수 없습니다";
+            }
+            return GlobalResponseHandler.error(
+                    HttpStatus.CONFLICT.value(),
+                    message,
+                    createErrorDetails("DATA_INTEGRITY_VIOLATION", request)
+            );
         }
 
         // 제약 조건 위반
         if (cause instanceof ConstraintViolationException constraintEx) {
-            return handleConstraintViolation(constraintEx, request);
+            String violations = constraintEx.getConstraintViolations().stream()
+                    .map(v -> v.getPropertyPath() + ": " + v.getMessage())
+                    .collect(java.util.stream.Collectors.joining(", "));
+            return GlobalResponseHandler.error(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "제약 조건 위반: " + violations,
+                    createErrorDetails("CONSTRAINT_VIOLATION", request)
+            );
         }
 
         // Validation 예외
         if (cause instanceof MethodArgumentNotValidException validationEx) {
-            return handleValidationErrors(validationEx, request);
+            java.util.Map<String, String> fieldErrors = new java.util.HashMap<>();
+            validationEx.getBindingResult().getFieldErrors().forEach(error ->
+                    fieldErrors.put(error.getField(), error.getDefaultMessage())
+            );
+            java.util.Map<String, Object> details = createErrorDetails("VALIDATION_ERROR", request);
+            details.put("fieldErrors", fieldErrors);
+            return GlobalResponseHandler.error(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "입력 데이터 검증에 실패했습니다",
+                    details
+            );
         }
 
         // IllegalArgument 예외
         if (cause instanceof IllegalArgumentException illegalArgEx) {
-            return handleIllegalArgument(illegalArgEx, request);
+            return GlobalResponseHandler.error(
+                    HttpStatus.BAD_REQUEST.value(),
+                    illegalArgEx.getMessage(),
+                    createErrorDetails("INVALID_ARGUMENT", request)
+            );
         }
 
         // IllegalState 예외
         if (cause instanceof IllegalStateException illegalStateEx) {
-            return handleIllegalState(illegalStateEx, request);
+            return GlobalResponseHandler.error(
+                    HttpStatus.CONFLICT.value(),
+                    illegalStateEx.getMessage(),
+                    createErrorDetails("BUSINESS_RULE_VIOLATION", request)
+            );
         }
 
         // 그 외의 RuntimeException
         if (cause instanceof RuntimeException runtimeEx) {
-            return handleRuntimeException(runtimeEx, request);
+            log.error("Unexpected runtime exception (async): {}", runtimeEx.getMessage(), runtimeEx);
+            return GlobalResponseHandler.error(
+                    HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    "서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+                    createErrorDetails("RUNTIME_ERROR", request)
+            );
         }
 
         // 일반 Exception

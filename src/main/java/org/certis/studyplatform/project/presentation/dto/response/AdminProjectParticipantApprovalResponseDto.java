@@ -19,7 +19,6 @@ import java.time.OffsetDateTime;
 @AllArgsConstructor
 public class AdminProjectParticipantApprovalResponseDto {
 
-    private Long participantId;
     private Long projectId;
     private String projectTitle;
     private Long memberId;
@@ -34,8 +33,7 @@ public class AdminProjectParticipantApprovalResponseDto {
     @Override
     public String toString() {
         return "AdminProjectParticipantApprovalResponseDto{" +
-                "participantId=" + participantId +
-                ", projectId=" + projectId +
+                "projectId=" + projectId +
                 ", projectTitle='" + projectTitle + '\'' +
                 ", memberId=" + memberId +
                 ", memberName='" + memberName + '\'' +

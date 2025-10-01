@@ -15,4 +15,5 @@ public class AuthorResponseDto {
     private Long memberId;
     private String name;
     private MemberRole role;
+    private String profileImageUrl;
 }

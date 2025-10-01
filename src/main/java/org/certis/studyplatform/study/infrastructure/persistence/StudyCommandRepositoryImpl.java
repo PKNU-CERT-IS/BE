@@ -98,6 +98,7 @@ public class StudyCommandRepositoryImpl implements StudyCommandRepository {
                     .type(file.getContentType())
                     .size(String.valueOf(file.getSize()))
                     .createdAt(OffsetDateTime.now())
+                    .updatedAt(OffsetDateTime.now())
                     .build();
 
             studyAttachedJpaRepository.save(entity);
@@ -143,9 +144,10 @@ public class StudyCommandRepositoryImpl implements StudyCommandRepository {
                     .memberId(requesterId)
                     .attachedUrl(file.url())
                     .name(file.name())
-                    .type(file.type() != null ? file.type().name() : null)
+                    .type(file.type() != null ? file.type().name() : "TEXT")
                     .size(file.size() != null ? String.valueOf(file.size()) : "0")
                     .createdAt(java.time.OffsetDateTime.now())
+                    .updatedAt(java.time.OffsetDateTime.now())
                     .build();
             studyAttachedJpaRepository.save(entity);
         }

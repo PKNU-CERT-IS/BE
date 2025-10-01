@@ -15,6 +15,9 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import org.certis.studyplatform.exception.DomainException;
+import org.certis.studyplatform.exception.ExceptionStatus;
+import org.springframework.dao.DataIntegrityViolationException;
 
 /**
  * Project Participant Command Repository Implementation
@@ -44,7 +47,16 @@ public class ProjectParticipantCommandRepositoryImpl implements ProjectParticipa
         ProjectParticipantEntity entity = mapper.toEntity(participantVo);
 
         // JPA Repository를 통한 저장
-        ProjectParticipantEntity savedEntity = jpaRepository.save(entity);
+        ProjectParticipantEntity savedEntity;
+        try {
+            savedEntity = jpaRepository.save(entity);
+        } catch (DataIntegrityViolationException ex) {
+            // DB 제약(유니크 등)으로 인한 중복 저장 - 원래 예외를 그대로 던져서 트랜잭션 롤백 방지
+            log.warn("Command: Data integrity violation - projectId: {}, memberId: {}, error: {}",
+                    participantVo.projectId(), participantVo.memberId(), ex.getMessage());
+            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION,
+                    "이미 참가 신청한 프로젝트입니다.", ex);
+        }
 
         // Entity → CreatedVo 변환
         ProjectParticipantCreatedVo result = mapper.toCreatedVo(savedEntity);
@@ -62,11 +74,21 @@ public class ProjectParticipantCommandRepositoryImpl implements ProjectParticipa
                 participantVo.id(), participantVo.status());
 
         // 벌크 업데이트 실행 (조회 없이)
-        int affectedRows = jpaRepository.bulkUpdateStatus(
-                participantVo.id(),
-                participantVo.status(),
-                OffsetDateTime.now()
-        );
+        int affectedRows;
+        OffsetDateTime now = OffsetDateTime.now();
+        if (participantVo.status() == ProjectParticipantStatus.REJECTED) {
+            // 거절 시에는 상태 변경 + 소프트 삭제를 동시에 처리
+            affectedRows = jpaRepository.bulkRejectWithSoftDelete(
+                    participantVo.id(),
+                    now
+            );
+        } else {
+            affectedRows = jpaRepository.bulkUpdateStatus(
+                    participantVo.id(),
+                    participantVo.status(),
+                    now
+            );
+        }
 
         if (affectedRows == 0) {
             throw new InfrastructureException(ExceptionStatus.PROJECT_INFRASTRUCTURE_NOT_FOUND,
@@ -129,5 +151,13 @@ public class ProjectParticipantCommandRepositoryImpl implements ProjectParticipa
                     "삭제할 참가자를 찾을 수 없습니다");
         }
         log.debug("Command: Participant soft deleted - id: {}", participantId);
+    }
+
+    @Override
+    public int restoreByProjectIdAndMemberId(Long projectId, Long memberId) {
+        log.debug("Command: Restoring soft-deleted participant - projectId: {}, memberId: {}", projectId, memberId);
+        int affectedRows = jpaRepository.restoreLatestByProjectIdAndMemberId(projectId, memberId, OffsetDateTime.now());
+        log.debug("Command: Restore affected rows: {} - projectId: {}, memberId: {}", affectedRows, projectId, memberId);
+        return affectedRows;
     }
 }

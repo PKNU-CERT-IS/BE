@@ -68,6 +68,11 @@ public interface ProjectQueryRepository {
     ProjectSearchResultVo findActiveProjects(Pageable pageable);
 
     /**
+     * 진행 중인 프로젝트(시작됨 AND 아직 종료 전) 중 특정 회원이 생성한 개수 반환
+     */
+    long countActiveProjectsCreatedByMemberId(Long memberId);
+
+    /**
      * 키워드로 프로젝트 검색
      *
      * @param keyword 검색 키워드

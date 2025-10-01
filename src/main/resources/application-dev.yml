@@ -61,6 +61,14 @@ spring:
           min-idle: 0
         shutdown-timeout: 100ms
 
+certis:
+  redis:
+    dev-schedule:
+      enabled: true
+  board:
+    dev-schedule:
+      enabled: true
+
   # 캐시 설정 - Redis 사용 (실패 시 메모리 캐시로 fallback)
   cache:
     type: redis

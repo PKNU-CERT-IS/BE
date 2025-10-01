@@ -3,7 +3,6 @@ package org.certis.studyplatform.blog.domain.vo;
 import org.certis.studyplatform.blog.domain.ArticleReferenceType;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 
 /**
  * Blog Summary Value Object
@@ -18,6 +17,7 @@ public record BlogSummaryVo(
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt,
         String blogCreatorName,
+        String blogCreatorProfileImageUrl,
         ArticleReferenceType referenceType,
         String referenceTitle,
         Integer views,
@@ -34,6 +34,7 @@ public record BlogSummaryVo(
             OffsetDateTime createdAt,
             OffsetDateTime updatedAt,
             String blogCreatorName,
+            String blogCreatorProfileImageUrl,
             ArticleReferenceType referenceType,
             String referenceTitle,
             Integer views,
@@ -44,7 +45,7 @@ public record BlogSummaryVo(
     ) {
         return new BlogSummaryVo(
                 id, title, description, category,
-                createdAt, updatedAt, blogCreatorName,
+                createdAt, updatedAt, blogCreatorName, blogCreatorProfileImageUrl,
                 referenceType, referenceTitle, views,
                 studyId, projectId, studyTitle, projectTitle
         );

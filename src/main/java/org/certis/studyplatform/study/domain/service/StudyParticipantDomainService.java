@@ -17,6 +17,9 @@ import org.certis.studyplatform.study.domain.vo.StudyParticipantVo;
 import org.certis.studyplatform.study.domain.vo.StudyVo;
 import org.springframework.stereotype.Service;
 
+import org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository;
+import org.certis.studyplatform.member.domain.repository.query.MemberQueryRepository;
+
 import java.time.OffsetDateTime;
 
 /**
@@ -33,8 +36,9 @@ public class StudyParticipantDomainService {
     private final StudyParticipantCommandRepository commandRepository;
     private final StudyParticipantQueryRepository queryRepository;
     private final StudyQueryRepository studyQueryRepository;
-    private final org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository projectParticipantQueryRepository;
-    private final org.certis.studyplatform.member.domain.repository.query.MemberQueryRepository memberQueryRepository;
+    private final ProjectParticipantQueryRepository projectParticipantQueryRepository;
+    private final org.certis.studyplatform.project.domain.repository.ProjectQueryRepository projectQueryRepository;
+    private final MemberQueryRepository memberQueryRepository;
 
     // ================================================================
     // COMMAND OPERATIONS
@@ -47,11 +51,11 @@ public class StudyParticipantDomainService {
         log.info("Domain: Creating participant request - studyId: {}, memberId: {}",
                 command.studyId(), command.memberId());
 
-        // 1. 스터디 존재 및 상태 검증
-        StudyVo study = validateStudyForJoin(command.studyId());
-
-        // 2. 중복 신청 검증 (먼저 확인)
+        // 1. 중복 신청 검증 (테스트 기대: 중복일 때 우선적으로 에러 발생)
         validateDuplicateParticipation(command.studyId(), command.memberId());
+
+        // 2. 스터디 존재 및 상태 검증
+        StudyVo study = validateStudyForJoin(command.studyId());
 
         // 3. 신청 제한 규칙 검증 (도메인 상한 규칙을 우선 적용)
         enforceApplicationLimits(command.memberId());
@@ -65,11 +69,10 @@ public class StudyParticipantDomainService {
         // 5. 참가자 수 제한 검증 (동시성 고려를 위해 마지막에 재확인)
         validateParticipantLimit(command.studyId(), study.maxParticipants());
 
-        // 6. 새로운 참가 신청 생성
+        // 6. 새로운 참가 신청 생성 및 저장
         StudyParticipantVo participantVo = StudyParticipantVo.createNew(
                 command.studyId(), command.memberId());
-
-        // 7. 저장
+        
         StudyParticipantCreatedVo result = commandRepository.save(participantVo);
 
         log.info("Domain: Participant request created - ID: {}", result.id());
@@ -267,10 +270,15 @@ public class StudyParticipantDomainService {
      * 중복 참가 신청 검증
      */
     private void validateDuplicateParticipation(Long studyId, Long memberId) {
-        if (queryRepository.existsByStudyIdAndMemberId(studyId, memberId)) {
-            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_PERMISSION_DENINED,
-                    "이미 참가 신청한 스터디입니다.");
-        }
+        // Prefer checking actual status to be robust across repository implementations/caching
+        queryRepository.findByStudyIdAndMemberId(studyId, memberId)
+                .ifPresent(existing -> {
+                    if (existing.isPending() || existing.isApproved()) {
+                        throw new DomainException(ExceptionStatus.STUDY_DOMAIN_PERMISSION_DENINED,
+                                "이미 참가 신청한 스터디입니다.");
+                    }
+                    // REJECTED/CANCELLED should be allowed to re-apply
+                });
     }
 
     /**
@@ -279,8 +287,15 @@ public class StudyParticipantDomainService {
      * - 진행 중인 project >= 1 이고 진행 중인 study >= 1 이면 study 추가 신청 불가
      */
     private void enforceApplicationLimits(Long memberId) {
-        long activeStudies = queryRepository.countActiveStudiesByMemberId(memberId);
-        long activeProjects = projectParticipantQueryRepository.countActiveProjectsByMemberId(memberId);
+        long activeStudiesJoined = queryRepository.countActiveStudiesByMemberId(memberId);
+        long activeProjectsJoined = projectParticipantQueryRepository.countActiveProjectsByMemberId(memberId);
+
+        // Use dedicated aggregate counts instead of heavy list queries (prevents hidden rollback-only)
+        long activeStudiesCreated = studyQueryRepository.countActiveStudiesCreatedByMemberId(memberId);
+        long activeProjectsCreated = projectQueryRepository.countActiveProjectsCreatedByMemberId(memberId);
+
+        long activeStudies = activeStudiesJoined + activeStudiesCreated;
+        long activeProjects = activeProjectsJoined + activeProjectsCreated;
 
         // 프로젝트 미진행 시: 스터디 2개까지 허용 (즉, 3번째부터 제한)
         if (activeProjects == 0 && activeStudies >= 2) {

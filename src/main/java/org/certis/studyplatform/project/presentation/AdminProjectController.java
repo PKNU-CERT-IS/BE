@@ -10,7 +10,8 @@ import org.certis.studyplatform.shared.security.CurrentUser;
 import org.certis.studyplatform.project.application.ProjectParticipantFacadeService;
 
 import org.springframework.web.bind.annotation.PathVariable;
-import org.certis.studyplatform.project.presentation.dto.request.AdminProjectParticipantApprovalRequestDto;
+import org.certis.studyplatform.project.presentation.dto.request.ProjectJoinApproveRequestDto;
+import org.certis.studyplatform.project.presentation.dto.request.ProjectJoinRejectRequestDto;
 import org.certis.studyplatform.project.presentation.dto.response.AdminProjectParticipantApprovalResponseDto;
 import org.certis.studyplatform.project.presentation.dto.response.AdminProjectEndSubmissionResponseDto;
 import org.certis.studyplatform.project.application.ProjectFacadeService;
@@ -20,6 +21,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.certis.studyplatform.project.presentation.dto.request.AdminProjectUpdateRequestDto;
 
 /**
  * Admin Project Controller
@@ -47,17 +49,17 @@ public class AdminProjectController {
     @PostMapping("/participant/approve")
     @Operation(summary = "프로젝트 참가 신청 승인", description = "프로젝트 참가 신청을 승인합니다")
     public ResponseEntity<GlobalResponseHandler<AdminProjectParticipantApprovalResponseDto>> approveProjectParticipant(
-            @Valid @RequestBody AdminProjectParticipantApprovalRequestDto request,
+            @Valid @RequestBody ProjectJoinApproveRequestDto request,
             @AuthenticationPrincipal CurrentUser currentUser
     ) {
-        log.info("Admin: Approving project participant - participantId: {}, adminId: {}", 
-                request.getParticipantId(), currentUser.getId());
+        log.info("Admin: Approving project participant - projectId: {}, memberId: {}, adminId: {}", 
+                request.getProjectId(), request.getMemberId(), currentUser.getId());
 
-        AdminProjectParticipantApprovalResponseDto response = projectParticipantFacadeService.approveParticipantByAdmin(
+        AdminProjectParticipantApprovalResponseDto response = projectParticipantFacadeService.approveParticipantByAdminWithProjectAndMember(
                 request, currentUser.getId());
 
-        log.info("Admin: Project participant approved successfully - participantId: {}", 
-                response.getParticipantId());
+        log.info("Admin: Project participant approved successfully - projectId: {}, memberId: {}", 
+                request.getProjectId(), request.getMemberId());
 
         return GlobalResponseHandler.success(ResponseStatus.PROJECT_PARTICIPANT_APPROVE_SUCCESS, response);
     }
@@ -72,19 +74,32 @@ public class AdminProjectController {
     @PostMapping("/participant/reject")
     @Operation(summary = "프로젝트 참가 신청 거절", description = "프로젝트 참가 신청을 거절합니다")
     public ResponseEntity<GlobalResponseHandler<AdminProjectParticipantApprovalResponseDto>> rejectProjectParticipant(
-            @Valid @RequestBody AdminProjectParticipantApprovalRequestDto request,
+            @Valid @RequestBody ProjectJoinRejectRequestDto request,
             @AuthenticationPrincipal CurrentUser currentUser
     ) {
-        log.info("Admin: Rejecting project participant - participantId: {}, adminId: {}", 
-                request.getParticipantId(), currentUser.getId());
+        log.info("Admin: Rejecting project participant - projectId: {}, memberId: {}, adminId: {}", 
+                request.getProjectId(), request.getMemberId(), currentUser.getId());
 
-        AdminProjectParticipantApprovalResponseDto response = projectParticipantFacadeService.rejectParticipantByAdmin(
+        AdminProjectParticipantApprovalResponseDto response = projectParticipantFacadeService.rejectParticipantByAdminWithProjectAndMember(
                 request, currentUser.getId());
 
-        log.info("Admin: Project participant rejected successfully - participantId: {}", 
-                response.getParticipantId());
+        log.info("Admin: Project participant rejected successfully - projectId: {}, memberId: {}", 
+                request.getProjectId(), request.getMemberId());
 
         return GlobalResponseHandler.success(ResponseStatus.PROJECT_PARTICIPANT_REJECT_SUCCESS, response);
+    }
+
+    /**
+     * 프로젝트 정보 수정 (관리자)
+     */
+    @PutMapping("/update")
+    @Operation(summary = "프로젝트 수정(관리자)", description = "STAFF 이상이 프로젝트 정보를 수정합니다. 날짜 조정 가능")
+    public ResponseEntity<GlobalResponseHandler<Void>> updateProjectByAdmin(
+            @Valid @RequestBody AdminProjectUpdateRequestDto request,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
+        projectFacadeService.updateProjectByAdmin(request, currentUser.getId());
+        return GlobalResponseHandler.success(ResponseStatus.PROJECT_UPDATE_SUCCESS);
     }
 
     @PostMapping("/end/approve")

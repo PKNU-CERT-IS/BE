@@ -10,7 +10,6 @@ import java.time.OffsetDateTime;
 @Builder(toBuilder = true)
 public class StudyJoinResponseDto {
 
-    private Long participantId;
     private Long studyId;
     private StudyParticipantStatus status;
     private OffsetDateTime createdAt;

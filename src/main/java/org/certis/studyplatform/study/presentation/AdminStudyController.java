@@ -10,7 +10,8 @@ import org.certis.studyplatform.shared.security.CurrentUser;
 import org.certis.studyplatform.study.application.StudyParticipantFacadeService;
 
 import org.springframework.web.bind.annotation.PathVariable;
-import org.certis.studyplatform.study.presentation.dto.request.AdminStudyParticipantApprovalRequestDto;
+import org.certis.studyplatform.study.presentation.dto.request.StudyJoinApproveRequestDto;
+import org.certis.studyplatform.study.presentation.dto.request.StudyJoinRejectRequestDto;
 import org.certis.studyplatform.study.presentation.dto.response.AdminStudyEndSubmissionResponseDto;
 import org.certis.studyplatform.study.presentation.dto.response.AdminStudyParticipantApprovalResponseDto;
 import org.certis.studyplatform.study.application.StudyFacadeService;
@@ -20,6 +21,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.certis.studyplatform.study.presentation.dto.request.AdminStudyUpdateRequestDto;
 
 /**
  * Admin Study Controller
@@ -47,17 +49,17 @@ public class AdminStudyController {
     @PostMapping("/participant/approve")
     @Operation(summary = "스터디 참가 신청 승인", description = "스터디 참가 신청을 승인합니다")
     public ResponseEntity<GlobalResponseHandler<AdminStudyParticipantApprovalResponseDto>> approveStudyParticipant(
-            @Valid @RequestBody AdminStudyParticipantApprovalRequestDto request,
+            @Valid @RequestBody StudyJoinApproveRequestDto request,
             @AuthenticationPrincipal CurrentUser currentUser
     ) {
-        log.info("Admin: Approving study participant - participantId: {}, adminId: {}", 
-                request.getParticipantId(), currentUser.getId());
+        log.info("Admin: Approving study participant - studyId: {}, memberId: {}, adminId: {}", 
+                request.getStudyId(), request.getMemberId(), currentUser.getId());
 
-        AdminStudyParticipantApprovalResponseDto response = studyParticipantFacadeService.approveParticipantByAdmin(
+        AdminStudyParticipantApprovalResponseDto response = studyParticipantFacadeService.approveParticipantByAdminWithStudyAndMember(
                 request, currentUser.getId());
 
-        log.info("Admin: Study participant approved successfully - participantId: {}", 
-                response.getParticipantId());
+        log.info("Admin: Study participant approved successfully - studyId: {}, memberId: {}", 
+                request.getStudyId(), request.getMemberId());
 
         return GlobalResponseHandler.success(ResponseStatus.STUDY_PARTICIPANT_APPROVE_SUCCESS, response);
     }
@@ -72,19 +74,32 @@ public class AdminStudyController {
     @PostMapping("/participant/reject")
     @Operation(summary = "스터디 참가 신청 거절", description = "스터디 참가 신청을 거절합니다")
     public ResponseEntity<GlobalResponseHandler<AdminStudyParticipantApprovalResponseDto>> rejectStudyParticipant(
-            @Valid @RequestBody AdminStudyParticipantApprovalRequestDto request,
+            @Valid @RequestBody StudyJoinRejectRequestDto request,
             @AuthenticationPrincipal CurrentUser currentUser
     ) {
-        log.info("Admin: Rejecting study participant - participantId: {}, adminId: {}", 
-                request.getParticipantId(), currentUser.getId());
+        log.info("Admin: Rejecting study participant - studyId: {}, memberId: {}, adminId: {}", 
+                request.getStudyId(), request.getMemberId(), currentUser.getId());
 
-        AdminStudyParticipantApprovalResponseDto response = studyParticipantFacadeService.rejectParticipantByAdmin(
+        AdminStudyParticipantApprovalResponseDto response = studyParticipantFacadeService.rejectParticipantByAdminWithStudyAndMember(
                 request, currentUser.getId());
 
-        log.info("Admin: Study participant rejected successfully - participantId: {}", 
-                response.getParticipantId());
+        log.info("Admin: Study participant rejected successfully - studyId: {}, memberId: {}", 
+                request.getStudyId(), request.getMemberId());
 
         return GlobalResponseHandler.success(ResponseStatus.STUDY_PARTICIPANT_REJECT_SUCCESS, response);
+    }
+
+    /**
+     * 스터디 정보 수정 (관리자)
+     */
+    @PutMapping("/update")
+    @Operation(summary = "스터디 수정(관리자)", description = "STAFF 이상이 스터디 정보를 수정합니다. 날짜 조정 가능")
+    public ResponseEntity<GlobalResponseHandler<Void>> updateStudyByAdmin(
+            @Valid @RequestBody AdminStudyUpdateRequestDto request,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
+        studyFacadeService.updateStudyByAdmin(request, currentUser.getId());
+        return GlobalResponseHandler.success(ResponseStatus.STUDY_UPDATE_SUCCESS);
     }
 
     @PostMapping("/end/approve")

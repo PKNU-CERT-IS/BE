@@ -53,8 +53,9 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/v1/member/**",
                                 "/api/v1/auth/login",
+                                "/api/v1/auth/logout",
                                 "/api/v1/auth/register",  // 회원가입 추가
-                                "/api/v1/auth/refresh",   // 토큰 갱신
+                                "/api/v1/auth/token/refresh",   // 토큰 갱신
                                 "/api/v1/blog",              // 블로그 목록 조회
                                 "/api/v1/blog/detail",       // 블로그 상세 조회
                                 "/api/v1/blog/search",       // 블로그 검색
@@ -75,6 +76,7 @@ public class SecurityConfig {
                                 "/api/v1/project/meeting/detail",
                                 "/api/v1/project/meeting/all",
                                 "/api/v1/project/participant/{projectId}/participants/{participantId}",
+                                "/api/v1/project/participant/{projectId}/participants",
                                 "/api/v1/project/participant/members/{memberId}/participants",
                                 "/api/v1/project/participant/{projectId}/participants/all",
                                 "/api/v1/project/participant/{projectId}/participants/pending",
@@ -91,6 +93,7 @@ public class SecurityConfig {
                                 "/api/v1/study/meeting/detail",
                                 "/api/v1/study/meeting/all",
                                 "/api/v1/study/participant/{studyId}/participants/{participantId}",
+                                "/api/v1/study/participant/{studyId}/participants",
                                 "/api/v1/study/participant/members/{memberId}/participants",
                                 "/api/v1/study/participant/{studyId}/participants/pending",
                                 "/api/v1/study/participant/{studyId}/participants/approved",

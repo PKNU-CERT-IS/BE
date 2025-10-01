@@ -55,6 +55,7 @@ spring:
     properties:
       hibernate:
         jdbc:
+          time_zone: Asia/Seoul
           lob:
             non_contextual_creation: true
           batch_size: 25

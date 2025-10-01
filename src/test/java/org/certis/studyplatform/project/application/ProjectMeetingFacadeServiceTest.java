@@ -86,6 +86,7 @@ class ProjectMeetingFacadeServiceTest {
                 1L,                          // memberId
                 "테스트 사용자",               // memberName
                 MemberGrade.FRESHMAN,        // memberGrade
+                null,                        // memberProfileImageUrl
                 "테스트 프로젝트",             // projectTitle
                 ProjectParticipantStatus.APPROVED, // status
                 OffsetDateTime.now()         // createdAt
@@ -157,6 +158,7 @@ class ProjectMeetingFacadeServiceTest {
                 1L,                          // memberId
                 "테스트 사용자",               // memberName
                 MemberGrade.FRESHMAN,        // memberGrade
+                null,                        // memberProfileImageUrl
                 "테스트 프로젝트",             // projectTitle
                 ProjectParticipantStatus.APPROVED, // status
                 OffsetDateTime.now()         // createdAt

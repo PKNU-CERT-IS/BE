@@ -29,14 +29,16 @@ public class CacheConfig {
      */
     @Bean("redisCacheManager")
     @ConditionalOnProperty(name = "spring.cache.type", havingValue = "redis")
+    @ConditionalOnMissingBean(name = "fallbackCacheManager")
     public CacheManager redisCacheManager(RedisConnectionFactory connectionFactory, ObjectMapper objectMapper) {
         log.info("✅ Configuring Redis as the primary cache manager.");
 
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofMinutes(10)) // 기본 TTL 10분
+                .entryTtl(Duration.ofMinutes(30)) // 토큰 관련 캐시 TTL 최적화 (1시간 → 30분)
                 .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer(objectMapper)))
-                .disableCachingNullValues(); // Null 값 캐싱 비활성화
+                .disableCachingNullValues() // Null 값 캐싱 비활성화
+                .computePrefixWith(cacheName -> "certis:" + cacheName + ":"); // 키 네임스페이스 추가
 
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(config)

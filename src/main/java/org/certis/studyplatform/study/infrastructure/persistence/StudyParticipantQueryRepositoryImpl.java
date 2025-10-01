@@ -97,6 +97,7 @@ public class StudyParticipantQueryRepositoryImpl implements StudyParticipantQuer
                         s.MEMBER_ID,
                         m.NAME.as("member_name"),
                         m.GRADE.as("member_grade"),
+                        m.PROFILE_IMAGE.as("member_profile_image_url"),
                         st.TITLE.as("study_title"),
                         s.STATUS,
                         s.CREATED_AT
@@ -144,12 +145,13 @@ public class StudyParticipantQueryRepositoryImpl implements StudyParticipantQuer
         
         if (pageable.isUnpaged()) {
             // Pageable이 unpaged인 경우 페이징 없이 조회
-            var query = dsl.select(
+                    var query = dsl.select(
                             s.ID,
                             s.STUDY_ID,
                             s.MEMBER_ID,
                             m.NAME.as("member_name"),
                             m.GRADE.as("member_grade"),
+                            m.PROFILE_IMAGE.as("member_profile_image_url"),
                             p.TITLE.as("study_title"), // 스터디 제목을 별도 필드로 저장
                             s.STATUS,
                             s.CREATED_AT
@@ -172,6 +174,7 @@ public class StudyParticipantQueryRepositoryImpl implements StudyParticipantQuer
                             s.MEMBER_ID,
                             m.NAME.as("member_name"),
                             m.GRADE.as("member_grade"),
+                            m.PROFILE_IMAGE.as("member_profile_image_url"),
                             p.TITLE.as("study_title"), // 스터디 제목을 별도 필드로 저장
                             s.STATUS,
                             s.CREATED_AT
@@ -201,6 +204,11 @@ public class StudyParticipantQueryRepositoryImpl implements StudyParticipantQuer
                         .from(s)
                         .where(s.STUDY_ID.eq(studyId))
                         .and(s.MEMBER_ID.eq(memberId))
+                        // Only consider PENDING or APPROVED as existing application/membership
+                        .and(s.STATUS.in(
+                                inline(StudyParticipantStatus.PENDING.name()),
+                                inline(StudyParticipantStatus.APPROVED.name())
+                        ))
                         .and(s.DELETED_AT.isNull())
         );
 
@@ -230,6 +238,8 @@ public class StudyParticipantQueryRepositoryImpl implements StudyParticipantQuer
                 .where(s.STUDY_ID.eq(studyId))
                 .and(s.MEMBER_ID.eq(memberId))
                 .and(s.DELETED_AT.isNull())
+                .orderBy(s.UPDATED_AT.desc())
+                .limit(1)
                 .fetchOptional(mapper::toVoFromRecord);
 
         log.info("jOOQ: Participant found - studyId: {}, memberId: {}", studyId, memberId);
@@ -314,6 +324,7 @@ public class StudyParticipantQueryRepositoryImpl implements StudyParticipantQuer
                             s.MEMBER_ID,
                             m.NAME.as("member_name"),
                             m.GRADE.as("member_grade"),
+                            m.PROFILE_IMAGE.as("member_profile_image_url"),
                             st.TITLE.as("study_title"),
                             s.STATUS,
                             s.CREATED_AT

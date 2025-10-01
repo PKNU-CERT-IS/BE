@@ -54,6 +54,9 @@ public class StudyDomainService {
     private final StudyQueryRepository queryRepository;
     private final MemberDomainService memberDomainService;
     private final S3FileService s3FileService;
+    private final org.certis.studyplatform.study.domain.repository.StudyParticipantQueryRepository studyParticipantQueryRepository;
+    private final org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository projectParticipantQueryRepository;
+    private final org.certis.studyplatform.project.domain.repository.ProjectQueryRepository projectQueryRepository;
 
     // ================================================================
     // COMMAND OPERATIONS
@@ -74,6 +77,9 @@ public class StudyDomainService {
         // 중복 검사 (Repository 의존성이 필요한 검증만 수행)
 //        validateStudyTitleDuplication(command.title());
 
+        // Creation limit enforcement: consider created + joined actives
+        enforceCreationLimits(command.creatorId());
+
         // StudyVo.createNew() 사용 - 생성 시 자동으로 나머지 검증 수행
         StudyVo studyVo = StudyVo.createNew(
                 command.title(),
@@ -86,6 +92,7 @@ public class StudyDomainService {
                 command.creatorId(),
                 null, // creatorName
                 null, // creatorGrade
+                null, // creatorProfileImageUrl
                 command.maxParticipants()
         );
 
@@ -99,6 +106,27 @@ public class StudyDomainService {
         return savedStudyVo;
     }
 
+    private void enforceCreationLimits(Long creatorId) {
+        long activeStudiesJoined = studyParticipantQueryRepository.countActiveStudiesByMemberId(creatorId);
+        long activeProjectsJoined = projectParticipantQueryRepository.countActiveProjectsByMemberId(creatorId);
+
+        // Lightweight counts to avoid nested transactional reads marking rollback-only
+        long activeStudiesCreated = queryRepository.countActiveStudiesCreatedByMemberId(creatorId);
+        long activeProjectsCreated = projectQueryRepository.countActiveProjectsCreatedByMemberId(creatorId);
+
+        long activeStudies = activeStudiesJoined + activeStudiesCreated;
+        long activeProjects = activeProjectsJoined + activeProjectsCreated;
+
+        if (activeProjects == 0 && activeStudies >= 2) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_PERMISSION_DENINED,
+                    "프로젝트 미진행 시 스터디 2개까지 가능합니다.");
+        }
+        if (activeProjects >= 1 && activeStudies >= 1) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_PERMISSION_DENINED,
+                    "프로젝트 진행 중에는 스터디 1개까지만 신청할 수 있습니다.");
+        }
+    }
+
     private String mapAttachedTypeToContentType(org.certis.studyplatform.shared.type.AttachedType type) {
         if (type == null) return "application/octet-stream";
         return switch (type) {
@@ -110,6 +138,7 @@ public class StudyDomainService {
             case PPTX -> "application/vnd.openxmlformats-officedocument.presentationml.presentation";
             case EXCEL -> "application/vnd.ms-excel";
             case TEXT -> "text/plain";
+            case CSV -> "text/csv";
             case PNG -> "image/png";
             case JPEG, JPG -> "image/jpeg";
             case ZIP -> "application/zip";
@@ -130,9 +159,13 @@ public class StudyDomainService {
         // 권한 검증: STAFF 이상이거나 작성자 본인인지 확인
         validateStudyUpdatePermission(command.requesterId(), existingStudy.creatorId());
 
-        // 제목 중복 검사 (자신 제외)
+        // 제목 중복 검사 (자신 제외) - 실제로 제목이 변경되는 경우에만 검사
         if (command.title() != null) {
-            validateStudyTitleDuplicationForUpdate(command.title(), command.id());
+            String incomingTitle = command.title() != null ? command.title().trim() : null;
+            String existingTitle = existingStudy.title() != null ? existingStudy.title().trim() : null;
+            if (incomingTitle != null && (existingTitle == null || !existingTitle.equalsIgnoreCase(incomingTitle))) {
+                validateStudyTitleDuplicationForUpdate(incomingTitle, command.id());
+            }
         }
 
         // StudyVo.updateFrom() 사용 - 업데이트 시 자동으로 검증 수행

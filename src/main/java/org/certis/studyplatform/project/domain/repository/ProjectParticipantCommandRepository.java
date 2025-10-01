@@ -37,4 +37,10 @@ public interface ProjectParticipantCommandRepository {
      * 참가 신청 단건 소프트 삭제 (거절 등)
      */
     void softDeleteById(Long participantId);
+
+    /**
+     * Restore soft-deleted participant by projectId and memberId
+     * @return number of restored rows
+     */
+    int restoreByProjectIdAndMemberId(Long projectId, Long memberId);
 }

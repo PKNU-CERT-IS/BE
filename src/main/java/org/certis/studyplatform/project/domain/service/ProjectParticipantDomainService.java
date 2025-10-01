@@ -14,6 +14,7 @@ import org.certis.studyplatform.project.domain.repository.ProjectParticipantQuer
 import org.certis.studyplatform.project.domain.repository.ProjectQueryRepository;
 import org.certis.studyplatform.project.domain.vo.*;
 import org.springframework.stereotype.Service;
+import org.certis.studyplatform.study.domain.repository.StudyQueryRepository;
 
 import java.time.OffsetDateTime;
 
@@ -31,6 +32,7 @@ public class ProjectParticipantDomainService {
     private final ProjectParticipantCommandRepository commandRepository;
     private final ProjectParticipantQueryRepository queryRepository;
     private final ProjectQueryRepository projectQueryRepository;
+    private final StudyQueryRepository studyQueryRepository;
     private final MemberQueryRepository memberQueryRepository;
 
     // ================================================================
@@ -44,17 +46,17 @@ public class ProjectParticipantDomainService {
         log.info("Domain: Creating participant request - projectId: {}, memberId: {}",
                 command.projectId(), command.memberId());
 
-        // 1. 프로젝트 존재 및 상태 검증
+        // 1. 중복 신청 검증 (중복일 때 우선적으로 에러 발생시키도록 순서 조정)
+        validateDuplicateParticipation(command.projectId(), command.memberId());
+
+        // 2. 프로젝트 존재 및 상태 검증
         ProjectVo project = validateProjectForJoin(command.projectId());
 
-        // 2. 프로젝트 생성자가 자신의 프로젝트에 참가 신청하는 것 방지
+        // 3. 프로젝트 생성자가 자신의 프로젝트에 참가 신청하는 것 방지
         if (project.creatorId().equals(command.memberId())) {
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_STATUS,
                     "프로젝트 생성자는 자신의 프로젝트에 참가 신청할 수 없습니다.");
         }
-
-        // 3. 중복 신청 검증
-        validateDuplicateParticipation(command.projectId(), command.memberId());
 
         // 4. 신청 제한 규칙 검증 (프로젝트: 진행 중 1개 초과 금지)
         enforceApplicationLimits(command.memberId());
@@ -62,11 +64,10 @@ public class ProjectParticipantDomainService {
         // 5. 참가자 수 제한 검증
         validateParticipantLimit(command.projectId(), project.maxParticipants());
 
-        // 6. 새로운 참가 신청 생성
+        // 6. 새로운 참가 신청 생성 및 저장
         ProjectParticipantVo participantVo = ProjectParticipantVo.createNew(
                 command.projectId(), command.memberId());
-
-        // 7. 저장
+        
         ProjectParticipantCreatedVo result = commandRepository.save(participantVo);
 
         log.info("Domain: Participant request created - ID: {}", result.id());
@@ -264,10 +265,14 @@ public class ProjectParticipantDomainService {
      * 중복 참가 신청 검증
      */
     private void validateDuplicateParticipation(Long projectId, Long memberId) {
-        if (queryRepository.existsByProjectIdAndMemberId(projectId, memberId)) {
-            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_PERMISSION,
-                    "이미 참가 신청한 프로젝트입니다.");
-        }
+        // Check actual status: only PENDING or APPROVED should block re-application
+        queryRepository.findByProjectIdAndMemberId(projectId, memberId)
+                .ifPresent(existing -> {
+                    if (existing.isPending() || existing.isApproved()) {
+                        throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_PERMISSION,
+                                "이미 참가 신청한 프로젝트입니다.");
+                    }
+                });
     }
 
     /**
@@ -305,7 +310,12 @@ public class ProjectParticipantDomainService {
     }
 
     private void enforceApplicationLimits(Long memberId) {
-        long activeProjects = queryRepository.countActiveProjectsByMemberId(memberId);
+        long activeProjectsJoined = queryRepository.countActiveProjectsByMemberId(memberId);
+
+        // Use lightweight aggregate count to avoid nested reads causing rollback-only
+        long activeProjectsCreated = projectQueryRepository.countActiveProjectsCreatedByMemberId(memberId);
+
+        long activeProjects = activeProjectsJoined + activeProjectsCreated;
         if (activeProjects >= 1) {
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_PERMISSION,
                     "진행 중인 프로젝트가 1개 있으면 추가 신청이 불가합니다.");

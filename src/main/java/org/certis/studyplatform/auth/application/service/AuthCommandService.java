@@ -71,7 +71,7 @@ public class AuthCommandService {
                 refreshTokenCommand.role()
         );
 
-        log.info("AccessToken 갱신 완료: memberId={}", refreshTokenCommand.memberId());
+        log.info("AccessToken 및 RefreshToken 갱신 완료: memberId={}", refreshTokenCommand.memberId());
         return newAccessToken;
     }
 

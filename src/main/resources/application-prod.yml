@@ -40,9 +40,16 @@ spring:
       port: ${SPRING_DATA_REDIS_PORT:6379}
       ssl:
         enabled: true
-      timeout: 10000ms
-      connect-timeout: 10000ms
+      timeout: 2000ms # 타임아웃 최적화 (3초 → 2초)
+      connect-timeout: 2000ms # 연결 타임아웃 최적화 (3초 → 2초)
       database: 0
+      lettuce:
+        pool:
+          max-active: 50 # 트래픽 스파이크 대응을 위해 연결 수 증가 (30 → 50)
+          max-idle: 15 # 유휴 연결 수 증가 (8 → 15)
+          min-idle: 5 # 최소 유휴 연결 수 증가 (3 → 5)
+          max-wait: 1000ms # 연결 대기 시간 최적화 (2초 → 1초)
+        shutdown-timeout: 2000ms # 종료 타임아웃 설정
 
 logging:
   level:

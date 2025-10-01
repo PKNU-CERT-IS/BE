@@ -76,8 +76,8 @@ public class ProjectApplicationCommandMapper {
             dto.getContent(),
             dto.getCategory(),
             dto.getSubCategory(),
-            dto.getStartDate(),
-            dto.getEndDate(),
+            null, // startDate handled only by admin update
+            null, // endDate handled only by admin update
             dto.getGithubUrl(),
             dto.getExternalUrl() != null ? 
                 new ExternalUrlVo(dto.getExternalUrl().getTitle(), dto.getExternalUrl().getUrl()) : null,
@@ -123,11 +123,7 @@ public class ProjectApplicationCommandMapper {
      */
     public UpdateProjectParticipantStatusCommand toApproveProjectParticipantCommand(
             ProjectJoinApproveRequestDto requestDto, Long requesterId) {
-        return new UpdateProjectParticipantStatusCommand(
-                requestDto.getParticipantId(),
-                org.certis.studyplatform.project.domain.ProjectParticipantStatus.APPROVED,
-                requesterId
-        );
+        throw new UnsupportedOperationException("Facade에서 participantId resolve 후 호출하세요");
     }
 
     /**
@@ -135,11 +131,7 @@ public class ProjectApplicationCommandMapper {
      */
     public UpdateProjectParticipantStatusCommand toRejectProjectParticipantCommand(
             ProjectJoinRejectRequestDto requestDto, Long requesterId) {
-        return new UpdateProjectParticipantStatusCommand(
-                requestDto.getParticipantId(),
-                org.certis.studyplatform.project.domain.ProjectParticipantStatus.REJECTED,
-                requesterId
-        );
+        throw new UnsupportedOperationException("Facade에서 participantId resolve 후 호출하세요");
     }
 
     /**

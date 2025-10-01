@@ -54,8 +54,8 @@ StudyParticipantController {
 
         StudyJoinResponseDto responseDto = studyParticipantFacadeService.registerJoinStudy(requestDto, currentUser.getId());
 
-        log.info("Controller: Study join registered successfully - participantId: {}",
-                responseDto.getParticipantId());
+        log.info("Controller: Study join registered successfully - studyId: {}",
+                responseDto.getStudyId());
 
         return GlobalResponseHandler.success(ResponseStatus.STUDY_PARTICIPANT_JOIN_REGISTERED, responseDto);
     }
@@ -94,14 +94,14 @@ StudyParticipantController {
             @AuthenticationPrincipal CurrentUser currentUser
     ) {
 
-        log.info("Controller: Approve study join request - participantId: {}",
-                requestDto.getParticipantId());
+        log.info("Controller: Approve study join request - studyId: {}, memberId: {}",
+                requestDto.getStudyId(), requestDto.getMemberId());
 
         StudyParticipantStatusUpdateResponseDto responseDto =
                 studyParticipantFacadeService.approveJoinStudy(requestDto, currentUser.getId());
 
-        log.info("Controller: Study join approved successfully - participantId: {}",
-                responseDto.getParticipantId());
+        log.info("Controller: Study join approved successfully - studyId: {}",
+                responseDto.getStudyId());
 
         return GlobalResponseHandler.success(ResponseStatus.STUDY_PARTICIPANT_JOIN_APPROVED, responseDto);
     }
@@ -119,14 +119,14 @@ StudyParticipantController {
             @AuthenticationPrincipal CurrentUser currentUser
     ) {
 
-        log.info("Controller: Reject study join request - participantId: {}",
-                requestDto.getParticipantId());
+        log.info("Controller: Reject study join request - studyId: {}, memberId: {}",
+                requestDto.getStudyId(), requestDto.getMemberId());
 
         StudyParticipantStatusUpdateResponseDto responseDto =
                 studyParticipantFacadeService.rejectJoinStudy(requestDto, currentUser.getId());
 
-        log.info("Controller: Study join rejected successfully - participantId: {}",
-                responseDto.getParticipantId());
+        log.info("Controller: Study join rejected successfully - studyId: {}",
+                responseDto.getStudyId());
 
         return GlobalResponseHandler.success(ResponseStatus.STUDY_PARTICIPANT_JOIN_REJECTED, responseDto);
     }

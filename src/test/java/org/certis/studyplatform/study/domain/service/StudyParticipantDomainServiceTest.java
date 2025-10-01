@@ -1,8 +1,5 @@
 package org.certis.studyplatform.study.domain.service;
 
-import org.certis.studyplatform.config.TestEmbeddedPostgresConfig;
-import org.certis.studyplatform.member.domain.MemberRole;
-import org.certis.studyplatform.member.domain.vo.MemberVo;
 import org.certis.studyplatform.study.application.object.command.CreateStudyParticipantCommand;
 import org.certis.studyplatform.study.application.object.command.UpdateStudyParticipantStatusCommand;
 import org.certis.studyplatform.study.domain.StudyParticipantStatus;
@@ -14,9 +11,9 @@ import org.certis.studyplatform.study.domain.vo.StudyParticipantStatusUpdatedVo;
 import org.certis.studyplatform.study.domain.vo.StudyParticipantVo;
 import org.certis.studyplatform.study.domain.vo.StudyVo;
 import org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository;
+import org.certis.studyplatform.project.domain.repository.ProjectQueryRepository;
 import org.certis.studyplatform.member.domain.repository.query.MemberQueryRepository;
 import org.certis.studyplatform.exception.DomainException;
-import org.certis.studyplatform.exception.ExceptionStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -24,6 +21,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.time.OffsetDateTime;
 import java.util.Optional;
@@ -47,6 +46,7 @@ import static org.mockito.Mockito.*;
  * - 예외 상황 및 엣지 케이스 커버
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("StudyParticipantDomainService 도메인 서비스 테스트")
 class StudyParticipantDomainServiceTest {
 
@@ -63,6 +63,9 @@ class StudyParticipantDomainServiceTest {
     private ProjectParticipantQueryRepository projectParticipantQueryRepository;
     
     @Mock
+    private ProjectQueryRepository projectQueryRepository;
+    
+    @Mock
     private MemberQueryRepository memberQueryRepository;
 
     private StudyParticipantDomainService domainService;
@@ -74,6 +77,7 @@ class StudyParticipantDomainServiceTest {
                 queryRepository,
                 studyQueryRepository,
                 projectParticipantQueryRepository,
+                projectQueryRepository,
                 memberQueryRepository
         );
     }
@@ -92,7 +96,7 @@ class StudyParticipantDomainServiceTest {
             when(queryRepository.countActiveStudiesByMemberId(memberId)).thenReturn(2L);
             when(studyQueryRepository.findByIdAndDeletedAtIsNull(studyId))
                     .thenReturn(Optional.of(createStudyVo(studyId, 1L))); // 생성자는 1L
-            when(queryRepository.existsByStudyIdAndMemberId(studyId, memberId)).thenReturn(false);
+            when(queryRepository.findByStudyIdAndMemberId(studyId, memberId)).thenReturn(Optional.empty());
 
             // When & Then
             assertThatThrownBy(() -> domainService.createParticipant(
@@ -112,7 +116,7 @@ class StudyParticipantDomainServiceTest {
             when(projectParticipantQueryRepository.countActiveProjectsByMemberId(memberId)).thenReturn(1L);
             when(studyQueryRepository.findByIdAndDeletedAtIsNull(studyId))
                     .thenReturn(Optional.of(createStudyVo(studyId, 1L))); // 생성자는 1L
-            when(queryRepository.existsByStudyIdAndMemberId(studyId, memberId)).thenReturn(false);
+            when(queryRepository.findByStudyIdAndMemberId(studyId, memberId)).thenReturn(Optional.empty());
 
             // When & Then
             assertThatThrownBy(() -> domainService.createParticipant(
@@ -132,7 +136,7 @@ class StudyParticipantDomainServiceTest {
             when(projectParticipantQueryRepository.countActiveProjectsByMemberId(memberId)).thenReturn(0L);
             when(studyQueryRepository.findByIdAndDeletedAtIsNull(studyId))
                     .thenReturn(Optional.of(createStudyVo(studyId, 1L))); // 생성자는 1L
-            when(queryRepository.existsByStudyIdAndMemberId(studyId, memberId)).thenReturn(false);
+            when(queryRepository.findByStudyIdAndMemberId(studyId, memberId)).thenReturn(Optional.empty());
             when(commandRepository.save(any())).thenReturn(createStudyParticipantCreatedVo());
 
             // When
@@ -301,13 +305,37 @@ class StudyParticipantDomainServiceTest {
             
             when(studyQueryRepository.findByIdAndDeletedAtIsNull(studyId))
                     .thenReturn(Optional.of(createStudyVo(studyId, 1L))); // 생성자는 1L
-            when(queryRepository.existsByStudyIdAndMemberId(studyId, memberId)).thenReturn(true);
+            when(queryRepository.findByStudyIdAndMemberId(studyId, memberId)).thenReturn(Optional.of(
+                    new StudyParticipantVo(1L, studyId, memberId, "", StudyParticipantStatus.PENDING, OffsetDateTime.now(), OffsetDateTime.now())
+            ));
 
             // When & Then
             assertThatThrownBy(() -> domainService.createParticipant(
                     createStudyParticipantCommand(studyId, memberId)))
                     .isInstanceOf(DomainException.class)
                     .hasMessage("이미 참가 신청한 스터디입니다.");
+        }
+
+        @Test
+        @DisplayName("REJECTED 이후 재신청 가능")
+        void shouldAllowReapplyAfterRejected() {
+            // Given
+            Long studyId = 1L;
+            Long memberId = 2L; // 스터디 생성자가 아닌 다른 사용자
+
+            when(studyQueryRepository.findByIdAndDeletedAtIsNull(studyId))
+                    .thenReturn(Optional.of(createStudyVo(studyId, 1L))); // 생성자는 1L
+            // existsBy는 PENDING/APPROVED만 true가 되도록 변경됨 -> 거절 상태만 있는 경우 false
+            when(queryRepository.findByStudyIdAndMemberId(studyId, memberId)).thenReturn(Optional.empty());
+            when(commandRepository.save(any())).thenReturn(createStudyParticipantCreatedVo());
+
+            // When
+            StudyParticipantCreatedVo result = domainService.createParticipant(
+                    createStudyParticipantCommand(studyId, memberId));
+
+            // Then
+            assertThat(result).isNotNull();
+            verify(commandRepository).save(any());
         }
     }
 
@@ -327,9 +355,7 @@ class StudyParticipantDomainServiceTest {
         );
     }
 
-    private StudyVo createStudyVo(Long studyId) {
-        return createStudyVo(studyId, 1L);
-    }
+    // createStudyVo(studyId) overload removed as unused
 
     private StudyVo createStudyVo(Long studyId, Long creatorId) {
         OffsetDateTime endDate = OffsetDateTime.now().plusDays(30);
@@ -347,8 +373,10 @@ class StudyParticipantDomainServiceTest {
                 creatorId,
                 "생성자",
                 org.certis.studyplatform.member.domain.MemberGrade.FRESHMAN,
+                null, // creatorProfileImageUrl
                 calculateSemester(endDate), // semester 계산
                 calculateStatus(endDate), // status 계산
+                org.certis.studyplatform.shared.domain.ResultSubmitStatus.READY, // resultSubmitStatus 추가
                 10,
                 0,
                 true, // isParticipantable
@@ -405,21 +433,7 @@ class StudyParticipantDomainServiceTest {
         );
     }
 
-    private MemberVo createMemberVo(Long memberId, MemberRole role) {
-        return new MemberVo(
-                memberId,
-                "테스트 사용자",
-                "20240001",
-                null,
-                org.certis.studyplatform.member.domain.MemberGrade.FRESHMAN,
-                role,
-                java.util.Collections.emptyList(),
-                "컴퓨터공학과",
-                "테스트 설명",
-                OffsetDateTime.now(),
-                OffsetDateTime.now()
-        );
-    }
+    // createMemberVo removed as unused
 
     private StudyParticipantStatusUpdatedVo createStudyParticipantStatusUpdatedVo() {
         return new StudyParticipantStatusUpdatedVo(

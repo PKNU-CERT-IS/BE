@@ -41,24 +41,28 @@ public class RedisRefreshTokenRepositoryImpl implements RedisRefreshTokenReposit
     @Override
     public Optional<RefreshTokenVo> findByMemberId(MemberIdVo memberIdVo) {
         String key = getKey(memberIdVo.value());
-        Object value = redisTemplate.opsForValue().get(key);
-        if (value != null) {
-            try {
+        
+        try {
+            Object value = redisTemplate.opsForValue().get(key);
+            if (value != null) {
                 // LinkedHashMap을 RefreshTokenVo로 변환
                 RefreshTokenVo refreshTokenVo = objectMapper.convertValue(value, RefreshTokenVo.class);
 
+                // 만료된 토큰은 즉시 삭제하고 빈 결과 반환
                 if (refreshTokenVo.isExpiredRefreshToken()) {
-                    deleteByMemberId(memberIdVo);
+                    log.debug("만료된 RefreshToken 발견, 삭제 처리: memberId={}", memberIdVo.value());
+                    // 비동기 삭제로 성능 최적화
+                    redisTemplate.delete(key);
                     return Optional.empty();
                 }
 
                 return Optional.of(refreshTokenVo);
-
-            } catch (Exception e) {
-                log.error("RefreshTokenVo 변환 실패: {}", e.getMessage(), e);
-                return Optional.empty();
             }
+        } catch (Exception e) {
+            log.error("RefreshToken 조회 실패: memberId={}, error={}", memberIdVo.value(), e.getMessage(), e);
+            // Redis 오류 시 빈 결과 반환하여 서비스 중단 방지
         }
+        
         return Optional.empty();
     }
 

@@ -10,6 +10,9 @@ import lombok.Setter;
 @NoArgsConstructor
 public class StudyJoinApproveRequestDto {
 
-    @NotNull(message = "참가자 ID는 필수입니다")
-    private Long participantId;
+    @NotNull(message = "스터디 ID는 필수입니다")
+    private Long studyId;
+
+    @NotNull(message = "회원 ID는 필수입니다")
+    private Long memberId;
 }

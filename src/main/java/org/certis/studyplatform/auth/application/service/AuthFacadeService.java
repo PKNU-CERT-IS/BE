@@ -20,10 +20,8 @@ import org.certis.studyplatform.member.application.command.GetMemberTokenInfoQue
 import org.certis.studyplatform.member.application.command.MemberCommandService;
 import org.certis.studyplatform.member.application.object.command.CreateMemberCommand;
 import org.certis.studyplatform.member.application.query.MemberQueryService;
-import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.vo.MemberCreatedVo;
 import org.certis.studyplatform.member.domain.vo.MemberTokenInfoVo;
-import org.certis.studyplatform.member.domain.vo.MemberVo;
 import org.certis.studyplatform.shared.security.JwtTokenProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -116,8 +114,12 @@ public class AuthFacadeService {
                 memberInfo.role()
         );
 
-        // 4. 새 AccessToken 생성
+        // 4. 새 AccessToken 및 RefreshToken 생성
         AccessTokenVo newAccessToken = authCommandService.refreshAccessToken(command);
+
+        // 5. 새로운 RefreshToken 조회 (토큰 로테이션으로 인해 새로 생성됨)
+        ValidateRefreshTokenQuery newTokenQuery = ValidateRefreshTokenQuery.of(verifiedMemberId);
+        RefreshTokenVo newRefreshToken = authQueryService.validateRefreshToken(newTokenQuery);
 
         log.info("안전한 토큰 갱신 완료: memberId={}, role={}", memberInfo.memberId(), memberInfo.role());
         return new RefreshAccessTokenResponseDto(newAccessToken.value());

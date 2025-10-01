@@ -185,10 +185,8 @@ public class BlogDomainService {
                 ? resolvedReferenceTitle
                 : (blogVo.referenceTitle() != null ? blogVo.referenceTitle() : "");
 
-        // 조회수 증가 (Redis)
-        if (query.viewerId() != null) {
-            blogViewDomainService.incrementViewCountInRedis(query.id(), query.viewerId());
-        }
+        // 조회수 증가 (Redis) - 비로그인 유저도 포함
+        blogViewDomainService.incrementViewCountInRedis(query.id(), query.viewerId());
 
         // ViewCount 조회
         BlogIdVo blogIdVo = BlogIdVo.of(query.id());
@@ -521,6 +519,7 @@ public class BlogDomainService {
                         blog.createdAt(),
                         blog.updatedAt(),
                         blog.blogCreatorName(),
+                        blog.blogCreatorProfileImageUrl(), // 기존 profile image URL 유지
                         referenceType,
                         referenceTitle,
                         blog.views(), // 기존 views 값 유지
@@ -531,6 +530,7 @@ public class BlogDomainService {
                 );
             }
 
+            // 참조 정보가 없어도 원본 BlogSummaryVo를 그대로 반환
             return blog;
         } catch (Exception e) {
             log.error("Domain: Error enriching blog with reference - BlogId: {}", blog.id().value(), e);

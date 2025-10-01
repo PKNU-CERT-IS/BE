@@ -44,7 +44,7 @@ public class AdminMemberController {
 
         AdminMemberUpdateResponseDto response = memberFacadeService.updateMemberAdminFields(
                 currentUser.getId(),
-                MemberRole.valueOf(currentUser.getRole()),
+                MemberRole.fromAuthorityString(currentUser.getRole()),
                 request
         );
 

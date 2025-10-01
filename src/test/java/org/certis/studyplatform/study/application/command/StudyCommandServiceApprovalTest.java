@@ -63,7 +63,7 @@ class StudyCommandServiceApprovalTest {
                         null,
                         null,
                         "APPROVED",
-                        ResultSubmitStatus.READY,
+                        ResultSubmitStatus.READY.toString(),
                         10,
                         0,
                         false,

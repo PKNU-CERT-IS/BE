@@ -52,6 +52,9 @@ public class ProjectDomainService {
     private final ProjectCommandRepository commandRepository;
     private final ProjectQueryRepository queryRepository;
     private final MemberDomainService memberDomainService;
+    private final org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository projectParticipantQueryRepository;
+    private final org.certis.studyplatform.study.domain.repository.StudyParticipantQueryRepository studyParticipantQueryRepository;
+    private final org.certis.studyplatform.study.domain.repository.StudyQueryRepository studyQueryRepository;
 
     // ================================================================
     // COMMAND OPERATIONS
@@ -71,6 +74,8 @@ public class ProjectDomainService {
 
         // 중복 검사 (Repository 의존성이 필요한 검증만 수행)
 //        validateProjectTitleDuplication(command.title());
+        // Creation limit enforcement: consider created + joined actives
+        enforceCreationLimits(command.creatorId());
 
         // ProjectVo.createNew() 사용 - 생성 시 자동으로 나머지 검증 수행
         ProjectVo projectVo = ProjectVo.createNew(
@@ -101,6 +106,18 @@ public class ProjectDomainService {
         return savedProjectVo;
     }
 
+    private void enforceCreationLimits(Long creatorId) {
+        long activeProjectsJoined = projectParticipantQueryRepository.countActiveProjectsByMemberId(creatorId);
+
+        long activeProjectsCreated = queryRepository.countActiveProjectsCreatedByMemberId(creatorId);
+
+        long activeProjects = activeProjectsJoined + activeProjectsCreated;
+        if (activeProjects >= 1) {
+            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_PERMISSION,
+                    "진행 중인 프로젝트가 1개 있으면 추가 신청이 불가합니다.");
+        }
+    }
+
     /**
      * 프로젝트 수정
      */
@@ -115,9 +132,13 @@ public class ProjectDomainService {
         // 권한 검증: STAFF 이상이거나 작성자 본인인지 확인
         validateProjectUpdatePermission(command.requesterId(), existingProject.creatorId());
 
-        // 제목 중복 검사 (자신 제외)
+        // 제목 중복 검사 (자신 제외) - 실제로 제목이 변경되는 경우에만 검사
         if (command.title() != null) {
-            validateProjectTitleDuplicationForUpdate(command.title(), command.id());
+            String incomingTitle = command.title() != null ? command.title().trim() : null;
+            String existingTitle = existingProject.title() != null ? existingProject.title().trim() : null;
+            if (incomingTitle != null && (existingTitle == null || !existingTitle.equalsIgnoreCase(incomingTitle))) {
+                validateProjectTitleDuplicationForUpdate(incomingTitle, command.id());
+            }
         }
 
         // ProjectVo.updateFrom() 사용 - 업데이트 시 자동으로 검증 수행

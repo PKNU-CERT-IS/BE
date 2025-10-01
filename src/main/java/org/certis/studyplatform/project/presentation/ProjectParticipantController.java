@@ -52,8 +52,8 @@ public class ProjectParticipantController {
 
         ProjectJoinResponseDto responseDto = projectParticipantFacadeService.registerJoinProject(requestDto, currentUser.getId());
 
-        log.info("Controller: Project join registered successfully - participantId: {}",
-                responseDto.getParticipantId());
+        log.info("Controller: Project join registered successfully - projectId: {}",
+                responseDto.getProjectId());
 
         return GlobalResponseHandler.success(ResponseStatus.PROJECT_PARTICIPANT_JOIN_REGISTERED, responseDto);
     }
@@ -92,14 +92,14 @@ public class ProjectParticipantController {
             @AuthenticationPrincipal CurrentUser currentUser
     ) {
 
-        log.info("Controller: Approve project join request - participantId: {}",
-                requestDto.getParticipantId());
+        log.info("Controller: Approve project join request - projectId: {}, memberId: {}",
+                requestDto.getProjectId(), requestDto.getMemberId());
 
         ProjectParticipantStatusUpdateResponseDto responseDto =
                 projectParticipantFacadeService.approveJoinProject(requestDto, currentUser.getId());
 
-        log.info("Controller: Project join approved successfully - participantId: {}",
-                responseDto.getParticipantId());
+        log.info("Controller: Project join approved successfully - projectId: {}",
+                responseDto.getProjectId());
 
         return GlobalResponseHandler.success(ResponseStatus.PROJECT_PARTICIPANT_JOIN_APPROVED, responseDto);
     }
@@ -116,14 +116,14 @@ public class ProjectParticipantController {
             @AuthenticationPrincipal CurrentUser currentUser
     ) {
 
-        log.info("Controller: Reject project join request - participantId: {}",
-                requestDto.getParticipantId());
+        log.info("Controller: Reject project join request - projectId: {}, memberId: {}",
+                requestDto.getProjectId(), requestDto.getMemberId());
 
         ProjectParticipantStatusUpdateResponseDto responseDto =
                 projectParticipantFacadeService.rejectJoinProject(requestDto, currentUser.getId());
 
-        log.info("Controller: Project join rejected successfully - participantId: {}",
-                responseDto.getParticipantId());
+        log.info("Controller: Project join rejected successfully - projectId: {}",
+                responseDto.getProjectId());
 
         return GlobalResponseHandler.success(ResponseStatus.PROJECT_PARTICIPANT_JOIN_REJECTED, responseDto);
     }
@@ -138,7 +138,7 @@ public class ProjectParticipantController {
      * @param projectId 프로젝트 ID
      * @param status 참가자 상태 (선택적)
      * @param pageable 페이징 정보
-     * @return 참가자 목록
+     * @return 참가자 목록/{projectId}/participants
      */
     @GetMapping("/{projectId}/participants")
     public ResponseEntity<GlobalResponseHandler<Page<ProjectParticipantSummaryResponseDto>>> getProjectParticipants(

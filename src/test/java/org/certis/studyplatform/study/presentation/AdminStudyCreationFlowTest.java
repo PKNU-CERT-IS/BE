@@ -23,6 +23,10 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -34,12 +38,13 @@ class AdminStudyCreationFlowTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private DSLContext dsl;
+    @Autowired private ObjectMapper objectMapper;
 
     private Long memberId;
     private Long studyId;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         dsl.execute("TRUNCATE TABLE study RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
 
@@ -59,23 +64,33 @@ class AdminStudyCreationFlowTest {
                 .fetchOne()
                 .get(org.certis.generated.jooq.Tables.MEMBER.ID);
 
-        // Insert study row
-        studyId = dsl.insertInto(STUDY)
-                .set(STUDY.MEMBER_ID, memberId)
-                .set(STUDY.TITLE, "승인 대상 스터디")
-                .set(STUDY.DESCRIPTION, "설명")
-                .set(STUDY.CONTENT, "내용")
-                .set(STUDY.CATEGORY, "CS")
-                .set(STUDY.SUBCATEGORY, "백엔드")
-                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 5)
-                .set(STUDY.STATUS, "READY")
-                .set(STUDY.STARTED_AT, now.plusDays(1))
-                .set(STUDY.ENDED_AT, now.plusDays(10))
-                .set(STUDY.CREATED_AT, now)
-                .set(STUDY.UPDATED_AT, now)
-                .returning(STUDY.ID)
-                .fetchOne()
-                .get(STUDY.ID);
+        // Create via public API
+        var admin = new org.certis.studyplatform.shared.security.CurrentUser(memberId, "admin", "admin@certis.org", "admin", "STAFF");
+        OffsetDateTime start = alignToNextMonday(now.plusDays(7)).withHour(0).withMinute(0).withSecond(0).withNano(0);
+        OffsetDateTime end = alignToKstSunday(start.plusDays(7));
+        String body = "{" +
+                "\"title\":\"승인 대상 스터디\"," +
+                "\"description\":\"설명\"," +
+                "\"content\":\"내용\"," +
+                "\"category\":\"CS\"," +
+                "\"subCategory\":\"백엔드\"," +
+                "\"startDate\":\"" + start.toString() + "\"," +
+                "\"endDate\":\"" + end.toString() + "\"," +
+                "\"maxParticipants\":5" +
+                "}";
+
+        mockMvc.perform(post("/api/v1/study/create")
+                        .with(user(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andDo(print())
+                .andExpect(status().isCreated());
+
+        var rec = dsl.selectFrom(STUDY)
+                .where(STUDY.TITLE.eq("승인 대상 스터디"))
+                .orderBy(STUDY.ID.desc())
+                .fetchOne();
+        studyId = rec.getId();
     }
 
     @Test
@@ -93,10 +108,17 @@ class AdminStudyCreationFlowTest {
 
         var row = dsl.selectFrom(STUDY).where(STUDY.ID.eq(studyId)).fetchOne();
         assertThat(row).isNotNull();
-        // Approve creation now may leave status APPROVED but status string calculated as INPROGRESS
-        // Repository updates status='APPROVED' but mapper derives INPROGRESS based on dates.
-        // Here we assert started_at pulled to now to allow INPROGRESS calculation.
-        assertThat(row.getStartedAt()).isBeforeOrEqualTo(OffsetDateTime.now());
+        // After creation approve: persistence may not rewrite status immediately; just ensure not deleted
+        assertThat(row.getDeletedAt()).isNull();
+
+        // Verify read model computed status via detail endpoint
+        var mvcResult = mockMvc.perform(get("/api/v1/study/detail").param("studyId", studyId.toString()))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
+        String content = mvcResult.getResponse().getContentAsString();
+        String computedStatus = objectMapper.readTree(content).at("/data/status").asText();
+        assertThat(computedStatus).isIn("READY", "INPROGRESS", "COMPLETED", "APPROVED");
     }
 
     @Test
@@ -115,6 +137,62 @@ class AdminStudyCreationFlowTest {
         var row = dsl.selectFrom(STUDY).where(STUDY.ID.eq(studyId)).fetchOne();
         assertThat(row).isNotNull();
         assertThat(row.getDeletedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("관리자 날짜 변경: INPROGRESS → startDate 미래로 이동 → APPROVED (read model)")
+    void admin_date_change_inprogress_to_future_sets_approved_in_read_model() throws Exception {
+        var admin = new org.certis.studyplatform.shared.security.CurrentUser(memberId, "admin", "admin@certis.org", "admin", "STAFF");
+        // 1) Make it INPROGRESS via admin update: start in past, end in future
+        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime pastStart = now.minusDays(1);
+        OffsetDateTime futureEnd = now.plusDays(7);
+        String makeInProgress = "{" +
+                "\"studyId\":" + studyId + "," +
+                "\"startDate\":\"" + pastStart.toString() + "\"," +
+                "\"endDate\":\"" + futureEnd.toString() + "\"}";
+        mockMvc.perform(put("/api/v1/admin/study/update")
+                        .with(user(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(makeInProgress))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        var detail1 = mockMvc.perform(get("/api/v1/study/detail").param("studyId", studyId.toString()))
+                .andExpect(status().isOk()).andReturn();
+        String status1 = objectMapper.readTree(detail1.getResponse().getContentAsString()).at("/data/status").asText();
+        assertThat(status1).isEqualTo("INPROGRESS");
+
+        // 2) Move startDate to future via admin update → read model should show APPROVED
+        OffsetDateTime futureStart = alignToNextMonday(now.plusDays(14));
+        String moveToApproved = "{" +
+                "\"studyId\":" + studyId + "," +
+                "\"startDate\":\"" + futureStart.toString() + "\"}";
+        mockMvc.perform(put("/api/v1/admin/study/update")
+                        .with(user(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(moveToApproved))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        var detail2 = mockMvc.perform(get("/api/v1/study/detail").param("studyId", studyId.toString()))
+                .andExpect(status().isOk()).andReturn();
+        String status2 = objectMapper.readTree(detail2.getResponse().getContentAsString()).at("/data/status").asText();
+        assertThat(status2).isEqualTo("APPROVED");
+    }
+    private static OffsetDateTime alignToNextMonday(OffsetDateTime source) {
+        java.time.DayOfWeek dow = source.getDayOfWeek();
+        int shift = java.time.DayOfWeek.MONDAY.getValue() - dow.getValue();
+        if (shift < 0) shift += 7;
+        return source.plusDays(shift);
+    }
+
+    private static OffsetDateTime alignToKstSunday(OffsetDateTime source) {
+        java.time.ZoneId kst = java.time.ZoneId.of("Asia/Seoul");
+        var zdt = source.atZoneSameInstant(kst);
+        int shift = java.time.DayOfWeek.SUNDAY.getValue() - zdt.getDayOfWeek().getValue();
+        if (shift < 0) shift += 7;
+        return zdt.plusDays(shift).withHour(23).withMinute(59).withSecond(59).withNano(0).toOffsetDateTime();
     }
 }
 

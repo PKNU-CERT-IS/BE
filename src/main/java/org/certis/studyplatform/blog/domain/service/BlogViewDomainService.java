@@ -50,17 +50,24 @@ public class BlogViewDomainService {
     }
 
     /**
-     * Redis에서 조회수 증가 (중복 방지)
+     * Redis에서 조회수 증가 (중복 방지) - 비로그인 유저 지원
      */
     public void incrementViewCountInRedis(Long blogId, Long viewerId) {
         try {
             BlogIdVo blogIdVo = BlogIdVo.of(blogId);
 
-            if (!redisRepository.isViewedByMember(blogIdVo, viewerId)) {
-                redisRepository.addView(blogIdVo, viewerId);
-                log.debug("Domain: View count increased in Redis for blog: {} by viewer: {}", blogId, viewerId);
+            // 비로그인 유저는 중복 방지 없이 항상 조회수 증가
+            if (viewerId == null) {
+                redisRepository.addViewForAnonymous(blogIdVo);
+                log.debug("Domain: View count increased in Redis for blog: {} by anonymous user", blogId);
             } else {
-                log.debug("Domain: View already counted for blog: {} by viewer: {}", blogId, viewerId);
+                // 로그인 유저는 중복 방지 적용
+                if (!redisRepository.isViewedByMember(blogIdVo, viewerId)) {
+                    redisRepository.addView(blogIdVo, viewerId);
+                    log.debug("Domain: View count increased in Redis for blog: {} by viewer: {}", blogId, viewerId);
+                } else {
+                    log.debug("Domain: View already counted for blog: {} by viewer: {}", blogId, viewerId);
+                }
             }
         } catch (Exception e) {
             log.error("Domain: Redis failed for view increment - blogId: {}, viewerId: {}", blogId, viewerId, e);

@@ -5,7 +5,6 @@ import jakarta.validation.constraints.Positive;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
@@ -30,10 +29,6 @@ public class ProjectUpdateRequestDto {
     private String category;
 
     private String subCategory;
-
-    private OffsetDateTime startDate;
-
-    private OffsetDateTime endDate;
 
     private List<ProjectAttachedCreateRequestDto> attachments;
 

@@ -52,6 +52,8 @@ public class StudyDetailResponseDto {
 
     private String studyCreatorGrade;
 
+    private String studyCreatorProfileImageUrl;
+
     private String semester;
 
     private String status;

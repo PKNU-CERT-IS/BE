@@ -26,6 +26,7 @@ import org.certis.studyplatform.project.presentation.dto.request.ProjectSearchRe
 import org.certis.studyplatform.project.presentation.dto.request.ProjectUpdateRequestDto;
 import org.certis.studyplatform.project.presentation.dto.request.ProjectDetailRequestDto;
 import org.certis.studyplatform.project.presentation.dto.request.ProjectAdvancedSearchRequestDto;
+import org.certis.studyplatform.project.presentation.dto.request.AdminProjectUpdateRequestDto;
 import org.certis.studyplatform.project.presentation.dto.response.ProjectDetailResponseDto;
 import org.certis.studyplatform.project.presentation.dto.response.ProjectMeetingSummaryResponseDto;
 import org.certis.studyplatform.project.presentation.dto.response.ProjectSummaryResponseDto;
@@ -408,6 +409,35 @@ public class ProjectFacadeService {
 
     public void rejectProjectCreation(Long projectId, Long adminId) {
         projectCommandService.rejectProjectCreation(projectId, adminId);
+    }
+
+    /**
+     * 관리자: 프로젝트 수정 (날짜 포함)
+     */
+    public void updateProjectByAdmin(AdminProjectUpdateRequestDto requestDto, Long adminId) {
+        log.info("Facade(Admin): Updating project - ID: {} by admin: {}", requestDto.getProjectId(), adminId);
+
+        // 관리자도 동일한 UpdateProjectCommand 사용 (start/end 포함)
+        UpdateProjectCommand command = UpdateProjectCommand.of(
+                requestDto.getProjectId(),
+                requestDto.getTitle(),
+                requestDto.getDescription(),
+                requestDto.getContent(),
+                requestDto.getCategory(),
+                requestDto.getSubCategory(),
+                requestDto.getStartDate(),
+                requestDto.getEndDate(),
+                requestDto.getGithubUrl(),
+                requestDto.getExternalUrl() != null ?
+                        new org.certis.studyplatform.project.domain.vo.ExternalUrlVo(requestDto.getExternalUrl().getTitle(), requestDto.getExternalUrl().getUrl()) : null,
+                requestDto.getDemoUrl(),
+                requestDto.getThumbnailUrl(),
+                null,
+                requestDto.getMaxParticipants(),
+                adminId
+        );
+
+        projectCommandService.updateProject(command);
     }
 
 }

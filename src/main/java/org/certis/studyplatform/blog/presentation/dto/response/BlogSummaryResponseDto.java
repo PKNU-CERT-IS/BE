@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 import org.certis.studyplatform.blog.domain.ArticleReferenceType;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 
 /**
  * Blog Summary Response DTO
@@ -43,6 +42,8 @@ public class BlogSummaryResponseDto {
     private OffsetDateTime updatedAt;
 
     private String blogCreatorName;
+
+    private String blogCreatorProfileImageUrl;
 
     private Integer views;
 

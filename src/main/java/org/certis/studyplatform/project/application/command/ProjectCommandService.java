@@ -70,15 +70,38 @@ public class ProjectCommandService {
                 if (finalUrl != null && finalUrl.startsWith("data:")) {
                     try {
                         String[] parts = finalUrl.split(",", 2);
-                        String base64Part = parts.length == 2 ? parts[1] : parts[0];
-                        byte[] bytes = Base64.getDecoder().decode(base64Part);
+                        if (parts.length != 2) {
+                            throw new ApplicationException(
+                                    ExceptionStatus.PROJECT_APPLICATION_ATTACHMENT_UPLOAD_FAILED,
+                                    "잘못된 data URL 형식입니다. 올바른 형식: data:type;base64,data");
+                        }
+                        String base64Part = parts[1];
+                        
+                        // Base64 유효성 검증
+                        if (!isValidBase64(base64Part)) {
+                            throw new ApplicationException(
+                                    ExceptionStatus.PROJECT_APPLICATION_ATTACHMENT_UPLOAD_FAILED,
+                                    "잘못된 Base64 인코딩입니다: " + fileCmd.name());
+                        }
+                        
+                        // 패딩이 누락된 경우 자동으로 추가
+                        String paddedBase64 = base64Part;
+                        int remainder = base64Part.length() % 4;
+                        if (remainder > 0) {
+                            paddedBase64 = base64Part + "=".repeat(4 - remainder);
+                        }
+                        
+                        byte[] bytes = Base64.getDecoder().decode(paddedBase64);
                         String contentType = mapAttachedTypeToContentType(fileCmd.type());
                         finalUrl = s3FileService.uploadBytes(bytes, contentType, fileCmd.name(), S3FileService.DomainFolders.PROJECT_ATTACHMENTS, System.currentTimeMillis());
+                    } catch (ApplicationException e) {
+                        // ApplicationException은 그대로 재발생
+                        throw e;
                     } catch (Exception e) {
                         log.error("S3 upload failed for project attachment: {}", fileCmd.name(), e);
                         throw new ApplicationException(
                                 ExceptionStatus.PROJECT_APPLICATION_ATTACHMENT_UPLOAD_FAILED,
-                                "프로젝트 첨부파일 업로드에 실패했습니다: " + fileCmd.name(), e);
+                                "프로젝트 첨부파일 업로드에 실패했습니다: " + fileCmd.name() + " - " + e.getMessage(), e);
                     }
                 }
                 if (finalUrl == null || finalUrl.isEmpty()) {
@@ -131,15 +154,38 @@ public class ProjectCommandService {
                 if (finalUrl != null && finalUrl.startsWith("data:")) {
                     try {
                         String[] parts = finalUrl.split(",", 2);
-                        String base64Part = parts.length == 2 ? parts[1] : parts[0];
-                        byte[] bytes = Base64.getDecoder().decode(base64Part);
+                        if (parts.length != 2) {
+                            throw new ApplicationException(
+                                    ExceptionStatus.PROJECT_APPLICATION_ATTACHMENT_UPLOAD_FAILED,
+                                    "잘못된 data URL 형식입니다. 올바른 형식: data:type;base64,data");
+                        }
+                        String base64Part = parts[1];
+                        
+                        // Base64 유효성 검증
+                        if (!isValidBase64(base64Part)) {
+                            throw new ApplicationException(
+                                    ExceptionStatus.PROJECT_APPLICATION_ATTACHMENT_UPLOAD_FAILED,
+                                    "잘못된 Base64 인코딩입니다: " + fileCmd.name());
+                        }
+                        
+                        // 패딩이 누락된 경우 자동으로 추가
+                        String paddedBase64 = base64Part;
+                        int remainder = base64Part.length() % 4;
+                        if (remainder > 0) {
+                            paddedBase64 = base64Part + "=".repeat(4 - remainder);
+                        }
+                        
+                        byte[] bytes = Base64.getDecoder().decode(paddedBase64);
                         String contentType = mapAttachedTypeToContentType(fileCmd.type());
                         finalUrl = s3FileService.uploadBytes(bytes, contentType, fileCmd.name(), S3FileService.DomainFolders.PROJECT_ATTACHMENTS, System.currentTimeMillis());
+                    } catch (ApplicationException e) {
+                        // ApplicationException은 그대로 재발생
+                        throw e;
                     } catch (Exception e) {
                         log.error("S3 upload failed for project attachment(update): {}", fileCmd.name(), e);
                         throw new ApplicationException(
                                 ExceptionStatus.PROJECT_APPLICATION_ATTACHMENT_UPLOAD_FAILED,
-                                "프로젝트 첨부파일 업로드에 실패했습니다: " + fileCmd.name(), e);
+                                "프로젝트 첨부파일 업로드에 실패했습니다: " + fileCmd.name() + " - " + e.getMessage(), e);
                     }
                 }
                 if (finalUrl == null || finalUrl.isEmpty()) {
@@ -403,9 +449,38 @@ public class ProjectCommandService {
             case PPTX -> "application/vnd.openxmlformats-officedocument.presentationml.presentation";
             case EXCEL -> "application/vnd.ms-excel";
             case TEXT -> "text/plain";
+            case CSV -> "text/csv";
             case PNG -> "image/png";
             case JPEG, JPG -> "image/jpeg";
             case ZIP -> "application/zip";
         };
+    }
+
+    /**
+     * Base64 문자열 유효성 검증 (FileReader 기반 데이터 지원)
+     */
+    private boolean isValidBase64(String base64String) {
+        if (base64String == null || base64String.isEmpty()) {
+            return false;
+        }
+        
+        // Base64 패턴 검증 (A-Z, a-z, 0-9, +, /, =)
+        if (!base64String.matches("^[A-Za-z0-9+/]*={0,2}$")) {
+            return false;
+        }
+        
+        // 패딩이 누락된 경우 자동으로 추가
+        String paddedBase64 = base64String;
+        int remainder = base64String.length() % 4;
+        if (remainder > 0) {
+            paddedBase64 = base64String + "=".repeat(4 - remainder);
+        }
+        
+        try {
+            Base64.getDecoder().decode(paddedBase64);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 }

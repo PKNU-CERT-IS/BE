@@ -14,6 +14,7 @@ public record BoardDetailVo(
         Long authorId,
         String authorName,
         MemberRole authorRole,
+        String authorProfileImageUrl,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt,
         List<AttachmentVo> attachments,
@@ -22,7 +23,7 @@ public record BoardDetailVo(
         boolean isLikedByCurrentUser
 ) {
 
-    public static BoardDetailVo of(BoardVo board, String authorName, MemberRole authorRole, Long likeCount,
+    public static BoardDetailVo of(BoardVo board, String authorName, MemberRole authorRole, String authorProfileImageUrl, Long likeCount,
                                    Long viewCount, boolean isLikedByCurrentUser) {
         return new BoardDetailVo(
                 board.id(),
@@ -33,6 +34,7 @@ public record BoardDetailVo(
                 board.authorId(),
                 authorName,
                 authorRole,
+                authorProfileImageUrl,
                 board.createdAt(),
                 board.updatedAt(),
                 board.attachments(),

@@ -239,7 +239,7 @@ public class BoardDomainService {
         BoardAuthorInfoVo authorInfo = boardQueryRepository.getAuthorInfo(boardIdVo);
 
         // 6. 통계가 포함된 DetailVo 생성
-        BoardDetailVo result = BoardDetailVo.of(board, authorInfo.name(), authorInfo.role(), likeCount, viewCount, isLikedByCurrentUser);
+        BoardDetailVo result = BoardDetailVo.of(board, authorInfo.name(), authorInfo.role(), authorInfo.profileImageUrl(), likeCount, viewCount, isLikedByCurrentUser);
 
         log.info("Domain: Board detail retrieved - ID: {}, title: {}", board.id(), board.title());
         return result;
@@ -258,8 +258,9 @@ public class BoardDomainService {
     /**
      * 모든 게시글 통계 동기화 (Redis → RDB)
      * 매일 00시 배치 작업에서 호출
+     * @return 동기화된 게시글 수
      */
-    public void syncAllBoardStats() {
+    public int syncAllBoardStats() {
         log.info("Domain: Starting board stats sync from Redis to Database");
 
         // 1. 모든 활성 게시글 ID 조회
@@ -281,44 +282,69 @@ public class BoardDomainService {
         }
 
         log.info("Domain: Board stats sync completed - Success: {}, Failed: {}", successCount, failCount);
+        
+        // 동기화 완료 후 Redis 통계 초기화 (다음 날 통계를 위해)
+        initializeRedisStatsAfterSync(activeBoardIds);
+        
+        return successCount;
     }
 
     /**
      * 단일 게시글 통계 동기화 (Redis → RDB)
+     * 누적 방식으로 동기화하여 데이터 손실 방지
      */
     private void syncSingleBoardStats(Long boardId) {
         log.debug("Domain: Syncing stats for board: {}", boardId);
 
-        // 1. 게시글 조회 (JOOQ - Query Repository)
-        BoardIdVo boardIdVo = BoardIdVo.of(boardId);
-        BoardVo existingBoard = boardQueryRepository.findById(boardIdVo)
-                .orElseThrow(() -> new DomainException(ExceptionStatus.BOARD_INFRASTRUCTURE_NOT_FOUND));
+        try {
+            // 1. 게시글 조회 (JOOQ - Query Repository)
+            BoardIdVo boardIdVo = BoardIdVo.of(boardId);
+            BoardVo existingBoard = boardQueryRepository.findById(boardIdVo)
+                    .orElseThrow(() -> new DomainException(ExceptionStatus.BOARD_INFRASTRUCTURE_NOT_FOUND));
 
-        // 2. Redis에서 최신 통계 조회
-        Long redisLikeCount = boardRedisRepository.getLikeCount(boardIdVo);
-        Long redisViewCount = boardRedisRepository.getViewCount(boardIdVo);
+            // 2. Redis에서 최신 통계 조회 (TTL 만료 시 0 반환됨)
+            Long redisLikeCount = boardRedisRepository.getLikeCount(boardIdVo);
+            Long redisViewCount = boardRedisRepository.getViewCount(boardIdVo);
 
-        // 🔧 3. 기존 통계 조회 (JOOQ - Query Repository)
-        BoardStatsVo currentStats = boardQueryRepository.getBoardStats(boardIdVo);
+            // 3. 기존 통계 조회 (JOOQ - Query Repository)
+            BoardStatsVo currentStats = boardQueryRepository.getBoardStats(boardIdVo);
 
-        // 🔧 4. 통계 업데이트 VO 생성
-        BoardStatsUpdateVo statsUpdateVo = BoardStatsUpdateVo.of(
-                boardIdVo.value(),
-                existingBoard.authorId(),
-                redisLikeCount,
-                redisViewCount,
-                currentStats.likeCount(),
-                currentStats.viewCount(),
-                currentStats.likeId(),   // 기존 Like Entity ID
-                currentStats.viewId()    // 기존 View Entity ID
-        );
+            // 4. 누적 방식으로 통계 업데이트 (Redis 값이 0이면 기존 값 유지)
+            Long finalLikeCount = redisLikeCount > 0 ? redisLikeCount : currentStats.likeCount();
+            Long finalViewCount = redisViewCount > 0 ? redisViewCount : currentStats.viewCount();
 
-        // 5. Command Repository로 업데이트 (JPA)
-        boardCommandRepository.updateBoardStats(statsUpdateVo);
+            // 5. 변경사항이 있는지 확인
+            boolean hasChanges = !finalLikeCount.equals(currentStats.likeCount()) || 
+                               !finalViewCount.equals(currentStats.viewCount());
 
-        log.debug("Domain: Stats synced for board: {} - Likes: {} → {}, Views: {} → {}",
-                boardId, currentStats.likeCount(), redisLikeCount,
-                currentStats.viewCount(), redisViewCount);
+            if (!hasChanges) {
+                log.debug("Domain: No changes detected for board: {} - skipping sync", boardId);
+                return;
+            }
+
+            // 6. 통계 업데이트 VO 생성 (누적 방식)
+            BoardStatsUpdateVo statsUpdateVo = BoardStatsUpdateVo.of(
+                    boardIdVo.value(),
+                    existingBoard.authorId(),
+                    finalLikeCount,
+                    finalViewCount,
+                    currentStats.likeCount(),
+                    currentStats.viewCount(),
+                    currentStats.likeId(),   // 기존 Like Entity ID
+                    currentStats.viewId()    // 기존 View Entity ID
+            );
+
+            // 7. Command Repository로 업데이트 (JPA)
+            boardCommandRepository.updateBoardStats(statsUpdateVo);
+
+            log.info("Domain: Stats synced for board: {} - Likes: {} → {} (Redis: {}), Views: {} → {} (Redis: {})",
+                    boardId, currentStats.likeCount(), finalLikeCount, redisLikeCount,
+                    currentStats.viewCount(), finalViewCount, redisViewCount);
+
+        } catch (Exception e) {
+            log.error("Domain: Failed to sync stats for board: {}", boardId, e);
+            throw e; // 상위에서 처리하도록 재발생
+        }
     }
 
     // ================================================================
@@ -421,12 +447,14 @@ public class BoardDomainService {
 
     /**
      * Redis ↔ RDB 데이터 일관성 검증
+     * TTL 만료를 고려한 스마트 검증
      */
     public boolean validateStatsConsistency() {
         log.info("Domain: Starting board stats consistency validation");
 
         List<Long> activeBoardIds = boardQueryRepository.findAllActiveBoardIds();
         int inconsistentCount = 0;
+        int ttlExpiredCount = 0;
 
         for (Long boardId : activeBoardIds) {
             try {
@@ -440,7 +468,17 @@ public class BoardDomainService {
                 Long dbLikeCount = boardQueryRepository.getLikeCountFromDB(boardIdVo);
                 Long dbViewCount = boardQueryRepository.getViewCountFromDB(boardIdVo);
 
-                // 일관성 체크
+                // TTL 만료 여부 확인 (Redis 값이 0이면 TTL 만료 가능성)
+                boolean redisExpired = (redisLikeCount == 0 && redisViewCount == 0);
+                
+                if (redisExpired) {
+                    ttlExpiredCount++;
+                    log.debug("Domain: Redis TTL expired for board: {} - DB values preserved (like:{}, view:{})",
+                            boardId, dbLikeCount, dbViewCount);
+                    continue; // TTL 만료는 정상 상황이므로 일관성 검증에서 제외
+                }
+
+                // 실제 일관성 체크 (Redis에 데이터가 있는 경우만)
                 boolean likeConsistent = redisLikeCount.equals(dbLikeCount);
                 boolean viewConsistent = redisViewCount.equals(dbViewCount);
 
@@ -458,8 +496,30 @@ public class BoardDomainService {
         }
 
         boolean isConsistent = inconsistentCount == 0;
-        log.info("Domain: Consistency validation completed - Inconsistent boards: {}", inconsistentCount);
+        log.info("Domain: Consistency validation completed - Inconsistent: {}, TTL Expired: {}, Total: {}", 
+                inconsistentCount, ttlExpiredCount, activeBoardIds.size());
 
         return isConsistent;
+    }
+
+    /**
+     * 동기화 완료 후 Redis 통계 초기화
+     * 다음 날 통계를 위해 깨끗한 상태로 리셋
+     */
+    private void initializeRedisStatsAfterSync(List<Long> boardIds) {
+        log.info("Domain: Initializing Redis stats after sync for {} boards", boardIds.size());
+        
+        int initializedCount = 0;
+        for (Long boardId : boardIds) {
+            try {
+                BoardIdVo boardIdVo = BoardIdVo.of(boardId);
+                boardRedisRepository.initializeStats(boardIdVo);
+                initializedCount++;
+            } catch (Exception e) {
+                log.error("Domain: Failed to initialize Redis stats for board: {}", boardId, e);
+            }
+        }
+        
+        log.info("Domain: Redis stats initialization completed - Success: {}/{}", initializedCount, boardIds.size());
     }
 }

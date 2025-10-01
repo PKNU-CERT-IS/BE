@@ -70,6 +70,11 @@ public interface StudyQueryRepository {
     StudySearchResultVo findActiveStudies(Pageable pageable);
 
     /**
+     * 진행 중인 스터디(시작됨 AND 아직 종료 전) 중 특정 회원이 생성한 개수 반환
+     */
+    long countActiveStudiesCreatedByMemberId(Long memberId);
+
+    /**
      * 키워드로 스터디 검색
      *
      * @param keyword 검색 키워드

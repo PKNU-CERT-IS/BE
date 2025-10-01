@@ -283,6 +283,57 @@ class AuthControllerTest {
 
     @Test
     @Order(9)
+    void refreshToken_Success_TokenRotation() throws Exception {
+        // Given: 로그인하여 토큰 획득
+        LoginRequestDto loginRequest = LoginRequestDto.builder()
+                .accountNumber(TEST_ACCOUNT_NUMBER)
+                .password(TEST_PASSWORD)
+                .build();
+
+        MvcResult loginResult = mockMvc.perform(post(BASE_URL + "/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // 로그인 응답에서 RefreshToken 추출
+        String loginResponseBody = loginResult.getResponse().getContentAsString();
+        String originalRefreshToken = objectMapper.readTree(loginResponseBody)
+                .path("data")
+                .path("refreshToken")
+                .asText();
+
+        // When: 토큰 갱신 요청
+        MvcResult refreshResult = mockMvc.perform(post(BASE_URL + "/token/refresh")
+                        .header("Cookie", "refreshToken=" + originalRefreshToken))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.accessToken").exists())
+                .andExpect(jsonPath("$.data.refreshToken").exists())
+                .andReturn();
+
+        // Then: 토큰 로테이션 검증
+        String refreshResponseBody = refreshResult.getResponse().getContentAsString();
+        String newAccessToken = objectMapper.readTree(refreshResponseBody)
+                .path("data")
+                .path("accessToken")
+                .asText();
+        String newRefreshToken = objectMapper.readTree(refreshResponseBody)
+                .path("data")
+                .path("refreshToken")
+                .asText();
+
+        // 새로운 토큰들이 생성되었는지 확인
+        assertThat(newAccessToken).isNotEmpty();
+        assertThat(newRefreshToken).isNotEmpty();
+        assertThat(newRefreshToken).isNotEqualTo(originalRefreshToken);
+
+        // Redis에서 토큰 저장이 호출되었는지 확인 (토큰 로테이션)
+        verify(redisRefreshTokenRepository, atLeast(2)).save(any(), any());
+    }
+
+    @Test
+    @Order(10)
     void refreshToken_Failure_ExpiredRefreshToken() throws Exception {
         LoginRequestDto loginRequest = LoginRequestDto.builder()
                 .accountNumber(TEST_ACCOUNT_NUMBER)

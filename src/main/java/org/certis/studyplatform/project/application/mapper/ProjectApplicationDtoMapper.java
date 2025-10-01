@@ -234,7 +234,6 @@ public class ProjectApplicationDtoMapper {
      */
     public ProjectJoinResponseDto toProjectJoinResponseDto(ProjectParticipantCreatedVo vo) {
         return ProjectJoinResponseDto.builder()
-                .participantId(vo.id())
                 .projectId(vo.projectId())
                 .status(vo.status())
                 .createdAt(vo.createdAt())
@@ -255,7 +254,6 @@ public class ProjectApplicationDtoMapper {
         };
 
         return ProjectParticipantStatusUpdateResponseDto.builder()
-                .participantId(vo.id())
                 .projectId(vo.projectId())
                 .memberId(vo.memberId())
                 .previousStatus(vo.previousStatus())
@@ -277,6 +275,7 @@ public class ProjectApplicationDtoMapper {
                 .memberGrade(vo.memberGrade())
                 .status(vo.status())
                 .createdAt(vo.createdAt())
+                .profileImageUrl(normalizeUrl(vo.memberProfileImageUrl()))
                 .build();
     }
 
@@ -357,7 +356,6 @@ public class ProjectApplicationDtoMapper {
         }
 
         return AdminProjectParticipantApprovalResponseDto.builder()
-                .participantId(participantVo.id())
                 .projectId(participantVo.projectId())
                 .projectTitle(projectVo.title())
                 .memberId(participantVo.memberId())
@@ -396,7 +394,6 @@ public class ProjectApplicationDtoMapper {
         }
 
         return AdminProjectParticipantApprovalResponseDto.builder()
-                .participantId(participantVo.id())
                 .projectId(participantVo.projectId())
                 .projectTitle(projectVo.title())
                 .memberId(participantVo.memberId())

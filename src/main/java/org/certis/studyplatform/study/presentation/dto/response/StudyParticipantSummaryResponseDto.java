@@ -22,4 +22,5 @@ public class StudyParticipantSummaryResponseDto {
     private MemberGrade memberGrade;
     private StudyParticipantStatus status;
     private OffsetDateTime createdAt;
+    private String profileImageUrl;
 }
