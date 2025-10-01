@@ -9,6 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Component;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collections;
 import java.util.List;
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
  */
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class BlogApplicationDtoMapper {
 
     private final S3FileService s3FileService;
@@ -57,6 +59,10 @@ public class BlogApplicationDtoMapper {
         if (vo == null) {
             return null;
         }
+
+        // 디버그 로그 추가
+        log.debug("BlogSummaryResponseDto mapping - vo.blogCreatorProfileImageUrl: {}", vo.blogCreatorProfileImageUrl());
+        log.debug("BlogSummaryResponseDto mapping - vo: {}", vo);
 
         return BlogSummaryResponseDto.builder()
                 .id(vo.id().value())
@@ -130,6 +136,13 @@ public class BlogApplicationDtoMapper {
     }
 
     private String normalizeUrl(String url) {
-        return s3FileService.toPresignedUrl(url);
+        log.debug("normalizeUrl called with: {}", url);
+        if (url == null || url.trim().isEmpty()) {
+            log.debug("URL is null or empty, returning null");
+            return null;
+        }
+        String result = s3FileService.toPresignedUrl(url);
+        log.debug("normalizeUrl result: {}", result);
+        return result;
     }
 }

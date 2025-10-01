@@ -6,11 +6,13 @@ import org.certis.studyplatform.blog.infrastructure.persistence.entity.BlogEntit
 import org.certis.studyplatform.blog.domain.repository.BlogRedisRepository;
 import org.jooq.Record;
 import org.springframework.stereotype.Component;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.certis.generated.jooq.Tables.*;
 
@@ -26,6 +28,7 @@ import static org.certis.generated.jooq.Tables.*;
  * ✅ BlogVo 내부 검증 로직과 연동
  */
 @Component
+@Slf4j
 public class BlogInfrastructureMapper {
 
     private final BlogRedisRepository blogRedisRepository;
@@ -196,6 +199,16 @@ public class BlogInfrastructureMapper {
         OffsetDateTime updatedAt = record.get(BLOG.UPDATED_AT);
         String creatorName = record.get("creator_name", String.class);
         String creatorProfileImage = record.get("creator_profile_image", String.class);
+        if (creatorProfileImage == null) {
+            creatorProfileImage = record.get("profile_image", String.class);
+        }
+        
+        // 디버그 로그 추가 - 모든 필드 확인
+        log.debug("BlogSummaryVo mapping - blogId: {}, creatorName: {}, creatorProfileImage: {}", 
+                blogId, creatorName, creatorProfileImage);
+        log.debug("Record fields: {}", Arrays.stream(record.fields())
+                .map(field -> field.getName() + "=" + record.get(field))
+                .collect(Collectors.joining(", ")));
         
         // 데이터베이스에서 view_count 조회 (JOIN으로 가져온 값)
         Integer views = record.get("view_count", Integer.class);
@@ -221,7 +234,10 @@ public class BlogInfrastructureMapper {
             referenceTitle = projectTitle;
         }
 
-        return BlogSummaryVo.of(
+        log.debug("Creating BlogSummaryVo with creatorProfileImage: {}", creatorProfileImage);
+        log.debug("About to call BlogSummaryVo.of with creatorProfileImage parameter: '{}'", creatorProfileImage);
+        
+        BlogSummaryVo result = BlogSummaryVo.of(
                 BlogIdVo.of(blogId),
                 title,
                 description,
@@ -238,6 +254,10 @@ public class BlogInfrastructureMapper {
                 studyTitle,
                 projectTitle
         );
+        
+        log.debug("Created BlogSummaryVo with blogCreatorProfileImageUrl: {}", result.blogCreatorProfileImageUrl());
+        log.debug("BlogSummaryVo toString: {}", result);
+        return result;
     }
 
     /**

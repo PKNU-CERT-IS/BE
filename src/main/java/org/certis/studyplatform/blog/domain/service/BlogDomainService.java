@@ -519,7 +519,7 @@ public class BlogDomainService {
                         blog.createdAt(),
                         blog.updatedAt(),
                         blog.blogCreatorName(),
-                        null, // blogCreatorProfileImageUrl - not available in this context
+                        blog.blogCreatorProfileImageUrl(), // 기존 profile image URL 유지
                         referenceType,
                         referenceTitle,
                         blog.views(), // 기존 views 값 유지
@@ -530,6 +530,7 @@ public class BlogDomainService {
                 );
             }
 
+            // 참조 정보가 없어도 원본 BlogSummaryVo를 그대로 반환
             return blog;
         } catch (Exception e) {
             log.error("Domain: Error enriching blog with reference - BlogId: {}", blog.id().value(), e);
