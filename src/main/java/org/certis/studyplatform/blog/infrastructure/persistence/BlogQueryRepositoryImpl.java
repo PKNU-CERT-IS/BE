@@ -221,6 +221,7 @@ public class BlogQueryRepositoryImpl implements BlogQueryRepository {
                         p.TITLE.as("project_title"),
                         b.MEMBER_ID,
                         m.NAME.as("creator_name"),
+                        m.PROFILE_IMAGE.as("creator_profile_image"),
                         b.CREATED_AT,
                         b.UPDATED_AT,
                         b.IS_PUBLIC
