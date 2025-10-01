@@ -34,6 +34,7 @@ import org.certis.studyplatform.study.domain.service.StudyDomainService;
 
 import org.certis.studyplatform.study.presentation.dto.response.AdminStudyEndSubmissionResponseDto;
 import org.certis.studyplatform.study.presentation.dto.response.StudyAttachedResponseDto;
+import org.certis.studyplatform.study.presentation.dto.request.AdminStudyUpdateRequestDto;
 
 import org.springframework.web.multipart.MultipartFile;
 
@@ -347,6 +348,32 @@ public class StudyFacadeService {
 
     public void rejectStudyCreation(Long studyId, Long adminId) {
         studyCommandService.rejectStudyCreation(studyId, adminId);
+    }
+
+    /**
+     * 관리자: 스터디 수정 (날짜 포함)
+     */
+    public void updateStudyByAdmin(AdminStudyUpdateRequestDto requestDto, Long adminId) {
+        log.info("Facade(Admin): Updating study - ID: {} by admin: {}", requestDto.getStudyId(), adminId);
+
+        UpdateStudyCommand command = UpdateStudyCommand.of(
+                requestDto.getStudyId(),
+                requestDto.getTitle(),
+                requestDto.getDescription(),
+                requestDto.getContent(),
+                requestDto.getCategory(),
+                requestDto.getSubCategory(),
+                requestDto.getStartDate(),
+                requestDto.getEndDate(),
+                requestDto.getGithubUrl(),
+                requestDto.getExternalUrl(),
+                requestDto.getThumbnailUrl(),
+                null,
+                requestDto.getMaxParticipants(),
+                adminId
+        );
+
+        studyCommandService.updateStudy(command);
     }
 
 

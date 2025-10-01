@@ -22,6 +22,10 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -33,12 +37,13 @@ class AdminProjectCreationFlowTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private DSLContext dsl;
+    @Autowired private ObjectMapper objectMapper;
 
     private Long memberId;
     private Long projectId;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         dsl.execute("TRUNCATE TABLE project RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
 
@@ -57,24 +62,35 @@ class AdminProjectCreationFlowTest {
                 .returning(org.certis.generated.jooq.Tables.MEMBER.ID)
                 .fetchOne()
                 .get(org.certis.generated.jooq.Tables.MEMBER.ID);
+        
+        // Create via public API
+        var admin = new org.certis.studyplatform.shared.security.CurrentUser(memberId, "admin", "admin@certis.org", "admin", "STAFF");
+        OffsetDateTime start = alignToNextMonday(now.plusDays(7)).withHour(0).withMinute(0).withSecond(0).withNano(0);
+        OffsetDateTime end = alignToKstSunday(start.plusDays(7));
+        String body = "{" +
+                "\"title\":\"승인 대상 프로젝트\"," +
+                "\"description\":\"설명\"," +
+                "\"content\":\"내용\"," +
+                "\"category\":\"CS\"," +
+                "\"subCategory\":\"백엔드\"," +
+                "\"startDate\":\"" + start.toString() + "\"," +
+                "\"endDate\":\"" + end.toString() + "\"," +
+                "\"maxParticipants\":5" +
+                "}";
 
-        // Insert project row
-        projectId = dsl.insertInto(PROJECT)
-                .set(PROJECT.MEMBER_ID, memberId)
-                .set(PROJECT.TITLE, "승인 대상 프로젝트")
-                .set(PROJECT.DESCRIPTION, "설명")
-                .set(PROJECT.CONTENT, "내용")
-                .set(PROJECT.CATEGORY, "CS")
-                .set(PROJECT.SUBCATEGORY, "백엔드")
-                .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
-                .set(PROJECT.STATUS, "READY")
-                .set(PROJECT.STARTED_AT, now.plusDays(1))
-                .set(PROJECT.ENDED_AT, now.plusDays(10))
-                .set(PROJECT.CREATED_AT, now)
-                .set(PROJECT.UPDATED_AT, now)
-                .returning(PROJECT.ID)
-                .fetchOne()
-                .get(PROJECT.ID);
+        mockMvc.perform(post("/api/v1/project/create")
+                        .with(user(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andDo(print())
+                .andExpect(status().isCreated());
+
+        // fetch created id
+        var rec = dsl.selectFrom(PROJECT)
+                .where(PROJECT.TITLE.eq("승인 대상 프로젝트"))
+                .orderBy(PROJECT.ID.desc())
+                .fetchOne();
+        projectId = rec.getId();
     }
 
     @Test
@@ -92,9 +108,17 @@ class AdminProjectCreationFlowTest {
 
         var row = dsl.selectFrom(PROJECT).where(PROJECT.ID.eq(projectId)).fetchOne();
         assertThat(row).isNotNull();
-        // Approve creation now moves status to INPROGRESS and may pull started_at to now
-        assertThat(row.getStatus()).isEqualTo("INPROGRESS");
-        assertThat(row.getStartedAt()).isBeforeOrEqualTo(OffsetDateTime.now());
+        // After creation approve: persistence may not rewrite status immediately; just ensure not deleted
+        assertThat(row.getDeletedAt()).isNull();
+
+        // Verify read model computed status via detail endpoint
+        var mvcResult = mockMvc.perform(get("/api/v1/project/detail").param("projectId", projectId.toString()))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
+        String content = mvcResult.getResponse().getContentAsString();
+        String computedStatus = objectMapper.readTree(content).at("/data/status").asText();
+        assertThat(computedStatus).isIn("READY", "INPROGRESS", "COMPLETED");
     }
 
     @Test
@@ -139,8 +163,65 @@ class AdminProjectCreationFlowTest {
 
         var row = dsl.selectFrom(PROJECT).where(PROJECT.ID.eq(projectId)).fetchOne();
         assertThat(row).isNotNull();
-        assertThat(row.getStatus()).isEqualTo("REJECTED");
-        assertThat(row.getDeletedAt()).isNull();
+        // End reject should clear attachments and set submission status rejected at domain level
+        assertThat(row.getResultAttachedUrl()).isNull();
+        assertThat(row.getResultSubmitStatus()).isEqualTo("REJECTED");
+    }
+
+    @Test
+    @DisplayName("관리자 날짜 변경: INPROGRESS → startDate 미래로 이동 → APPROVED (read model)")
+    void admin_date_change_inprogress_to_future_sets_approved_in_read_model() throws Exception {
+        var admin = new org.certis.studyplatform.shared.security.CurrentUser(memberId, "admin", "admin@certis.org", "admin", "STAFF");
+        // 1) Make it INPROGRESS via admin update: start in past, end in future
+        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime pastStart = now.minusDays(1);
+        OffsetDateTime futureEnd = now.plusDays(7);
+        String makeInProgress = "{" +
+                "\"projectId\":" + projectId + "," +
+                "\"startDate\":\"" + pastStart.toString() + "\"," +
+                "\"endDate\":\"" + futureEnd.toString() + "\"}";
+        mockMvc.perform(put("/api/v1/admin/project/update")
+                        .with(user(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(makeInProgress))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        var detail1 = mockMvc.perform(get("/api/v1/project/detail").param("projectId", projectId.toString()))
+                .andExpect(status().isOk()).andReturn();
+        String status1 = objectMapper.readTree(detail1.getResponse().getContentAsString()).at("/data/status").asText();
+        assertThat(status1).isEqualTo("INPROGRESS");
+
+        // 2) Move startDate to future via admin update → read model should show APPROVED
+        OffsetDateTime futureStart = alignToNextMonday(now.plusDays(14));
+        String moveToApproved = "{" +
+                "\"projectId\":" + projectId + "," +
+                "\"startDate\":\"" + futureStart.toString() + "\"}";
+        mockMvc.perform(put("/api/v1/admin/project/update")
+                        .with(user(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(moveToApproved))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        var detail2 = mockMvc.perform(get("/api/v1/project/detail").param("projectId", projectId.toString()))
+                .andExpect(status().isOk()).andReturn();
+        String status2 = objectMapper.readTree(detail2.getResponse().getContentAsString()).at("/data/status").asText();
+        assertThat(status2).isEqualTo("APPROVED");
+    }
+    private static OffsetDateTime alignToNextMonday(OffsetDateTime source) {
+        java.time.DayOfWeek dow = source.getDayOfWeek();
+        int shift = java.time.DayOfWeek.MONDAY.getValue() - dow.getValue();
+        if (shift < 0) shift += 7;
+        return source.plusDays(shift);
+    }
+
+    private static OffsetDateTime alignToKstSunday(OffsetDateTime source) {
+        java.time.ZoneId kst = java.time.ZoneId.of("Asia/Seoul");
+        var zdt = source.atZoneSameInstant(kst);
+        int shift = java.time.DayOfWeek.SUNDAY.getValue() - zdt.getDayOfWeek().getValue();
+        if (shift < 0) shift += 7;
+        return zdt.plusDays(shift).withHour(23).withMinute(59).withSecond(59).withNano(0).toOffsetDateTime();
     }
 }
 

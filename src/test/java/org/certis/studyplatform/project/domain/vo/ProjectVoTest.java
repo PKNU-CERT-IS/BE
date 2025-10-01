@@ -24,7 +24,7 @@ class ProjectVoTest {
         // Given
         OffsetDateTime now = OffsetDateTime.now();
         OffsetDateTime futureStartDate = alignToNextMonday(now.plusDays(7));
-        OffsetDateTime futureEndDate = futureStartDate.plusDays(30);
+        OffsetDateTime futureEndDate = alignToKstSunday(futureStartDate.plusDays(30));
         
         // READY 상태인 프로젝트 (startDate 변경이 허용되는 상태)
         ProjectVo existingProject = createTestProjectVo(
@@ -52,7 +52,8 @@ class ProjectVoTest {
         );
 
         // Then
-        assertThat(updatedProject.status()).isEqualTo(ProjectStatus.APPROVED.name());
+        // 정책에 따라 READY 상태에서는 미래로 옮겨도 READY 유지
+        assertThat(updatedProject.status()).isEqualTo(ProjectStatus.READY.name());
         assertThat(updatedProject.resultSubmitStatus()).isEqualTo(ResultSubmitStatus.READY);
         assertThat(updatedProject.title()).isEqualTo("Updated Title");
         assertThat(updatedProject.startDate()).isEqualTo(futureStartDate);
@@ -65,7 +66,7 @@ class ProjectVoTest {
         // Given
         OffsetDateTime now = OffsetDateTime.now();
         OffsetDateTime pastStartDate = alignToNextMonday(now.minusDays(8)); // 이전 주 월요일
-        OffsetDateTime futureEndDate = pastStartDate.plusDays(10);
+        OffsetDateTime futureEndDate = alignToKstSunday(pastStartDate.plusDays(10));
         
         ProjectVo existingProject = createTestProjectVo(
             "READY", 
@@ -105,7 +106,7 @@ class ProjectVoTest {
         // Given
         OffsetDateTime now = OffsetDateTime.now();
         OffsetDateTime pastStartDate = alignToNextMonday(now.minusDays(14)); // 2주 전 월요일
-        OffsetDateTime pastEndDate = pastStartDate.plusDays(1);
+        OffsetDateTime pastEndDate = alignToKstSunday(pastStartDate.plusDays(1));
         
         // READY 상태인 프로젝트 (startDate 변경이 허용되는 상태)
         ProjectVo existingProject = createTestProjectVo(
@@ -146,7 +147,7 @@ class ProjectVoTest {
         // Given
         OffsetDateTime now = OffsetDateTime.now();
         OffsetDateTime pastStartDate = now.minusDays(1);
-        OffsetDateTime futureEndDate = now.plusDays(10);
+        OffsetDateTime futureEndDate = alignToKstSunday(now.plusDays(10));
         
         ProjectVo existingProject = createTestProjectVo(
             "INPROGRESS", 
@@ -182,14 +183,14 @@ class ProjectVoTest {
         assertThat(updatedProject.endDate()).isEqualTo(existingProject.endDate());
         assertThat(updatedProject.maxParticipants()).isEqualTo(existingProject.maxParticipants());
         
-        // Status는 기존 로직에 따라 재계산됨
-        assertThat(updatedProject.status()).isEqualTo(ProjectStatus.INPROGRESS.name());
-        assertThat(updatedProject.resultSubmitStatus()).isEqualTo(ResultSubmitStatus.INPROGRESS);
+        // 상태는 날짜 변경이 없으므로 유지됨
+        assertThat(updatedProject.status()).isEqualTo(existingProject.status());
+        assertThat(updatedProject.resultSubmitStatus()).isEqualTo(existingProject.resultSubmitStatus());
     }
 
     @Test
-    @DisplayName("updateFrom - READY 상태가 아닐 때 startDate 변경 시 예외 발생")
-    void updateFrom_whenStatusIsNotReadyAndStartDateChanged_shouldThrowException() {
+    @DisplayName("updateFrom - INPROGRESS에서 startDate를 미래로 옮기면 APPROVED로 롤백")
+    void updateFrom_whenInProgressAndStartMovedToFuture_shouldRollbackToApproved() {
         // Given
         OffsetDateTime now = OffsetDateTime.now();
         OffsetDateTime newStartDate = alignToNextMonday(now.plusDays(7));
@@ -202,34 +203,27 @@ class ProjectVoTest {
             now.plusDays(10)  // 미래 종료일
         );
 
-        // When & Then
-        assertThatThrownBy(() -> ProjectVo.updateFrom(
+        // When
+        ProjectVo updated = ProjectVo.updateFrom(
             existingProject,
-            null, // title은 변경하지 않음
-            null, // description은 변경하지 않음
-            null, // content는 변경하지 않음
-            null, // category는 변경하지 않음
-            null, // subCategory는 변경하지 않음
-            newStartDate, // 새로운 시작일 (변경 시도)
-            null, // endDate는 변경하지 않음
-            null, // githubUrl은 변경하지 않음
-            null, // externalUrl은 변경하지 않음
-            null, // demoUrl은 변경하지 않음
-            null, // thumbnailUrl은 변경하지 않음
-            null  // maxParticipants는 변경하지 않음
-        ))
-        .isInstanceOf(DomainException.class)
-        .hasFieldOrPropertyWithValue("status", ExceptionStatus.PROJECT_DOMAIN_INVALID_STATUS)
-        .hasMessageContaining("프로젝트가 READY 상태가 아닐 때는 시작일을 변경할 수 없습니다");
+            null, null, null, null, null,
+            newStartDate,
+            null,
+            null, null, null, null, null
+        );
+
+        // Then
+        assertThat(updated.status()).isEqualTo(ProjectStatus.APPROVED.name());
+        assertThat(updated.resultSubmitStatus()).isEqualTo(ResultSubmitStatus.READY);
     }
 
     @Test
-    @DisplayName("updateFrom - READY 상태일 때 startDate 변경은 허용")
+    @DisplayName("updateFrom - READY 상태에서 startDate 변경해도 READY 유지")
     void updateFrom_whenStatusIsReadyAndStartDateChanged_shouldAllowChange() {
         // Given
         OffsetDateTime now = OffsetDateTime.now();
         OffsetDateTime newStartDate = alignToNextMonday(now.plusDays(7));
-        OffsetDateTime newEndDate = newStartDate.plusDays(30);
+        OffsetDateTime newEndDate = alignToKstSunday(newStartDate.plusDays(30));
         
         // READY 상태인 프로젝트
         ProjectVo existingProject = createTestProjectVo(
@@ -259,7 +253,7 @@ class ProjectVoTest {
         // Then
         assertThat(updatedProject.startDate()).isEqualTo(newStartDate);
         assertThat(updatedProject.endDate()).isEqualTo(newEndDate);
-        assertThat(updatedProject.status()).isEqualTo(ProjectStatus.APPROVED.name());
+        assertThat(updatedProject.status()).isEqualTo(ProjectStatus.READY.name());
         assertThat(updatedProject.resultSubmitStatus()).isEqualTo(ResultSubmitStatus.READY);
     }
 
@@ -268,7 +262,7 @@ class ProjectVoTest {
     void updateFrom_whenStatusIsApproved_shouldMaintainStatus() {
         // Given
         OffsetDateTime now = OffsetDateTime.now();
-        OffsetDateTime futureEndDate = now.plusDays(30);
+        OffsetDateTime futureEndDate = alignToKstSunday(now.plusDays(30));
         
         // APPROVED 상태인 프로젝트
         ProjectVo existingProject = createTestProjectVo(
@@ -310,7 +304,7 @@ class ProjectVoTest {
         // Given
         OffsetDateTime now = OffsetDateTime.now();
         OffsetDateTime pastStartDate = now.minusDays(1);
-        OffsetDateTime futureEndDate = now.plusDays(10);
+        OffsetDateTime futureEndDate = alignToKstSunday(now.plusDays(10));
         
         // INPROGRESS 상태인 프로젝트
         ProjectVo existingProject = createTestProjectVo(
@@ -427,7 +421,12 @@ class ProjectVoTest {
                                         OffsetDateTime startDate, OffsetDateTime endDate) {
         // Align start to Monday to satisfy domain rule
         OffsetDateTime mondayStart = alignToNextMonday(startDate);
-        OffsetDateTime safeEnd = endDate.isAfter(mondayStart) ? endDate : mondayStart.plusDays(7);
+        // align end to Sunday in KST to satisfy domain rule
+        java.time.ZoneId kst = java.time.ZoneId.of("Asia/Seoul");
+        var endZdt = (endDate.isAfter(mondayStart) ? endDate : mondayStart.plusDays(6)).atZoneSameInstant(kst);
+        int shift = java.time.DayOfWeek.SUNDAY.getValue() - endZdt.getDayOfWeek().getValue();
+        if (shift < 0) shift += 7;
+        OffsetDateTime safeEnd = endZdt.plusDays(shift).withHour(23).withMinute(59).withSecond(59).withNano(0).toOffsetDateTime();
         return new ProjectVo(
             1L,
             "Test Project",
@@ -462,6 +461,14 @@ class ProjectVoTest {
             shift += 7;
         }
         return source.plusDays(shift);
+    }
+
+    private OffsetDateTime alignToKstSunday(OffsetDateTime source) {
+        java.time.ZoneId kst = java.time.ZoneId.of("Asia/Seoul");
+        var zdt = source.atZoneSameInstant(kst);
+        int shift = java.time.DayOfWeek.SUNDAY.getValue() - zdt.getDayOfWeek().getValue();
+        if (shift < 0) shift += 7;
+        return zdt.plusDays(shift).withHour(23).withMinute(59).withSecond(59).withNano(0).toOffsetDateTime();
     }
 
     @Test

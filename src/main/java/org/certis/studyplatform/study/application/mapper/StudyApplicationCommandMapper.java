@@ -74,8 +74,8 @@ public class StudyApplicationCommandMapper {
             dto.getContent(),
             dto.getCategory(),
             dto.getSubCategory(),
-            dto.getStartDate(),
-            dto.getEndDate(),
+            null, // startDate handled only by admin update
+            null, // endDate handled only by admin update
             dto.getGithubUrl(),
             dto.getExternalUrl(),
             dto.getThumbnailUrl(),

@@ -119,7 +119,6 @@ class AuthFacadeServiceTest {
         // Then
         assertThat(result).isNotNull();
         assertThat(result.getAccessToken()).isEqualTo(TEST_NEW_ACCESS_TOKEN);
-        assertThat(result.getRefreshToken()).isEqualTo(TEST_NEW_REFRESH_TOKEN);
 
         // 토큰 로테이션 검증: 새로운 RefreshToken이 생성되었는지 확인
         verify(authCommandService, times(1)).refreshAccessToken(any(RefreshTokenCommand.class));

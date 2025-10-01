@@ -21,6 +21,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.certis.studyplatform.project.presentation.dto.request.AdminProjectUpdateRequestDto;
 
 /**
  * Admin Project Controller
@@ -86,6 +87,19 @@ public class AdminProjectController {
                 request.getProjectId(), request.getMemberId());
 
         return GlobalResponseHandler.success(ResponseStatus.PROJECT_PARTICIPANT_REJECT_SUCCESS, response);
+    }
+
+    /**
+     * 프로젝트 정보 수정 (관리자)
+     */
+    @PutMapping("/update")
+    @Operation(summary = "프로젝트 수정(관리자)", description = "STAFF 이상이 프로젝트 정보를 수정합니다. 날짜 조정 가능")
+    public ResponseEntity<GlobalResponseHandler<Void>> updateProjectByAdmin(
+            @Valid @RequestBody AdminProjectUpdateRequestDto request,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
+        projectFacadeService.updateProjectByAdmin(request, currentUser.getId());
+        return GlobalResponseHandler.success(ResponseStatus.PROJECT_UPDATE_SUCCESS);
     }
 
     @PostMapping("/end/approve")

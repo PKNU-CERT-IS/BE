@@ -21,6 +21,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.certis.studyplatform.study.presentation.dto.request.AdminStudyUpdateRequestDto;
 
 /**
  * Admin Study Controller
@@ -86,6 +87,19 @@ public class AdminStudyController {
                 request.getStudyId(), request.getMemberId());
 
         return GlobalResponseHandler.success(ResponseStatus.STUDY_PARTICIPANT_REJECT_SUCCESS, response);
+    }
+
+    /**
+     * 스터디 정보 수정 (관리자)
+     */
+    @PutMapping("/update")
+    @Operation(summary = "스터디 수정(관리자)", description = "STAFF 이상이 스터디 정보를 수정합니다. 날짜 조정 가능")
+    public ResponseEntity<GlobalResponseHandler<Void>> updateStudyByAdmin(
+            @Valid @RequestBody AdminStudyUpdateRequestDto request,
+            @AuthenticationPrincipal CurrentUser currentUser
+    ) {
+        studyFacadeService.updateStudyByAdmin(request, currentUser.getId());
+        return GlobalResponseHandler.success(ResponseStatus.STUDY_UPDATE_SUCCESS);
     }
 
     @PostMapping("/end/approve")

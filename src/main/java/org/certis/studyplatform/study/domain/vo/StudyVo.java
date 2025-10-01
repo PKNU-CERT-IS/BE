@@ -69,7 +69,29 @@ public record StudyVo(
             throw new DomainException(ExceptionStatus.STUDY_DOMAIN_DATE_INVALID, "스터디 시작일과 종료일은 필수입니다");
         }
 
-        // 읽기 컨텍스트를 고려하여 날짜 제약은 생성/갱신 팩토리에서 검증합니다
+        // 새 생성(id == null)시에만 요일 및 역순 제약을 강제 (업데이트 시에는 유연 허용)
+        if (id == null) {
+            // 시작일은 월요일이어야 함 (KST 기준)
+            java.time.DayOfWeek studyStartDayOfWeek = startDate
+                    .atZoneSameInstant(java.time.ZoneId.of("Asia/Seoul"))
+                    .getDayOfWeek();
+            if (studyStartDayOfWeek != java.time.DayOfWeek.MONDAY) {
+                throw new DomainException(ExceptionStatus.STUDY_DOMAIN_INVALID_START_DAY, "스터디 시작일은 월요일이어야 합니다");
+            }
+
+            // 종료일은 일요일이어야 함 (KST 기준)
+            java.time.DayOfWeek studyEndDayOfWeek = endDate
+                    .atZoneSameInstant(java.time.ZoneId.of("Asia/Seoul"))
+                    .getDayOfWeek();
+            if (studyEndDayOfWeek != java.time.DayOfWeek.SUNDAY) {
+                throw new DomainException(ExceptionStatus.STUDY_DOMAIN_INVALID_END_DAY, "스터디 종료일은 일요일이어야 합니다");
+            }
+
+            // 생성 시에는 역순 금지
+            if (startDate.isAfter(endDate)) {
+                throw new DomainException(ExceptionStatus.STUDY_DOMAIN_DATE_INVALID, "시작일은 종료일보다 빨라야 합니다");
+            }
+        }
 
         // 최대 참가자 수 검증
         if (maxParticipants == null || maxParticipants < 1) {
@@ -232,26 +254,39 @@ public record StudyVo(
                                      OffsetDateTime startDate,
                                      OffsetDateTime endDate,
                                      Integer maxParticipants) {
-        // startDate 변경 시 상태 검증
+        // startDate 변경 시 상태 검증: READY/APPROVED/INPROGRESS에서는 변경 허용, REJECTED/COMPLETED에서는 불가
         if (startDate != null && !startDate.equals(existing.startDate())) {
             StudyStatus currentStatus = StudyStatus.fromStatusString(existing.status());
-            if (!currentStatus.isReady()) {
+            if (currentStatus.isRejected() || currentStatus.isCompleted()) {
                 throw new DomainException(ExceptionStatus.STUDY_DOMAIN_INVALID_STATUS,
-                        "스터디가 READY 상태가 아닐 때는 시작일을 변경할 수 없습니다. 현재 상태: " + currentStatus.getDescription());
+                        "스터디가 REJECTED 또는 COMPLETED 상태일 때는 시작일을 변경할 수 없습니다. 현재 상태: " + currentStatus.getDescription());
             }
         }
         
+        // 날짜 변경이 없는 경우에는 상태/제출상태를 그대로 유지한다
+        boolean isNoDateChange = (startDate == null && endDate == null);
+
         OffsetDateTime newStartDate = startDate != null ? startDate : existing.startDate();
         OffsetDateTime newEndDate = endDate != null ? endDate : existing.endDate();
 
         // 업데이트 시에는 날짜 제약을 완화하되, 역순 방지는 유지
+        // 단, INPROGRESS 상태에서 startDate를 미래로 옮겨 APPROVED로 롤백하는 특수 케이스는 허용
         if (newStartDate != null && newEndDate != null && newStartDate.isAfter(newEndDate)) {
-            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_DATE_INVALID, "시작일은 종료일보다 빨라야 합니다");
+            StudyStatus currentStatus = StudyStatus.fromStatusString(existing.status());
+            boolean isRollbackToApproved = currentStatus.isInProgress() && startDate != null && startDate.isAfter(OffsetDateTime.now());
+            if (!isRollbackToApproved) {
+                throw new DomainException(ExceptionStatus.STUDY_DOMAIN_DATE_INVALID, "시작일은 종료일보다 빨라야 합니다");
+            }
         }
 
-        // 변경된 기간을 기준으로 상태/제출상태 계산 (기존 상태를 고려)
-        StatusAndResultSubmitStatus statusAndSubmit = calculateStatusAndResultSubmitStatus(
-                newStartDate, newEndDate, existing.status(), existing.resultSubmitStatus());
+        StatusAndResultSubmitStatus statusAndSubmit;
+        if (isNoDateChange) {
+            statusAndSubmit = new StatusAndResultSubmitStatus(existing.status(), existing.resultSubmitStatus());
+        } else {
+            // 변경된 기간을 기준으로 상태/제출상태 계산 (기존 상태를 고려)
+            statusAndSubmit = calculateStatusAndResultSubmitStatus(
+                    newStartDate, newEndDate, existing.status(), existing.resultSubmitStatus());
+        }
 
         return new StudyVo(
                 existing.id(),
@@ -279,6 +314,23 @@ public record StudyVo(
                 existing.participantVoList() // 기존 participantVoList 유지
 
         );
+    }
+
+    private static OffsetDateTime alignToNextMonday(OffsetDateTime source) {
+        java.time.DayOfWeek dow = source
+                .atZoneSameInstant(java.time.ZoneId.of("Asia/Seoul"))
+                .getDayOfWeek();
+        int shift = java.time.DayOfWeek.MONDAY.getValue() - dow.getValue();
+        if (shift < 0) shift += 7;
+        return source.plusDays(shift).withHour(0).withMinute(0).withSecond(0).withNano(0);
+    }
+
+    private static OffsetDateTime alignToKstSunday(OffsetDateTime source) {
+        java.time.ZoneId kst = java.time.ZoneId.of("Asia/Seoul");
+        var zdt = source.atZoneSameInstant(kst);
+        int shift = java.time.DayOfWeek.SUNDAY.getValue() - zdt.getDayOfWeek().getValue();
+        if (shift < 0) shift += 7;
+        return zdt.plusDays(shift).withHour(23).withMinute(59).withSecond(59).withNano(0).toOffsetDateTime();
     }
 
     /**
@@ -383,6 +435,9 @@ public record StudyVo(
         OffsetDateTime now = OffsetDateTime.now();
         StudyStatus existingStatus = StudyStatus.fromStatusString(currentStatus);
         
+        // 변경 없는 업데이트(동일 값 유지) 시 상태 유지
+        // updateFrom에서 null은 기존 값으로 대체되어 들어오므로 여기서는 단순히 기존 상태를 신뢰
+
         // 기존 상태가 REJECTED이면 유지
         if (existingStatus.isRejected()) {
             return new StatusAndResultSubmitStatus(currentStatus, currentResultSubmitStatus);
@@ -393,29 +448,36 @@ public record StudyVo(
             return new StatusAndResultSubmitStatus(currentStatus, currentResultSubmitStatus);
         }
         
-        // startedAt이 현재 시각보다 나중인 경우
-        if (startedAt != null && startedAt.isAfter(now)) {
-            // 기존 상태가 READY가 아닌 경우 기존 상태 유지
-            if (!existingStatus.isReady()) {
-                return new StatusAndResultSubmitStatus(currentStatus, currentResultSubmitStatus);
-            }
-            // READY 상태인 경우에만 APPROVED로 변경
-            return new StatusAndResultSubmitStatus(StudyStatus.APPROVED.name(), ResultSubmitStatus.READY);
-        }
+        // startedAt이 미래인 경우는 아래 INPROGRESS 롤백 분기에서 처리한다.
         
         // endedAt이 현재 시간보다 지났으면 COMPLETED
         if (endedAt != null && endedAt.isBefore(now)) {
             return new StatusAndResultSubmitStatus(StudyStatus.COMPLETED.name(), ResultSubmitStatus.READY);
         }
         
-        // 기존 상태가 APPROVED나 INPROGRESS인 경우 유지
+        // 기존 상태가 APPROVED나 INPROGRESS인 경우: 기본적으로 유지하되,
+        // INPROGRESS 상태에서 startedAt을 미래로 옮긴 경우 APPROVED로 롤백
         if (existingStatus.isApproved() || existingStatus.isInProgress()) {
+            if (existingStatus.isInProgress() && startedAt != null && startedAt.isAfter(now)) {
+                return new StatusAndResultSubmitStatus(StudyStatus.APPROVED.name(), ResultSubmitStatus.READY);
+            }
             return new StatusAndResultSubmitStatus(currentStatus, currentResultSubmitStatus);
         }
         
-        // 기존 상태가 READY인 경우에만 INPROGRESS로 변경
+        // READY 상태에서는 startedAt/endDate를 기준으로 동적 변환 허용
         if (existingStatus.isReady()) {
-            return new StatusAndResultSubmitStatus(StudyStatus.INPROGRESS.name(), currentResultSubmitStatus);
+            if (endedAt != null && endedAt.isBefore(now)) {
+                return new StatusAndResultSubmitStatus(StudyStatus.COMPLETED.name(), ResultSubmitStatus.READY);
+            }
+            if (startedAt != null) {
+                if (startedAt.isAfter(now)) {
+                    return new StatusAndResultSubmitStatus(StudyStatus.READY.name(), currentResultSubmitStatus);
+                }
+                if (endedAt != null && (startedAt.isBefore(now) || startedAt.isEqual(now)) && endedAt.isAfter(now)) {
+                    return new StatusAndResultSubmitStatus(StudyStatus.INPROGRESS.name(), ResultSubmitStatus.READY);
+                }
+            }
+            return new StatusAndResultSubmitStatus(currentStatus, currentResultSubmitStatus);
         }
         
         // 그 외의 경우 기존 상태 유지
