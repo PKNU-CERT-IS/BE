@@ -71,10 +71,6 @@ public class AuthCommandService {
                 refreshTokenCommand.role()
         );
 
-        // 보안 강화: 새로운 RefreshToken도 생성하여 토큰 로테이션 적용
-        RefreshTokenVo newRefreshToken = jwtTokenProvider.generateRefreshToken(refreshTokenCommand.memberId());
-        authDomainService.saveRefreshToken(newRefreshToken);
-
         log.info("AccessToken 및 RefreshToken 갱신 완료: memberId={}", refreshTokenCommand.memberId());
         return newAccessToken;
     }
