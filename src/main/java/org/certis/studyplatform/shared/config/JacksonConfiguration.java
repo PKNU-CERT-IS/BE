@@ -1,6 +1,7 @@
 package org.certis.studyplatform.shared.config;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.StreamReadConstraints;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -38,6 +39,13 @@ public class JacksonConfiguration {
 
         // null 값 무시 (Map values에서 null 제외)
         mapper.setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
+
+        // 대용량 파일 업로드를 위한 문자열 길이 제한 완화
+        mapper.getFactory().setStreamReadConstraints(
+            StreamReadConstraints.builder()
+                .maxStringLength(100_000_000) // 100MB로 설정
+                .build()
+        );
 
         return mapper;
     }
