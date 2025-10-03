@@ -114,12 +114,8 @@ public class AuthFacadeService {
                 memberInfo.role()
         );
 
-        // 4. 새 AccessToken 및 RefreshToken 생성
+        // 4. 새 AccessToken 생성 (RefreshToken 로테이션 없음)
         AccessTokenVo newAccessToken = authCommandService.refreshAccessToken(command);
-
-        // 5. 새로운 RefreshToken 조회 (토큰 로테이션으로 인해 새로 생성됨)
-        ValidateRefreshTokenQuery newTokenQuery = ValidateRefreshTokenQuery.of(verifiedMemberId);
-        RefreshTokenVo newRefreshToken = authQueryService.validateRefreshToken(newTokenQuery);
 
         log.info("안전한 토큰 갱신 완료: memberId={}, role={}", memberInfo.memberId(), memberInfo.role());
         return new RefreshAccessTokenResponseDto(newAccessToken.value());

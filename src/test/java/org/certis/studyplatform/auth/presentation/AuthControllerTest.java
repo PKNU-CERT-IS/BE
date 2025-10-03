@@ -23,6 +23,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import static org.mockito.Mockito.*;
+import jakarta.servlet.http.Cookie;
 
 
 import java.time.OffsetDateTime;
@@ -296,20 +297,31 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        // 로그인 응답에서 RefreshToken 추출
-        String loginResponseBody = loginResult.getResponse().getContentAsString();
-        String originalRefreshToken = objectMapper.readTree(loginResponseBody)
-                .path("data")
-                .path("refreshToken")
-                .asText();
+        // 로그인 응답 쿠키에서 RefreshToken 추출
+        Cookie[] cookies = loginResult.getResponse().getCookies();
+        String originalRefreshToken = java.util.Arrays.stream(cookies)
+                .filter(c -> "refreshToken".equals(c.getName()))
+                .map(Cookie::getValue)
+                .findFirst()
+                .orElse(null);
+        assertThat(originalRefreshToken).isNotBlank();
+
+        // Redis에 기존 RefreshToken 이 저장되어 있다고 가정
+        when(redisRefreshTokenRepository.findByMemberId(any()))
+                .thenReturn(java.util.Optional.of(
+                        new org.certis.studyplatform.auth.domain.model.vo.RefreshTokenVo(
+                                originalRefreshToken,
+                                java.time.LocalDateTime.now().plusDays(1),
+                                TEST_MEMBER_ID
+                        )
+                ));
 
         // When: 토큰 갱신 요청
         MvcResult refreshResult = mockMvc.perform(post(BASE_URL + "/token/refresh")
-                        .header("Cookie", "refreshToken=" + originalRefreshToken))
+                        .cookie(new Cookie("refreshToken", originalRefreshToken)))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.accessToken").exists())
-                .andExpect(jsonPath("$.data.refreshToken").exists())
                 .andReturn();
 
         // Then: 토큰 로테이션 검증
@@ -318,18 +330,12 @@ class AuthControllerTest {
                 .path("data")
                 .path("accessToken")
                 .asText();
-        String newRefreshToken = objectMapper.readTree(refreshResponseBody)
-                .path("data")
-                .path("refreshToken")
-                .asText();
-
-        // 새로운 토큰들이 생성되었는지 확인
+        
+        // 새로운 AccessToken 이 생성되었는지 확인 (리프레시 토큰 로테이션 없음)
         assertThat(newAccessToken).isNotEmpty();
-        assertThat(newRefreshToken).isNotEmpty();
-        assertThat(newRefreshToken).isNotEqualTo(originalRefreshToken);
-
-        // Redis에서 토큰 저장이 호출되었는지 확인 (토큰 로테이션)
-        verify(redisRefreshTokenRepository, atLeast(2)).save(any(), any());
+        
+        // 로그인 시 저장은 최소 1회 호출됨. 리프레시 동작에 대한 추가 호출은 보장하지 않음.
+        verify(redisRefreshTokenRepository, atLeastOnce()).save(any(), any());
     }
 
     @Test

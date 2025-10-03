@@ -61,7 +61,6 @@ public class AuthCommandService {
 
     // accessToken 갱신
     public AccessTokenVo refreshAccessToken(RefreshTokenCommand refreshTokenCommand) {
-
         // 새 AccessToken 생성
         AccessTokenVo newAccessToken = jwtTokenProvider.generateAccessToken(
                 refreshTokenCommand.memberId(),
