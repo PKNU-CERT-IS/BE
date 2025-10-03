@@ -101,13 +101,12 @@ class AuthFacadeServiceTest {
     }
 
     @Test
-    @DisplayName("토큰 갱신 성공 - 토큰 로테이션 검증")
+    @DisplayName("토큰 갱신 성공 - AccessToken만 재발급 (로테이션 없음)")
     void refreshAccessToken_Success_TokenRotation() {
         // Given
         when(jwtTokenProvider.getUserIdFromToken(TEST_REFRESH_TOKEN)).thenReturn(TEST_MEMBER_ID);
         when(authQueryService.validateRefreshToken(any(ValidateRefreshTokenQuery.class)))
-                .thenReturn(mockRefreshToken)  // 첫 번째 호출: 기존 토큰 검증
-                .thenReturn(mockNewRefreshToken); // 두 번째 호출: 새 토큰 조회
+                .thenReturn(mockRefreshToken);
         when(memberQueryService.getMemberTokenInfo(any(GetMemberTokenInfoQuery.class)))
                 .thenReturn(mockMemberInfo);
         when(authCommandService.refreshAccessToken(any(RefreshTokenCommand.class)))
@@ -120,9 +119,9 @@ class AuthFacadeServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.getAccessToken()).isEqualTo(TEST_NEW_ACCESS_TOKEN);
 
-        // 토큰 로테이션 검증: 새로운 RefreshToken이 생성되었는지 확인
+        // AccessToken만 재발급, RefreshToken 로테이션/재조회 없음
         verify(authCommandService, times(1)).refreshAccessToken(any(RefreshTokenCommand.class));
-        verify(authQueryService, times(2)).validateRefreshToken(any(ValidateRefreshTokenQuery.class));
+        verify(authQueryService, times(1)).validateRefreshToken(any(ValidateRefreshTokenQuery.class));
     }
 
     @Test

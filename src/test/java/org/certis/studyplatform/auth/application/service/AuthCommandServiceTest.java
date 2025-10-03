@@ -80,8 +80,6 @@ class AuthCommandServiceTest {
         when(jwtTokenProvider.generateAccessToken(
                 TEST_MEMBER_ID, TEST_STUDENT_NUMBER, TEST_EMAIL, TEST_NAME, TEST_ROLE))
                 .thenReturn(mockAccessToken);
-        when(jwtTokenProvider.generateRefreshToken(TEST_MEMBER_ID))
-                .thenReturn(mockRefreshToken);
 
         // When
         AccessTokenVo result = authCommandService.refreshAccessToken(mockCommand);
@@ -94,10 +92,8 @@ class AuthCommandServiceTest {
         // 토큰 생성 검증
         verify(jwtTokenProvider, times(1)).generateAccessToken(
                 TEST_MEMBER_ID, TEST_STUDENT_NUMBER, TEST_EMAIL, TEST_NAME, TEST_ROLE);
-        verify(jwtTokenProvider, times(1)).generateRefreshToken(TEST_MEMBER_ID);
-
-        // 토큰 로테이션 검증: 새로운 RefreshToken이 Redis에 저장되었는지 확인
-        verify(authDomainService, times(1)).saveRefreshToken(mockRefreshToken);
+        verify(jwtTokenProvider, never()).generateRefreshToken(any());
+        verify(authDomainService, never()).saveRefreshToken(any());
     }
 
     @Test
@@ -125,19 +121,15 @@ class AuthCommandServiceTest {
         when(jwtTokenProvider.generateAccessToken(
                 TEST_MEMBER_ID, TEST_STUDENT_NUMBER, TEST_EMAIL, TEST_NAME, TEST_ROLE))
                 .thenReturn(mockAccessToken);
-        when(jwtTokenProvider.generateRefreshToken(TEST_MEMBER_ID))
-                .thenReturn(mockRefreshToken);
-        doThrow(new RuntimeException("Redis 저장 실패"))
-                .when(authDomainService).saveRefreshToken(any(RefreshTokenVo.class));
+        
+        // When
+        AccessTokenVo result = authCommandService.refreshAccessToken(mockCommand);
 
-        // When & Then
-        assertThatThrownBy(() -> authCommandService.refreshAccessToken(mockCommand))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Redis 저장 실패");
-
-        // AccessToken은 생성되었지만 RefreshToken 저장이 실패했는지 확인
+        // Then: RefreshToken 저장 로직이 호출되지 않음을 검증 (현재 비즈니스 로직 상 로테이션 없음)
+        assertThat(result).isNotNull();
         verify(jwtTokenProvider, times(1)).generateAccessToken(
                 TEST_MEMBER_ID, TEST_STUDENT_NUMBER, TEST_EMAIL, TEST_NAME, TEST_ROLE);
-        verify(jwtTokenProvider, times(1)).generateRefreshToken(TEST_MEMBER_ID);
+        verify(jwtTokenProvider, never()).generateRefreshToken(any());
+        verify(authDomainService, never()).saveRefreshToken(any());
     }
 }
