@@ -48,7 +48,6 @@ public class BoardController {
 
     // 게시글 생성
     @PostMapping("/create")
-    @PreAuthorize("hasRole('UPSOLVER') or hasRole('STAFF') or hasRole('VICECHAIRMAN') or hasRole('CHAIRMAN') or hasRole('ADMIN')") // 게시글 생성은 UPSOLVER 이상
     public ResponseEntity<GlobalResponseHandler<Void>> createBoard(
             @Valid @RequestBody BoardCreateRequestDto request,
             @AuthenticationPrincipal CurrentUser currentUser
@@ -60,7 +59,6 @@ public class BoardController {
 
     // 게시글 수정
     @PutMapping("/edit/{id}")
-    @PreAuthorize("hasRole('UPSOLVER') or hasRole('STAFF') or hasRole('VICECHAIRMAN') or hasRole('CHAIRMAN') or hasRole('ADMIN')") // 게시글 수정은 UPSOLVER 이상
     public ResponseEntity<GlobalResponseHandler<Void>> updateBoard(
             @PathVariable Long id,
             @Valid @RequestBody BoardUpdateRequestDto request,
@@ -74,7 +72,6 @@ public class BoardController {
 
     // 게시글 삭제
     @DeleteMapping("/delete/{id}")
-    @PreAuthorize("hasRole('STAFF') or hasRole('VICECHAIRMAN') or hasRole('CHAIRMAN') or hasRole('ADMIN')") // 게시글 삭제는 STAFF 이상 부터
     public ResponseEntity<GlobalResponseHandler<Void>> deleteBoard(
             @PathVariable Long id,
             @AuthenticationPrincipal CurrentUser currentUser
