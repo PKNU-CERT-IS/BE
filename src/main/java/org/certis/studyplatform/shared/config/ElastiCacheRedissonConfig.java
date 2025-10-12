@@ -22,7 +22,8 @@ import java.time.Duration;
  * - 운영환경에서만 활성화
  */
 @Configuration
-@Profile("prod")
+@Profile("elasti-cache")
+@Deprecated
 public class ElastiCacheRedissonConfig {
 
     private static final Logger log = LoggerFactory.getLogger(ElastiCacheRedissonConfig.class);
