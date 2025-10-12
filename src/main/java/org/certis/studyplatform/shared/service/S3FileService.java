@@ -172,6 +172,28 @@ public class S3FileService {
     }
 
     /**
+     * Normalize a URL by stripping query and fragment. Used to store canonical S3 URLs
+     * when clients send presigned URLs during update flows.
+     * @param url input URL (could be presigned)
+     * @return canonical URL without query/fragment
+     */
+    public String normalizeUrl(String url) {
+        if (url == null || url.isEmpty()) {
+            return url;
+        }
+        try {
+            int q = url.indexOf('?');
+            int h = url.indexOf('#');
+            int end = url.length();
+            if (q >= 0) end = q;
+            if (h >= 0 && h < end) end = h;
+            return url.substring(0, end);
+        } catch (Exception ignored) {
+            return url;
+        }
+    }
+
+    /**
      * S3에서 파일 삭제
      * @param fileUrl 삭제할 파일의 S3 URL
      */
