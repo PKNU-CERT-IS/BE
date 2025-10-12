@@ -817,6 +817,99 @@ class StudyAndProjectS3E2ETest {
                 .andExpect(jsonPath("$.data.content[0].attachments.length()", org.hamcrest.Matchers.greaterThanOrEqualTo(2)))
                 .andExpect(jsonPath("$.data.content[0].attachments[0].attachedUrl", org.hamcrest.Matchers.startsWith("https://")));
     }
+
+    @Test
+    @DisplayName("Study: attachments == null → 보존, [] → DB만 삭제, 기존+신규 → 신규만 추가, 기존만 → 그대로")
+    void e2e_study_update_policy_variants() throws Exception {
+        String region = dotenv.get("AWS_DEFAULT_REGION", "ap-northeast-2");
+        String bucket = dotenv.get("AWS_S3_BUCKET", "test-bucket");
+        String urlOld = "https://" + bucket + ".s3." + region + ".amazonaws.com/study-attachments/" + TEST_STUDY_ID + "/old.txt";
+        String urlNew = "https://" + bucket + ".s3." + region + ".amazonaws.com/study-attachments/" + TEST_STUDY_ID + "/new.txt";
+
+        OffsetDateTime now = OffsetDateTime.now();
+        // seed study with old attachment
+        dsl.insertInto(STUDY).set(STUDY.ID, TEST_STUDY_ID).set(STUDY.TITLE, "S3 E2E Study")
+                .set(STUDY.DESCRIPTION, "d").set(STUDY.CONTENT, "c").set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY.CATEGORY, "웹 개발").set(STUDY.SUBCATEGORY, "풀스택").set(STUDY.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(STUDY.STARTED_AT, now.plusDays(1)).set(STUDY.ENDED_AT, now.plusDays(30))
+                .set(STUDY.STATUS, "READY").set(STUDY.RESULT_SUBMIT_STATUS, "READY")
+                .set(STUDY.CREATED_AT, now).set(STUDY.UPDATED_AT, now)
+                .onConflict(STUDY.ID).doNothing().execute();
+        dsl.insertInto(STUDY_ATTACHED)
+                .set(STUDY_ATTACHED.STUDY_ID, TEST_STUDY_ID).set(STUDY_ATTACHED.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY_ATTACHED.NAME, "old.txt").set(STUDY_ATTACHED.TYPE, "text/plain").set(STUDY_ATTACHED.SIZE, "1")
+                .set(STUDY_ATTACHED.ATTACHED_URL, urlOld).set(STUDY_ATTACHED.CREATED_AT, now).set(STUDY_ATTACHED.UPDATED_AT, now)
+                .execute();
+
+        // attachments == null -> preserve
+        String nullJson = "{" + "\"studyId\":" + TEST_STUDY_ID + "}";
+        mockMvc.perform(put("/api/v1/study/update").contentType(MediaType.APPLICATION_JSON).content(nullJson))
+                .andDo(print()).andExpect(status().isOk());
+        var cnt1 = dsl.fetchOne("SELECT COUNT(1) AS c FROM study_attached WHERE study_id=? AND deleted_at IS NULL", TEST_STUDY_ID);
+        Assertions.assertEquals(1L, ((Number)cnt1.get("c")).longValue());
+
+        // attachments == [] -> DB only delete
+        String emptyJson = "{" + "\"studyId\":" + TEST_STUDY_ID + ",\"attachments\":[]}";
+        mockMvc.perform(put("/api/v1/study/update").contentType(MediaType.APPLICATION_JSON).content(emptyJson))
+                .andDo(print()).andExpect(status().isOk());
+        var cnt2 = dsl.fetchOne("SELECT COUNT(1) AS c FROM study_attached WHERE study_id=? AND deleted_at IS NULL", TEST_STUDY_ID);
+        Assertions.assertEquals(0L, ((Number)cnt2.get("c")).longValue());
+
+        // existing only (re-add old) + new -> DB add only for new ; old remains absent? Our policy: when list provided we treat as desired set; add both
+        String addBoth = "{" + "\"studyId\":" + TEST_STUDY_ID + ",\"attachments\":[{" +
+                "\"name\":\"old.txt\",\"type\":\"TEXT\",\"size\":\"1\",\"attachedUrl\":\"" + urlOld + "\"},{" +
+                "\"name\":\"new.txt\",\"type\":\"TEXT\",\"size\":\"1\",\"attachedUrl\":\"" + urlNew + "\"}]}";
+        mockMvc.perform(put("/api/v1/study/update").contentType(MediaType.APPLICATION_JSON).content(addBoth))
+                .andDo(print()).andExpect(status().isOk());
+        var cnt3 = dsl.fetchOne("SELECT COUNT(1) AS c FROM study_attached WHERE study_id=? AND deleted_at IS NULL", TEST_STUDY_ID);
+        Assertions.assertTrue(((Number)cnt3.get("c")).longValue() >= 2L);
+    }
+
+    @Test
+    @DisplayName("Project: attachments 정책 케이스 검증(null, [], 기존+신규)")
+    void e2e_project_update_policy_variants() throws Exception {
+        String region = dotenv.get("AWS_DEFAULT_REGION", "ap-northeast-2");
+        String bucket = dotenv.get("AWS_S3_BUCKET", "test-bucket");
+        String urlOld = "https://" + bucket + ".s3." + region + ".amazonaws.com/project-attachments/" + TEST_PROJECT_ID + "/old.txt";
+        String urlNew = "https://" + bucket + ".s3." + region + ".amazonaws.com/project-attachments/" + TEST_PROJECT_ID + "/new.txt";
+
+        OffsetDateTime now = OffsetDateTime.now();
+        dsl.insertInto(PROJECT).set(PROJECT.ID, TEST_PROJECT_ID).set(PROJECT.TITLE, "S3 E2E Project")
+                .set(PROJECT.DESCRIPTION, "d").set(PROJECT.CONTENT, "c").set(PROJECT.MEMBER_ID, TEST_MEMBER_ID)
+                .set(PROJECT.CATEGORY, "웹 개발").set(PROJECT.SUBCATEGORY, "풀스택").set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(PROJECT.STARTED_AT, now.plusDays(1)).set(PROJECT.ENDED_AT, now.plusDays(30))
+                .set(PROJECT.STATUS, "READY").set(PROJECT.RESULT_SUBMIT_STATUS, "READY")
+                .set(PROJECT.CREATED_AT, now).set(PROJECT.UPDATED_AT, now)
+                .onConflict(PROJECT.ID).doNothing().execute();
+        dsl.insertInto(PROJECT_ATTACHED)
+                .set(PROJECT_ATTACHED.PROJECT_ID, TEST_PROJECT_ID).set(PROJECT_ATTACHED.MEMBER_ID, TEST_MEMBER_ID)
+                .set(PROJECT_ATTACHED.NAME, "old.txt").set(PROJECT_ATTACHED.TYPE, "text/plain").set(PROJECT_ATTACHED.SIZE, "1")
+                .set(PROJECT_ATTACHED.ATTACHED_URL, urlOld).set(PROJECT_ATTACHED.CREATED_AT, now).set(PROJECT_ATTACHED.UPDATED_AT, now)
+                .execute();
+
+        // null → preserve
+        String nullJson = "{" + "\"projectId\":" + TEST_PROJECT_ID + "}";
+        mockMvc.perform(put("/api/v1/project/update").contentType(MediaType.APPLICATION_JSON).content(nullJson))
+                .andDo(print()).andExpect(status().isOk());
+        var c1 = dsl.fetchOne("SELECT COUNT(1) AS c FROM project_attached WHERE project_id=? AND deleted_at IS NULL", TEST_PROJECT_ID);
+        Assertions.assertEquals(1L, ((Number)c1.get("c")).longValue());
+
+        // [] → DB only delete
+        String emptyJson = "{" + "\"projectId\":" + TEST_PROJECT_ID + ",\"attachments\":[]}";
+        mockMvc.perform(put("/api/v1/project/update").contentType(MediaType.APPLICATION_JSON).content(emptyJson))
+                .andDo(print()).andExpect(status().isOk());
+        var c2 = dsl.fetchOne("SELECT COUNT(1) AS c FROM project_attached WHERE project_id=? AND deleted_at IS NULL", TEST_PROJECT_ID);
+        Assertions.assertEquals(0L, ((Number)c2.get("c")).longValue());
+
+        // existing + new → add both
+        String addBoth = "{" + "\"projectId\":" + TEST_PROJECT_ID + ",\"attachments\":[{" +
+                "\"name\":\"old.txt\",\"type\":\"TEXT\",\"size\":\"1\",\"attachedUrl\":\"" + urlOld + "\"},{" +
+                "\"name\":\"new.txt\",\"type\":\"TEXT\",\"size\":\"1\",\"attachedUrl\":\"" + urlNew + "\"}]}";
+        mockMvc.perform(put("/api/v1/project/update").contentType(MediaType.APPLICATION_JSON).content(addBoth))
+                .andDo(print()).andExpect(status().isOk());
+        var c3 = dsl.fetchOne("SELECT COUNT(1) AS c FROM project_attached WHERE project_id=? AND deleted_at IS NULL", TEST_PROJECT_ID);
+        Assertions.assertTrue(((Number)c3.get("c")).longValue() >= 2L);
+    }
 }
 
 

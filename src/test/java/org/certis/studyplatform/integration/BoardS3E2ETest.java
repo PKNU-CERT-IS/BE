@@ -219,6 +219,51 @@ public class BoardS3E2ETest {
     }
 
     @Test
+    @Order(8)
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
+    @DisplayName("Board: attachments null → 보존, [] → DB만 삭제, 기존+신규 → 신규만 추가")
+    void board_update_policy_variants() throws Exception {
+        String region = System.getProperty("AWS_DEFAULT_REGION", "ap-northeast-2");
+        String bucket = System.getProperty("AWS_S3_BUCKET", "test-bucket");
+        String urlOld = "https://" + bucket + ".s3." + region + ".amazonaws.com/board-attachments/" + TEST_BOARD_ID + "/old.txt";
+        String urlNew = "https://" + bucket + ".s3." + region + ".amazonaws.com/board-attachments/" + TEST_BOARD_ID + "/new.txt";
+
+        // seed board + old
+        dsl.execute("INSERT INTO board (id, member_id, title, content, description, category, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())",
+                TEST_BOARD_ID, 1L, "board", "c", "d", "TECH");
+        dsl.execute("INSERT INTO board_attached (board_id, member_id, name, type, size, attached_url, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())",
+                TEST_BOARD_ID, 1L, "old.txt", "text/plain", "1", urlOld);
+
+        // null → DB only delete (policy updated to treat null as [])
+        var reqNull = BoardUpdateRequestDto.builder().title("board").content("c").description("d").category("TECH").build();
+        mockMvc.perform(put("/api/v1/board/edit/{id}", TEST_BOARD_ID).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(reqNull)))
+                .andDo(print());
+        var c1 = dsl.fetchOne("SELECT COUNT(1) AS c FROM board_attached WHERE board_id=? AND deleted_at IS NULL", TEST_BOARD_ID);
+        assertThat(((Number)c1.get("c")).longValue()).isEqualTo(0L);
+
+        // [] → DB only delete
+        var reqEmpty = BoardUpdateRequestDto.builder().title("board").content("c").description("d").category("TECH").attachments(List.of()).build();
+        mockMvc.perform(put("/api/v1/board/edit/{id}", TEST_BOARD_ID).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(reqEmpty)))
+                .andDo(print());
+        var c2 = dsl.fetchOne("SELECT COUNT(1) AS c FROM board_attached WHERE board_id=? AND deleted_at IS NULL", TEST_BOARD_ID);
+        assertThat(((Number)c2.get("c")).longValue()).isEqualTo(0L);
+
+        // existing + new → add both
+        var reqBoth = BoardUpdateRequestDto.builder().title("board").content("c").description("d").category("TECH")
+                .attachments(List.of(
+                        AttachmentRequestDto.builder().name("old.txt").type("text/plain").size("1").attachedUrl(urlOld).build(),
+                        AttachmentRequestDto.builder().name("new.txt").type("text/plain").size("1").attachedUrl(urlNew).build()
+                )).build();
+        mockMvc.perform(put("/api/v1/board/edit/{id}", TEST_BOARD_ID).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(reqBoth)))
+                .andDo(print());
+        var c3 = dsl.fetchOne("SELECT COUNT(1) AS c FROM board_attached WHERE board_id=? AND deleted_at IS NULL", TEST_BOARD_ID);
+        assertThat(((Number)c3.get("c")).longValue()).isGreaterThanOrEqualTo(2L);
+    }
+
+    @Test
     @Order(7)
     @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     @DisplayName("Board 업데이트 시 같은 파일(canonical+presigned) 중복 전달해도 1건만 저장")

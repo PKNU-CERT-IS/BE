@@ -208,12 +208,21 @@ public class ProjectCommandService {
             return updatedVo;
         }
 
-        // 기존 첨부 전체 삭제 (소프트 딜리트) + S3 원본 삭제
+        // 기존 첨부 전체 삭제 (소프트 딜리트) + S3 원본 삭제(차등)
         var existing = projectAttachedJpaRepository.findByProjectId(updatedVo.id());
         if (!existing.isEmpty()) {
+            java.util.Set<String> keepUrls = new java.util.HashSet<>();
+            if (command.attachedFiles() != null && !command.attachedFiles().isEmpty()) {
+                for (var a : (processed != null ? processed : command.attachedFiles())) {
+                    if (a.url() != null) keepUrls.add(s3FileService.normalizeUrl(a.url()));
+                }
+            }
             for (ProjectAttachedEntity entity : existing) {
-                try { s3FileService.deleteFile(entity.getAttachedUrl()); } catch (Exception ex) {
-                    log.warn("Failed to delete S3 file on project update clear: {}", entity.getAttachedUrl(), ex);
+                String canonical = s3FileService.normalizeUrl(entity.getAttachedUrl());
+                if (!keepUrls.contains(canonical)) {
+                    try { s3FileService.deleteFile(entity.getAttachedUrl()); } catch (Exception ex) {
+                        log.warn("Failed to delete S3 file on project update clear: {}", entity.getAttachedUrl(), ex);
+                    }
                 }
             }
             projectAttachedJpaRepository.deleteAll(existing);

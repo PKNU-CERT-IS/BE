@@ -116,16 +116,23 @@ public class BoardCommandService {
     }
 
     private UpdateBoardCommand preprocessUpdateCommand(UpdateBoardCommand command) {
-        List<AttachmentCommand> processed = preprocessAttachments(command.attachments());
-        // Deduplicate by canonical URL while preserving order
-        java.util.LinkedHashMap<String, AttachmentCommand> byUrl = new java.util.LinkedHashMap<>();
-        for (AttachmentCommand a : processed) {
-            String key = a.attachedUrl();
-            if (key != null && !key.isBlank() && !byUrl.containsKey(key)) {
-                byUrl.put(key, a);
+        List<AttachmentCommand> processed;
+        if (command.attachments() == null) {
+            processed = List.of(); // treat null as [] → DB clear only
+        } else if (command.attachments().isEmpty()) {
+            processed = List.of();
+        } else {
+            processed = preprocessAttachments(command.attachments());
+            // Deduplicate by canonical URL while preserving order
+            java.util.LinkedHashMap<String, AttachmentCommand> byUrl = new java.util.LinkedHashMap<>();
+            for (AttachmentCommand a : processed) {
+                String key = a.attachedUrl();
+                if (key != null && !key.isBlank() && !byUrl.containsKey(key)) {
+                    byUrl.put(key, a);
+                }
             }
+            processed = new java.util.ArrayList<>(byUrl.values());
         }
-        processed = new java.util.ArrayList<>(byUrl.values());
         return UpdateBoardCommand.of(
                 command.boardId(),
                 command.title(),

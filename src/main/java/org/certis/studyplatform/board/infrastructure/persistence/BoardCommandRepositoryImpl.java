@@ -160,50 +160,55 @@ public class BoardCommandRepositoryImpl implements BoardCommandRepository {
     }
 
     private void updateViewStatsWithJpa(BoardStatsUpdateVo statsUpdateVo) {
-        if (statsUpdateVo.hasExistingViewEntity()) {
-            // 기존 엔티티 업데이트 (ID만으로 바로 업데이트)
-            BoardViewEntity updatedEntity = BoardViewEntity.builder()
-                    .id(statsUpdateVo.viewEntityId())
-                    .boardId(statsUpdateVo.boardId())
-                    .viewNumber(statsUpdateVo.newViewCount().intValue())
-                    .build();
+        try {
+            if (statsUpdateVo.hasExistingViewEntity()) {
+                // Update existing entity directly with SQL
+                boardViewJpaRepository.updateViewNumber(
+                        statsUpdateVo.viewEntityId(), 
+                        statsUpdateVo.newViewCount().intValue());
+                log.debug("📊 Updated view entity: id={}, viewNumber={}", 
+                        statsUpdateVo.viewEntityId(), statsUpdateVo.newViewCount());
+            } else {
+                // Create new entity
+                BoardViewEntity newEntity = BoardViewEntity.builder()
+                        .boardId(statsUpdateVo.boardId())
+                        .viewNumber(statsUpdateVo.newViewCount().intValue())
+                        .build();
 
-            boardViewJpaRepository.save(updatedEntity);
-            log.debug("📊 Updated view entity: id={}", statsUpdateVo.viewEntityId());
-        } else {
-            // 새 엔티티 생성
-            BoardViewEntity newEntity = BoardViewEntity.builder()
-                    .boardId(statsUpdateVo.boardId())
-                    .viewNumber(statsUpdateVo.newViewCount().intValue())
-                    .build();
-
-            boardViewJpaRepository.save(newEntity);
-            log.debug("📊 Created new view entity for board: {}", statsUpdateVo.boardId());
+                boardViewJpaRepository.save(newEntity);
+                log.debug("📊 Created new view entity for board: {}, viewNumber={}", 
+                        statsUpdateVo.boardId(), statsUpdateVo.newViewCount());
+            }
+        } catch (Exception e) {
+            log.error("❌ Failed to update view stats: {}", e.getMessage(), e);
+            throw e;
         }
     }
 
     private void updateLikeStatsWithJpa(BoardStatsUpdateVo statsUpdateVo) {
-        if (statsUpdateVo.hasExistingLikeEntity()) {
-            // 기존 엔티티 업데이트 (ID만으로 바로 업데이트)
-            BoardLikeEntity updatedEntity = BoardLikeEntity.builder()
-                    .id(statsUpdateVo.likeEntityId())  // 기존 ID 설정
-                    .boardId(statsUpdateVo.boardId())
-                    .memberId(statsUpdateVo.authorId())
-                    .likeNumber(statsUpdateVo.newLikeCount().intValue())
-                    .build();
+        try {
+            if (statsUpdateVo.hasExistingLikeEntity()) {
+                // Update existing entity directly with SQL
+                boardLikeJpaRepository.updateLikeNumber(
+                        statsUpdateVo.likeEntityId(), 
+                        statsUpdateVo.newLikeCount().intValue());
+                log.debug("📊 Updated like entity: id={}, likeNumber={}", 
+                        statsUpdateVo.likeEntityId(), statsUpdateVo.newLikeCount());
+            } else {
+                // Create new entity
+                BoardLikeEntity newEntity = BoardLikeEntity.builder()
+                        .boardId(statsUpdateVo.boardId())
+                        .memberId(statsUpdateVo.authorId())
+                        .likeNumber(statsUpdateVo.newLikeCount().intValue())
+                        .build();
 
-            boardLikeJpaRepository.save(updatedEntity);  // JPA가 ID 있으면 UPDATE 실행
-            log.debug("📊 Updated like entity: id={}", statsUpdateVo.likeEntityId());
-        } else {
-            // 새 엔티티 생성
-            BoardLikeEntity newEntity = BoardLikeEntity.builder()
-                    .boardId(statsUpdateVo.boardId())
-                    .memberId(statsUpdateVo.authorId())
-                    .likeNumber(statsUpdateVo.newLikeCount().intValue())
-                    .build();
-
-            boardLikeJpaRepository.save(newEntity);  // JPA가 ID 없으면 INSERT 실행
-            log.debug("📊 Created new like entity for board: {}", statsUpdateVo.boardId());
+                boardLikeJpaRepository.save(newEntity);
+                log.debug("📊 Created new like entity for board: {}, likeNumber={}", 
+                        statsUpdateVo.boardId(), statsUpdateVo.newLikeCount());
+            }
+        } catch (Exception e) {
+            log.error("❌ Failed to update like stats: {}", e.getMessage(), e);
+            throw e;
         }
     }
 
@@ -214,33 +219,57 @@ public class BoardCommandRepositoryImpl implements BoardCommandRepository {
         log.debug("📎 Starting attachment processing for board: {}", boardId);
 
         try {
-            // 기존 첨부파일 전체 삭제 (소프트 딜리트) + S3 원본 삭제
+            // 현재 DB에 저장된 첨부 목록
             List<BoardAttachedEntity> existingEntities = boardAttachedJpaRepository.findByBoardIdAndDeletedAtIsNull(boardId);
 
-            if (!existingEntities.isEmpty()) {
-                for (BoardAttachedEntity entity : existingEntities) {
-                    try {
-                        s3FileService.deleteFile(entity.getAttachedUrl());
-                    } catch (Exception ex) {
-                        log.warn("S3 delete failed for attachment url={} (boardId={})", entity.getAttachedUrl(), boardId, ex);
-                    }
+            // attachments == null 또는 빈 배열이면 DB만 비웁니다(S3 삭제 없음)
+            if (newAttachments == null || newAttachments.isEmpty()) {
+                if (!existingEntities.isEmpty()) {
+                    boardAttachedJpaRepository.deleteAll(existingEntities);
+                    boardAttachedJpaRepository.flush();
                 }
-                boardAttachedJpaRepository.deleteAll(existingEntities);
-                boardAttachedJpaRepository.flush();
-                log.debug("🗑️ Deleted {} existing attachments", existingEntities.size());
+                log.debug("🗑️ Cleared all board attachments from DB only (no S3 deletes)");
+                log.debug("✅ Attachment processing completed");
+                return;
             }
 
-            // 새로운 첨부파일 전체 저장
-            if (!newAttachments.isEmpty()) {
-                List<BoardAttachedEntity> newAttachmentEntities =
-                        boardInfrastructureMapper.toBoardAttachedEntityList(
-                                newAttachments,
-                                boardId,
-                                memberId
-                        );
+            // 정규화된 URL 기준으로 diff 계산
+            java.util.Set<String> desired = new java.util.LinkedHashSet<>();
+            for (AttachmentVo vo : newAttachments) {
+                if (vo.attachedUrl() != null) desired.add(s3FileService.normalizeUrl(vo.attachedUrl()));
+            }
+            java.util.Set<String> existing = new java.util.LinkedHashSet<>();
+            for (BoardAttachedEntity e : existingEntities) {
+                existing.add(s3FileService.normalizeUrl(e.getAttachedUrl()));
+            }
 
-                boardAttachedJpaRepository.saveAll(newAttachmentEntities);
-                log.debug("💾 Saved {} new attachments", newAttachmentEntities.size());
+            // DB에서 제거할 것(존재하지만 요청에 없음)
+            java.util.Set<String> toRemove = new java.util.LinkedHashSet<>(existing);
+            toRemove.removeAll(desired);
+            if (!toRemove.isEmpty()) {
+                List<BoardAttachedEntity> removeEntities = existingEntities.stream()
+                        .filter(e -> toRemove.contains(s3FileService.normalizeUrl(e.getAttachedUrl())))
+                        .toList();
+                if (!removeEntities.isEmpty()) {
+                    boardAttachedJpaRepository.deleteAll(removeEntities);
+                }
+            }
+
+            // DB에 추가할 것(요청엔 있으나 기존엔 없음)
+            java.util.Set<String> toAdd = new java.util.LinkedHashSet<>(desired);
+            toAdd.removeAll(existing);
+            if (!toAdd.isEmpty()) {
+                List<AttachmentVo> addVos = new java.util.ArrayList<>();
+                for (AttachmentVo vo : newAttachments) {
+                    String canon = s3FileService.normalizeUrl(vo.attachedUrl());
+                    if (toAdd.contains(canon)) addVos.add(vo);
+                }
+                if (!addVos.isEmpty()) {
+                    List<BoardAttachedEntity> newAttachmentEntities =
+                            boardInfrastructureMapper.toBoardAttachedEntityList(
+                                    addVos, boardId, memberId);
+                    boardAttachedJpaRepository.saveAll(newAttachmentEntities);
+                }
             }
 
             log.debug("✅ Attachment processing completed");
