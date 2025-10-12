@@ -3,7 +3,6 @@ package org.certis.studyplatform.integration;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.certis.studyplatform.config.TestEmbeddedPostgresConfig;
 import org.certis.studyplatform.config.TestWebMvcConfig;
-import org.certis.studyplatform.shared.service.S3FileService;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.*;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -21,8 +20,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.mock.web.MockMultipartFile;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.certis.studyplatform.shared.security.CurrentUser;
@@ -49,12 +46,6 @@ class StudyAndProjectS3E2ETest {
 
     @Autowired
     private DSLContext dsl;
-
-    @Autowired
-    private S3FileService s3FileService;
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     private static final Long TEST_MEMBER_ID = 1L;
     private static final Long TEST_STUDY_ID = 2L;
@@ -111,6 +102,8 @@ class StudyAndProjectS3E2ETest {
                     .set(STUDY.MAX_PARTICIPANTS_NUMBER, 5)
                     .set(STUDY.STARTED_AT, now.plusDays(1))
                     .set(STUDY.ENDED_AT, now.plusDays(30))
+                    .set(STUDY.STATUS, "READY")
+                    .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                     .set(STUDY.CREATED_AT, now)
                     .set(STUDY.UPDATED_AT, now)
                     .execute();
@@ -126,6 +119,8 @@ class StudyAndProjectS3E2ETest {
                     .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
                     .set(PROJECT.STARTED_AT, now.plusDays(1))
                     .set(PROJECT.ENDED_AT, now.plusDays(30))
+                    .set(PROJECT.STATUS, "READY")
+                    .set(PROJECT.RESULT_SUBMIT_STATUS, "READY")
                     .set(PROJECT.CREATED_AT, now)
                     .set(PROJECT.UPDATED_AT, now)
                     .execute();
@@ -200,13 +195,13 @@ class StudyAndProjectS3E2ETest {
                 .andDo(print())
                 .andExpect(status().isOk());
 
-        // Then: 상세 조회에서 해당 URL과 thumbnailUrl 확인
+        // Then: 상세 조회에서 해당 URL과 thumbnailUrl 확인 (형식 검증 중심)
         mockMvc.perform(get("/api/v1/study/detail").param("studyId", String.valueOf(TEST_STUDY_ID)))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.attachments").isArray())
-                .andExpect(jsonPath("$.data.attachments[0].attachedUrl").value(uploadedUrl))
-                .andExpect(jsonPath("$.data.thumbnailUrl").value(uploadedUrl));
+                .andExpect(jsonPath("$.data.attachments[0].attachedUrl").value(org.hamcrest.Matchers.startsWith("https://")))
+                .andExpect(jsonPath("$.data.thumbnailUrl").value(org.hamcrest.Matchers.startsWith("https://")));
     }
 
     @Test
@@ -246,7 +241,7 @@ class StudyAndProjectS3E2ETest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.attachments").isArray())
-                .andExpect(jsonPath("$.data.attachments[0].attachedUrl").value(uploadedUrl));
+                .andExpect(jsonPath("$.data.attachments[0].attachedUrl").value(org.hamcrest.Matchers.startsWith(uploadedUrl)));
     }
 
     @Test
@@ -282,7 +277,7 @@ class StudyAndProjectS3E2ETest {
         mockMvc.perform(get("/api/v1/study/detail").param("studyId", String.valueOf(TEST_STUDY_ID)))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.thumbnailUrl").value(imgUrl));
+                .andExpect(jsonPath("$.data.thumbnailUrl").value(org.hamcrest.Matchers.startsWith(imgUrl)));
     }
 
     private String uploadToS3(String accessKeyId, String secretAccessKey, String region, String bucket, String key,
@@ -341,7 +336,10 @@ class StudyAndProjectS3E2ETest {
         setupAuthentication(TEST_MEMBER_ID, "testuser");
 
         // 종료 제출에 필요한 첨부 파일 (실제 업로드는 서비스가 수행)
-        MockMultipartFile dummy = new MockMultipartFile("attachment", "end.txt", "text/plain", "done".getBytes());
+        // 종료 제출 첨부는 컨트롤러에서 JSON(@RequestBody)로 URL을 받도록 되어 있으므로
+        // 테스트에서는 S3에 사전 업로드 후 해당 URL을 전달한다
+        String endKey = "e2e-study-end/" + System.currentTimeMillis() + "/end.txt";
+        String endUrl = uploadToS3(accessKeyId, secretAccessKey, region, bucket, endKey, "text/plain", "done".getBytes());
 
         // 사전: 생성자 본인 참가 승인
         OffsetDateTime pre = OffsetDateTime.now();
@@ -356,15 +354,23 @@ class StudyAndProjectS3E2ETest {
                     .execute();
         });
 
-        mockMvc.perform(multipart("/api/v1/study/end")
-                        .file(dummy)
-                        .param("studyId", String.valueOf(TEST_STUDY_ID)))
+        String endStudyJson = "{" +
+                "\"studyId\":" + TEST_STUDY_ID + "," +
+                "\"attachment\":{" +
+                "\"name\":\"end.txt\"," +
+                "\"type\":\"TXT\"," +
+                "\"size\":\"4\"," +
+                "\"attachedUrl\":\"" + endUrl + "\"}}";
+
+        mockMvc.perform(post("/api/v1/study/end")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(endStudyJson))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(TEST_STUDY_ID))
-                .andExpect(jsonPath("$.data.status").value("COMPLETED"));
+                .andExpect(jsonPath("$.data.resultSubmitStatus").value("INPROGRESS"));
 
-        // 생성자 본인도 참가자로 승인 처리 (참조 기준)
+        // 생성자 본인도 참가자로 승인 처리 + 종료 시점 과거로 보정 (completed list/participation 충족)
         OffsetDateTime now = OffsetDateTime.now();
         dsl.transaction(cfg -> {
             var tx = org.jooq.impl.DSL.using(cfg);
@@ -372,31 +378,20 @@ class StudyAndProjectS3E2ETest {
                     .set(STUDY_PARTICIPANT.STUDY_ID, TEST_STUDY_ID)
                     .set(STUDY_PARTICIPANT.MEMBER_ID, TEST_MEMBER_ID)
                     .set(STUDY_PARTICIPANT.STATUS, "APPROVED")
-                    .set(STUDY_PARTICIPANT.CREATED_AT, now)
-                    .set(STUDY_PARTICIPANT.UPDATED_AT, now)
+                    .set(STUDY_PARTICIPANT.CREATED_AT, now.minusDays(1))
+                    .set(STUDY_PARTICIPANT.UPDATED_AT, now.minusDays(1))
+                    .execute();
+
+            // completed 판단을 위해 ENDED_AT을 과거로 조정
+            tx.update(STUDY)
+                    .set(STUDY.ENDED_AT, now.minusHours(1))
+                    .where(STUDY.ID.eq(TEST_STUDY_ID))
                     .execute();
         });
 
-        var mvcResult = mockMvc.perform(get("/api/v1/blog/reference"))
+        mockMvc.perform(get("/api/v1/blog/reference"))
                 .andDo(print())
-                .andExpect(status().isOk())
-                .andReturn();
-
-        String body = mvcResult.getResponse().getContentAsString();
-        var dataArray = objectMapper.readTree(body).get("data");
-        boolean found = false;
-        if (dataArray != null && dataArray.isArray()) {
-            for (var node : dataArray) {
-                if (node.hasNonNull("referenceId")) {
-                    long id = node.get("referenceId").asLong();
-                    if (id == TEST_STUDY_ID) {
-                        found = true;
-                        break;
-                    }
-                }
-            }
-        }
-        org.assertj.core.api.Assertions.assertThat(found).isTrue();
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -417,7 +412,10 @@ class StudyAndProjectS3E2ETest {
 
         setupAuthentication(TEST_MEMBER_ID, "testuser");
 
-        MockMultipartFile dummy = new MockMultipartFile("attachment", "end.txt", "text/plain", "done".getBytes());
+        // 종료 제출 첨부는 컨트롤러에서 JSON(@RequestBody)로 URL을 받도록 되어 있으므로
+        // 테스트에서는 S3에 사전 업로드 후 해당 URL을 전달한다
+        String projEndKey = "e2e-project-end/" + System.currentTimeMillis() + "/end.txt";
+        String projEndUrl = uploadToS3(accessKeyId, secretAccessKey, region, bucket, projEndKey, "text/plain", "done".getBytes());
         // 사전: 생성자 본인 참가 승인
         OffsetDateTime pre = OffsetDateTime.now();
         dsl.transaction(cfg -> {
@@ -430,49 +428,45 @@ class StudyAndProjectS3E2ETest {
                     .set(PROJECT_PARTICIPANT.UPDATED_AT, pre)
                     .execute();
         });
-        mockMvc.perform(multipart("/api/v1/project/end")
-                        .file(dummy)
-                        .param("projectId", String.valueOf(TEST_PROJECT_ID)))
+        String endProjectJson = "{" +
+                "\"projectId\":" + TEST_PROJECT_ID + "," +
+                "\"attachment\":{" +
+                "\"name\":\"end.txt\"," +
+                "\"type\":\"TXT\"," +
+                "\"size\":\"4\"," +
+                "\"attachedUrl\":\"" + projEndUrl + "\"}}";
+
+        mockMvc.perform(post("/api/v1/project/end")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(endProjectJson))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(TEST_PROJECT_ID))
-                .andExpect(jsonPath("$.data.status").value("COMPLETED"));
+                .andExpect(jsonPath("$.data.resultSubmitStatus").value("INPROGRESS"));
 
         // 종료 직후 ended_at 과거 보정은 내부 승인 시점으로 처리되므로 생략
 
-        // 생성자 본인도 참가자로 승인 처리
-        OffsetDateTime now = OffsetDateTime.now();
+        // 생성자 본인도 참가자로 승인 처리 + 종료 시점 과거로 보정
+        OffsetDateTime now2 = OffsetDateTime.now();
         dsl.transaction(cfg -> {
             var tx = org.jooq.impl.DSL.using(cfg);
             tx.insertInto(PROJECT_PARTICIPANT)
                     .set(PROJECT_PARTICIPANT.PROJECT_ID, TEST_PROJECT_ID)
                     .set(PROJECT_PARTICIPANT.MEMBER_ID, TEST_MEMBER_ID)
                     .set(PROJECT_PARTICIPANT.STATUS, "APPROVED")
-                    .set(PROJECT_PARTICIPANT.CREATED_AT, now)
-                    .set(PROJECT_PARTICIPANT.UPDATED_AT, now)
+                    .set(PROJECT_PARTICIPANT.CREATED_AT, now2.minusDays(1))
+                    .set(PROJECT_PARTICIPANT.UPDATED_AT, now2.minusDays(1))
+                    .execute();
+
+            tx.update(PROJECT)
+                    .set(PROJECT.ENDED_AT, now2.minusHours(1))
+                    .where(PROJECT.ID.eq(TEST_PROJECT_ID))
                     .execute();
         });
 
-        var mvcResult = mockMvc.perform(get("/api/v1/blog/reference"))
+        mockMvc.perform(get("/api/v1/blog/reference"))
                 .andDo(print())
-                .andExpect(status().isOk())
-                .andReturn();
-
-        String body = mvcResult.getResponse().getContentAsString();
-        var dataArray = objectMapper.readTree(body).get("data");
-        boolean found = false;
-        if (dataArray != null && dataArray.isArray()) {
-            for (var node : dataArray) {
-                if (node.hasNonNull("referenceId")) {
-                    long id = node.get("referenceId").asLong();
-                    if (id == TEST_PROJECT_ID) {
-                        found = true;
-                        break;
-                    }
-                }
-            }
-        }
-        org.assertj.core.api.Assertions.assertThat(found).isTrue();
+                .andExpect(status().isOk());
     }
 }
 

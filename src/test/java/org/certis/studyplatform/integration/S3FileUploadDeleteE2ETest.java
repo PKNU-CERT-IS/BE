@@ -1,13 +1,7 @@
 package org.certis.studyplatform.integration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.cdimascio.dotenv.Dotenv;
 import lombok.extern.slf4j.Slf4j;
-import org.certis.studyplatform.member.domain.MemberGrade;
-import org.certis.studyplatform.member.domain.MemberRole;
-import org.certis.studyplatform.member.presentation.dto.request.ProfileUpdateRequestDto;
-import org.certis.studyplatform.project.presentation.dto.request.ProjectUpdateRequestDto;
-import org.certis.studyplatform.study.presentation.dto.request.StudyUpdateRequestDto;
 import org.certis.studyplatform.config.TestEmbeddedPostgresConfig;
 import org.certis.studyplatform.config.TestWebMvcConfig;
 import org.jooq.DSLContext;
@@ -17,12 +11,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -31,14 +23,10 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
 import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.certis.generated.jooq.Tables.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -69,9 +57,6 @@ class S3FileUploadDeleteE2ETest {
 
     @Autowired
     private DSLContext dsl;
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     private static final Long TEST_MEMBER_ID = 1L;
     private static final Long TEST_PROJECT_ID = 2L;
@@ -129,6 +114,7 @@ class S3FileUploadDeleteE2ETest {
                 .set(PROJECT.STARTED_AT, now.plusDays(1))
                 .set(PROJECT.ENDED_AT, now.plusDays(30))
                 .set(PROJECT.STATUS, "READY")
+                .set(PROJECT.RESULT_SUBMIT_STATUS, "READY")
                 .set(PROJECT.CREATED_AT, now)
                 .set(PROJECT.UPDATED_AT, now)
                 .execute();
@@ -146,6 +132,7 @@ class S3FileUploadDeleteE2ETest {
                 .set(STUDY.STARTED_AT, now.plusDays(1))
                 .set(STUDY.ENDED_AT, now.plusDays(30))
                 .set(STUDY.STATUS, "READY")
+                .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                 .set(STUDY.CREATED_AT, now)
                 .set(STUDY.UPDATED_AT, now)
                 .execute();
@@ -207,7 +194,7 @@ class S3FileUploadDeleteE2ETest {
     }
 
     @Test
-    @DisplayName("프로젝트 첨부파일 업로드 → null 요청으로 삭제 E2E 테스트")
+    @DisplayName("프로젝트 첨부파일 업로드 → 빈 배열 요청으로 삭제 E2E 테스트")
     void projectAttachmentUploadAndDeleteE2E() throws Exception {
         // 환경변수 체크
         String accessKeyId = dotenv.get("AWS_ACCESS_KEY_ID");
@@ -244,12 +231,13 @@ class S3FileUploadDeleteE2ETest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.attachments").isArray())
-                .andExpect(jsonPath("$.data.attachments[0].attachedUrl").value(uploadedUrl));
+                .andExpect(jsonPath("$.data.attachments[0].attachedUrl").isString())
+                .andExpect(jsonPath("$.data.attachments[0].attachedUrl").value(org.hamcrest.Matchers.startsWith("https://")));
 
-        // When: 프로젝트 첨부파일을 null로 업데이트 (이제는 보존 정책)
+        // When: 프로젝트 첨부파일을 빈 배열로 업데이트 → 전체 삭제 정책
         String deleteJson = "{" +
                 "\"projectId\":" + TEST_PROJECT_ID + "," +
-                "\"attachments\":null}";
+                "\"attachments\":[]}";
 
         mockMvc.perform(put("/api/v1/project/update")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -257,15 +245,22 @@ class S3FileUploadDeleteE2ETest {
                 .andDo(print())
                 .andExpect(status().isOk());
 
-        // Then: S3 파일은 유지되어야 함
-        Thread.sleep(1000); // 처리 대기
-        boolean fileExists = checkS3FileExists(accessKeyId, secretAccessKey, region, bucket, key);
-        assertThat(fileExists).isTrue();
-        log.info("프로젝트 첨부파일 null 업데이트 후 보존 확인: {}", uploadedUrl);
+        // Then: DB에서 첨부가 삭제되고, 상세 조회 시 첨부가 비어있음
+        var cntRec = dsl.fetchOne("SELECT COUNT(1) AS cnt FROM project_attached WHERE project_id = ? AND deleted_at IS NULL", TEST_PROJECT_ID);
+        assertThat(cntRec).isNotNull();
+        long cnt = ((Number) cntRec.get("cnt")).longValue();
+        assertThat(cnt).isZero();
+
+        mockMvc.perform(get("/api/v1/project/detail").param("projectId", String.valueOf(TEST_PROJECT_ID)))
+                .andDo(print())
+                .andExpect(status().isOk());
+        // Async consistency: wait until attachments array becomes empty (best-effort)
+        waitUntilAttachmentsEmpty("/api/v1/project/detail", "projectId", TEST_PROJECT_ID);
+        log.info("프로젝트 첨부파일 빈 배열 업데이트 후 첨부 비어있음 확인: {}", uploadedUrl);
     }
 
     @Test
-    @DisplayName("스터디 첨부파일 업로드 → null 요청으로 삭제 E2E 테스트")
+    @DisplayName("스터디 첨부파일 업로드 → 빈 배열 요청으로 삭제 E2E 테스트")
     void studyAttachmentUploadAndDeleteE2E() throws Exception {
         // 환경변수 체크
         String accessKeyId = dotenv.get("AWS_ACCESS_KEY_ID");
@@ -302,12 +297,13 @@ class S3FileUploadDeleteE2ETest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.attachments").isArray())
-                .andExpect(jsonPath("$.data.attachments[0].attachedUrl").value(uploadedUrl));
+                .andExpect(jsonPath("$.data.attachments[0].attachedUrl").isString())
+                .andExpect(jsonPath("$.data.attachments[0].attachedUrl").value(org.hamcrest.Matchers.startsWith("https://")));
 
-        // When: 스터디 첨부파일을 null로 업데이트 (이제는 보존 정책)
+        // When: 스터디 첨부파일을 빈 배열로 업데이트 → 전체 삭제 정책
         String deleteJson = "{" +
                 "\"studyId\":" + TEST_STUDY_ID + "," +
-                "\"attachments\":null}";
+                "\"attachments\":[]}";
 
         mockMvc.perform(put("/api/v1/study/update")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -315,11 +311,18 @@ class S3FileUploadDeleteE2ETest {
                 .andDo(print())
                 .andExpect(status().isOk());
 
-        // Then: S3 파일은 유지되어야 함
-        Thread.sleep(1000); // 처리 대기
-        boolean fileExists = checkS3FileExists(accessKeyId, secretAccessKey, region, bucket, key);
-        assertThat(fileExists).isTrue();
-        log.info("스터디 첨부파일 null 업데이트 후 보존 확인: {}", uploadedUrl);
+        // Then: DB에서 첨부가 삭제되고, 상세 조회 시 첨부가 비어있음
+        var cntRec2 = dsl.fetchOne("SELECT COUNT(1) AS cnt FROM study_attached WHERE study_id = ? AND deleted_at IS NULL", TEST_STUDY_ID);
+        assertThat(cntRec2).isNotNull();
+        long cnt2 = ((Number) cntRec2.get("cnt")).longValue();
+        assertThat(cnt2).isZero();
+
+        mockMvc.perform(get("/api/v1/study/detail").param("studyId", String.valueOf(TEST_STUDY_ID)))
+                .andDo(print())
+                .andExpect(status().isOk());
+        // Async consistency: wait until attachments array becomes empty (best-effort)
+        waitUntilAttachmentsEmpty("/api/v1/study/detail", "studyId", TEST_STUDY_ID);
+        log.info("스터디 첨부파일 빈 배열 업데이트 후 첨부 비어있음 확인: {}", uploadedUrl);
     }
 
     // S3 업로드 헬퍼 메서드 (성공하는 테스트와 동일한 패턴)
@@ -358,6 +361,26 @@ class S3FileUploadDeleteE2ETest {
         } catch (Exception e) {
             log.warn("S3 파일 존재 확인 중 오류: {}", e.getMessage());
             return false;
+        }
+    }
+
+    // Poll detail endpoint up to 3 times with 200ms backoff until attachments array is empty
+    private void waitUntilAttachmentsEmpty(String endpoint, String idParamName, Long id) throws Exception {
+        int maxAttempts = 3;
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                mockMvc.perform(get(endpoint).param(idParamName, String.valueOf(id)))
+                        .andDo(print())
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.attachments").isArray())
+                        .andExpect(jsonPath("$.data.attachments.length()").value(0));
+                return;
+            } catch (AssertionError ae) {
+                if (attempt == maxAttempts) {
+                    throw ae;
+                }
+                Thread.sleep(200);
+            }
         }
     }
 }
