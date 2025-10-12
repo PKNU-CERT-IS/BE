@@ -6,11 +6,9 @@ import org.certis.studyplatform.board.presentation.dto.request.BoardCreateReques
 import org.certis.studyplatform.board.presentation.dto.request.BoardUpdateRequestDto;
 import org.certis.studyplatform.config.TestEmbeddedPostgresConfig;
 import org.certis.studyplatform.config.TestWebMvcConfig;
-import org.certis.studyplatform.response.ResponseStatus;
 import org.certis.studyplatform.shared.service.S3FileService;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.Assumptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -30,7 +28,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -177,6 +174,86 @@ public class BoardS3E2ETest {
         assertThat(newUrl).startsWith("https://");
         assertThat(newUrl).contains(".s3.");
         assertThat(newUrl).isNotEqualTo(oldS3Url);
+    }
+
+    @Test
+    @Order(6)
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
+    @DisplayName("Board update with presigned URL stores canonical URL (no query)")
+    void updateBoard_withPresignedUrl_storesCanonical() throws Exception {
+        // Given: existing board
+        dsl.execute("INSERT INTO board (id, member_id, title, content, description, category, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())",
+                TEST_BOARD_ID, 1L, "기존", "내용", "설명", "TECH");
+
+        String region = System.getProperty("AWS_DEFAULT_REGION", "ap-northeast-2");
+        String bucket = System.getProperty("AWS_S3_BUCKET", "test-bucket");
+        String key = "board-attachments/" + TEST_BOARD_ID + "/norm-" + System.currentTimeMillis() + ".txt";
+        String canonical = "https://" + bucket + ".s3." + region + ".amazonaws.com/" + key;
+        String presigned = canonical + "?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=dummy&X-Amz-Date=20250101T000000Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=dummy";
+
+        BoardUpdateRequestDto request = BoardUpdateRequestDto.builder()
+                .title("업데이트")
+                .content("내용")
+                .description("설명")
+                .category("TECH")
+                .attachments(List.of(
+                        AttachmentRequestDto.builder()
+                                .name("norm.txt")
+                                .type("text/plain")
+                                .size("10")
+                                .attachedUrl(presigned)
+                                .build()
+                ))
+                .build();
+
+        mockMvc.perform(put("/api/v1/board/edit/{id}", TEST_BOARD_ID)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print());
+
+        var rec = dsl.fetchOne("SELECT attached_url FROM board_attached WHERE board_id = ? AND deleted_at IS NULL ORDER BY id DESC LIMIT 1", TEST_BOARD_ID);
+        assertThat(rec).isNotNull();
+        String stored = rec.get("attached_url", String.class);
+        assertThat(stored).isEqualTo(canonical);
+    }
+
+    @Test
+    @Order(7)
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
+    @DisplayName("Board 업데이트 시 같은 파일(canonical+presigned) 중복 전달해도 1건만 저장")
+    void updateBoard_duplicate_inputs_saved_once() throws Exception {
+        // Given: existing board
+        dsl.execute("INSERT INTO board (id, member_id, title, content, description, category, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())",
+                TEST_BOARD_ID, 1L, "기존", "내용", "설명", "TECH");
+
+        String region = System.getProperty("AWS_DEFAULT_REGION", "ap-northeast-2");
+        String bucket = System.getProperty("AWS_S3_BUCKET", "test-bucket");
+        String key = "board-attachments/" + TEST_BOARD_ID + "/dedupe-" + System.currentTimeMillis() + ".txt";
+        String canonical = "https://" + bucket + ".s3." + region + ".amazonaws.com/" + key;
+        String presigned = canonical + "?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20250101T000000Z&X-Amz-Expires=3600&X-Amz-Signature=dummy";
+
+        BoardUpdateRequestDto request = BoardUpdateRequestDto.builder()
+                .title("업데이트")
+                .content("내용")
+                .description("설명")
+                .category("TECH")
+                .attachments(List.of(
+                        AttachmentRequestDto.builder().name("dup1.txt").type("text/plain").size("10").attachedUrl(canonical).build(),
+                        AttachmentRequestDto.builder().name("dup2.txt").type("text/plain").size("10").attachedUrl(presigned).build()
+                ))
+                .build();
+
+        mockMvc.perform(put("/api/v1/board/edit/{id}", TEST_BOARD_ID)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print());
+
+        var cntRec = dsl.fetchOne("SELECT COUNT(1) AS cnt FROM board_attached WHERE board_id = ? AND deleted_at IS NULL", TEST_BOARD_ID);
+        assertThat(cntRec).isNotNull();
+        long cnt = ((Number) cntRec.get("cnt")).longValue();
+        assertThat(cnt).isEqualTo(1L);
     }
 
     @Test

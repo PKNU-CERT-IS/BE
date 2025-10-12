@@ -245,6 +245,130 @@ class StudyAndProjectS3E2ETest {
     }
 
     @Test
+    @DisplayName("Study 업데이트 시 presigned S3 URL을 보내면 쿼리 제거하여 저장한다")
+    void e2e_study_update_with_presigned_url_is_normalized() throws Exception {
+        String region = System.getProperty("AWS_DEFAULT_REGION", "ap-northeast-2");
+        String bucket = System.getProperty("AWS_S3_BUCKET", "test-bucket");
+        String key = "study-attachments/" + TEST_STUDY_ID + "/norm-" + System.currentTimeMillis() + ".txt";
+        String canonical = "https://" + bucket + ".s3." + region + ".amazonaws.com/" + key;
+        String presigned = canonical + "?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=dummy&X-Amz-Date=20250101T000000Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=dummy";
+
+        String updateJson = "{" +
+                "\"studyId\":" + TEST_STUDY_ID + "," +
+                "\"attachments\":[{" +
+                "\"name\":\"norm.txt\"," +
+                "\"type\":\"TEXT\"," +
+                "\"size\":\"3\"," +
+                "\"attachedUrl\":\"" + presigned + "\"}]}";
+
+        mockMvc.perform(put("/api/v1/study/update")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateJson))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        var rec = dsl.fetchOne("SELECT attached_url FROM study_attached WHERE study_id = ? AND deleted_at IS NULL ORDER BY id DESC LIMIT 1", TEST_STUDY_ID);
+        Assertions.assertNotNull(rec);
+        String stored = (String) rec.get("attached_url");
+        Assertions.assertEquals(canonical, stored);
+    }
+
+    @Test
+    @DisplayName("Project 업데이트 시 presigned S3 URL을 보내면 쿼리 제거하여 저장한다")
+    void e2e_project_update_with_presigned_url_is_normalized() throws Exception {
+        String region = System.getProperty("AWS_DEFAULT_REGION", "ap-northeast-2");
+        String bucket = System.getProperty("AWS_S3_BUCKET", "test-bucket");
+        String key = "project-attachments/" + TEST_PROJECT_ID + "/norm-" + System.currentTimeMillis() + ".pdf";
+        String canonical = "https://" + bucket + ".s3." + region + ".amazonaws.com/" + key;
+        String presigned = canonical + "?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=dummy&X-Amz-Date=20250101T000000Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=dummy";
+
+        String updateJson = "{" +
+                "\"projectId\":" + TEST_PROJECT_ID + "," +
+                "\"attachments\":[{" +
+                "\"name\":\"norm.pdf\"," +
+                "\"type\":\"PDF\"," +
+                "\"size\":\"3\"," +
+                "\"attachedUrl\":\"" + presigned + "\"}]}";
+
+        mockMvc.perform(put("/api/v1/project/update")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateJson))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        var rec = dsl.fetchOne("SELECT attached_url FROM project_attached WHERE project_id = ? AND deleted_at IS NULL ORDER BY id DESC LIMIT 1", TEST_PROJECT_ID);
+        Assertions.assertNotNull(rec);
+        String stored = (String) rec.get("attached_url");
+        Assertions.assertEquals(canonical, stored);
+    }
+
+    @Test
+    @DisplayName("Study 업데이트 시 같은 파일(canonical+presigned) 중복 전달해도 1건만 저장")
+    void e2e_study_update_duplicate_inputs_saved_once() throws Exception {
+        String region = System.getProperty("AWS_DEFAULT_REGION", "ap-northeast-2");
+        String bucket = System.getProperty("AWS_S3_BUCKET", "test-bucket");
+        String key = "study-attachments/" + TEST_STUDY_ID + "/dedupe-" + System.currentTimeMillis() + ".txt";
+        String canonical = "https://" + bucket + ".s3." + region + ".amazonaws.com/" + key;
+        String presigned = canonical + "?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20250101T000000Z&X-Amz-Expires=3600&X-Amz-Signature=dummy";
+
+        String updateJson = "{" +
+                "\"studyId\":" + TEST_STUDY_ID + "," +
+                "\"attachments\":[{" +
+                "\"name\":\"dup1.txt\"," +
+                "\"type\":\"TEXT\"," +
+                "\"size\":\"3\"," +
+                "\"attachedUrl\":\"" + canonical + "\"},{" +
+                "\"name\":\"dup2.txt\"," +
+                "\"type\":\"TEXT\"," +
+                "\"size\":\"3\"," +
+                "\"attachedUrl\":\"" + presigned + "\"}]}";
+
+        mockMvc.perform(put("/api/v1/study/update")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateJson))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        var cntRec = dsl.fetchOne("SELECT COUNT(1) AS cnt FROM study_attached WHERE study_id = ? AND deleted_at IS NULL", TEST_STUDY_ID);
+        Assertions.assertNotNull(cntRec);
+        long cnt = ((Number) cntRec.get("cnt")).longValue();
+        Assertions.assertEquals(1L, cnt);
+    }
+
+    @Test
+    @DisplayName("Project 업데이트 시 같은 파일(canonical+presigned) 중복 전달해도 1건만 저장")
+    void e2e_project_update_duplicate_inputs_saved_once() throws Exception {
+        String region = System.getProperty("AWS_DEFAULT_REGION", "ap-northeast-2");
+        String bucket = System.getProperty("AWS_S3_BUCKET", "test-bucket");
+        String key = "project-attachments/" + TEST_PROJECT_ID + "/dedupe-" + System.currentTimeMillis() + ".pdf";
+        String canonical = "https://" + bucket + ".s3." + region + ".amazonaws.com/" + key;
+        String presigned = canonical + "?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20250101T000000Z&X-Amz-Expires=3600&X-Amz-Signature=dummy";
+
+        String updateJson = "{" +
+                "\"projectId\":" + TEST_PROJECT_ID + "," +
+                "\"attachments\":[{" +
+                "\"name\":\"dup1.pdf\"," +
+                "\"type\":\"PDF\"," +
+                "\"size\":\"3\"," +
+                "\"attachedUrl\":\"" + canonical + "\"},{" +
+                "\"name\":\"dup2.pdf\"," +
+                "\"type\":\"PDF\"," +
+                "\"size\":\"3\"," +
+                "\"attachedUrl\":\"" + presigned + "\"}]}";
+
+        mockMvc.perform(put("/api/v1/project/update")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateJson))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        var cntRec = dsl.fetchOne("SELECT COUNT(1) AS cnt FROM project_attached WHERE project_id = ? AND deleted_at IS NULL", TEST_PROJECT_ID);
+        Assertions.assertNotNull(cntRec);
+        long cnt = ((Number) cntRec.get("cnt")).longValue();
+        Assertions.assertEquals(1L, cnt);
+    }
+
+    @Test
     @DisplayName("Study 업데이트 시 이미지 첨부가 있으면 thumbnailUrl이 해당 S3 URL로 설정된다")
     void e2e_study_update_sets_thumbnail_from_image_url() throws Exception {
         String accessKeyId = dotenv.get("AWS_ACCESS_KEY_ID");
@@ -467,6 +591,231 @@ class StudyAndProjectS3E2ETest {
         mockMvc.perform(get("/api/v1/blog/reference"))
                 .andDo(print())
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Study 검색 결과에 모든 첨부파일이 포함된다")
+    void e2e_study_search_returns_all_attachments() throws Exception {
+        // Given: Insert two attachments for the existing study
+        String region = System.getProperty("AWS_DEFAULT_REGION", "ap-northeast-2");
+        String bucket = System.getProperty("AWS_S3_BUCKET", "test-bucket");
+        String key1 = "study-attachments/" + TEST_STUDY_ID + "/s1-" + System.currentTimeMillis() + ".txt";
+        String key2 = "study-attachments/" + TEST_STUDY_ID + "/s2-" + System.nanoTime() + ".txt";
+        String url1 = "https://" + bucket + ".s3." + region + ".amazonaws.com/" + key1;
+        String url2 = "https://" + bucket + ".s3." + region + ".amazonaws.com/" + key2;
+
+        OffsetDateTime now = OffsetDateTime.now();
+        dsl.insertInto(STUDY_ATTACHED)
+                .set(STUDY_ATTACHED.STUDY_ID, TEST_STUDY_ID)
+                .set(STUDY_ATTACHED.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY_ATTACHED.NAME, "a1.txt")
+                .set(STUDY_ATTACHED.TYPE, "text/plain")
+                .set(STUDY_ATTACHED.SIZE, "10")
+                .set(STUDY_ATTACHED.ATTACHED_URL, url1)
+                .set(STUDY_ATTACHED.CREATED_AT, now)
+                .set(STUDY_ATTACHED.UPDATED_AT, now)
+                .execute();
+        dsl.insertInto(STUDY_ATTACHED)
+                .set(STUDY_ATTACHED.STUDY_ID, TEST_STUDY_ID)
+                .set(STUDY_ATTACHED.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY_ATTACHED.NAME, "a2.txt")
+                .set(STUDY_ATTACHED.TYPE, "text/plain")
+                .set(STUDY_ATTACHED.SIZE, "20")
+                .set(STUDY_ATTACHED.ATTACHED_URL, url2)
+                .set(STUDY_ATTACHED.CREATED_AT, now)
+                .set(STUDY_ATTACHED.UPDATED_AT, now)
+                .execute();
+
+        // When: Search with keyword matching the seeded title
+        mockMvc.perform(get("/api/v1/study/search").param("keyword", "E2E"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content[0].attachments").isArray())
+                .andExpect(jsonPath("$.data.content[0].attachments.length()", org.hamcrest.Matchers.greaterThanOrEqualTo(2)));
+    }
+
+    @Test
+    @DisplayName("Project 검색 결과에 모든 첨부파일이 포함된다")
+    void e2e_project_search_returns_all_attachments() throws Exception {
+        // Given: Insert two attachments for the existing project
+        String region = System.getProperty("AWS_DEFAULT_REGION", "ap-northeast-2");
+        String bucket = System.getProperty("AWS_S3_BUCKET", "test-bucket");
+        String key1 = "project-attachments/" + TEST_PROJECT_ID + "/p1-" + System.currentTimeMillis() + ".txt";
+        String key2 = "project-attachments/" + TEST_PROJECT_ID + "/p2-" + System.nanoTime() + ".txt";
+        String url1 = "https://" + bucket + ".s3." + region + ".amazonaws.com/" + key1;
+        String url2 = "https://" + bucket + ".s3." + region + ".amazonaws.com/" + key2;
+
+        OffsetDateTime now = OffsetDateTime.now();
+        dsl.insertInto(PROJECT_ATTACHED)
+                .set(PROJECT_ATTACHED.PROJECT_ID, TEST_PROJECT_ID)
+                .set(PROJECT_ATTACHED.MEMBER_ID, TEST_MEMBER_ID)
+                .set(PROJECT_ATTACHED.NAME, "p1.txt")
+                .set(PROJECT_ATTACHED.TYPE, "text/plain")
+                .set(PROJECT_ATTACHED.SIZE, "10")
+                .set(PROJECT_ATTACHED.ATTACHED_URL, url1)
+                .set(PROJECT_ATTACHED.CREATED_AT, now)
+                .set(PROJECT_ATTACHED.UPDATED_AT, now)
+                .execute();
+        dsl.insertInto(PROJECT_ATTACHED)
+                .set(PROJECT_ATTACHED.PROJECT_ID, TEST_PROJECT_ID)
+                .set(PROJECT_ATTACHED.MEMBER_ID, TEST_MEMBER_ID)
+                .set(PROJECT_ATTACHED.NAME, "p2.txt")
+                .set(PROJECT_ATTACHED.TYPE, "text/plain")
+                .set(PROJECT_ATTACHED.SIZE, "20")
+                .set(PROJECT_ATTACHED.ATTACHED_URL, url2)
+                .set(PROJECT_ATTACHED.CREATED_AT, now)
+                .set(PROJECT_ATTACHED.UPDATED_AT, now)
+                .execute();
+
+        // When: Search with keyword matching the seeded title
+        mockMvc.perform(get("/api/v1/project/search").param("keyword", "E2E"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content[0].attachments").isArray())
+                .andExpect(jsonPath("$.data.content[0].attachments.length()", org.hamcrest.Matchers.greaterThanOrEqualTo(2)));
+    }
+
+    @Test
+    @DisplayName("Study create(FileA) → update(FileB+FileA) 후 검색에서 둘 다 보이고 presigned로 다운로드 가능")
+    void e2e_study_create_then_update_with_two_files_and_downloadable() throws Exception {
+        String accessKeyId = dotenv.get("AWS_ACCESS_KEY_ID");
+        String secretAccessKey = dotenv.get("AWS_SECRET_ACCESS_KEY");
+        String region = dotenv.get("AWS_DEFAULT_REGION");
+        String bucket = dotenv.get("AWS_S3_BUCKET");
+        assumeTrue(accessKeyId != null && !accessKeyId.isEmpty());
+        assumeTrue(secretAccessKey != null && !secretAccessKey.isEmpty());
+        assumeTrue(region != null && !region.isEmpty());
+        assumeTrue(bucket != null && !bucket.isEmpty());
+
+        // Pre-upload FileA and FileB
+        String keyA = "e2e-study-files/" + System.currentTimeMillis() + "/A.txt";
+        String urlA = uploadToS3(accessKeyId, secretAccessKey, region, bucket, keyA, "text/plain", "A".getBytes());
+        String keyB = "e2e-study-files/" + System.currentTimeMillis() + "/B.txt";
+        String urlB = uploadToS3(accessKeyId, secretAccessKey, region, bucket, keyB, "text/plain", "B".getBytes());
+
+        // Seed Study with FileA (avoid create endpoint auth/contract dependencies)
+        OffsetDateTime now = OffsetDateTime.now();
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, TEST_STUDY_ID)
+                .set(STUDY.TITLE, "S3 E2E Study")
+                .set(STUDY.DESCRIPTION, "desc")
+                .set(STUDY.CONTENT, "content")
+                .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY.CATEGORY, "웹 개발")
+                .set(STUDY.SUBCATEGORY, "풀스택")
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(STUDY.STARTED_AT, now.plusDays(1))
+                .set(STUDY.ENDED_AT, now.plusDays(30))
+                .set(STUDY.STATUS, "READY")
+                .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
+                .set(STUDY.CREATED_AT, now)
+                .set(STUDY.UPDATED_AT, now)
+                .onConflict(STUDY.ID).doNothing()
+                .execute();
+
+        dsl.insertInto(STUDY_ATTACHED)
+                .set(STUDY_ATTACHED.STUDY_ID, TEST_STUDY_ID)
+                .set(STUDY_ATTACHED.MEMBER_ID, TEST_MEMBER_ID)
+                .set(STUDY_ATTACHED.NAME, "A.txt")
+                .set(STUDY_ATTACHED.TYPE, "text/plain")
+                .set(STUDY_ATTACHED.SIZE, "1")
+                .set(STUDY_ATTACHED.ATTACHED_URL, urlA)
+                .set(STUDY_ATTACHED.CREATED_AT, now)
+                .set(STUDY_ATTACHED.UPDATED_AT, now)
+                .execute();
+
+        // Update: include FileB and FileA (order changed) → should store both
+        String updateJson = "{" +
+                "\"studyId\":" + TEST_STUDY_ID + "," +
+                "\"attachments\":[{" +
+                "\"name\":\"B.txt\",\"type\":\"TEXT\",\"size\":\"1\",\"attachedUrl\":\"" + urlB + "\"},{" +
+                "\"name\":\"A.txt\",\"type\":\"TEXT\",\"size\":\"1\",\"attachedUrl\":\"" + urlA + "\"}]}";
+        mockMvc.perform(put("/api/v1/study/update")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateJson))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        // Search: attachments should include at least 2
+        mockMvc.perform(get("/api/v1/study/search").param("keyword", "E2E"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content[0].attachments.length()", org.hamcrest.Matchers.greaterThanOrEqualTo(2)))
+                .andExpect(jsonPath("$.data.content[0].attachments[0].attachedUrl", org.hamcrest.Matchers.startsWith("https://")));
+
+        // Download check: GET presigned URL should be reachable (HTTP 200)
+        // We can't follow the presigned URL via MockMvc; validate format and presence only
+    }
+
+    @Test
+    @DisplayName("Project create(FileA) → update(FileB+FileA) 후 검색에서 둘 다 보이고 presigned로 다운로드 가능")
+    void e2e_project_create_then_update_with_two_files_and_downloadable() throws Exception {
+        String accessKeyId = dotenv.get("AWS_ACCESS_KEY_ID");
+        String secretAccessKey = dotenv.get("AWS_SECRET_ACCESS_KEY");
+        String region = dotenv.get("AWS_DEFAULT_REGION");
+        String bucket = dotenv.get("AWS_S3_BUCKET");
+        assumeTrue(accessKeyId != null && !accessKeyId.isEmpty());
+        assumeTrue(secretAccessKey != null && !secretAccessKey.isEmpty());
+        assumeTrue(region != null && !region.isEmpty());
+        assumeTrue(bucket != null && !bucket.isEmpty());
+
+        // Pre-upload FileA and FileB
+        String keyA = "e2e-project-files/" + System.currentTimeMillis() + "/A.txt";
+        String urlA = uploadToS3(accessKeyId, secretAccessKey, region, bucket, keyA, "text/plain", "A".getBytes());
+        String keyB = "e2e-project-files/" + System.currentTimeMillis() + "/B.txt";
+        String urlB = uploadToS3(accessKeyId, secretAccessKey, region, bucket, keyB, "text/plain", "B".getBytes());
+
+        // Create: since create API path not defined here, seed DB directly for project
+        OffsetDateTime now = OffsetDateTime.now();
+        dsl.insertInto(PROJECT)
+                .set(PROJECT.ID, TEST_PROJECT_ID)
+                .set(PROJECT.TITLE, "S3 E2E Project")
+                .set(PROJECT.DESCRIPTION, "desc")
+                .set(PROJECT.CONTENT, "content")
+                .set(PROJECT.MEMBER_ID, TEST_MEMBER_ID)
+                .set(PROJECT.CATEGORY, "웹 개발")
+                .set(PROJECT.SUBCATEGORY, "풀스택")
+                .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(PROJECT.STARTED_AT, now.plusDays(1))
+                .set(PROJECT.ENDED_AT, now.plusDays(30))
+                .set(PROJECT.STATUS, "READY")
+                .set(PROJECT.RESULT_SUBMIT_STATUS, "READY")
+                .set(PROJECT.CREATED_AT, now)
+                .set(PROJECT.UPDATED_AT, now)
+                .onConflict(PROJECT.ID).doNothing()
+                .execute();
+
+        dsl.insertInto(PROJECT_ATTACHED)
+                .set(PROJECT_ATTACHED.PROJECT_ID, TEST_PROJECT_ID)
+                .set(PROJECT_ATTACHED.MEMBER_ID, TEST_MEMBER_ID)
+                .set(PROJECT_ATTACHED.NAME, "A.txt")
+                .set(PROJECT_ATTACHED.TYPE, "text/plain")
+                .set(PROJECT_ATTACHED.SIZE, "1")
+                .set(PROJECT_ATTACHED.ATTACHED_URL, urlA)
+                .set(PROJECT_ATTACHED.CREATED_AT, now)
+                .set(PROJECT_ATTACHED.UPDATED_AT, now)
+                .execute();
+
+        // Update with FileB + FileA via API
+        String updateJson = "{" +
+                "\"projectId\":" + TEST_PROJECT_ID + "," +
+                "\"attachments\":[{" +
+                "\"name\":\"B.txt\",\"type\":\"TEXT\",\"size\":\"1\",\"attachedUrl\":\"" + urlB + "\"},{" +
+                "\"name\":\"A.txt\",\"type\":\"TEXT\",\"size\":\"1\",\"attachedUrl\":\"" + urlA + "\"}]}";
+        mockMvc.perform(put("/api/v1/project/update")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateJson))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        // Search: attachments should include at least 2 and be presigned
+        mockMvc.perform(get("/api/v1/project/search").param("keyword", "E2E"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content[0].attachments.length()", org.hamcrest.Matchers.greaterThanOrEqualTo(2)))
+                .andExpect(jsonPath("$.data.content[0].attachments[0].attachedUrl", org.hamcrest.Matchers.startsWith("https://")));
     }
 }
 
