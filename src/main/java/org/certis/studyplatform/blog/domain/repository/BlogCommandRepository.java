@@ -1,7 +1,6 @@
 package org.certis.studyplatform.blog.domain.repository;
 
 import org.certis.studyplatform.blog.domain.vo.BlogVo;
-import org.certis.studyplatform.blog.domain.vo.BlogIdVo;
 
 /**
  * Blog Command Repository Interface

@@ -154,7 +154,16 @@ public class StudyCommandRepositoryImpl implements StudyCommandRepository {
         }
 
         // 신규 첨부 저장 (DB에만 추가; URL은 이미 업로드/정규화됨)
+        // 기존에 존재하지 않는 항목만 추가하여 중복 방지
+        java.util.Set<String> existingSetAfterRemoval = new java.util.LinkedHashSet<>();
+        for (var e : studyAttachedJpaRepository.findByStudyId(studyId)) {
+            existingSetAfterRemoval.add(s3FileService.normalizeUrl(e.getAttachedUrl()));
+        }
         for (var file : attachments) {
+            String canon = s3FileService.normalizeUrl(file.url());
+            if (existingSetAfterRemoval.contains(canon)) {
+                continue;
+            }
             StudyAttachedEntity entity = StudyAttachedEntity.builder()
                     .studyId(studyId)
                     .memberId(requesterId)

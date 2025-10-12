@@ -203,32 +203,37 @@ public class ProjectCommandService {
         // 2) Command 객체를 Domain Service로 전달
         ProjectVo updatedVo = projectDomainService.updateProject(command);
 
-        // 정책: attachments == null -> 변경 없음, attachments 제공됨(빈 포함) -> 기존 전체 삭제(S3 포함) 후 신규로 덮어쓰기
+        // 정책 변경: attachments == null → 변경 없음, attachments == [] → DB 비우고 S3는 유지
         if (command.attachedFiles() == null) {
             return updatedVo;
         }
 
-        // 기존 첨부 전체 삭제 (소프트 딜리트) + S3 원본 삭제(차등)
+        // 기존 첨부 전체 삭제 (소프트 딜리트) + S3 원본 삭제(차등/조건)
         var existing = projectAttachedJpaRepository.findByProjectId(updatedVo.id());
         if (!existing.isEmpty()) {
-            java.util.Set<String> keepUrls = new java.util.HashSet<>();
-            if (command.attachedFiles() != null && !command.attachedFiles().isEmpty()) {
+            if (command.attachedFiles().isEmpty()) {
+                // 빈 배열: DB만 비움 (S3 삭제 없음)
+                projectAttachedJpaRepository.deleteAll(existing);
+            } else {
+                // 차등: DB에서 제거할 목록만 제거, S3는 유지
+                java.util.Set<String> desired = new java.util.LinkedHashSet<>();
                 for (var a : (processed != null ? processed : command.attachedFiles())) {
-                    if (a.url() != null) keepUrls.add(s3FileService.normalizeUrl(a.url()));
+                    if (a.url() != null) desired.add(s3FileService.normalizeUrl(a.url()));
+                }
+                java.util.Set<String> existingSet = new java.util.LinkedHashSet<>();
+                for (ProjectAttachedEntity e : existing) existingSet.add(s3FileService.normalizeUrl(e.getAttachedUrl()));
+                java.util.Set<String> toRemove = new java.util.LinkedHashSet<>(existingSet);
+                toRemove.removeAll(desired);
+                if (!toRemove.isEmpty()) {
+                    var removeEntities = existing.stream()
+                            .filter(e -> toRemove.contains(s3FileService.normalizeUrl(e.getAttachedUrl())))
+                            .toList();
+                    projectAttachedJpaRepository.deleteAll(removeEntities);
                 }
             }
-            for (ProjectAttachedEntity entity : existing) {
-                String canonical = s3FileService.normalizeUrl(entity.getAttachedUrl());
-                if (!keepUrls.contains(canonical)) {
-                    try { s3FileService.deleteFile(entity.getAttachedUrl()); } catch (Exception ex) {
-                        log.warn("Failed to delete S3 file on project update clear: {}", entity.getAttachedUrl(), ex);
-                    }
-                }
-            }
-            projectAttachedJpaRepository.deleteAll(existing);
         }
 
-        // 빈 리스트면 여기서 종료 (완전 삭제 상태 유지)
+        // 빈 리스트면 여기서 종료 (DB만 비워진 상태 유지)
         if (command.attachedFiles().isEmpty()) {
             return updatedVo;
         }
@@ -242,7 +247,16 @@ public class ProjectCommandService {
                 byUrl.put(key, file);
             }
         }
+        // 기존에 존재하지 않는 항목만 추가하여 중복 방지
+        java.util.Set<String> existingSetAfterRemoval = new java.util.LinkedHashSet<>();
+        for (ProjectAttachedEntity e : projectAttachedJpaRepository.findByProjectId(updatedVo.id())) {
+            existingSetAfterRemoval.add(s3FileService.normalizeUrl(e.getAttachedUrl()));
+        }
         for (var file : byUrl.values()) {
+            String canon = s3FileService.normalizeUrl(file.url());
+            if (existingSetAfterRemoval.contains(canon)) {
+                continue;
+            }
             ProjectAttachedEntity entity = ProjectAttachedEntity.builder()
                     .projectId(updatedVo.id())
                     .memberId(command.requesterId())
