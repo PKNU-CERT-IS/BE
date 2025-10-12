@@ -7,7 +7,6 @@ import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.member.application.GracePeriodService;
 import org.certis.studyplatform.study.domain.service.StudyDomainService;
 import org.certis.studyplatform.study.domain.service.StudyParticipantDomainService;
-import org.certis.studyplatform.study.domain.repository.StudyQueryRepository;
 import org.certis.studyplatform.study.domain.repository.StudyCommandRepository;
 import org.certis.studyplatform.study.domain.vo.StudyVo;
 import org.certis.studyplatform.study.application.object.command.CreateStudyCommand;
@@ -42,7 +41,6 @@ public class StudyCommandService {
 
     private final StudyDomainService studyDomainService;
     private final StudyParticipantDomainService studyParticipantDomainService;
-    private final StudyQueryRepository studyQueryRepository;
     private final StudyCommandRepository studyCommandRepository;
     private final S3FileService s3FileService;
     private final GracePeriodService gracePeriodService;
@@ -210,6 +208,9 @@ public class StudyCommandService {
                                 ExceptionStatus.STUDY_APPLICATION_ATTACHMENT_UPLOAD_FAILED,
                                 "스터디 첨부파일 업로드에 실패했습니다: " + fileCmd.name() + " - " + e.getMessage(), e);
                     }
+                } else if (finalUrl != null && !finalUrl.isBlank()) {
+                    // Skip upload for S3/external URL; store canonical form (strip query/fragment)
+                    finalUrl = s3FileService.normalizeUrl(finalUrl);
                 }
                 if (finalUrl == null || finalUrl.isEmpty()) {
                     throw new ApplicationException(
@@ -225,7 +226,16 @@ public class StudyCommandService {
 
         // 3) 첨부파일 덮어쓰기 (Infra 정책에 따라 전체 교체)
         if (processed != null) {
-            studyDomainService.updateStudyAttachments(updatedVo.id(), command.requesterId(), processed);
+            // Deduplicate by canonical URL while preserving order
+            java.util.LinkedHashMap<String, CreateStudyAttachedCommand> byUrl = new java.util.LinkedHashMap<>();
+            for (var f : processed) {
+                String key = f.url();
+                if (key != null && !key.isEmpty() && !byUrl.containsKey(key)) {
+                    byUrl.put(key, f);
+                }
+            }
+            java.util.List<CreateStudyAttachedCommand> deduped = new java.util.ArrayList<>(byUrl.values());
+            studyDomainService.updateStudyAttachments(updatedVo.id(), command.requesterId(), deduped);
         }
 
         log.info("Command: Study updated successfully - ID: {}", updatedVo.id());

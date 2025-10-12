@@ -187,6 +187,9 @@ public class ProjectCommandService {
                                 ExceptionStatus.PROJECT_APPLICATION_ATTACHMENT_UPLOAD_FAILED,
                                 "프로젝트 첨부파일 업로드에 실패했습니다: " + fileCmd.name() + " - " + e.getMessage(), e);
                     }
+                } else if (finalUrl != null && !finalUrl.isBlank()) {
+                    // Skip upload for S3/external URL; store canonical form (strip query/fragment)
+                    finalUrl = s3FileService.normalizeUrl(finalUrl);
                 }
                 if (finalUrl == null || finalUrl.isEmpty()) {
                     throw new ApplicationException(
@@ -221,9 +224,16 @@ public class ProjectCommandService {
             return updatedVo;
         }
 
-        // 신규 첨부 저장 (덮어쓰기)
+        // 신규 첨부 저장 (덮어쓰기) with de-duplication by canonical URL
         java.util.List<CreateProjectAttachedCommand> attachmentsToSave = processed != null ? processed : command.attachedFiles();
+        java.util.LinkedHashMap<String, CreateProjectAttachedCommand> byUrl = new java.util.LinkedHashMap<>();
         for (var file : attachmentsToSave) {
+            String key = file.url();
+            if (key != null && !key.isEmpty() && !byUrl.containsKey(key)) {
+                byUrl.put(key, file);
+            }
+        }
+        for (var file : byUrl.values()) {
             ProjectAttachedEntity entity = ProjectAttachedEntity.builder()
                     .projectId(updatedVo.id())
                     .memberId(command.requesterId())
