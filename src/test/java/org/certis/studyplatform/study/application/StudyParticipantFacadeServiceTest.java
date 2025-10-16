@@ -7,16 +7,15 @@ import org.certis.studyplatform.study.application.mapper.StudyApplicationDtoMapp
 import org.certis.studyplatform.study.application.object.query.GetStudyByIdQuery;
 import org.certis.studyplatform.study.application.query.StudyParticipantQueryService;
 import org.certis.studyplatform.study.application.query.StudyQueryService;
+import org.certis.studyplatform.exception.ApplicationException;
 import org.certis.studyplatform.study.domain.StudyParticipantStatus;
-import org.certis.studyplatform.study.domain.vo.StudyParticipantStatusUpdatedVo;
 import org.certis.studyplatform.study.domain.vo.StudyParticipantVo;
+import org.certis.studyplatform.study.domain.vo.StudyParticipantStatusUpdatedVo;
 import org.certis.studyplatform.study.domain.vo.StudyVo;
 import org.certis.studyplatform.study.presentation.dto.request.StudyJoinApproveRequestDto;
-import org.certis.studyplatform.study.presentation.dto.request.StudyJoinRejectRequestDto;
 import org.certis.studyplatform.study.presentation.dto.response.StudyParticipantStatusUpdateResponseDto;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.time.OffsetDateTime;
 import java.util.Optional;
@@ -30,8 +29,8 @@ public class StudyParticipantFacadeServiceTest {
 
     private final StudyParticipantCommandService commandService = mock(StudyParticipantCommandService.class);
     private final StudyParticipantQueryService participantQueryService = mock(StudyParticipantQueryService.class);
-    private final StudyApplicationCommandMapper commandMapper = mock(StudyApplicationCommandMapper.class, Mockito.RETURNS_DEEP_STUBS);
-    private final StudyApplicationDtoMapper dtoMapper = mock(StudyApplicationDtoMapper.class, Mockito.RETURNS_DEEP_STUBS);
+    private final StudyApplicationCommandMapper commandMapper = mock(StudyApplicationCommandMapper.class);
+    private final StudyApplicationDtoMapper dtoMapper = mock(StudyApplicationDtoMapper.class);
     private final MemberQueryService memberQueryService = mock(MemberQueryService.class);
     private final StudyQueryService studyQueryService = mock(StudyQueryService.class);
 
@@ -88,13 +87,23 @@ public class StudyParticipantFacadeServiceTest {
         when(commandService.approveParticipant(any())).thenReturn(new StudyParticipantStatusUpdatedVo(
                 participantId, studyId, memberId, StudyParticipantStatus.PENDING, StudyParticipantStatus.APPROVED, OffsetDateTime.now(), creatorId
         ));
+        when(dtoMapper.toStudyParticipantStatusUpdateResponseDto(any())).thenReturn(
+                StudyParticipantStatusUpdateResponseDto.builder()
+                        .studyId(studyId)
+                        .memberId(memberId)
+                        .previousStatus(StudyParticipantStatus.PENDING)
+                        .currentStatus(StudyParticipantStatus.APPROVED)
+                        .message("프로젝트 참가가 승인되었습니다.")
+                        .updatedAt(OffsetDateTime.now())
+                        .build()
+        );
 
         StudyJoinApproveRequestDto req = new StudyJoinApproveRequestDto();
         req.setStudyId(studyId);
         req.setMemberId(memberId);
 
         StudyParticipantStatusUpdateResponseDto res = facade.approveJoinStudy(req, creatorId);
-        assertThat(res.getCurrentStatus()).isEqualTo("APPROVED");
+        assertThat(res.getCurrentStatus()).isEqualTo(StudyParticipantStatus.APPROVED);
     }
 
     @Test
@@ -111,8 +120,8 @@ public class StudyParticipantFacadeServiceTest {
         req.setMemberId(memberId);
 
         assertThatThrownBy(() -> facade.approveJoinStudy(req, requesterId))
-                .isInstanceOf(org.certis.studyplatform.exception.ApplicationException.class)
-                .hasMessageContaining("승인/거절 권한");
+                .isInstanceOf(ApplicationException.class)
+                .hasMessageContaining("스터디 생성자 또는 관리자만 참가 승인/거절을 할 수 있습니다.");
     }
 }
 

@@ -5,7 +5,6 @@ import org.certis.studyplatform.study.domain.repository.StudyCommandRepository;
 import org.certis.studyplatform.study.domain.repository.StudyQueryRepository;
 import org.certis.studyplatform.study.domain.vo.StudyVo;
 import org.certis.studyplatform.member.domain.service.MemberDomainService;
-import org.certis.studyplatform.shared.service.S3FileService;
 import org.certis.studyplatform.study.domain.repository.StudyParticipantQueryRepository;
 import org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository;
 import org.certis.studyplatform.project.domain.repository.ProjectQueryRepository;
@@ -18,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.OffsetDateTime;
+import org.certis.studyplatform.shared.util.DateTimeUtils;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -48,9 +48,6 @@ class StudyDomainServiceTest {
     
     @Mock
     private MemberDomainService memberDomainService;
-    
-    @Mock
-    private S3FileService s3FileService;
 
     @Mock
     private StudyParticipantQueryRepository studyParticipantQueryRepository;
@@ -69,7 +66,6 @@ class StudyDomainServiceTest {
                 commandRepository,
                 queryRepository,
                 memberDomainService,
-                s3FileService,
                 studyParticipantQueryRepository,
                 projectParticipantQueryRepository,
                 projectQueryRepository
@@ -235,14 +231,17 @@ class StudyDomainServiceTest {
     }
 
     private CreateStudyCommand createStudyCommand(Long creatorId, String title) {
+        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime startMonday = DateTimeUtils.calculateStudyStartWeek(now);
+        OffsetDateTime endSunday = DateTimeUtils.calculateEndWeek(startMonday, 4);
         return CreateStudyCommand.of(
                 title,
                 "테스트 설명",
                 "테스트 내용",
                 "CTF",
                 "포너블",
-                OffsetDateTime.now().minusDays(1),
-                OffsetDateTime.now().plusDays(30),
+                startMonday,
+                endSunday,
                 null, // githubUrl
                 null, // externalUrl
                 null, // thumbnailUrl
@@ -253,7 +252,9 @@ class StudyDomainServiceTest {
     }
 
     private StudyVo createStudyVo(Long studyId, Long creatorId) {
-        OffsetDateTime endDate = OffsetDateTime.now().plusDays(30);
+        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime startMonday = DateTimeUtils.calculateStudyStartWeek(now);
+        OffsetDateTime endDate = DateTimeUtils.calculateEndWeek(startMonday, 4);
         return StudyVo.createForTest(
                 studyId,
                 "테스트 스터디",
@@ -261,7 +262,7 @@ class StudyDomainServiceTest {
                 "테스트 내용",
                 "CTF",
                 "포너블",
-                OffsetDateTime.now().minusDays(1),
+                startMonday,
                 endDate,
                 OffsetDateTime.now(),
                 OffsetDateTime.now(),
