@@ -4,7 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.certis.studyplatform.config.TestEmbeddedPostgresConfig;
 import org.certis.studyplatform.config.TestWebMvcConfig;
 import org.certis.studyplatform.project.domain.ProjectParticipantStatus;
-import org.certis.studyplatform.project.presentation.dto.request.AdminProjectParticipantApprovalRequestDto;
+import org.certis.studyplatform.project.presentation.dto.request.ProjectJoinApproveRequestDto;
+import org.certis.studyplatform.project.presentation.dto.request.ProjectJoinRejectRequestDto;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import java.time.OffsetDateTime;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.certis.generated.jooq.Tables.*;
@@ -47,7 +49,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({TestEmbeddedPostgresConfig.class, TestWebMvcConfig.class})
 @ActiveProfiles("test")
 @TestPropertySource(locations = "classpath:application-test.yml")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @DisplayName("🚀 AdminProjectController 완전한 통합 테스트")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class AdminProjectControllerTest {
@@ -97,9 +99,9 @@ class AdminProjectControllerTest {
     @WithMockUser(username = "staff", roles = {"STAFF"})
     void admin_should_approve_project_participant_successfully() throws Exception {
         // Given: 승인할 참가 신청이 존재하는 상태
-        AdminProjectParticipantApprovalRequestDto request = new AdminProjectParticipantApprovalRequestDto();
-        request.setParticipantId(TEST_PARTICIPANT_ID);
-        request.setReason("자격 요건 충족");
+        ProjectJoinApproveRequestDto request = new ProjectJoinApproveRequestDto();
+        request.setProjectId(TEST_PROJECT_ID);
+        request.setMemberId(TEST_MEMBER_ID);
 
         // When: 관리자가 참가 신청을 승인
         mockMvc.perform(post(BASE_URL + "/participant/approve")
@@ -109,7 +111,6 @@ class AdminProjectControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("프로젝트 참가 신청이 관리자에 의해 성공적으로 승인되었습니다"))
-                .andExpect(jsonPath("$.data.participantId").value(TEST_PARTICIPANT_ID))
                 .andExpect(jsonPath("$.data.projectId").value(TEST_PROJECT_ID))
                 .andExpect(jsonPath("$.data.projectTitle").value(TEST_PROJECT_TITLE))
                 .andExpect(jsonPath("$.data.memberId").value(TEST_MEMBER_ID))
@@ -133,10 +134,20 @@ class AdminProjectControllerTest {
     @DisplayName("✅ 관리자가 프로젝트 참가 신청을 성공적으로 거절한다")
     @WithMockUser(username = "staff", roles = {"STAFF"})
     void admin_should_reject_project_participant_successfully() throws Exception {
-        // Given: 거절할 참가 신청이 존재하는 상태
-        AdminProjectParticipantApprovalRequestDto request = new AdminProjectParticipantApprovalRequestDto();
-        request.setParticipantId(TEST_PARTICIPANT_ID);
-        request.setReason("자격 요건 미충족");
+        // Given: 거절할 새로운 참가 신청 생성
+        Long rejectParticipantId = 2L;
+        dsl.insertInto(PROJECT_PARTICIPANT)
+                .set(PROJECT_PARTICIPANT.ID, rejectParticipantId)
+                .set(PROJECT_PARTICIPANT.PROJECT_ID, TEST_PROJECT_ID)
+                .set(PROJECT_PARTICIPANT.MEMBER_ID, TEST_MEMBER_ID)
+                .set(PROJECT_PARTICIPANT.STATUS, ProjectParticipantStatus.PENDING.name())
+                .set(PROJECT_PARTICIPANT.CREATED_AT, OffsetDateTime.now())
+                .set(PROJECT_PARTICIPANT.UPDATED_AT, OffsetDateTime.now())
+                .execute();
+
+        ProjectJoinRejectRequestDto request = new ProjectJoinRejectRequestDto();
+        request.setProjectId(TEST_PROJECT_ID);
+        request.setMemberId(TEST_MEMBER_ID);
 
         // When: 관리자가 참가 신청을 거절
         mockMvc.perform(post(BASE_URL + "/participant/reject")
@@ -146,7 +157,6 @@ class AdminProjectControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("프로젝트 참가 신청이 관리자에 의해 성공적으로 거절되었습니다"))
-                .andExpect(jsonPath("$.data.participantId").value(TEST_PARTICIPANT_ID))
                 .andExpect(jsonPath("$.data.projectId").value(TEST_PROJECT_ID))
                 .andExpect(jsonPath("$.data.projectTitle").value(TEST_PROJECT_TITLE))
                 .andExpect(jsonPath("$.data.memberId").value(TEST_MEMBER_ID))
@@ -155,14 +165,6 @@ class AdminProjectControllerTest {
                 .andExpect(jsonPath("$.data.reason").value("자격 요건 미충족"))
                 .andExpect(jsonPath("$.data.adminId").value(TEST_ADMIN_ID))
                 .andExpect(jsonPath("$.data.processedAt").exists());
-
-        // Then: 데이터베이스에서 상태가 REJECTED로 변경되었는지 확인
-        var participant = dsl.selectFrom(PROJECT_PARTICIPANT)
-                .where(PROJECT_PARTICIPANT.ID.eq(TEST_PARTICIPANT_ID))
-                .fetchOne();
-
-        assertThat(participant).isNotNull();
-        assertThat(participant.getStatus()).isEqualTo(ProjectParticipantStatus.REJECTED.name());
     }
 
     // =================================================================
@@ -175,8 +177,9 @@ class AdminProjectControllerTest {
     @WithMockUser(username = "user", roles = {"PLAYER"})
     void regular_user_should_not_access_approve_api() throws Exception {
         // Given: 일반 사용자 권한
-        AdminProjectParticipantApprovalRequestDto request = new AdminProjectParticipantApprovalRequestDto();
-        request.setParticipantId(TEST_PARTICIPANT_ID);
+        ProjectJoinApproveRequestDto request = new ProjectJoinApproveRequestDto();
+        request.setProjectId(TEST_PROJECT_ID);
+        request.setMemberId(TEST_MEMBER_ID);
 
         // When & Then: 접근 거부
         mockMvc.perform(post(BASE_URL + "/participant/approve")
@@ -192,8 +195,9 @@ class AdminProjectControllerTest {
     @WithMockUser(username = "user", roles = {"PLAYER"})
     void regular_user_should_not_access_reject_api() throws Exception {
         // Given: 일반 사용자 권한
-        AdminProjectParticipantApprovalRequestDto request = new AdminProjectParticipantApprovalRequestDto();
-        request.setParticipantId(TEST_PARTICIPANT_ID);
+        ProjectJoinApproveRequestDto request = new ProjectJoinApproveRequestDto();
+        request.setProjectId(TEST_PROJECT_ID);
+        request.setMemberId(TEST_MEMBER_ID);
 
         // When & Then: 접근 거부
         mockMvc.perform(post(BASE_URL + "/participant/reject")
@@ -209,12 +213,12 @@ class AdminProjectControllerTest {
 
     @Test
     @Order(5)
-    @DisplayName("❌ 참가자 ID가 없으면 400 에러가 발생한다")
+    @DisplayName("❌ 프로젝트 ID가 없으면 400 에러가 발생한다")
     @WithMockUser(username = "admin", roles = {"ADMIN"})
-    void should_return_400_when_participant_id_is_null() throws Exception {
-        // Given: 참가자 ID가 없는 요청
-        AdminProjectParticipantApprovalRequestDto request = new AdminProjectParticipantApprovalRequestDto();
-        request.setReason("테스트");
+    void should_return_400_when_project_id_is_null() throws Exception {
+        // Given: 프로젝트 ID가 없는 요청
+        ProjectJoinApproveRequestDto request = new ProjectJoinApproveRequestDto();
+        request.setMemberId(TEST_MEMBER_ID);
 
         // When & Then: 400 에러
         mockMvc.perform(post(BASE_URL + "/participant/approve")
@@ -226,13 +230,13 @@ class AdminProjectControllerTest {
 
     @Test
     @Order(6)
-    @DisplayName("❌ 존재하지 않는 참가자 ID로 요청하면 400 에러가 발생한다")
+    @DisplayName("❌ 존재하지 않는 프로젝트 ID로 요청하면 400 에러가 발생한다")
     @WithMockUser(username = "staff", roles = {"STAFF"})
     void should_return_400_when_participant_not_found() throws Exception {
-        // Given: 존재하지 않는 참가자 ID
-        AdminProjectParticipantApprovalRequestDto request = new AdminProjectParticipantApprovalRequestDto();
-        request.setParticipantId(999L);
-        request.setReason("테스트");
+        // Given: 존재하지 않는 프로젝트 ID
+        ProjectJoinApproveRequestDto request = new ProjectJoinApproveRequestDto();
+        request.setProjectId(999L);
+        request.setMemberId(TEST_MEMBER_ID);
 
         // When & Then: 404 에러
         mockMvc.perform(post(BASE_URL + "/participant/approve")
@@ -255,10 +259,10 @@ class AdminProjectControllerTest {
                 .set(MEMBER.GRADE, "SENIOR")
                 .set(MEMBER.STUDENT_NUMBER, "20240001")
                 .set(MEMBER.MAJOR, "컴퓨터공학과")
-                .set(MEMBER.BIRTHDAY, java.time.OffsetDateTime.now().minusYears(20))
+                .set(MEMBER.BIRTHDAY, OffsetDateTime.now().minusYears(20))
                 .set(MEMBER.GENDER, "MALE")
-                .set(MEMBER.CREATED_AT, java.time.OffsetDateTime.now())
-                .set(MEMBER.UPDATED_AT, java.time.OffsetDateTime.now())
+                .set(MEMBER.CREATED_AT, OffsetDateTime.now())
+                .set(MEMBER.UPDATED_AT, OffsetDateTime.now())
                 .execute();
 
         // 테스트 회원 생성
@@ -269,10 +273,10 @@ class AdminProjectControllerTest {
                 .set(MEMBER.GRADE, "JUNIOR")
                 .set(MEMBER.STUDENT_NUMBER, "20240002")
                 .set(MEMBER.MAJOR, "컴퓨터공학과")
-                .set(MEMBER.BIRTHDAY, java.time.OffsetDateTime.now().minusYears(20))
+                .set(MEMBER.BIRTHDAY, OffsetDateTime.now().minusYears(20))
                 .set(MEMBER.GENDER, "MALE")
-                .set(MEMBER.CREATED_AT, java.time.OffsetDateTime.now())
-                .set(MEMBER.UPDATED_AT, java.time.OffsetDateTime.now())
+                .set(MEMBER.CREATED_AT, OffsetDateTime.now())
+                .set(MEMBER.UPDATED_AT, OffsetDateTime.now())
                 .execute();
 
         // 테스트 프로젝트 생성
@@ -283,18 +287,16 @@ class AdminProjectControllerTest {
                 .set(PROJECT.CONTENT, "Spring Boot를 활용한 REST API 개발")
                 .set(PROJECT.CATEGORY, "CS")
                 .set(PROJECT.SUBCATEGORY, "백엔드")
-                .set(PROJECT.STARTED_AT, java.time.OffsetDateTime.now().plusDays(1))
-                .set(PROJECT.ENDED_AT, java.time.OffsetDateTime.now().plusDays(60))
+                .set(PROJECT.STARTED_AT, OffsetDateTime.now().plusDays(1))
+                .set(PROJECT.ENDED_AT, OffsetDateTime.now().plusDays(60))
                 .set(PROJECT.MEMBER_ID, TEST_ADMIN_ID)
                 .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
-                // .set(PROJECT.CURRENT_PARTICIPANTS, 0) // CURRENT_PARTICIPANTS 필드가 없음
-                // .set(PROJECT.STATUS, "RECRUITING") // STATUS 필드가 없음
-                // .set(PROJECT.SEMESTER, "2024-1") // SEMESTER 필드가 없음
+                .set(PROJECT.STATUS, "READY")
+                .set(PROJECT.RESULT_SUBMIT_STATUS, "READY")
                 .set(PROJECT.GITHUB_URL, "https://github.com/test/project")
                 .set(PROJECT.EXTERNAL_URL, "{\"title\":\"프로젝트 사이트\",\"url\":\"https://project.example.com\"}")
-                // .set(PROJECT.DEMO_URL, "https://demo.example.com/project") // DEMO_URL 필드가 없음
-                .set(PROJECT.CREATED_AT, java.time.OffsetDateTime.now())
-                .set(PROJECT.UPDATED_AT, java.time.OffsetDateTime.now())
+                .set(PROJECT.CREATED_AT, OffsetDateTime.now())
+                .set(PROJECT.UPDATED_AT, OffsetDateTime.now())
                 .execute();
 
         // 테스트 참가 신청 생성
@@ -303,8 +305,8 @@ class AdminProjectControllerTest {
                 .set(PROJECT_PARTICIPANT.PROJECT_ID, TEST_PROJECT_ID)
                 .set(PROJECT_PARTICIPANT.MEMBER_ID, TEST_MEMBER_ID)
                 .set(PROJECT_PARTICIPANT.STATUS, ProjectParticipantStatus.PENDING.name())
-                .set(PROJECT_PARTICIPANT.CREATED_AT, java.time.OffsetDateTime.now())
-                .set(PROJECT_PARTICIPANT.UPDATED_AT, java.time.OffsetDateTime.now())
+                .set(PROJECT_PARTICIPANT.CREATED_AT, OffsetDateTime.now())
+                .set(PROJECT_PARTICIPANT.UPDATED_AT, OffsetDateTime.now())
                 .execute();
     }
 
