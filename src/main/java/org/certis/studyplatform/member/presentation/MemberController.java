@@ -4,7 +4,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.member.application.MemberFacadeService;
-import org.certis.studyplatform.member.domain.vo.MemberVo;
 import org.certis.studyplatform.member.domain.vo.MemberUpdatedVo;
 import org.certis.studyplatform.member.presentation.dto.request.MemberSearchRequestDto;
 import org.certis.studyplatform.member.presentation.dto.request.MemberUpdateRequestDto;

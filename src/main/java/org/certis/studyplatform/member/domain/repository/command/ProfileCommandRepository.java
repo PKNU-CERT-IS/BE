@@ -4,8 +4,6 @@ import org.certis.studyplatform.member.domain.vo.MemberIdVo;
 import org.certis.studyplatform.member.domain.vo.ProfileVo;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Optional;
-
 /**
  * Profile Command Repository Interface
  *

@@ -1,6 +1,5 @@
 package org.certis.studyplatform.member.application.mapper;
 
-import org.certis.studyplatform.member.application.object.command.CreateMemberCommand;
 import org.certis.studyplatform.member.application.object.command.CreateProfileCommand;
 import org.certis.studyplatform.member.application.object.command.UpdateMemberCommand;
 import org.certis.studyplatform.member.application.object.query.GetMemberByIdQuery;
@@ -12,9 +11,6 @@ import org.certis.studyplatform.member.presentation.dto.response.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Optional;
 /**
  * Application Layer Mapper for the entire Member context.
  *

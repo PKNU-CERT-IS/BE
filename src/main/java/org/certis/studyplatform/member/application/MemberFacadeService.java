@@ -1,6 +1,5 @@
 package org.certis.studyplatform.member.application;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.member.application.command.*;
@@ -17,8 +16,6 @@ import org.certis.studyplatform.member.presentation.dto.request.*;
 import org.certis.studyplatform.member.presentation.dto.response.AdminMemberUpdateResponseDto;
 import org.certis.studyplatform.member.presentation.dto.response.MemberDataForAdminResponseDto;
 import org.certis.studyplatform.member.presentation.dto.response.MemberSearchResponseDto;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

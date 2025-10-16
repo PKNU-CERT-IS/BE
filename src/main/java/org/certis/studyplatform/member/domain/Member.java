@@ -69,7 +69,6 @@ public class Member {
         this.role = role;
         this.skills = skills;
         this.major = MajorVo.of(major);
-        this.description = description;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }

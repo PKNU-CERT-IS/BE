@@ -1,7 +1,6 @@
 package org.certis.studyplatform.member.presentation.dto.request;
 
 import jakarta.validation.constraints.*;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;

@@ -6,7 +6,6 @@ import org.certis.studyplatform.member.application.command.GetMemberTokenInfoQue
 import org.certis.studyplatform.member.application.object.query.*;
 import org.certis.studyplatform.member.domain.service.MemberDomainService;
 import org.certis.studyplatform.member.domain.vo.*;
-import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

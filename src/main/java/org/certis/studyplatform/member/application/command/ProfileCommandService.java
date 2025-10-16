@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.member.application.object.command.UpdateProfileCommand;
 import org.certis.studyplatform.member.domain.service.ProfileDomainService;
 import org.certis.studyplatform.member.domain.vo.ProfileVo;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -32,7 +31,6 @@ import org.springframework.web.multipart.MultipartFile;
 public class ProfileCommandService {
 
     private final ProfileDomainService profileDomainService;
-    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 프로필 정보 수정 (Command 객체 사용, VO 반환)
