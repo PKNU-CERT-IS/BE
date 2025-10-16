@@ -19,16 +19,17 @@ import org.certis.studyplatform.project.application.object.query.SearchProjectsQ
 import org.certis.studyplatform.project.domain.ProjectStatus;
 import org.certis.studyplatform.project.domain.repository.ProjectCommandRepository;
 import org.certis.studyplatform.project.domain.repository.ProjectQueryRepository;
+import org.certis.studyplatform.project.domain.vo.ProjectEndSubmissionInfoVo;
 import org.certis.studyplatform.project.domain.vo.ProjectVo;
 import org.certis.studyplatform.project.domain.vo.ProjectSummaryVo;
 import org.certis.studyplatform.project.domain.vo.ProjectSearchCriteriaVo;
 import org.certis.studyplatform.project.domain.vo.ProjectSearchResultVo;
-import org.certis.studyplatform.project.domain.vo.ProjectEndSubmissionInfoVo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository;
 import java.util.List;
 import java.util.Optional;
 import java.time.OffsetDateTime;
@@ -52,9 +53,7 @@ public class ProjectDomainService {
     private final ProjectCommandRepository commandRepository;
     private final ProjectQueryRepository queryRepository;
     private final MemberDomainService memberDomainService;
-    private final org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository projectParticipantQueryRepository;
-    private final org.certis.studyplatform.study.domain.repository.StudyParticipantQueryRepository studyParticipantQueryRepository;
-    private final org.certis.studyplatform.study.domain.repository.StudyQueryRepository studyQueryRepository;
+    private final ProjectParticipantQueryRepository projectParticipantQueryRepository;
 
     // ================================================================
     // COMMAND OPERATIONS
@@ -317,19 +316,6 @@ public class ProjectDomainService {
     // ================================================================
 
     /**
-     * 프로젝트 생성자 존재 확인
-     */
-    private void validateCreatorExists(Long creatorId) {
-        try {
-            memberDomainService.getMemberVo(new GetMemberByIdQuery(creatorId));
-            log.debug("Domain: Project creator validation passed - {}", creatorId);
-        } catch (DomainException e) {
-            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_CREATOR,
-                    "프로젝트 생성자를 찾을 수 없습니다: " + creatorId);
-        }
-    }
-
-    /**
      * 프로젝트 수정 권한 검증
      * STAFF 이상의 관리자이거나 프로젝트 생성자 본인만 수정 가능
      */
@@ -399,18 +385,6 @@ public class ProjectDomainService {
                 "프로젝트를 삭제할 권한이 없습니다");
     }
 
-
-    /**
-     * 프로젝트 제목 중복 검증 (생성 시)
-     */
-    private void validateProjectTitleDuplication(String title) {
-        if (queryRepository.existsByTitle(title)) {
-            throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_TITLE,
-                    "이미 존재하는 프로젝트 제목입니다: " + title);
-        }
-        log.debug("Domain: Project title duplication validation passed - {}", title);
-    }
-
     /**
      * 프로젝트 종료
      */
@@ -425,8 +399,8 @@ public class ProjectDomainService {
         // 권한 검증: STAFF 이상이거나 프로젝트 생성자인지 확인
         validateProjectEndPermission(command.requesterId(), existingProject.creatorId());
 
-        // 이미 종료된 프로젝트인지 검증
-        if (existingProject.endDate() != null && existingProject.endDate().isBefore(OffsetDateTime.now())) {
+        // 이미 종료된 프로젝트인지 검증 (시간 비교가 아닌, DB에 저장된 status 기준)
+        if (ProjectStatus.fromStatusString(existingProject.status()).isCompleted()) {
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_RULE_VIOLATION,
                     "이미 종료된 프로젝트입니다");
         }

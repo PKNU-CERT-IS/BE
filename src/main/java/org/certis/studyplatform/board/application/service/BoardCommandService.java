@@ -116,7 +116,23 @@ public class BoardCommandService {
     }
 
     private UpdateBoardCommand preprocessUpdateCommand(UpdateBoardCommand command) {
-        List<AttachmentCommand> processed = preprocessAttachments(command.attachments());
+        List<AttachmentCommand> processed;
+        if (command.attachments() == null) {
+            processed = List.of(); // treat null as [] → DB clear only
+        } else if (command.attachments().isEmpty()) {
+            processed = List.of();
+        } else {
+            processed = preprocessAttachments(command.attachments());
+            // Deduplicate by canonical URL while preserving order
+            java.util.LinkedHashMap<String, AttachmentCommand> byUrl = new java.util.LinkedHashMap<>();
+            for (AttachmentCommand a : processed) {
+                String key = a.attachedUrl();
+                if (key != null && !key.isBlank() && !byUrl.containsKey(key)) {
+                    byUrl.put(key, a);
+                }
+            }
+            processed = new java.util.ArrayList<>(byUrl.values());
+        }
         return UpdateBoardCommand.of(
                 command.boardId(),
                 command.title(),
@@ -158,7 +174,8 @@ public class BoardCommandService {
                 throw new ApplicationException(ExceptionStatus.S3_INFRASTRUCTURE_UPLOAD_FAILED);
             }
         }
-        // If already S3 URL or external URL, keep as is
-        return attachment;
+        // If already S3 URL or external URL, keep as is but normalize (strip query/fragment)
+        String canonical = s3FileService.normalizeUrl(url);
+        return AttachmentCommand.of(attachment.id(), attachment.name(), attachment.type(), attachment.size(), canonical);
     }
 }

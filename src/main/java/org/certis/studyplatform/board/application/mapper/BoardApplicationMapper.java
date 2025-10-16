@@ -66,11 +66,12 @@ public class BoardApplicationMapper {
      * BoardUpdateRequestDto → UpdateBoardCommand 변환
      */
     public UpdateBoardCommand toUpdateBoardCommand(Long boardId, BoardUpdateRequestDto request, Long requesterId) {
-        List<AttachmentCommand> attachments = request.getAttachments() != null
-                ? request.getAttachments().stream()
-                .map(this::toAttachmentCommand)
-                .collect(Collectors.toList())
-                : List.of();
+        List<AttachmentCommand> attachments = null;
+        if (request.getAttachments() != null) {
+            attachments = request.getAttachments().stream()
+                    .map(this::toAttachmentCommand)
+                    .collect(Collectors.toList());
+        }
 
         return UpdateBoardCommand.of(
                 boardId,

@@ -14,9 +14,8 @@ import org.certis.studyplatform.project.domain.repository.ProjectParticipantQuer
 import org.certis.studyplatform.project.domain.repository.ProjectQueryRepository;
 import org.certis.studyplatform.project.domain.vo.*;
 import org.springframework.stereotype.Service;
-import org.certis.studyplatform.study.domain.repository.StudyQueryRepository;
 
-import java.time.OffsetDateTime;
+// import removed: OffsetDateTime no longer used after switching to status-based validation
 
 /**
  * Project Participant Domain Service
@@ -32,7 +31,6 @@ public class ProjectParticipantDomainService {
     private final ProjectParticipantCommandRepository commandRepository;
     private final ProjectParticipantQueryRepository queryRepository;
     private final ProjectQueryRepository projectQueryRepository;
-    private final StudyQueryRepository studyQueryRepository;
     private final MemberQueryRepository memberQueryRepository;
 
     // ================================================================
@@ -251,9 +249,8 @@ public class ProjectParticipantDomainService {
                 .orElseThrow(() -> new DomainException(ExceptionStatus.PROJECT_DOMAIN_NOT_FOUND,
                         "프로젝트를 찾을 수 없습니다."));
 
-        // 프로젝트 종료 여부 확인
-        OffsetDateTime now = OffsetDateTime.now();
-        if (project.endDate() != null && project.endDate().isBefore(now)) {
+        // 프로젝트 종료 여부 확인 (시간 비교가 아닌, DB에 저장된 status 기준)
+        if (org.certis.studyplatform.project.domain.ProjectStatus.fromStatusString(project.status()).isCompleted()) {
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_DEADLINE_PASSED,
                     "종료된 프로젝트에는 참가할 수 없습니다.");
         }

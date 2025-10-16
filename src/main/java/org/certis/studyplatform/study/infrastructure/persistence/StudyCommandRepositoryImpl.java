@@ -119,17 +119,33 @@ public class StudyCommandRepositoryImpl implements StudyCommandRepository {
             return;
         }
 
-        // 기존 첨부 전체 삭제 (소프트 딜리트) + S3 원본 삭제
+        // 기존 첨부 전체 삭제 (소프트 딜리트) + S3 원본 삭제(차등)
         var existing = studyAttachedJpaRepository.findByStudyId(studyId);
         if (!existing.isEmpty()) {
-            for (StudyAttachedEntity entity : existing) {
-                try {
-                    s3FileService.deleteFile(entity.getAttachedUrl());
-                } catch (Exception ex) {
-                    log.warn("S3 delete failed for study attachment url={} (studyId={})", entity.getAttachedUrl(), studyId, ex);
-                }
+            // attachments == null 또는 빈 배열이면 DB만 비움 (S3 삭제 없음)
+            if (attachments == null || attachments.isEmpty()) {
+                studyAttachedJpaRepository.deleteAll(existing);
+                return;
             }
-            studyAttachedJpaRepository.deleteAll(existing);
+
+            // 차등 처리: DB 삭제만, S3는 유지
+            java.util.Set<String> desired = new java.util.LinkedHashSet<>();
+            for (var a : attachments) {
+                if (a.url() != null) desired.add(s3FileService.normalizeUrl(a.url()));
+            }
+            java.util.Set<String> existingSet = new java.util.LinkedHashSet<>();
+            for (StudyAttachedEntity e : existing) existingSet.add(s3FileService.normalizeUrl(e.getAttachedUrl()));
+
+            java.util.Set<String> toRemove = new java.util.LinkedHashSet<>(existingSet);
+            toRemove.removeAll(desired);
+            if (!toRemove.isEmpty()) {
+                var removeEntities = existing.stream()
+                        .filter(e -> toRemove.contains(s3FileService.normalizeUrl(e.getAttachedUrl())))
+                        .toList();
+                studyAttachedJpaRepository.deleteAll(removeEntities);
+            }
+
+            // 기존에 있던 것과 동일한 URL은 남기기 위해 별도 조치 불필요
         }
 
         // 빈 리스트면 여기서 종료 (완전 삭제 상태 유지)
@@ -137,8 +153,17 @@ public class StudyCommandRepositoryImpl implements StudyCommandRepository {
             return;
         }
 
-        // 신규 첨부 저장 (덮어쓰기)
+        // 신규 첨부 저장 (DB에만 추가; URL은 이미 업로드/정규화됨)
+        // 기존에 존재하지 않는 항목만 추가하여 중복 방지
+        java.util.Set<String> existingSetAfterRemoval = new java.util.LinkedHashSet<>();
+        for (var e : studyAttachedJpaRepository.findByStudyId(studyId)) {
+            existingSetAfterRemoval.add(s3FileService.normalizeUrl(e.getAttachedUrl()));
+        }
         for (var file : attachments) {
+            String canon = s3FileService.normalizeUrl(file.url());
+            if (existingSetAfterRemoval.contains(canon)) {
+                continue;
+            }
             StudyAttachedEntity entity = StudyAttachedEntity.builder()
                     .studyId(studyId)
                     .memberId(requesterId)

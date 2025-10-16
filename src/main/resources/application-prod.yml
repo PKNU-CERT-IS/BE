@@ -38,18 +38,20 @@ spring:
     redis:
       host: ${SPRING_DATA_REDIS_HOST}
       port: ${SPRING_DATA_REDIS_PORT:6379}
+      username: ${SPRING_DATA_REDIS_USERNAME:}
+      password: ${SPRING_DATA_REDIS_PASSWORD:}
       ssl:
-        enabled: true
-      timeout: 2000ms # 타임아웃 최적화 (3초 → 2초)
-      connect-timeout: 2000ms # 연결 타임아웃 최적화 (3초 → 2초)
+        enabled: false # Redis Cloud SSL 비활성화
+      timeout: 5000ms # Redis Cloud 권장 타임아웃
+      connect-timeout: 10000ms # Redis Cloud 권장 연결 타임아웃
       database: 0
       lettuce:
         pool:
-          max-active: 50 # 트래픽 스파이크 대응을 위해 연결 수 증가 (30 → 50)
-          max-idle: 15 # 유휴 연결 수 증가 (8 → 15)
-          min-idle: 5 # 최소 유휴 연결 수 증가 (3 → 5)
-          max-wait: 1000ms # 연결 대기 시간 최적화 (2초 → 1초)
-        shutdown-timeout: 2000ms # 종료 타임아웃 설정
+          max-active: 50 # Redis Cloud 권장 연결 수
+          max-idle: 15 # 유휴 연결 수
+          min-idle: 10 # 최소 유휴 연결 수
+          max-wait: 2000ms # 연결 대기 시간
+        shutdown-timeout: 5000ms # 종료 타임아웃
 
 logging:
   level:

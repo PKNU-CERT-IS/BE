@@ -13,7 +13,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 import org.certis.studyplatform.member.domain.MemberGrade;
 import java.time.OffsetDateTime;
@@ -236,6 +235,16 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.groupRecordsByStudyIdToSummaryVos(records))
                 .orElse(List.of());
+        // Ensure all attachments are included (post-fetch expansion)
+        studySummaries = studySummaries.stream().map(vo ->
+                org.certis.studyplatform.study.domain.vo.StudySummaryVo.of(
+                        vo.id(), vo.title(), vo.description(), vo.category(), vo.subcategory(),
+                        vo.startDate(), vo.endDate(), vo.studyCreatorName(), vo.studyCreatorGrade(),
+                        vo.semester(), vo.status(), vo.isParticipantable(),
+                        findAttachmentsByStudyId(vo.id()),
+                        vo.maxParticipants(), vo.currentParticipants(), vo.resultSubmitStatus()
+                )
+        ).collect(java.util.stream.Collectors.toList());
 
         log.debug("jOOQ: Data query executed successfully, found {} study summaries",
                 studySummaries.size());
@@ -314,6 +323,15 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.groupRecordsByStudyIdToSummaryVos(records))
                 .orElse(List.of());
+        studySummaries = studySummaries.stream().map(vo ->
+                org.certis.studyplatform.study.domain.vo.StudySummaryVo.of(
+                        vo.id(), vo.title(), vo.description(), vo.category(), vo.subcategory(),
+                        vo.startDate(), vo.endDate(), vo.studyCreatorName(), vo.studyCreatorGrade(),
+                        vo.semester(), vo.status(), vo.isParticipantable(),
+                        findAttachmentsByStudyId(vo.id()),
+                        vo.maxParticipants(), vo.currentParticipants(), vo.resultSubmitStatus()
+                )
+        ).collect(java.util.stream.Collectors.toList());
 
         return createSearchResult(studySummaries, total, pageable);
     }
@@ -378,6 +396,15 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.groupRecordsByStudyIdToSummaryVos(records))
                 .orElse(List.of());
+        studySummaries = studySummaries.stream().map(vo ->
+                org.certis.studyplatform.study.domain.vo.StudySummaryVo.of(
+                        vo.id(), vo.title(), vo.description(), vo.category(), vo.subcategory(),
+                        vo.startDate(), vo.endDate(), vo.studyCreatorName(), vo.studyCreatorGrade(),
+                        vo.semester(), vo.status(), vo.isParticipantable(),
+                        findAttachmentsByStudyId(vo.id()),
+                        vo.maxParticipants(), vo.currentParticipants(), vo.resultSubmitStatus()
+                )
+        ).collect(java.util.stream.Collectors.toList());
 
         return createSearchResult(studySummaries, total, pageable);
     }
@@ -444,6 +471,15 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.groupRecordsByStudyIdToSummaryVos(records))
                 .orElse(List.of());
+        studySummaries = studySummaries.stream().map(vo ->
+                org.certis.studyplatform.study.domain.vo.StudySummaryVo.of(
+                        vo.id(), vo.title(), vo.description(), vo.category(), vo.subcategory(),
+                        vo.startDate(), vo.endDate(), vo.studyCreatorName(), vo.studyCreatorGrade(),
+                        vo.semester(), vo.status(), vo.isParticipantable(),
+                        findAttachmentsByStudyId(vo.id()),
+                        vo.maxParticipants(), vo.currentParticipants(), vo.resultSubmitStatus()
+                )
+        ).collect(java.util.stream.Collectors.toList());
 
         return createSearchResult(studySummaries, total, pageable);
     }
@@ -583,6 +619,15 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.groupRecordsByStudyIdToSummaryVos(records))
                 .orElse(List.of());
+        studySummaries = studySummaries.stream().map(vo ->
+                org.certis.studyplatform.study.domain.vo.StudySummaryVo.of(
+                        vo.id(), vo.title(), vo.description(), vo.category(), vo.subcategory(),
+                        vo.startDate(), vo.endDate(), vo.studyCreatorName(), vo.studyCreatorGrade(),
+                        vo.semester(), vo.status(), vo.isParticipantable(),
+                        findAttachmentsByStudyId(vo.id()),
+                        vo.maxParticipants(), vo.currentParticipants(), vo.resultSubmitStatus()
+                )
+        ).collect(java.util.stream.Collectors.toList());
 
         return createSearchResult(studySummaries, total, pageable);
     }
@@ -649,6 +694,15 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.groupRecordsByStudyIdToSummaryVos(records))
                 .orElse(List.of());
+        studySummaries = studySummaries.stream().map(vo ->
+                org.certis.studyplatform.study.domain.vo.StudySummaryVo.of(
+                        vo.id(), vo.title(), vo.description(), vo.category(), vo.subcategory(),
+                        vo.startDate(), vo.endDate(), vo.studyCreatorName(), vo.studyCreatorGrade(),
+                        vo.semester(), vo.status(), vo.isParticipantable(),
+                        findAttachmentsByStudyId(vo.id()),
+                        vo.maxParticipants(), vo.currentParticipants(), vo.resultSubmitStatus()
+                )
+        ).collect(java.util.stream.Collectors.toList());
 
         return createSearchResult(studySummaries, total, pageable);
     }
@@ -716,6 +770,15 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.groupRecordsByStudyIdToSummaryVos(records))
                 .orElse(List.of());
+        studies = studies.stream().map(vo ->
+                org.certis.studyplatform.study.domain.vo.StudySummaryVo.of(
+                        vo.id(), vo.title(), vo.description(), vo.category(), vo.subcategory(),
+                        vo.startDate(), vo.endDate(), vo.studyCreatorName(), vo.studyCreatorGrade(),
+                        vo.semester(), vo.status(), vo.isParticipantable(),
+                        findAttachmentsByStudyId(vo.id()),
+                        vo.maxParticipants(), vo.currentParticipants(), vo.resultSubmitStatus()
+                )
+        ).collect(java.util.stream.Collectors.toList());
 
         return new PageImpl<>(studies, pageable, totalCount);
     }
@@ -767,7 +830,16 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .collect(java.util.stream.Collectors.toList())
                 ).filter(records -> !records.isEmpty())
                 .map(mapper::groupRecordsByStudyIdToSummaryVos)
-                .orElse(List.of());
+                .orElse(List.of())
+                .stream()
+                .map(vo -> org.certis.studyplatform.study.domain.vo.StudySummaryVo.of(
+                        vo.id(), vo.title(), vo.description(), vo.category(), vo.subcategory(),
+                        vo.startDate(), vo.endDate(), vo.studyCreatorName(), vo.studyCreatorGrade(),
+                        vo.semester(), vo.status(), vo.isParticipantable(),
+                        findAttachmentsByStudyId(vo.id()),
+                        vo.maxParticipants(), vo.currentParticipants(), vo.resultSubmitStatus()
+                ))
+                .collect(java.util.stream.Collectors.toList());
     }
 
     // ================= Additional Helper Methods for Domain Service =================

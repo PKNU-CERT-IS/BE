@@ -27,13 +27,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import org.certis.studyplatform.shared.service.S3FileService;
 import org.certis.studyplatform.study.application.object.command.CreateStudyAttachedCommand;
 
 import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 import java.time.OffsetDateTime;
 import java.util.List;
-import org.certis.studyplatform.study.application.object.command.CreateStudyAttachedCommand;
 
 /**
  * Study Domain Service
@@ -53,7 +51,6 @@ public class StudyDomainService {
     private final StudyCommandRepository commandRepository;
     private final StudyQueryRepository queryRepository;
     private final MemberDomainService memberDomainService;
-    private final S3FileService s3FileService;
     private final org.certis.studyplatform.study.domain.repository.StudyParticipantQueryRepository studyParticipantQueryRepository;
     private final org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository projectParticipantQueryRepository;
     private final org.certis.studyplatform.project.domain.repository.ProjectQueryRepository projectQueryRepository;
@@ -125,24 +122,6 @@ public class StudyDomainService {
             throw new DomainException(ExceptionStatus.STUDY_DOMAIN_PERMISSION_DENINED,
                     "프로젝트 진행 중에는 스터디 1개까지만 신청할 수 있습니다.");
         }
-    }
-
-    private String mapAttachedTypeToContentType(org.certis.studyplatform.shared.type.AttachedType type) {
-        if (type == null) return "application/octet-stream";
-        return switch (type) {
-            case PDF -> "application/pdf";
-            case HWP -> "application/x-hwp";
-            case HWPX -> "application/vnd.hancom.hwpx";
-            case WORD -> "application/msword";
-            case PPT -> "application/vnd.ms-powerpoint";
-            case PPTX -> "application/vnd.openxmlformats-officedocument.presentationml.presentation";
-            case EXCEL -> "application/vnd.ms-excel";
-            case TEXT -> "text/plain";
-            case CSV -> "text/csv";
-            case PNG -> "image/png";
-            case JPEG, JPG -> "image/jpeg";
-            case ZIP -> "application/zip";
-        };
     }
 
     /**
@@ -359,19 +338,6 @@ public class StudyDomainService {
     // ================================================================
 
     /**
-     * 스터디 생성자 존재 확인
-     */
-    private void validateCreatorExists(Long creatorId) {
-        try {
-            memberDomainService.getMemberVo(new GetMemberByIdQuery(creatorId));
-            log.debug("Domain: Study creator validation passed - {}", creatorId);
-        } catch (DomainException e) {
-            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_INVALID_CREATOR,
-                    "스터디 생성자를 찾을 수 없습니다: " + creatorId);
-        }
-    }
-
-    /**
      * 스터디 수정 권한 검증
      * STAFF 이상의 관리자이거나 스터디 생성자 본인만 수정 가능
      */
@@ -441,18 +407,6 @@ public class StudyDomainService {
                 "스터디를 삭제할 권한이 없습니다");
     }
 
-
-    /**
-     * 스터디 제목 중복 검증 (생성 시)
-     */
-    private void validateStudyTitleDuplication(String title) {
-        if (queryRepository.existsByTitle(title)) {
-            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_INVALID_TITLE,
-                    "이미 존재하는 스터디 제목입니다: " + title);
-        }
-        log.debug("Domain: Study title duplication validation passed - {}", title);
-    }
-
     /**
      * 스터디 종료
      */
@@ -467,8 +421,8 @@ public class StudyDomainService {
         // 권한 검증: STAFF 이상이거나 스터디 생성자인지 확인
         validateStudyEndPermission(command.requesterId(), existingStudy.creatorId());
 
-        // 이미 종료된 스터디인지 검증
-        if (existingStudy.endDate() != null && existingStudy.endDate().isBefore(OffsetDateTime.now())) {
+        // 이미 종료된 스터디인지 검증 (시간 비교가 아닌, DB에 저장된 status 기준)
+        if (StudyStatus.fromStatusString(existingStudy.status()).isCompleted()) {
             throw new DomainException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION,
                     "이미 종료된 스터디입니다");
         }

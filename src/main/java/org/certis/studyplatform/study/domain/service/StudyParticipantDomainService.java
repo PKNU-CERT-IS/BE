@@ -20,7 +20,7 @@ import org.springframework.stereotype.Service;
 import org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository;
 import org.certis.studyplatform.member.domain.repository.query.MemberQueryRepository;
 
-import java.time.OffsetDateTime;
+// import removed: OffsetDateTime no longer used after switching to status-based validation
 
 /**
  * Study Participant Domain Service
@@ -257,9 +257,8 @@ public class StudyParticipantDomainService {
                 .orElseThrow(() -> new DomainException(ExceptionStatus.STUDY_DOMAIN_NOT_FOUND,
                         "스터디를 찾을 수 없습니다."));
 
-        // 스터디 종료 여부 확인
-        OffsetDateTime now = OffsetDateTime.now();
-        if (study.endDate() != null && study.endDate().isBefore(now)) {
+        // 스터디 종료 여부 확인 (시간 비교가 아닌, DB에 저장된 status 기준)
+        if (org.certis.studyplatform.study.domain.StudyStatus.fromStatusString(study.status()).isCompleted()) {
             throw new DomainException(ExceptionStatus.STUDY_DOMAIN_DEADLINE_PASSED);
         }
 
