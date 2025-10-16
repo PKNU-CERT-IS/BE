@@ -6,6 +6,7 @@ import org.certis.studyplatform.auth.presentation.dto.request.LoginRequestDto;
 import org.certis.studyplatform.auth.presentation.dto.request.RegisterRequestDto;
 import org.certis.studyplatform.config.TestEmbeddedPostgresConfig;
 import org.certis.studyplatform.member.domain.MemberRole;
+import org.certis.studyplatform.config.TestRedisMockConfig;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.*;
 import org.springframework.context.annotation.Bean;
@@ -27,6 +28,7 @@ import jakarta.servlet.http.Cookie;
 
 
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.certis.generated.jooq.Tables.*;
@@ -36,7 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import(TestEmbeddedPostgresConfig.class)
+@Import({TestEmbeddedPostgresConfig.class, TestRedisMockConfig.class})
 @ActiveProfiles("test")
 @TestPropertySource(locations = "classpath:application-test.yml")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
@@ -82,6 +84,35 @@ class AuthControllerTest {
     @AfterEach
     void tearDown() {
         cleanupTestData(); // 테스트 후 데이터 정리
+    }
+
+    /**
+     * 만료된 JWT 토큰 생성 (테스트용)
+     */
+    private String createExpiredJwtToken() {
+        try {
+            // 테스트용 비밀키 (application-test.yml과 동일)
+            String secretKey = "test-secret-key-for-testing-only";
+            byte[] keyBytes = Arrays.copyOf(secretKey.getBytes(), 32);
+            javax.crypto.SecretKey key = new javax.crypto.spec.SecretKeySpec(keyBytes, "HmacSHA256");
+
+            // 현재 시간에서 1초 전으로 만료일 설정
+            java.util.Date now = new java.util.Date();
+            java.util.Date expiredDate = new java.util.Date(now.getTime() - 1000); // 1초 전
+
+            java.util.Map<String, Object> claims = new java.util.HashMap<>();
+            claims.put("type", "refresh");
+
+            return io.jsonwebtoken.Jwts.builder()
+                    .subject(TEST_MEMBER_ID.toString())
+                    .claims(claims)
+                    .issuedAt(expiredDate)
+                    .expiration(expiredDate)
+                    .signWith(key)
+                    .compact();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create expired JWT token", e);
+        }
     }
 
     // =================================================================
@@ -363,6 +394,85 @@ class AuthControllerTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    // =================================================================
+    // JWT 예외 처리 테스트
+    // =================================================================
+
+    @Test
+    @Order(11)
+    @DisplayName("JWT 토큰 만료 예외 처리 테스트")
+    void refreshToken_Failure_JwtExpiredException() throws Exception {
+        // Given: 만료된 JWT 토큰 (과거 시간으로 만료)
+        String expiredJwtToken = createExpiredJwtToken();
+
+        mockMvc.perform(post(BASE_URL + "/token/refresh")
+                        .cookie(new Cookie("refreshToken", expiredJwtToken)))
+                .andDo(print())
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.statusCode").value(401))
+                .andExpect(jsonPath("$.message").value("JWT 토큰 파싱 중 오류가 발생했습니다"))
+                .andExpect(jsonPath("$.data.type").value("INFRASTRUCTURE_ERROR"));
+    }
+
+    @Test
+    @Order(12)
+    @DisplayName("JWT 토큰 형식 오류 예외 처리 테스트")
+    void refreshToken_Failure_MalformedJwtException() throws Exception {
+        // Given: 잘못된 형식의 JWT 토큰
+        String malformedJwtToken = "invalid.jwt.token";
+
+        mockMvc.perform(post(BASE_URL + "/token/refresh")
+                        .cookie(new Cookie("refreshToken", malformedJwtToken)))
+                .andDo(print())
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.statusCode").value(401))
+                .andExpect(jsonPath("$.message").value("JWT 토큰 형식이 올바르지 않습니다"))
+                .andExpect(jsonPath("$.data.type").value("INFRASTRUCTURE_ERROR"));
+    }
+
+    @Test
+    @Order(13)
+    @DisplayName("JWT 토큰 서명 오류 예외 처리 테스트")
+    void refreshToken_Failure_SignatureException() throws Exception {
+        // Given: 잘못된 서명의 JWT 토큰
+        String invalidSignatureToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.invalid_signature";
+
+        mockMvc.perform(post(BASE_URL + "/token/refresh")
+                        .cookie(new Cookie("refreshToken", invalidSignatureToken)))
+                .andDo(print())
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.statusCode").value(401))
+                .andExpect(jsonPath("$.message").value("JWT 토큰 파싱 중 오류가 발생했습니다"))
+                .andExpect(jsonPath("$.data.type").value("INFRASTRUCTURE_ERROR"));
+    }
+
+    @Test
+    @Order(14)
+    @DisplayName("JWT 토큰이 없는 경우 예외 처리 테스트")
+    void refreshToken_Failure_MissingJwtToken() throws Exception {
+        // Given: JWT 토큰이 없는 요청
+
+        mockMvc.perform(post(BASE_URL + "/token/refresh"))
+                .andDo(print())
+                .andExpect(status().isUnauthorized()); // JWT 필터에서 처리되는 경우
+    }
+
+    @Test
+    @Order(15)
+    @DisplayName("유효하지 않은 JWT 토큰 예외 처리 테스트")
+    void refreshToken_Failure_InvalidJwtToken() throws Exception {
+        // Given: 유효하지 않은 JWT 토큰
+        String invalidJwtToken = "completely.invalid.token";
+
+        mockMvc.perform(post(BASE_URL + "/token/refresh")
+                        .cookie(new Cookie("refreshToken", invalidJwtToken)))
+                .andDo(print())
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.statusCode").value(401))
+                .andExpect(jsonPath("$.message").value("JWT 토큰 형식이 올바르지 않습니다"))
+                .andExpect(jsonPath("$.data.type").value("INFRASTRUCTURE_ERROR"));
+    }
+
 
     // =================================================================
     // 보안 테스트
@@ -403,6 +513,7 @@ class AuthControllerTest {
 
         // MEMBER 테이블에 기본 회원 정보 생성
         dsl.insertInto(MEMBER)
+                .set(MEMBER.ID, TEST_MEMBER_ID)
                 .set(MEMBER.NAME, TEST_NAME)
                 .set(MEMBER.STUDENT_NUMBER, TEST_ACCOUNT_NUMBER)
                 .set(MEMBER.GRADE, "JUNIOR")
@@ -413,6 +524,9 @@ class AuthControllerTest {
                 .set(MEMBER.CREATED_AT, OffsetDateTime.now())
                 .set(MEMBER.UPDATED_AT, OffsetDateTime.now())
                 .execute();
+
+        // 시퀀스를 현재 최대 ID 뒤로 이동하여 ID 충돌 방지
+        dsl.execute("SELECT setval('member_id_seq', (SELECT COALESCE(MAX(id), 0) FROM member))");
 
         // MEMBER_CONTACT 테이블에 연락처 정보 생성
         dsl.insertInto(MEMBER_CONTACT)
@@ -475,9 +589,35 @@ class AuthControllerTest {
 
     private void cleanupTestData() {
         // 외래키 제약조건 고려하여 순서대로 데이터 삭제
-        dsl.deleteFrom(AUTH).execute(); // 인증 정보 삭제
-        dsl.deleteFrom(MEMBER_CONTACT).execute(); // 연락처 정보 삭제
-        dsl.deleteFrom(MEMBER).execute(); // 회원 정보 삭제
+        // 1) 하위 테이블(자식 테이블)부터 삭제
+        dsl.deleteFrom(BOARD_LIKE).execute();
+        dsl.deleteFrom(BOARD_ATTACHED).execute();
+        dsl.deleteFrom(BOARD_VIEW).execute();
+        dsl.deleteFrom(BLOG_TAG).execute();
+        dsl.deleteFrom(BLOG_VIEW).execute();
+        dsl.deleteFrom(SCHEDULE_STATUS).execute();
+        dsl.deleteFrom(SCHEDULE_ATTACHED).execute();
+        dsl.deleteFrom(PROJECT_MEETING_LINK).execute();
+        dsl.deleteFrom(PROJECT_MEETING).execute();
+        dsl.deleteFrom(PROJECT_ATTACHED).execute();
+        dsl.deleteFrom(PROJECT_PARTICIPANT).execute();
+        dsl.deleteFrom(STUDY_MEETING_LINK).execute();
+        dsl.deleteFrom(STUDY_MEETING).execute();
+        dsl.deleteFrom(STUDY_ATTACHED).execute();
+        dsl.deleteFrom(STUDY_PARTICIPANT).execute();
+
+        // 2) member_id를 직접 참조하는 상위 테이블 삭제
+        dsl.deleteFrom(AUTH).execute();
+        dsl.deleteFrom(MEMBER_CONTACT).execute();
+        dsl.deleteFrom(MEMBER_PENALTY).execute();
+        dsl.deleteFrom(BOARD).execute();
+        dsl.deleteFrom(BLOG).execute();
+        dsl.deleteFrom(SCHEDULE).execute();
+        dsl.deleteFrom(PROJECT).execute();
+        dsl.deleteFrom(STUDY).execute();
+
+        // 3) 마지막으로 MEMBER 삭제
+        dsl.deleteFrom(MEMBER).execute();
         dsl.execute("ALTER SEQUENCE member_id_seq RESTART WITH 1"); // 시퀀스 초기화
     }
 }
