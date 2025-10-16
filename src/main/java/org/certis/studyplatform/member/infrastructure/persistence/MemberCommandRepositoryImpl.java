@@ -329,7 +329,7 @@ public class MemberCommandRepositoryImpl implements MemberCommandRepository {
     @Transactional
     public void updateGracePeriod(MemberIdVo memberIdVo, GracePeriodVo gracePeriodVo) {
         try {
-            log.info("Infrastructure: Updating grace period for memberId={}, until={}",
+            log.info("Infrastructure: Updating grace period for memberId={}, newGracePeriod={}",
                     memberIdVo.value(), gracePeriodVo.value());
 
             MemberEntity member = memberJpaRepository.findById(memberIdVo.value())
@@ -339,7 +339,7 @@ public class MemberCommandRepositoryImpl implements MemberCommandRepository {
             log.info("Infrastructure: Found member - id={}, currentGracePeriod={}", 
                     member.getId(), member.getGracePeriod());
 
-            // MemberEntity에 gracePeriod 업데이트
+            // JPA를 사용하여 gracePeriod 업데이트
             MemberEntity updated = member.toBuilder()
                     .gracePeriod(gracePeriodVo.value())
                     .updatedAt(OffsetDateTime.now())
@@ -349,15 +349,19 @@ public class MemberCommandRepositoryImpl implements MemberCommandRepository {
                     updated.getId(), updated.getGracePeriod());
 
             MemberEntity saved = memberJpaRepository.save(updated);
+            memberJpaRepository.flush(); // 즉시 DB에 반영
             
-            log.info("Infrastructure: Saved member - id={}, savedGracePeriod={}", 
+            log.info("Infrastructure: Saved and flushed member - id={}, savedGracePeriod={}", 
                     saved.getId(), saved.getGracePeriod());
 
             log.info("✅ Infrastructure: Grace period updated successfully for memberId={}", memberIdVo.value());
+        } catch (DomainException e) {
+            throw e;
         } catch (Exception e) {
             log.error("❌ Infrastructure: Failed to update grace period for memberId={}, error: {}", 
                     memberIdVo.value(), e.getMessage(), e);
-            throw e;
+            throw new InfrastructureException(ExceptionStatus.MEMBER_INFRASTRUCTURE_DATABASE_ERROR,
+                    "유예기간 업데이트 실패: " + e.getMessage(), e);
         }
     }
 
