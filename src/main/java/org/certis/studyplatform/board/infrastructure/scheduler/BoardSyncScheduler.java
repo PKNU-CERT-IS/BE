@@ -6,6 +6,8 @@ import org.certis.studyplatform.board.application.sync.BoardSyncService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -21,7 +23,7 @@ public class BoardSyncScheduler {
     @Scheduled(cron = "0 0 0 * * *")
     public void syncBoardStatsDaily() {
         long startTime = System.currentTimeMillis();
-        log.info("🔄 Scheduler: Starting daily board stats sync job at {}", java.time.LocalDateTime.now());
+        log.info("🔄 Scheduler: Starting daily board stats sync job at {}", LocalDateTime.now());
 
         try {
             // 동기화 실행
@@ -49,7 +51,7 @@ public class BoardSyncScheduler {
     @Scheduled(cron = "0 0 1 * * *")
     public void validateDataConsistencyDaily() {
         long startTime = System.currentTimeMillis();
-        log.info("🔍 Scheduler: Starting daily data consistency validation at {}", java.time.LocalDateTime.now());
+        log.info("🔍 Scheduler: Starting daily data consistency validation at {}", LocalDateTime.now());
 
         try {
             boardSyncService.validateDataConsistency();

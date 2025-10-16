@@ -6,7 +6,6 @@ import org.certis.studyplatform.board.application.object.query.GetBoardDetailQue
 import org.certis.studyplatform.board.application.object.query.SearchBoardsQuery;
 import org.certis.studyplatform.board.domain.model.vo.BoardDetailVo;
 import org.certis.studyplatform.board.domain.model.vo.BoardSummaryVo;
-import org.certis.studyplatform.board.domain.model.vo.BoardVo;
 import org.certis.studyplatform.board.domain.service.BoardDomainService;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;

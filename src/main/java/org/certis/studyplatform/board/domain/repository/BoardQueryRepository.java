@@ -1,7 +1,6 @@
 package org.certis.studyplatform.board.domain.repository;
 
 import org.certis.studyplatform.board.domain.model.vo.*;
-import org.certis.studyplatform.member.domain.MemberRole;
 import org.springframework.data.domain.Page;
 
 import java.util.List;
