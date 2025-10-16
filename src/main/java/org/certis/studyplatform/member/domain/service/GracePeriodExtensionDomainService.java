@@ -187,14 +187,52 @@ public class GracePeriodExtensionDomainService {
     private void updateMemberGracePeriod(Long memberId, OffsetDateTime newGracePeriod) {
         try {
             MemberIdVo memberIdVo = MemberIdVo.of(memberId);
-            GracePeriodVo gracePeriodVo = GracePeriodVo.of(newGracePeriod);
             
-            memberCommandRepository.updateGracePeriod(memberIdVo, gracePeriodVo);
+            // 현재 유예기간 조회
+            OffsetDateTime currentGracePeriod = memberQueryRepository.findGracePeriodByMemberId(memberId).orElse(null);
             
-            log.info("Domain: Grace period updated for member - memberId: {}, newGracePeriod: {}", 
-                memberId, newGracePeriod);
+            log.info("Domain: Checking grace period extension - memberId: {}, current: {}, new: {}", 
+                memberId, currentGracePeriod, newGracePeriod);
+            
+            // 유예기간 연장이 필요한 경우에만 업데이트
+            if (shouldExtendGracePeriod(currentGracePeriod, newGracePeriod)) {
+                GracePeriodVo gracePeriodVo = GracePeriodVo.of(newGracePeriod);
+                memberCommandRepository.updateGracePeriod(memberIdVo, gracePeriodVo);
+                
+                log.info("Domain: Grace period updated for member - memberId: {}, oldGracePeriod: {}, newGracePeriod: {}", 
+                    memberId, currentGracePeriod, newGracePeriod);
+            } else {
+                log.info("Domain: Grace period not extended (current is already later or equal) - memberId: {}, current: {}, attempted: {}", 
+                    memberId, currentGracePeriod, newGracePeriod);
+            }
         } catch (Exception e) {
             log.error("Domain: Failed to update grace period for member - memberId: {}, error: {}", 
+                memberId, e.getMessage(), e);
+            // 개별 회원 업데이트 실패가 전체 프로세스를 중단시키지 않도록 처리
+        }
+    }
+
+    /**
+     * 회원의 유예기간 강제 업데이트 (조기 종료 등으로 유예기간을 단축할 때 사용)
+     */
+    private void forceUpdateMemberGracePeriod(Long memberId, OffsetDateTime newGracePeriod) {
+        try {
+            MemberIdVo memberIdVo = MemberIdVo.of(memberId);
+            
+            // 현재 유예기간 조회
+            OffsetDateTime currentGracePeriod = memberQueryRepository.findGracePeriodByMemberId(memberId).orElse(null);
+            
+            log.info("Domain: Force updating grace period - memberId: {}, current: {}, new: {}", 
+                memberId, currentGracePeriod, newGracePeriod);
+            
+            // 연장 체크 없이 바로 업데이트 (조기 종료로 인한 단축도 허용)
+            GracePeriodVo gracePeriodVo = GracePeriodVo.of(newGracePeriod);
+            memberCommandRepository.updateGracePeriod(memberIdVo, gracePeriodVo);
+            
+            log.info("Domain: Grace period force updated for member - memberId: {}, oldGracePeriod: {}, newGracePeriod: {}", 
+                memberId, currentGracePeriod, newGracePeriod);
+        } catch (Exception e) {
+            log.error("Domain: Failed to force update grace period for member - memberId: {}, error: {}", 
                 memberId, e.getMessage(), e);
             // 개별 회원 업데이트 실패가 전체 프로세스를 중단시키지 않도록 처리
         }
@@ -302,7 +340,7 @@ public class GracePeriodExtensionDomainService {
                 
                 // 조기 종료로 인해 유예기간이 단축되는 경우에만 업데이트
                 if (shouldAdjustGracePeriodForEarlyTermination(currentGracePeriod, adjustedGracePeriod)) {
-                    updateMemberGracePeriod(participant.memberId(), adjustedGracePeriod);
+                    forceUpdateMemberGracePeriod(participant.memberId(), adjustedGracePeriod);
                     log.info("Domain: Grace period adjusted for early terminated study - memberId: {}, oldGracePeriod: {}, newGracePeriod: {}", 
                         participant.memberId(), currentGracePeriod, adjustedGracePeriod);
                 } else {
@@ -352,7 +390,7 @@ public class GracePeriodExtensionDomainService {
                 
                 // 조기 종료로 인해 유예기간이 단축되는 경우에만 업데이트
                 if (shouldAdjustGracePeriodForEarlyTermination(currentGracePeriod, adjustedGracePeriod)) {
-                    updateMemberGracePeriod(participant.memberId(), adjustedGracePeriod);
+                    forceUpdateMemberGracePeriod(participant.memberId(), adjustedGracePeriod);
                     log.info("Domain: Grace period adjusted for early terminated project - memberId: {}, oldGracePeriod: {}, newGracePeriod: {}", 
                         participant.memberId(), currentGracePeriod, adjustedGracePeriod);
                 } else {
