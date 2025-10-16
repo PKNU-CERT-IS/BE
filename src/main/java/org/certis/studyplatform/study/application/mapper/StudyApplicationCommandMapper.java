@@ -115,34 +115,12 @@ public class StudyApplicationCommandMapper {
     }
 
     /**
-     * StudyJoinApproveRequestDto → UpdateStudyParticipantStatusCommand 변환 (승인용)
-     */
-    public UpdateStudyParticipantStatusCommand toApproveStudyParticipantCommand(
-            StudyJoinApproveRequestDto requestDto, Long requesterId) {
-        // 이 단계에서는 participantId를 모름. Facade에서 (studyId, memberId)로 참가자 ID를 resolve 후 전달하도록 변경할 수 있으나
-        // 기존 Command는 participantId만 받으므로, 새로운 메서드가 필요하다면 도메인에 (studyId, memberId) 승인/거절 API를 추가해야 함.
-        // 우선 기존 시그니처 유지: Facade에서 resolve하여 participantId를 채워 넣도록 구성 예정.
-        throw new UnsupportedOperationException("Facade에서 participantId resolve 후 호출하세요");
-    }
-
-    /**
-     * StudyJoinRejectRequestDto → UpdateStudyParticipantStatusCommand 변환 (거절용)
-     */
-    public UpdateStudyParticipantStatusCommand toRejectStudyParticipantCommand(
-            StudyJoinRejectRequestDto requestDto, Long requesterId) {
-        throw new UnsupportedOperationException("Facade에서 participantId resolve 후 호출하세요");
-    }
-
-    /**
      * AdminStudyParticipantApprovalRequestDto → UpdateStudyParticipantStatusCommand 변환 (관리자 승인용)
      */
     public UpdateStudyParticipantStatusCommand toApproveStudyParticipantByAdminCommand(
             AdminStudyParticipantApprovalRequestDto requestDto, Long adminId) {
-        return new UpdateStudyParticipantStatusCommand(
-                requestDto.getParticipantId(),
-                org.certis.studyplatform.study.domain.StudyParticipantStatus.APPROVED,
-                adminId
-        );
+        // participantId 기반 매핑은 사용하지 않습니다. (studyId, memberId)로 참가자를 조회하세요.
+        throw new UnsupportedOperationException("Use approveParticipantByAdminWithStudyAndMember in Facade");
     }
 
     /**
@@ -150,11 +128,8 @@ public class StudyApplicationCommandMapper {
      */
     public UpdateStudyParticipantStatusCommand toRejectStudyParticipantByAdminCommand(
             AdminStudyParticipantApprovalRequestDto requestDto, Long adminId) {
-        return new UpdateStudyParticipantStatusCommand(
-                requestDto.getParticipantId(),
-                org.certis.studyplatform.study.domain.StudyParticipantStatus.REJECTED,
-                adminId
-        );
+        // participantId 기반 매핑은 사용하지 않습니다. (studyId, memberId)로 참가자를 조회하세요.
+        throw new UnsupportedOperationException("Use rejectParticipantByAdminWithStudyAndMember in Facade");
     }
 
     /**
