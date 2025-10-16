@@ -129,6 +129,7 @@ class FileUploadDeleteE2ETest {
                 .set(PROJECT.STARTED_AT, now.plusDays(1))
                 .set(PROJECT.ENDED_AT, now.plusDays(30))
                 .set(PROJECT.STATUS, "READY")
+                .set(PROJECT.RESULT_SUBMIT_STATUS, "READY")
                 .set(PROJECT.CREATED_AT, now)
                 .set(PROJECT.UPDATED_AT, now)
                 .execute();
@@ -146,6 +147,7 @@ class FileUploadDeleteE2ETest {
                 .set(STUDY.STARTED_AT, now.plusDays(1))
                 .set(STUDY.ENDED_AT, now.plusDays(30))
                 .set(STUDY.STATUS, "READY")
+                .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                 .set(STUDY.CREATED_AT, now)
                 .set(STUDY.UPDATED_AT, now)
                 .execute();

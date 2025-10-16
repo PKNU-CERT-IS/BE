@@ -12,7 +12,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
@@ -35,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({TestEmbeddedPostgresConfig.class, TestWebMvcConfig.class})
 @ActiveProfiles("test")
 @TestPropertySource(locations = "classpath:application-test.yml")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @DisplayName("🚀 Project End S3 E2E Test (real S3 if creds present)")
 class ProjectEndS3E2ETest {
 
@@ -104,6 +103,7 @@ class ProjectEndS3E2ETest {
                 .set(PROJECT.MEMBER_ID, STAFF_ID)
                 .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
                 .set(PROJECT.STATUS, "APPROVED")
+                .set(PROJECT.RESULT_SUBMIT_STATUS, "READY")
                 .set(PROJECT.CREATED_AT, java.time.OffsetDateTime.now())
                 .set(PROJECT.UPDATED_AT, java.time.OffsetDateTime.now())
                 .execute();
@@ -360,42 +360,6 @@ class ProjectEndS3E2ETest {
         return pdfContent.getBytes(StandardCharsets.UTF_8);
     }
 
-    private byte[] createMockZipData() {
-        // 간단한 ZIP 파일 구조 생성
-        byte[] zipHeader = {0x50, 0x4B, 0x03, 0x04}; // PK\003\004
-        byte[] mockZipData = new byte[256];
-
-        System.arraycopy(zipHeader, 0, mockZipData, 0, zipHeader.length);
-        for (int i = zipHeader.length; i < mockZipData.length - 4; i++) {
-            mockZipData[i] = (byte) (i % 256);
-        }
-
-        // ZIP 중앙 디렉토리 종료 시그니처: PK\005\006
-        mockZipData[mockZipData.length - 4] = 0x50;
-        mockZipData[mockZipData.length - 3] = 0x4B;
-        mockZipData[mockZipData.length - 2] = 0x05;
-        mockZipData[mockZipData.length - 1] = 0x06;
-
-        return mockZipData;
-    }
-
-    private byte[] createMockImageData() {
-        // 가짜 JPEG 헤더와 데이터 생성
-        byte[] jpegHeader = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0};
-        byte[] mockData = new byte[1024];
-        System.arraycopy(jpegHeader, 0, mockData, 0, jpegHeader.length);
-
-        for (int i = jpegHeader.length; i < mockData.length - 2; i++) {
-            mockData[i] = (byte) (i % 256);
-        }
-
-        // JPEG 종료 마커
-        mockData[mockData.length - 2] = (byte) 0xFF;
-        mockData[mockData.length - 1] = (byte) 0xD9;
-
-        return mockData;
-    }
-
     @Test
     @WithMockUser(username = "staff", roles = {"STAFF"})
     @DisplayName("Admin /end endpoint returns only INPROGRESS projects, filters out other statuses")
@@ -468,7 +432,7 @@ class ProjectEndS3E2ETest {
                 .set(PROJECT.STATUS, "APPROVED")
                 .set(PROJECT.CREATED_AT, java.time.OffsetDateTime.now())
                 .set(PROJECT.UPDATED_AT, java.time.OffsetDateTime.now())
-                .setNull(PROJECT.RESULT_SUBMIT_STATUS)
+                .set(PROJECT.RESULT_SUBMIT_STATUS, "READY")
                 .setNull(PROJECT.RESULT_SUBMITTED_AT)
                 .setNull(PROJECT.RESULT_ATTACHED_URL)
                 .execute();
