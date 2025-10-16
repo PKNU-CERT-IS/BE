@@ -1,6 +1,5 @@
 package org.certis.studyplatform.auth.presentation;
 
-import jakarta.security.auth.message.AuthException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -9,25 +8,21 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.auth.application.service.AuthFacadeService;
 import org.certis.studyplatform.auth.presentation.dto.request.RegisterRequestDto;
-import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.response.GlobalResponseHandler;
 import org.certis.studyplatform.response.ResponseStatus;
 import org.certis.studyplatform.shared.security.CurrentUser;
-import org.certis.studyplatform.shared.security.JwtTokenProvider;
 import org.certis.studyplatform.auth.presentation.dto.request.LoginRequestDto;
 import org.certis.studyplatform.auth.presentation.dto.response.RefreshAccessTokenResponseDto;
 import org.certis.studyplatform.auth.presentation.dto.response.LoginResponseDto;
 import org.certis.studyplatform.auth.presentation.dto.response.TokenRequestDto;
+import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.exception.PresentationException;
-import org.certis.studyplatform.member.domain.MemberRole;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 
 @Slf4j
@@ -37,7 +32,6 @@ import java.util.stream.Stream;
 public class AuthController {
 
     private final AuthFacadeService authFacadeService;
-    private final JwtTokenProvider jwtTokenProvider;
 
     /**
      * 로그인
@@ -97,7 +91,7 @@ public class AuthController {
         RefreshAccessTokenResponseDto responseDto = authFacadeService.refreshAccessToken(refreshToken);
 
         log.info("토큰 갱신 성공");
-        return GlobalResponseHandler.success(ResponseStatus.AUTH_TOKEN_REFRESH_SUCCESS,responseDto);
+        return GlobalResponseHandler.success(ResponseStatus.AUTH_TOKEN_REFRESH_SUCCESS, responseDto);
     }
 
 
@@ -111,24 +105,6 @@ public class AuthController {
         return GlobalResponseHandler.success(ResponseStatus.AUTH_REGISTER_REQUEST_SUCCESS);
     }
 
-    // 만료된 토큰으로 부터 role 추출하여 리프레시 로직에 활용
-    // 이유 1. 리프레시 에는 role 정보를 두지 않음
-    // 이유 2. role 정보를 위해 관계형 db에 접근하지 않기 위함
-    private MemberRole extractRoleFromAccessToken(String expiredToken) {
-        return jwtTokenProvider.getRoleFromAccessToken(expiredToken);
-    }
-
-    private String extractUserNameFromAccessToken(String expiredToken) {
-        return jwtTokenProvider.getUsernameFromToken(expiredToken);
-    }
-
-    private String extractNameFromAccessToken(String expiredToken) {
-        return jwtTokenProvider.getNameFromToken(expiredToken);
-    }
-
-    private String extractEmailFromAccessToken(String expiredToken) {
-        return jwtTokenProvider.getEmailFromToken(expiredToken);
-    }
 
     /**
      * RefreshToken 쿠키 설정 (실제 토큰 만료시간 사용)
