@@ -12,7 +12,6 @@ import org.certis.studyplatform.schedule.application.object.query.GetPendingSche
 import org.certis.studyplatform.schedule.domain.model.vo.*;
 import org.certis.studyplatform.schedule.domain.repository.ScheduleCommandRepository;
 import org.certis.studyplatform.schedule.domain.repository.ScheduleQueryRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;

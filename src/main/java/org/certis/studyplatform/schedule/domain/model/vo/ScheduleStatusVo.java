@@ -1,7 +1,5 @@
 package org.certis.studyplatform.schedule.domain.model.vo;
 
-import org.certis.studyplatform.exception.DomainException;
-import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.schedule.domain.model.ScheduleStatus;
 
 public record ScheduleStatusVo(ScheduleStatus status) {
