@@ -159,7 +159,7 @@ public class Project extends TableImpl<ProjectRecord> {
     /**
      * The column <code>public.project.result_submit_status</code>.
      */
-    public final TableField<ProjectRecord, String> RESULT_SUBMIT_STATUS = createField(DSL.name("result_submit_status"), SQLDataType.VARCHAR(20).defaultValue(DSL.field(DSL.raw("'READY'::character varying"), SQLDataType.VARCHAR)), this, "");
+    public final TableField<ProjectRecord, String> RESULT_SUBMIT_STATUS = createField(DSL.name("result_submit_status"), SQLDataType.VARCHAR(20).nullable(false).defaultValue(DSL.field(DSL.raw("'READY'::character varying"), SQLDataType.VARCHAR)), this, "");
 
     /**
      * The column <code>public.project.status</code>.
