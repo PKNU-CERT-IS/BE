@@ -2,8 +2,6 @@ package org.certis.studyplatform.project.infrastructure.persistence.jpa;
 
 import org.certis.studyplatform.project.domain.ProjectParticipantStatus;
 import org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectParticipantEntity;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -11,7 +9,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -93,7 +90,7 @@ public interface ProjectParticipantJpaRepository extends JpaRepository<ProjectPa
      * 소프트 삭제된 참가 신청 중 최신 1건만 복원 (deleted_at IS NOT NULL 중 updated_at DESC LIMIT 1)
      */
     @Modifying(clearAutomatically = true)
-    @Query(value = "UPDATE project_participant p SET deleted_at = NULL, updated_at = :updatedAt " +
+    @Query(value = "UPDATE project_participant p SET deleted_at = NULL, updated_at = :updatedAt, status = 'PENDING' " +
             "WHERE p.id = (SELECT id FROM project_participant WHERE project_id = :projectId AND member_id = :memberId " +
             "AND deleted_at IS NOT NULL ORDER BY updated_at DESC LIMIT 1)", nativeQuery = true)
     int restoreLatestByProjectIdAndMemberId(@Param("projectId") Long projectId,
@@ -103,7 +100,7 @@ public interface ProjectParticipantJpaRepository extends JpaRepository<ProjectPa
      * 소프트 삭제된 참가 신청 복원 (deletedAt = NULL, updatedAt = NOW())
      */
     @Modifying(clearAutomatically = true)
-    @Query("UPDATE ProjectParticipantEntity p SET p.deletedAt = NULL, p.updatedAt = :updatedAt " +
+    @Query("UPDATE ProjectParticipantEntity p SET p.deletedAt = NULL, p.updatedAt = :updatedAt, p.status = org.certis.studyplatform.project.domain.ProjectParticipantStatus.PENDING " +
             "WHERE p.projectId = :projectId AND p.memberId = :memberId AND p.deletedAt IS NOT NULL")
     int restoreByProjectIdAndMemberId(@Param("projectId") Long projectId,
                                       @Param("memberId") Long memberId,
