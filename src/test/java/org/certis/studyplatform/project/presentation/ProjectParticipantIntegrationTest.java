@@ -47,11 +47,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Import({TestEmbeddedPostgresConfig.class, TestWebMvcConfig.class})
 @ActiveProfiles("test")
-@TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:postgresql://localhost:5432/test_certis",
-        "spring.jpa.hibernate.ddl-auto=create-drop"
-})
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@TestPropertySource(locations = "classpath:application-test.yml") 
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @DisplayName("ProjectParticipantController 통합 테스트 - 새로운 비즈니스 규칙")
 class ProjectParticipantIntegrationTest {
 
@@ -71,11 +68,27 @@ class ProjectParticipantIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        // 테스트 데이터 초기화
+        // TRUNCATE를 먼저 실행! (이게 핵심)
+        cleanupTestData();
+        
+        // 그 다음 데이터 생성
         setupTestData();
         
         // 보안 컨텍스트 설정
         setupSecurityContext();
+    }
+
+    private void cleanupTestData() {
+        dsl.execute("TRUNCATE TABLE project_participant RESTART IDENTITY CASCADE");
+        dsl.execute("TRUNCATE TABLE project RESTART IDENTITY CASCADE");
+        dsl.execute("TRUNCATE TABLE member_contact RESTART IDENTITY CASCADE");
+        dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
+    }
+
+    @AfterEach
+    void tearDown() {
+        // 테스트 후에도 정리
+        cleanupTestData();
     }
 
     @Nested
@@ -399,6 +412,20 @@ class ProjectParticipantIntegrationTest {
                 .set(MEMBER.UPDATED_AT, OffsetDateTime.now())
                 .execute();
 
+        // CHAIRMAN 사용자 생성 (회장 권한 승인 테스트용)
+        dsl.insertInto(MEMBER)
+                .set(MEMBER.ID, 4L)
+                .set(MEMBER.NAME, "회장")
+                .set(MEMBER.STUDENT_NUMBER, "20240003")
+                .set(MEMBER.MAJOR, "컴퓨터공학과")
+                .set(MEMBER.GRADE, "SENIOR")
+                .set(MEMBER.ROLE, "CHAIRMAN")
+                .set(MEMBER.BIRTHDAY, OffsetDateTime.now().minusYears(24))
+                .set(MEMBER.GENDER, "MALE")
+                .set(MEMBER.CREATED_AT, OffsetDateTime.now())
+                .set(MEMBER.UPDATED_AT, OffsetDateTime.now())
+                .execute();
+
         dsl.insertInto(MEMBER)
                 .set(MEMBER.ID, 999L)
                 .set(MEMBER.NAME, "다른 사용자")
@@ -420,6 +447,8 @@ class ProjectParticipantIntegrationTest {
                 .set(PROJECT.CONTENT, "테스트 내용")
                 .set(PROJECT.CATEGORY, "CTF")
                 .set(PROJECT.SUBCATEGORY, "포너블")
+                .set(PROJECT.STATUS, "READY")
+                .set(PROJECT.RESULT_SUBMIT_STATUS, "READY")
                 .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 10)
                 .set(PROJECT.STARTED_AT, OffsetDateTime.now().minusDays(1))
                 .set(PROJECT.ENDED_AT, OffsetDateTime.now().plusDays(30))
@@ -479,6 +508,8 @@ class ProjectParticipantIntegrationTest {
                 .set(PROJECT.CONTENT, "테스트 내용")
                 .set(PROJECT.CATEGORY, "CTF")
                 .set(PROJECT.SUBCATEGORY, "포너블")
+                .set(PROJECT.STATUS, "READY")
+                .set(PROJECT.RESULT_SUBMIT_STATUS, "READY")
                 .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 10)
                 .set(PROJECT.STARTED_AT, OffsetDateTime.now().minusDays(1))
                 .set(PROJECT.ENDED_AT, OffsetDateTime.now().plusDays(30))
@@ -545,7 +576,8 @@ class ProjectParticipantIntegrationTest {
                 .fetchOne();
 
         assertThat(participant).isNotNull();
-        assertThat(participant.getStatus()).isEqualTo("REJECTED");
+        // 거절은 소프트 삭제 정책: deleted_at 이 설정되어야 함
+        assertThat(participant.getDeletedAt()).isNotNull();
     }
 
     private void verifyParticipantHardDeletedInDatabase(Long participantId) {
