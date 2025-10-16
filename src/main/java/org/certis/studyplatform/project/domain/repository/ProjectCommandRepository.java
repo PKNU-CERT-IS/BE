@@ -1,6 +1,5 @@
 package org.certis.studyplatform.project.domain.repository;
 
-import org.certis.studyplatform.project.domain.vo.ProjectUpdateVo;
 import org.certis.studyplatform.project.domain.vo.ProjectVo;
 import org.springframework.web.multipart.MultipartFile;
 

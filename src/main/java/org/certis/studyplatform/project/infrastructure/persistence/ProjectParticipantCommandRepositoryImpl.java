@@ -15,8 +15,6 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
-import org.certis.studyplatform.exception.DomainException;
-import org.certis.studyplatform.exception.ExceptionStatus;
 import org.springframework.dao.DataIntegrityViolationException;
 
 /**

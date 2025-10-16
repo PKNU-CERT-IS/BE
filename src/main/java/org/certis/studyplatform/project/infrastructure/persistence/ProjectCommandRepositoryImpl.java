@@ -3,7 +3,6 @@ package org.certis.studyplatform.project.infrastructure.persistence;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.project.domain.repository.ProjectCommandRepository;
-import org.certis.studyplatform.project.domain.vo.ProjectUpdateVo;
 import org.certis.studyplatform.project.domain.vo.ProjectVo;
 import org.certis.studyplatform.project.infrastructure.persistence.jpa.ProjectJpaRepository;
 import org.certis.studyplatform.project.infrastructure.persistence.jpa.ProjectAttachedJpaRepository;

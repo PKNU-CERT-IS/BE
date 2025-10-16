@@ -1,4 +1,4 @@
-package org.certis.studyplatform.project.infrastructure.persistence;
+package org.certis.studyplatform.project.domain.vo;
 
 import lombok.Builder;
 import lombok.Getter;

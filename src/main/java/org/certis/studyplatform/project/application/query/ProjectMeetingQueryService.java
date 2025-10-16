@@ -7,9 +7,6 @@ import org.certis.studyplatform.project.application.object.query.GetProjectMeeti
 import org.certis.studyplatform.project.domain.service.ProjectMeetingDomainService;
 import org.certis.studyplatform.project.domain.vo.ProjectMeetingDetailVo;
 import org.certis.studyplatform.project.domain.vo.ProjectMeetingPageResultVo;
-import org.certis.studyplatform.project.domain.vo.ProjectMeetingSummaryVo;
-import org.certis.studyplatform.project.domain.vo.ProjectMeetingVo;
-import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
