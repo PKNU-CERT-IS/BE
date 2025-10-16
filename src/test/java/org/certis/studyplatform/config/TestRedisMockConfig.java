@@ -1,6 +1,9 @@
 package org.certis.studyplatform.config;
 
 import org.mockito.Mockito;
+import org.redisson.api.RAtomicLong;
+import org.redisson.api.RKeys;
+import org.redisson.api.RSet;
 import org.redisson.api.RedissonClient;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Bean;
@@ -19,19 +22,34 @@ public class TestRedisMockConfig {
     @Bean
     @Primary
     public RedissonClient redissonClientMock() {
-        return Mockito.mock(RedissonClient.class, Mockito.RETURNS_DEEP_STUBS);
+        RedissonClient mockClient = Mockito.mock(RedissonClient.class);
+        
+        // RAtomicLong mock 설정
+        RAtomicLong mockAtomicLong = Mockito.mock(RAtomicLong.class);
+        Mockito.when(mockClient.getAtomicLong(Mockito.anyString())).thenReturn(mockAtomicLong);
+        
+        // RSet mock 설정 (raw type으로 처리하여 타입 안전성 문제 해결)
+        @SuppressWarnings("unchecked")
+        RSet<Object> mockSet = Mockito.mock(RSet.class);
+        Mockito.when(mockClient.getSet(Mockito.anyString())).thenReturn(mockSet);
+        
+        // RKeys mock 설정
+        RKeys mockKeys = Mockito.mock(RKeys.class);
+        Mockito.when(mockClient.getKeys()).thenReturn(mockKeys);
+        
+        return mockClient;
     }
 
     @Bean
     @Primary
     public RedisConnectionFactory redisConnectionFactoryMock() {
-        return Mockito.mock(RedisConnectionFactory.class, Mockito.RETURNS_DEEP_STUBS);
+        return Mockito.mock(RedisConnectionFactory.class);
     }
 
     @Bean
     @Primary
     public ReactiveRedisConnectionFactory reactiveRedisConnectionFactoryMock() {
-        return Mockito.mock(ReactiveRedisConnectionFactory.class, Mockito.RETURNS_DEEP_STUBS);
+        return Mockito.mock(ReactiveRedisConnectionFactory.class);
     }
 }
 

@@ -5,13 +5,14 @@ import com.zaxxer.hikari.HikariDataSource;
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.flywaydb.core.Flyway;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.mockito.Mock;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Primary;
-import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.boot.autoconfigure.flyway.FlywayMigrationInitializer;
+import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 import javax.sql.DataSource;
 import java.io.IOException;
@@ -38,7 +39,7 @@ public class TestEmbeddedPostgresConfig {
                 return SHARED_INSTANCE;
             }
 
-            logger.info("🐘 Starting Test Embedded PostgreSQL (singleton, with retry)...");
+            logger.info("Starting Test Embedded PostgreSQL (singleton, with retry)...");
 
             int maxAttempts = 3;
             Exception lastError = null;
@@ -53,28 +54,18 @@ public class TestEmbeddedPostgresConfig {
                             .start();
 
                     int actualPort = postgres.getPort();
-                    logger.info("✅ Embedded PostgreSQL started on port {} (attempt {}/{})", actualPort, attempt, maxAttempts);
-                    logger.info("📁 Data directory: {}", dataDir);
+                    logger.info("Embedded PostgreSQL started on port {} (attempt {}/{})", actualPort, attempt, maxAttempts);
+                    logger.info("Data directory: {}", dataDir);
 
-                    // 연결 테스트 로그 (드라이버가 실제 연결 확인)
                     String jdbcUrl = postgres.getJdbcUrl("postgres", "postgres");
-                    logger.info("📍 JDBC URL: {}", jdbcUrl);
+                    logger.info("JDBC URL: {}", jdbcUrl);
 
                     SHARED_INSTANCE = postgres;
-
-                    // 종료 훅 한 번만 등록
-                    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                        try {
-                            logger.info("🧹 Shutting down Embedded PostgreSQL");
-                            postgres.close();
-                        } catch (Exception ignore) {
-                        }
-                    }));
 
                     return SHARED_INSTANCE;
                 } catch (Exception e) {
                     lastError = e;
-                    logger.warn("⚠️ Failed to start Embedded PostgreSQL (attempt {}/{}): {}", attempt, maxAttempts, e.getMessage());
+                    logger.warn("Failed to start Embedded PostgreSQL (attempt {}/{}): {}", attempt, maxAttempts, e.getMessage());
                     try {
                         Thread.sleep(1500L * attempt);
                     } catch (InterruptedException ignored) {
@@ -83,9 +74,9 @@ public class TestEmbeddedPostgresConfig {
                 }
             }
 
-            logger.error("❌ Failed to start Embedded PostgreSQL after {} attempts", maxAttempts, lastError);
+            logger.error("Failed to start Embedded PostgreSQL after {} attempts", maxAttempts, lastError);
             if (lastError != null && lastError.getCause() != null) {
-                logger.error("❌ Root cause: {}", lastError.getCause().getMessage());
+                logger.error("Root cause: {}", lastError.getCause().getMessage());
             }
             throw new RuntimeException("Could not start embedded PostgreSQL for testing", lastError);
         }
@@ -93,91 +84,153 @@ public class TestEmbeddedPostgresConfig {
 
     @Bean
     @Primary
-    public DataSource testDataSource(EmbeddedPostgres embeddedPostgres) {
-        logger.info("🔗 Creating Test DataSource from Embedded PostgreSQL");
+    public Flyway flyway(EmbeddedPostgres embeddedPostgres) {
+        String jdbcUrl = embeddedPostgres.getJdbcUrl("postgres", "postgres");
+        logger.info("Configuring Flyway with JDBC URL: {}", jdbcUrl);
+        
+        return Flyway.configure()
+                .dataSource(jdbcUrl, "postgres", "")
+                .locations("classpath:db/migration/common")
+                .baselineOnMigrate(true)
+                .cleanDisabled(false) // 테스트에서는 clean 허용
+                .load();
+    }
+
+    @Bean
+    @Primary
+    public FlywayMigrationInitializer flywayMigrationInitializer(Flyway flyway) {
+        logger.info("Initializing Flyway migrations");
+        try {
+            // Repair first to fix any inconsistencies
+            flyway.repair();
+            logger.info("Flyway repair completed");
+            
+            // Then migrate
+            int migrationsApplied = flyway.migrate().migrationsExecuted;
+            logger.info("Flyway migrations completed successfully. Migrations applied: {}", migrationsApplied);
+        } catch (Exception e) {
+            logger.error("Flyway migration failed, attempting clean and migrate", e);
+            // If migration fails, clean and try again
+            flyway.clean();
+            logger.info("Flyway clean completed");
+            int migrationsApplied = flyway.migrate().migrationsExecuted;
+            logger.info("Flyway migrations after clean completed successfully. Migrations applied: {}", migrationsApplied);
+        }
+        return new FlywayMigrationInitializer(flyway, null);
+    }
+
+    @Bean(destroyMethod = "close")
+    @Primary
+    public DataSource testDataSource(EmbeddedPostgres embeddedPostgres, FlywayMigrationInitializer flywayMigrationInitializer) {
+        logger.info("Creating Test DataSource from Embedded PostgreSQL");
+        
+        // Flyway 마이그레이션이 완료된 후에만 DataSource를 생성하도록 보장
+        logger.info("Flyway migration initializer dependency satisfied");
         
         try {
-            // HikariCP 설정으로 커넥션 풀 관리 및 autoCommit 제어
             HikariConfig config = new HikariConfig();
             config.setJdbcUrl(embeddedPostgres.getJdbcUrl("postgres", "postgres"));
             config.setUsername("postgres");
             config.setPassword("");
             config.setDriverClassName("org.postgresql.Driver");
             
-            // 트랜잭션 제어를 위한 설정
-            config.setAutoCommit(false); // autoCommit 비활성화하여 트랜잭션 롤백 가능하게 함
-            config.setConnectionTimeout(60000); // 연결 타임아웃 증가
-            config.setMaximumPoolSize(2); // 풀 크기 더 감소
-            config.setMinimumIdle(1);
+            config.setAutoCommit(false);
+            config.setConnectionTimeout(60000);
+            config.setMaximumPoolSize(5); // 풀 크기 약간 증가
+            config.setMinimumIdle(2);
             config.setConnectionTestQuery("SELECT 1");
-            config.setValidationTimeout(10000); // 검증 타임아웃 증가
+            config.setValidationTimeout(10000);
             config.setIdleTimeout(300000);
             config.setMaxLifetime(600000);
             config.setPoolName("Test-HikariPool");
             
-            // 연결 안정성을 위한 추가 설정
             config.addDataSourceProperty("socketTimeout", "30000");
             config.addDataSourceProperty("loginTimeout", "30");
             config.addDataSourceProperty("tcpKeepAlive", "true");
             config.addDataSourceProperty("application_name", "test-app");
             
             HikariDataSource dataSource = new HikariDataSource(config);
-            logger.info("✅ Test DataSource configured successfully with autoCommit disabled");
+            logger.info("Test DataSource configured successfully with autoCommit disabled");
             return dataSource;
             
         } catch (Exception e) {
-            logger.error("❌ Failed to configure Test DataSource: {}", e.getMessage(), e);
+            logger.error("Failed to configure Test DataSource: {}", e.getMessage(), e);
             throw new RuntimeException("Could not configure Test DataSource", e);
         }
     }
 
-    @Bean("jooqDataSource")
-    public DataSource jooqDataSource(EmbeddedPostgres embeddedPostgres) {
-        logger.info("🔗 Creating jOOQ Test DataSource from Embedded PostgreSQL");
+    @Bean(value = "jooqDataSource", destroyMethod = "close")
+    public DataSource jooqDataSource(EmbeddedPostgres embeddedPostgres, FlywayMigrationInitializer flywayMigrationInitializer) {
+        logger.info("Creating jOOQ Test DataSource from Embedded PostgreSQL");
         
         try {
-            // jOOQ용 DataSource 설정
             HikariConfig config = new HikariConfig();
             config.setJdbcUrl(embeddedPostgres.getJdbcUrl("postgres", "postgres"));
             config.setUsername("postgres");
             config.setPassword("");
             config.setDriverClassName("org.postgresql.Driver");
             
-            // jOOQ용 설정 (autoCommit=true로 트랜잭션 문제 해결)
-            config.setAutoCommit(true);   // 핵심: 자동 커밋
-            config.setReadOnly(false);    // 읽기/쓰기 모두 허용
+            config.setAutoCommit(true);
+            config.setReadOnly(false);
             config.setConnectionTimeout(60000);
             config.setIdleTimeout(300000);
             config.setMaxLifetime(600000);
-            config.setMaximumPoolSize(2); // 풀 크기 더 감소
-            config.setMinimumIdle(1);
+            config.setMaximumPoolSize(5);
+            config.setMinimumIdle(2);
             config.setPoolName("jOOQ-Test-HikariPool");
             config.setConnectionTestQuery("SELECT 1");
             config.setValidationTimeout(10000);
             
-            // 연결 안정성을 위한 추가 설정
             config.addDataSourceProperty("socketTimeout", "30000");
             config.addDataSourceProperty("loginTimeout", "30");
             config.addDataSourceProperty("tcpKeepAlive", "true");
             config.addDataSourceProperty("application_name", "test-jooq-app");
             
             HikariDataSource dataSource = new HikariDataSource(config);
-            logger.info("✅ jOOQ Test DataSource configured successfully");
+            logger.info("jOOQ Test DataSource configured successfully");
             return dataSource;
             
         } catch (Exception e) {
-            logger.error("❌ Failed to configure jOOQ Test DataSource: {}", e.getMessage(), e);
+            logger.error("Failed to configure jOOQ Test DataSource: {}", e.getMessage(), e);
             throw new RuntimeException("Could not configure jOOQ Test DataSource", e);
         }
     }
+    
+    /**
+     * EntityManagerFactory가 Flyway 이후에 초기화되도록 명시적으로 의존성 설정
+     * 이를 통해 Hibernate의 create-drop이 Flyway 스키마를 덮어쓰지 않도록 함
+     */
+    @Bean
+    @Primary
+    @DependsOn("flywayMigrationInitializer")
+    public LocalContainerEntityManagerFactoryBean entityManagerFactory(
+            @Qualifier("testDataSource") DataSource dataSource,
+            FlywayMigrationInitializer flywayMigrationInitializer) {
+        logger.info("Configuring EntityManagerFactory after Flyway migration");
+        
+        LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
+        em.setDataSource(dataSource);
+        em.setPackagesToScan("org.certis.studyplatform");
+        
+        org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter vendorAdapter = 
+                new org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter();
+        em.setJpaVendorAdapter(vendorAdapter);
+        
+        java.util.Properties properties = new java.util.Properties();
+        properties.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
+        properties.setProperty("hibernate.hbm2ddl.auto", "validate"); // Flyway 스키마 검증만 수행
+        properties.setProperty("hibernate.physical_naming_strategy", 
+                "org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl");
+        properties.setProperty("hibernate.implicit_naming_strategy", 
+                "org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl");
+        properties.setProperty("hibernate.jdbc.lob.non_contextual_creation", "true");
+        properties.setProperty("hibernate.connection.autocommit", "false");
+        
+        em.setJpaProperties(properties);
+        
+        logger.info("EntityManagerFactory configured with Hibernate ddl-auto=validate (Flyway manages schema)");
+        return em;
+    }
 
-    // Redis 관련 Bean을 Mock으로 처리
-    @Mock
-    private RedisConnectionFactory redisConnectionFactory;
-
-    @Mock
-    private RedisTemplate<String, Object> redisTemplate;
-
-    @Mock
-    private ReactiveRedisConnectionFactory reactiveRedisConnectionFactory;
+    // Redis Mock 관련 제거 - TestRedisMockConfig에서 처리됨
 }
