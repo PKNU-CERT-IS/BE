@@ -6,7 +6,6 @@ import org.certis.studyplatform.study.domain.vo.StudyMeetingSummaryVo;
 import org.certis.studyplatform.study.domain.vo.StudyMeetingVo;
 import org.certis.studyplatform.study.infrastructure.persistence.entity.StudyMeetingEntity;
 import org.certis.studyplatform.study.infrastructure.persistence.entity.StudyMeetingLinkEntity;
-import org.certis.studyplatform.shared.util.DataConverter;
 import org.jooq.Record;
 import org.springframework.stereotype.Component;
 
@@ -25,8 +24,6 @@ import static org.certis.generated.jooq.Tables.STUDY_MEETING;
 @Component
 @RequiredArgsConstructor
 public class StudyMeetingInfrastructureMapper {
-
-    private final DataConverter dataConverter;
 
     /**
      * StudyMeetingEntity를 StudyMeetingVo로 변환 (Command Repository용)

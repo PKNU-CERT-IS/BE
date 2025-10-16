@@ -134,20 +134,6 @@ public class StudyMeetingCommandRepositoryImpl implements StudyMeetingCommandRep
     }
 
     /**
-     * List<Long> participantIds를 콤마로 구분된 문자열로 변환 (벌크 업데이트용)
-     */
-    private String convertParticipantIdsToString(java.util.List<Long> participantIds) {
-        if (participantIds == null || participantIds.isEmpty()) {
-            return "";
-        }
-
-        return participantIds.stream()
-                .map(String::valueOf)
-                .collect(java.util.stream.Collectors.joining(","));
-    }
-
-
-    /**
      * List<Long> participantIds를 String[] participants로 변환
      * 임시로 단순 변환 처리 (실제로는 Member ID를 이름으로 변환하는 로직 필요)
      */

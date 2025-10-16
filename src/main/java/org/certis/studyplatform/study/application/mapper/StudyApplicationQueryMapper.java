@@ -1,7 +1,6 @@
 package org.certis.studyplatform.study.application.mapper;
 
 import org.certis.studyplatform.study.presentation.dto.request.StudyAdvancedSearchRequestDto;
-import org.certis.studyplatform.study.presentation.dto.request.StudySearchRequestDto;
 import org.certis.studyplatform.study.application.object.query.GetAllStudiesQuery;
 import org.certis.studyplatform.study.application.object.query.GetStudyByIdQuery;
 import org.certis.studyplatform.study.application.object.query.SearchStudiesQuery;

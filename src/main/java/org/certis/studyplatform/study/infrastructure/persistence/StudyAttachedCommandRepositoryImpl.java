@@ -8,8 +8,6 @@ import org.certis.studyplatform.study.infrastructure.persistence.entity.StudyAtt
 import org.certis.studyplatform.study.infrastructure.persistence.jpa.StudyAttachedJpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-
 /**
  * Study Attached Command Repository Implementation
  *

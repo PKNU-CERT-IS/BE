@@ -316,22 +316,6 @@ public record StudyVo(
         );
     }
 
-    private static OffsetDateTime alignToNextMonday(OffsetDateTime source) {
-        java.time.DayOfWeek dow = source
-                .atZoneSameInstant(java.time.ZoneId.of("Asia/Seoul"))
-                .getDayOfWeek();
-        int shift = java.time.DayOfWeek.MONDAY.getValue() - dow.getValue();
-        if (shift < 0) shift += 7;
-        return source.plusDays(shift).withHour(0).withMinute(0).withSecond(0).withNano(0);
-    }
-
-    private static OffsetDateTime alignToKstSunday(OffsetDateTime source) {
-        java.time.ZoneId kst = java.time.ZoneId.of("Asia/Seoul");
-        var zdt = source.atZoneSameInstant(kst);
-        int shift = java.time.DayOfWeek.SUNDAY.getValue() - zdt.getDayOfWeek().getValue();
-        if (shift < 0) shift += 7;
-        return zdt.plusDays(shift).withHour(23).withMinute(59).withSecond(59).withNano(0).toOffsetDateTime();
-    }
 
     /**
      * Backward-compatible factory method for tests using old constructor signature
@@ -395,13 +379,6 @@ public record StudyVo(
             return year + "-2"; // 2학기
         }
     }
-
-    /**
-     * ended_at을 기준으로 status 계산
-     * ended_at이 현재 시간보다 지났으면 COMPLETED, 아니면 INPROGRESS
-     */
-    private static String calculateStatus(OffsetDateTime endedAt) { return endedAt == null ? StudyStatus.INPROGRESS.name() : (endedAt.isBefore(OffsetDateTime.now()) ? StudyStatus.COMPLETED.name() : StudyStatus.INPROGRESS.name()); }
-
     /**
      * startedAt과 endedAt을 고려하여 상태 계산 (새로 생성할 때 사용)
      */
