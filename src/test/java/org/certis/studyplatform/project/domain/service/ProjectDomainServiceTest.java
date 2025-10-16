@@ -1,13 +1,12 @@
 package org.certis.studyplatform.project.domain.service;
 
 import org.certis.studyplatform.project.application.object.command.CreateProjectCommand;
+import org.certis.studyplatform.project.domain.vo.ExternalUrlVo;
 import org.certis.studyplatform.project.domain.repository.ProjectCommandRepository;
 import org.certis.studyplatform.project.domain.repository.ProjectQueryRepository;
 import org.certis.studyplatform.project.domain.vo.ProjectVo;
 import org.certis.studyplatform.member.domain.service.MemberDomainService;
 import org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository;
-import org.certis.studyplatform.study.domain.repository.StudyParticipantQueryRepository;
-import org.certis.studyplatform.study.domain.repository.StudyQueryRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -16,7 +15,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Collections;
 import java.time.OffsetDateTime;
+import java.time.LocalDate;
+import java.time.DayOfWeek;
+import java.time.temporal.TemporalAdjusters;
+import java.time.ZoneId;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -51,12 +55,6 @@ class ProjectDomainServiceTest {
     @Mock
     private ProjectParticipantQueryRepository projectParticipantQueryRepository;
 
-    @Mock
-    private StudyParticipantQueryRepository studyParticipantQueryRepository;
-
-    @Mock
-    private StudyQueryRepository studyQueryRepository;
-
     private ProjectDomainService domainService;
 
     @BeforeEach
@@ -65,9 +63,7 @@ class ProjectDomainServiceTest {
                 commandRepository,
                 queryRepository,
                 memberDomainService,
-                projectParticipantQueryRepository,
-                studyParticipantQueryRepository,
-                studyQueryRepository
+                projectParticipantQueryRepository
         );
     }
 
@@ -280,8 +276,8 @@ class ProjectDomainServiceTest {
                 "테스트 내용",
                 "CTF",
                 "포너블",
-                OffsetDateTime.now().minusDays(1),
-                OffsetDateTime.now().plusDays(30),
+                getNextMonday(),
+                getNextSunday(),
                 null, // githubUrl
                 null, // externalUrl
                 null, // demoUrl
@@ -299,10 +295,10 @@ class ProjectDomainServiceTest {
                 "테스트 내용",
                 "CTF",
                 "포너블",
-                OffsetDateTime.now().minusDays(1),
-                OffsetDateTime.now().plusDays(30),
+                getNextMonday(),
+                getNextSunday(),
                 "https://github.com/test/project", // githubUrl
-                new org.certis.studyplatform.project.domain.vo.ExternalUrlVo("테스트 사이트", "https://test-project.com"), // externalUrl
+                new ExternalUrlVo("테스트 사이트", "https://test-project.com"), // externalUrl
                 "https://demo.test-project.com", // demoUrl
                 "https://thumbnail.test-project.com", // thumbnailUrl
                 null, // attachedFiles
@@ -312,7 +308,8 @@ class ProjectDomainServiceTest {
     }
 
     private ProjectVo createProjectVo(Long projectId, Long creatorId) {
-        OffsetDateTime endDate = OffsetDateTime.now().plusDays(30);
+        OffsetDateTime startDate = getNextMonday();
+        OffsetDateTime endDate = getNextSunday();
         return new ProjectVo(
                 projectId,
                 "테스트 프로젝트",
@@ -320,7 +317,7 @@ class ProjectDomainServiceTest {
                 "테스트 내용",
                 "CTF",
                 "포너블",
-                OffsetDateTime.now().minusDays(1),
+                startDate,
                 endDate,
                 creatorId,
                 "생성자",
@@ -334,13 +331,14 @@ class ProjectDomainServiceTest {
                 10,
                 0,
                 true, // isParticipantable
-                java.util.Collections.emptyList(), // attached
-                java.util.Collections.emptyList() // meetingSummaryVos
+                Collections.emptyList(), // attached
+                Collections.emptyList() // meetingSummaryVos
         );
     }
 
     private ProjectVo createProjectVoWithUrls(Long projectId, Long creatorId) {
-        OffsetDateTime endDate = OffsetDateTime.now().plusDays(30);
+        OffsetDateTime startDate = getNextMonday();
+        OffsetDateTime endDate = getNextSunday();
         return new ProjectVo(
                 projectId,
                 "테스트 프로젝트",
@@ -348,7 +346,7 @@ class ProjectDomainServiceTest {
                 "테스트 내용",
                 "CTF",
                 "포너블",
-                OffsetDateTime.now().minusDays(1),
+                startDate,
                 endDate,
                 creatorId,
                 "생성자",
@@ -356,14 +354,14 @@ class ProjectDomainServiceTest {
                 calculateSemester(endDate), // semester
                 calculateStatus(endDate), // status
                 "https://github.com/test/project", // githubUrl
-                new org.certis.studyplatform.project.domain.vo.ExternalUrlVo("테스트 사이트", "https://test-project.com"), // externalUrl
+                new ExternalUrlVo("테스트 사이트", "https://test-project.com"), // externalUrl
                 "https://demo.test-project.com", // demoUrl
                 "https://thumbnail.test-project.com", // thumbnailUrl
                 10,
                 0,
                 true, // isParticipantable
-                java.util.Collections.emptyList(), // attached
-                java.util.Collections.emptyList() // meetingSummaryVos
+                Collections.emptyList(), // attached
+                Collections.emptyList() // meetingSummaryVos
         );
     }
 
@@ -372,7 +370,7 @@ class ProjectDomainServiceTest {
             return null;
         }
         
-        java.time.LocalDate endDate = endedAt.toLocalDate();
+        LocalDate endDate = endedAt.toLocalDate();
         int year = endDate.getYear();
         int month = endDate.getMonthValue();
         
@@ -390,5 +388,37 @@ class ProjectDomainServiceTest {
         
         OffsetDateTime now = OffsetDateTime.now();
         return endedAt.isBefore(now) ? "ENDED" : "ACTIVE";
+    }
+
+    /**
+     * 다음 월요일을 반환합니다.
+     * 현재 날짜가 월요일이면 다음 주 월요일을 반환합니다.
+     */
+    private OffsetDateTime getNextMonday() {
+        LocalDate today = LocalDate.now();
+        LocalDate nextMonday = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY));
+        
+        // 오늘이 월요일이면 다음 주 월요일로 설정
+        if (nextMonday.equals(today)) {
+            nextMonday = today.with(TemporalAdjusters.next(DayOfWeek.MONDAY));
+        }
+        
+        return nextMonday.atStartOfDay(ZoneId.of("Asia/Seoul")).toOffsetDateTime();
+    }
+
+    /**
+     * 다음 일요일을 반환합니다.
+     * 시작일로부터 적절한 기간 후의 일요일을 반환합니다.
+     */
+    private OffsetDateTime getNextSunday() {
+        LocalDate startDate = getNextMonday().toLocalDate();
+        LocalDate nextSunday = startDate.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
+        
+        // 시작일이 일요일이면 다음 주 일요일로 설정
+        if (nextSunday.equals(startDate)) {
+            nextSunday = startDate.with(TemporalAdjusters.next(DayOfWeek.SUNDAY));
+        }
+        
+        return nextSunday.atStartOfDay(ZoneId.of("Asia/Seoul")).toOffsetDateTime();
     }
 }
