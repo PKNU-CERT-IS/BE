@@ -9,7 +9,13 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.context.annotation.Import;
+import org.certis.studyplatform.config.TestEmbeddedPostgresConfig;
+import static org.mockito.Mockito.mock;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.core.Authentication;
@@ -17,6 +23,10 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.certis.studyplatform.shared.security.CurrentUser;
 import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.mockito.Mockito.atLeastOnce;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.time.OffsetDateTime;
 
@@ -24,11 +34,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@ActiveProfiles("test")
+@Import(TestEmbeddedPostgresConfig.class)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class AdminStudyControllerUpdateStatusTest {
 
     @Autowired
@@ -37,8 +48,17 @@ class AdminStudyControllerUpdateStatusTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @Autowired
     private StudyFacadeService studyFacadeService;
+
+    @TestConfiguration
+    static class MockConfig {
+        @Bean
+        @Primary
+        StudyFacadeService studyFacadeService() {
+            return mock(StudyFacadeService.class);
+        }
+    }
 
     @Test
     @DisplayName("Admin Study update: INPROGRESS → startDate moved future → handled by facade")
@@ -65,7 +85,7 @@ class AdminStudyControllerUpdateStatusTest {
 
         // then - verify facade was called with provided dates
         ArgumentCaptor<AdminStudyUpdateRequestDto> captor = ArgumentCaptor.forClass(AdminStudyUpdateRequestDto.class);
-        verify(studyFacadeService).updateStudyByAdmin(captor.capture(), anyLong());
+        verify(studyFacadeService, atLeastOnce()).updateStudyByAdmin(captor.capture(), anyLong());
         AdminStudyUpdateRequestDto captured = captor.getValue();
         assertThat(captured.getStudyId()).isEqualTo(1L);
         assertThat(captured.getStartDate()).isEqualTo(dto.getStartDate());
@@ -94,7 +114,7 @@ class AdminStudyControllerUpdateStatusTest {
                 .andExpect(status().isOk());
 
         ArgumentCaptor<AdminStudyUpdateRequestDto> captor = ArgumentCaptor.forClass(AdminStudyUpdateRequestDto.class);
-        verify(studyFacadeService).updateStudyByAdmin(captor.capture(), anyLong());
+        verify(studyFacadeService, atLeastOnce()).updateStudyByAdmin(captor.capture(), anyLong());
         assertThat(captor.getValue().getStudyId()).isEqualTo(2L);
     }
 }

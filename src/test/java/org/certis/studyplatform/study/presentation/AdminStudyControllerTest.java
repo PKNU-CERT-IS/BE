@@ -49,7 +49,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({TestEmbeddedPostgresConfig.class, TestWebMvcConfig.class})
 @ActiveProfiles("test")
 @TestPropertySource(locations = "classpath:application-test.yml")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @DisplayName("🚀 AdminStudyController 완전한 통합 테스트")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class AdminStudyControllerTest {
@@ -100,8 +100,8 @@ class AdminStudyControllerTest {
     void admin_should_approve_study_participant_successfully() throws Exception {
         // Given: 승인할 참가 신청이 존재하는 상태
         AdminStudyParticipantApprovalRequestDto request = new AdminStudyParticipantApprovalRequestDto();
-        request.setParticipantId(TEST_PARTICIPANT_ID);
-        request.setReason("자격 요건 충족");
+        request.setStudyId(TEST_STUDY_ID);
+        request.setMemberId(TEST_MEMBER_ID);
 
         // When: 관리자가 참가 신청을 승인
         mockMvc.perform(post(BASE_URL + "/participant/approve")
@@ -111,13 +111,11 @@ class AdminStudyControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("스터디 참가 신청이 관리자에 의해 성공적으로 승인되었습니다"))
-                .andExpect(jsonPath("$.data.participantId").value(TEST_PARTICIPANT_ID))
                 .andExpect(jsonPath("$.data.studyId").value(TEST_STUDY_ID))
                 .andExpect(jsonPath("$.data.studyTitle").value("Spring Boot 스터디"))
                 .andExpect(jsonPath("$.data.memberId").value(TEST_MEMBER_ID))
                 .andExpect(jsonPath("$.data.memberName").value("테스트회원"))
                 .andExpect(jsonPath("$.data.status").value("APPROVED"))
-                .andExpect(jsonPath("$.data.reason").value("자격 요건 충족"))
                 .andExpect(jsonPath("$.data.adminId").value(TEST_ADMIN_ID))
                 .andExpect(jsonPath("$.data.processedAt").exists());
 
@@ -137,8 +135,8 @@ class AdminStudyControllerTest {
     void admin_should_reject_study_participant_successfully() throws Exception {
         // Given: 거절할 참가 신청이 존재하는 상태
         AdminStudyParticipantApprovalRequestDto request = new AdminStudyParticipantApprovalRequestDto();
-        request.setParticipantId(TEST_PARTICIPANT_ID);
-        request.setReason("자격 요건 미충족");
+        request.setStudyId(TEST_STUDY_ID);
+        request.setMemberId(TEST_MEMBER_ID);
 
         // When: 관리자가 참가 신청을 거절
         mockMvc.perform(post(BASE_URL + "/participant/reject")
@@ -148,13 +146,11 @@ class AdminStudyControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("스터디 참가 신청이 관리자에 의해 성공적으로 거절되었습니다"))
-                .andExpect(jsonPath("$.data.participantId").value(TEST_PARTICIPANT_ID))
                 .andExpect(jsonPath("$.data.studyId").value(TEST_STUDY_ID))
                 .andExpect(jsonPath("$.data.studyTitle").value("Spring Boot 스터디"))
                 .andExpect(jsonPath("$.data.memberId").value(TEST_MEMBER_ID))
                 .andExpect(jsonPath("$.data.memberName").value("테스트회원"))
                 .andExpect(jsonPath("$.data.status").value("REJECTED"))
-                .andExpect(jsonPath("$.data.reason").value("자격 요건 미충족"))
                 .andExpect(jsonPath("$.data.adminId").value(TEST_ADMIN_ID))
                 .andExpect(jsonPath("$.data.processedAt").exists());
 
@@ -164,7 +160,8 @@ class AdminStudyControllerTest {
                 .fetchOne();
 
         assertThat(participant).isNotNull();
-        assertThat(participant.getStatus()).isEqualTo(StudyParticipantStatus.REJECTED.name());
+        // 거절 시 도메인 정책: 상태 변경 대신 소프트 삭제 처리
+        assertThat(participant.getDeletedAt()).isNotNull();
     }
 
     // =================================================================
@@ -178,7 +175,8 @@ class AdminStudyControllerTest {
     void regular_user_should_not_access_approve_api() throws Exception {
         // Given: 일반 사용자 권한
         AdminStudyParticipantApprovalRequestDto request = new AdminStudyParticipantApprovalRequestDto();
-        request.setParticipantId(TEST_PARTICIPANT_ID);
+        request.setStudyId(TEST_STUDY_ID);
+        request.setMemberId(TEST_MEMBER_ID);
 
         // When & Then: 접근 거부
         mockMvc.perform(post(BASE_URL + "/participant/approve")
@@ -195,7 +193,8 @@ class AdminStudyControllerTest {
     void regular_user_should_not_access_reject_api() throws Exception {
         // Given: 일반 사용자 권한
         AdminStudyParticipantApprovalRequestDto request = new AdminStudyParticipantApprovalRequestDto();
-        request.setParticipantId(TEST_PARTICIPANT_ID);
+        request.setStudyId(TEST_STUDY_ID);
+        request.setMemberId(TEST_MEMBER_ID);
 
         // When & Then: 접근 거부
         mockMvc.perform(post(BASE_URL + "/participant/reject")
@@ -211,14 +210,14 @@ class AdminStudyControllerTest {
 
     @Test
     @Order(5)
-    @DisplayName("❌ 참가자 ID가 없으면 400 에러가 발생한다")
-    @WithMockUser(username = "admin", roles = {"ADMIN"})
-    void should_return_400_when_participant_id_is_null() throws Exception {
-        // Given: 참가자 ID가 없는 요청
+    @DisplayName("❌ studyId/memberId가 없으면 400 에러가 발생한다")
+    @WithMockUser(username = "staff", roles = {"STAFF"})
+    void should_return_400_when_missing_required_fields() throws Exception {
+        // Given: studyId 누락
         AdminStudyParticipantApprovalRequestDto request = new AdminStudyParticipantApprovalRequestDto();
-        request.setReason("테스트");
+        request.setMemberId(TEST_MEMBER_ID);
 
-        // When & Then: 400 에러
+        // When & Then: 400 에러 (검증 실패)
         mockMvc.perform(post(BASE_URL + "/participant/approve")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -228,13 +227,13 @@ class AdminStudyControllerTest {
 
     @Test
     @Order(6)
-    @DisplayName("❌ 존재하지 않는 참가자 ID로 요청하면 404 에러가 발생한다")
-    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @DisplayName("❌ 존재하지 않는 studyId/memberId로 요청하면 404 에러가 발생한다")
+    @WithMockUser(username = "staff", roles = {"STAFF"})
     void should_return_404_when_participant_not_found() throws Exception {
         // Given: 존재하지 않는 참가자 ID
         AdminStudyParticipantApprovalRequestDto request = new AdminStudyParticipantApprovalRequestDto();
-        request.setParticipantId(999L);
-        request.setReason("테스트");
+        request.setStudyId(TEST_STUDY_ID);
+        request.setMemberId(999L);
 
         // When & Then: 404 에러
         mockMvc.perform(post(BASE_URL + "/participant/approve")
@@ -289,6 +288,8 @@ class AdminStudyControllerTest {
                 .set(STUDY.ENDED_AT, OffsetDateTime.now().plusDays(30))
                 .set(STUDY.MEMBER_ID, TEST_ADMIN_ID)
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
+                .set(STUDY.STATUS, "READY")
                 // .set(STUDY.CURRENT_PARTICIPANTS, 0) // CURRENT_PARTICIPANTS 필드가 없음
                 // .set(STUDY.STATUS, "RECRUITING") // STATUS 필드가 없음
                 // .set(STUDY.SEMESTER, "2024-1") // SEMESTER 필드가 없음
