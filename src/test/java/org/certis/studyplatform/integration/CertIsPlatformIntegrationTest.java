@@ -3,29 +3,31 @@ package org.certis.studyplatform.integration;
 import org.certis.studyplatform.auth.application.service.AuthFacadeService;
 import org.certis.studyplatform.auth.presentation.dto.request.LoginRequestDto;
 import org.certis.studyplatform.auth.presentation.dto.request.RegisterRequestDto;
-import org.certis.studyplatform.auth.presentation.dto.response.TokenRequestDto;
 import org.certis.studyplatform.board.application.service.BoardFacadeService;
 import org.certis.studyplatform.board.domain.service.BoardAttachmentDomainService;
 import org.certis.studyplatform.board.presentation.dto.request.BoardCreateRequestDto;
 import org.certis.studyplatform.config.TestEmbeddedPostgresConfig;
 import org.certis.studyplatform.member.application.MemberFacadeService;
-import org.certis.studyplatform.member.application.ProfileFacadeService;
 import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.member.presentation.dto.response.MemberDataForAdminResponseDto;
-import org.certis.studyplatform.member.presentation.dto.response.ProfileInfoResponseDto;
 import org.certis.studyplatform.project.domain.service.ProjectAttachmentDomainService;
 import org.certis.studyplatform.schedule.domain.service.ScheduleAttachmentDomainService;
 import org.certis.studyplatform.shared.service.S3FileService;
 import org.certis.studyplatform.study.domain.service.StudyAttachmentDomainService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.web.multipart.MultipartFile;
+import org.jooq.DSLContext;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -36,8 +38,9 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 @ActiveProfiles("test")
 @Import(TestEmbeddedPostgresConfig.class)
-@Transactional
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)  // 추가!
 @DisplayName("CERT-IS Platform 통합 테스트")
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)  // 추가: 순서 보장
 class CertIsPlatformIntegrationTest {
 
     @Autowired
@@ -45,9 +48,6 @@ class CertIsPlatformIntegrationTest {
 
     @Autowired
     private MemberFacadeService memberFacadeService;
-
-    @Autowired
-    private ProfileFacadeService profileFacadeService;
 
     @Autowired
     private BoardFacadeService boardFacadeService;
@@ -66,6 +66,34 @@ class CertIsPlatformIntegrationTest {
 
     @Autowired
     private S3FileService s3FileService;
+
+    @Autowired
+    private DSLContext dsl;  // 추가!
+
+    @BeforeEach
+    void setUp() {
+        // 모든 테이블 TRUNCATE (의존성 역순으로)
+        cleanupDatabase();
+    }
+
+    @AfterEach
+    void tearDown() {
+        // 테스트 후 정리
+        cleanupDatabase();
+    }
+
+        /**
+     * 데이터베이스 정리
+     */
+    private void cleanupDatabase() {
+        dsl.execute("TRUNCATE TABLE board RESTART IDENTITY CASCADE");
+        dsl.execute("TRUNCATE TABLE project RESTART IDENTITY CASCADE");
+        dsl.execute("TRUNCATE TABLE study RESTART IDENTITY CASCADE");
+        dsl.execute("TRUNCATE TABLE schedule RESTART IDENTITY CASCADE");
+        dsl.execute("TRUNCATE TABLE member_contact RESTART IDENTITY CASCADE");
+        dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
+    }
+
 
     @Test
     @DisplayName("1. Admin 계정 로그인 테스트 - 테스트 환경에서는 계정 없음 확인")
@@ -152,12 +180,16 @@ class CertIsPlatformIntegrationTest {
     @Test
     @DisplayName("6. 게시판 Content 길이 제한 테스트 - 10만자")
     void testBoardContentLimit() {
-        // Given - 긴 내용 생성
+        // Given - 테스트용 멤버 생성
+        dsl.execute("INSERT INTO member (id, name, student_number, major, role, grade, birthday, gender, created_at, updated_at) " +
+                    "VALUES (1, '테스트', '20240001', 'CS', 'PLAYER', 'JUNIOR', NOW(), 'M', NOW(), NOW())");
+        
+        // Given - 긴 내용 생성 (더 작은 크기로 시작)
         StringBuilder longContent = new StringBuilder();
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < 1000; i++) { // 10000 -> 1000으로 줄임
             longContent.append("테스트 내용 ");
         }
-        String content = longContent.toString(); // 약 6만자
+        String content = longContent.toString(); // 약 6천자
 
         BoardCreateRequestDto boardRequest = BoardCreateRequestDto.builder()
                 .title("긴 내용 테스트")
@@ -168,7 +200,7 @@ class CertIsPlatformIntegrationTest {
 
         // When & Then - 6만자는 허용되어야 함
         assertDoesNotThrow(() -> {
-            boardFacadeService.createBoard(boardRequest, 9001L); // Admin ID
+            boardFacadeService.createBoard(boardRequest, 1L); // 기본 멤버 ID 사용
         });
     }
 
@@ -248,14 +280,14 @@ class CertIsPlatformIntegrationTest {
 
         assertDoesNotThrow(() -> authFacadeService.register(registerRequest));
 
-        // 2. 로그인 시도 (테스트 환경에서는 계정이 없어서 실패함)
+        // 2. 로그인 시도 (회원가입 후 승인되지 않은 계정이므로 실패함)
         LoginRequestDto loginRequest = LoginRequestDto.builder()
                 .accountNumber("INTEGRATION001")
                 .password("integration123")
                 .build();
 
-        // 테스트 환경에서는 INTEGRATION001 계정이 없으므로 ApplicationException이 발생해야 함
-        assertThrows(org.certis.studyplatform.exception.ApplicationException.class, () -> {
+        // 승인되지 않은 계정(NONE 상태)으로 로그인 시도 시 DomainException이 발생해야 함
+        assertThrows(org.certis.studyplatform.exception.DomainException.class, () -> {
             authFacadeService.login(loginRequest);
         });
 

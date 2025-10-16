@@ -63,12 +63,16 @@ class GracePeriodAdjustmentIntegrationTest {
     }
     
     private void cleanupTestData() {
-        // 기존 테스트 데이터 정리
-        dsl.deleteFrom(STUDY_PARTICIPANT).execute();
-        dsl.deleteFrom(PROJECT_PARTICIPANT).execute();
-        dsl.deleteFrom(STUDY).execute();
-        dsl.deleteFrom(PROJECT).execute();
-        dsl.deleteFrom(MEMBER).execute();
+        try {
+            // 기존 테스트 데이터 정리 - TRUNCATE로 시퀀스도 함께 리셋
+            dsl.execute("TRUNCATE TABLE study_participant RESTART IDENTITY CASCADE");
+            dsl.execute("TRUNCATE TABLE project_participant RESTART IDENTITY CASCADE");
+            dsl.execute("TRUNCATE TABLE study RESTART IDENTITY CASCADE");
+            dsl.execute("TRUNCATE TABLE project RESTART IDENTITY CASCADE");
+            dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
+        } catch (Exception e) {
+            // 테이블이 존재하지 않는 경우 무시
+        }
     }
     
     private void setupTestData(Long memberId, Long projectId, Long studyId) {
@@ -85,6 +89,7 @@ class GracePeriodAdjustmentIntegrationTest {
                 .set(MEMBER.GRACE_PERIOD, now.plusWeeks(4)) // 4주 후 유예기간 만료
                 .set(MEMBER.CREATED_AT, now)
                 .set(MEMBER.UPDATED_AT, now)
+                .onDuplicateKeyIgnore()
                 .execute();
         
         // 테스트용 프로젝트 생성
@@ -100,6 +105,7 @@ class GracePeriodAdjustmentIntegrationTest {
                 .set(PROJECT.STARTED_AT, now.minusWeeks(2))
                 .set(PROJECT.ENDED_AT, now.plusWeeks(2))
                 .set(PROJECT.STATUS, ProjectStatus.READY.name())
+                .set(PROJECT.RESULT_SUBMIT_STATUS, "READY")
                 .set(PROJECT.CREATED_AT, now)
                 .set(PROJECT.UPDATED_AT, now)
                 .execute();
@@ -117,6 +123,7 @@ class GracePeriodAdjustmentIntegrationTest {
                 .set(STUDY.STARTED_AT, now.minusWeeks(2))
                 .set(STUDY.ENDED_AT, now.plusWeeks(2))
                 .set(STUDY.STATUS, StudyStatus.READY.name())
+                .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                 .set(STUDY.CREATED_AT, now)
                 .set(STUDY.UPDATED_AT, now)
                 .execute();
@@ -247,6 +254,7 @@ class GracePeriodAdjustmentIntegrationTest {
                 .set(MEMBER.GRACE_PERIOD, now.plusWeeks(4)) // 4주 후 유예기간 만료
                 .set(MEMBER.CREATED_AT, now)
                 .set(MEMBER.UPDATED_AT, now)
+                .onDuplicateKeyIgnore()
                 .execute();
                 
         // 정상 종료되는 프로젝트 (4주 후 종료)
@@ -270,6 +278,7 @@ class GracePeriodAdjustmentIntegrationTest {
                 .set(PROJECT.MEMBER_ID, memberId)
                 .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
                 .set(PROJECT.STATUS, ProjectStatus.READY.name())
+                .set(PROJECT.RESULT_SUBMIT_STATUS, "READY")
                 .set(PROJECT.CREATED_AT, now)
                 .set(PROJECT.UPDATED_AT, now)
                 .execute();
