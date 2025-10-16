@@ -13,11 +13,15 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.certis.studyplatform.shared.security.CurrentUser;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.DayOfWeek;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.certis.generated.jooq.Tables.PROJECT;
+import static org.certis.generated.jooq.Tables.MEMBER;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -25,7 +29,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -38,33 +41,34 @@ class AdminProjectCreationFlowTest {
     @Autowired private MockMvc mockMvc;
     @Autowired private DSLContext dsl;
     @Autowired private ObjectMapper objectMapper;
-
     private Long memberId;
     private Long projectId;
 
     @BeforeEach
     void setUp() throws Exception {
-        dsl.execute("TRUNCATE TABLE project RESTART IDENTITY CASCADE");
-        dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
+        // 테이블이 존재하는 경우에만 TRUNCATE 실행
+        truncateTableIfExists("project_participant");
+        truncateTableIfExists("project");
+        truncateTableIfExists("member");
 
         // Insert minimal member
         OffsetDateTime now = OffsetDateTime.now();
-        memberId = dsl.insertInto(org.certis.generated.jooq.Tables.MEMBER)
-                .set(org.certis.generated.jooq.Tables.MEMBER.NAME, "admin")
-                .set(org.certis.generated.jooq.Tables.MEMBER.STUDENT_NUMBER, "20200001")
-                .set(org.certis.generated.jooq.Tables.MEMBER.ROLE, "STAFF")
-                .set(org.certis.generated.jooq.Tables.MEMBER.GRADE, "SENIOR")
-                .set(org.certis.generated.jooq.Tables.MEMBER.MAJOR, "컴퓨터공학과")
-                .set(org.certis.generated.jooq.Tables.MEMBER.BIRTHDAY, now.minusYears(20))
-                .set(org.certis.generated.jooq.Tables.MEMBER.GENDER, "M")
-                .set(org.certis.generated.jooq.Tables.MEMBER.CREATED_AT, now)
-                .set(org.certis.generated.jooq.Tables.MEMBER.UPDATED_AT, now)
-                .returning(org.certis.generated.jooq.Tables.MEMBER.ID)
+        memberId = dsl.insertInto(MEMBER)
+                .set(MEMBER.NAME, "admin")
+                .set(MEMBER.STUDENT_NUMBER, "20200001")
+                .set(MEMBER.ROLE, "STAFF")
+                .set(MEMBER.GRADE, "SENIOR")
+                .set(MEMBER.MAJOR, "컴퓨터공학과")
+                .set(MEMBER.BIRTHDAY, now.minusYears(20))
+                .set(MEMBER.GENDER, "M")
+                .set(MEMBER.CREATED_AT, now)
+                .set(MEMBER.UPDATED_AT, now)
+                .returning(MEMBER.ID)
                 .fetchOne()
-                .get(org.certis.generated.jooq.Tables.MEMBER.ID);
+                .get(MEMBER.ID);
         
         // Create via public API
-        var admin = new org.certis.studyplatform.shared.security.CurrentUser(memberId, "admin", "admin@certis.org", "admin", "STAFF");
+        var admin = new CurrentUser(memberId, "admin", "admin@certis.org", "admin", "STAFF");
         OffsetDateTime start = alignToNextMonday(now.plusDays(7)).withHour(0).withMinute(0).withSecond(0).withNano(0);
         OffsetDateTime end = alignToKstSunday(start.plusDays(7));
         String body = "{" +
@@ -96,7 +100,7 @@ class AdminProjectCreationFlowTest {
     @Test
     @DisplayName("관리자 생성 승인 - 200 OK")
     void approve_creation_ok() throws Exception {
-        var admin = new org.certis.studyplatform.shared.security.CurrentUser(memberId, "admin", "admin@certis.org", "admin", "STAFF");
+        var admin = new CurrentUser(memberId, "admin", "admin@certis.org", "admin", "STAFF");
 
         String body = "{\"projectId\": " + projectId + "}";
         mockMvc.perform(post("/api/v1/admin/project/create/approve")
@@ -118,13 +122,13 @@ class AdminProjectCreationFlowTest {
                 .andReturn();
         String content = mvcResult.getResponse().getContentAsString();
         String computedStatus = objectMapper.readTree(content).at("/data/status").asText();
-        assertThat(computedStatus).isIn("READY", "INPROGRESS", "COMPLETED");
+        assertThat(computedStatus).isEqualTo("APPROVED");
     }
 
     @Test
     @DisplayName("관리자 생성 거절 - deleted_at 설정")
     void reject_creation_sets_deleted_at() throws Exception {
-        var admin = new org.certis.studyplatform.shared.security.CurrentUser(memberId, "admin", "admin@certis.org", "admin", "STAFF");
+        var admin = new CurrentUser(memberId, "admin", "admin@certis.org", "admin", "STAFF");
 
         String body = "{\"projectId\": " + projectId + "}";
         mockMvc.perform(post("/api/v1/admin/project/create/reject")
@@ -142,7 +146,7 @@ class AdminProjectCreationFlowTest {
     @Test
     @DisplayName("관리자 종료 거절 - REJECTED 되나 deleted_at은 유지(null)")
     void reject_end_sets_rejected_and_keeps_deleted_at_null() throws Exception {
-        var admin = new org.certis.studyplatform.shared.security.CurrentUser(memberId, "admin", "admin@certis.org", "admin", "STAFF");
+        var admin = new CurrentUser(memberId, "admin", "admin@certis.org", "admin", "STAFF");
 
         // prepare project as if end submission is in progress
         OffsetDateTime now = OffsetDateTime.now();
@@ -171,7 +175,7 @@ class AdminProjectCreationFlowTest {
     @Test
     @DisplayName("관리자 날짜 변경: INPROGRESS → startDate 미래로 이동 → APPROVED (read model)")
     void admin_date_change_inprogress_to_future_sets_approved_in_read_model() throws Exception {
-        var admin = new org.certis.studyplatform.shared.security.CurrentUser(memberId, "admin", "admin@certis.org", "admin", "STAFF");
+        var admin = new CurrentUser(memberId, "admin", "admin@certis.org", "admin", "STAFF");
         // 1) Make it INPROGRESS via admin update: start in past, end in future
         OffsetDateTime now = OffsetDateTime.now();
         OffsetDateTime pastStart = now.minusDays(1);
@@ -210,18 +214,38 @@ class AdminProjectCreationFlowTest {
         assertThat(status2).isEqualTo("APPROVED");
     }
     private static OffsetDateTime alignToNextMonday(OffsetDateTime source) {
-        java.time.DayOfWeek dow = source.getDayOfWeek();
-        int shift = java.time.DayOfWeek.MONDAY.getValue() - dow.getValue();
+        DayOfWeek dow = source.getDayOfWeek();
+        int shift = DayOfWeek.MONDAY.getValue() - dow.getValue();
         if (shift < 0) shift += 7;
         return source.plusDays(shift);
     }
 
     private static OffsetDateTime alignToKstSunday(OffsetDateTime source) {
-        java.time.ZoneId kst = java.time.ZoneId.of("Asia/Seoul");
+        ZoneId kst = ZoneId.of("Asia/Seoul");
         var zdt = source.atZoneSameInstant(kst);
-        int shift = java.time.DayOfWeek.SUNDAY.getValue() - zdt.getDayOfWeek().getValue();
+        int shift = DayOfWeek.SUNDAY.getValue() - zdt.getDayOfWeek().getValue();
         if (shift < 0) shift += 7;
         return zdt.plusDays(shift).withHour(23).withMinute(59).withSecond(59).withNano(0).toOffsetDateTime();
+    }
+
+    /**
+     * 테이블이 존재하는 경우에만 TRUNCATE 실행
+     */
+    private void truncateTableIfExists(String tableName) {
+        try {
+            // 테이블 존재 여부 확인
+            var result = dsl.select()
+                    .from("information_schema.tables")
+                    .where("table_name = ? AND table_schema = 'public'", tableName)
+                    .fetch();
+            
+            if (!result.isEmpty()) {
+                dsl.execute("TRUNCATE TABLE " + tableName + " RESTART IDENTITY CASCADE");
+            }
+        } catch (Exception e) {
+            // 테이블이 존재하지 않거나 다른 오류가 발생한 경우 무시
+            // 테스트에서는 테이블이 아직 생성되지 않았을 수 있음
+        }
     }
 }
 
