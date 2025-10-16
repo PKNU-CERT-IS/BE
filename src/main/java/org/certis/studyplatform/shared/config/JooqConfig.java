@@ -6,8 +6,10 @@ import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 import org.jooq.impl.DefaultConfiguration;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 
 import javax.sql.DataSource;
 
@@ -19,6 +21,8 @@ public class JooqConfig {
      * jOOQ 전용 DSLContext - 별도 DataSource 사용으로 트랜잭션 충돌 방지
      */
     @Bean
+    @Lazy
+    @ConditionalOnBean(name = "jooqDataSource")
     public DSLContext dslContext(@Qualifier("jooqDataSource") DataSource jooqDataSource) {
         log.info("Configuring jOOQ DSLContext with dedicated DataSource");
 
