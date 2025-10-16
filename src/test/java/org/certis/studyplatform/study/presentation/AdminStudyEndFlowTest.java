@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.*;
 @Import({TestEmbeddedPostgresConfig.class, TestWebMvcConfig.class})
 @ActiveProfiles("test")
 @TestPropertySource(locations = "classpath:application-test.yml")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @DisplayName("🚀 Admin Study End Flow E2E Test")
 class AdminStudyEndFlowTest {
 
@@ -47,8 +47,8 @@ class AdminStudyEndFlowTest {
 
     @BeforeEach
     void setUp() {
-        dsl.execute("TRUNCATE TABLE study RESTART IDENTITY CASCADE");
-        dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
+        truncateTableIfExists("study");
+        truncateTableIfExists("member");
 
         // admin member
         dsl.execute("INSERT INTO member(id, name, role, grade, student_number, major, birthday, gender, created_at, updated_at) " +
@@ -62,8 +62,8 @@ class AdminStudyEndFlowTest {
 
     @AfterEach
     void tearDown() {
-        dsl.execute("TRUNCATE TABLE study RESTART IDENTITY CASCADE");
-        dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
+        truncateTableIfExists("study");
+        truncateTableIfExists("member");
     }
 
     @Test
@@ -118,6 +118,19 @@ class AdminStudyEndFlowTest {
                 .andExpect(jsonPath("$.data.status").value("INPROGRESS"))
                 .andExpect(jsonPath("$.data.submittedAt").exists())
                 .andExpect(jsonPath("$.data.studyId").value(STUDY_ID));
+    }
+
+    private void truncateTableIfExists(String tableName) {
+        try {
+            Boolean exists = dsl.fetchOne(
+                    "select exists (select 1 from information_schema.tables where table_schema = 'public' and table_name = ?)",
+                    tableName
+            ).get(0, Boolean.class);
+            if (Boolean.TRUE.equals(exists)) {
+                dsl.execute("TRUNCATE TABLE " + tableName + " RESTART IDENTITY CASCADE");
+            }
+        } catch (Exception ignored) {
+        }
     }
 }
 

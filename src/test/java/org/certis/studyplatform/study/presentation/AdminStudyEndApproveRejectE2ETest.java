@@ -24,6 +24,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import org.certis.studyplatform.shared.security.CurrentUser;
+
+
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import(TestEmbeddedPostgresConfig.class)
@@ -40,8 +43,8 @@ class AdminStudyEndApproveRejectE2ETest {
 
     @BeforeEach
     void setUp() {
-        dsl.execute("TRUNCATE TABLE study RESTART IDENTITY CASCADE");
-        dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
+        truncateTableIfExists("study");
+        truncateTableIfExists("member");
 
         OffsetDateTime now = OffsetDateTime.now();
 
@@ -66,6 +69,8 @@ class AdminStudyEndApproveRejectE2ETest {
                 .set(STUDY.CONTENT, "content")
                 .set(STUDY.CATEGORY, "CS")
                 .set(STUDY.SUBCATEGORY, "BE")
+                .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
+                .set(STUDY.STATUS, "READY")
                 .set(STUDY.STARTED_AT, now.plusDays(1))
                 .set(STUDY.ENDED_AT, now.plusDays(7))
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 5)
@@ -76,15 +81,30 @@ class AdminStudyEndApproveRejectE2ETest {
                 .get(STUDY.ID);
     }
 
+    private void truncateTableIfExists(String tableName) {
+        try {
+            // Check table existence in the current schema before truncating to avoid errors on clean DBs
+            Boolean exists = dsl.fetchOne(
+                    "select exists (select 1 from information_schema.tables where table_schema = 'public' and table_name = ?)",
+                    tableName
+            ).get(0, Boolean.class);
+
+            if (Boolean.TRUE.equals(exists)) {
+                dsl.execute("TRUNCATE TABLE " + tableName + " RESTART IDENTITY CASCADE");
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
     @Test
     @DisplayName("End approve sets result_submit_status to COMPLETED")
     void end_approve_sets_completed() throws Exception {
-        var admin = new org.certis.studyplatform.shared.security.CurrentUser(staffId, "admin", "a@b.c", "admin", "STAFF");
+        var admin = new CurrentUser(staffId, "admin", "a@b.c", "admin", "STAFF");
 
         mockMvc.perform(post("/api/v1/admin/study/end/approve")
                         .with(user(admin))
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("studyId", String.valueOf(studyId)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"studyId\":" + studyId + "}"))
                 .andDo(print())
                 .andExpect(status().isOk());
 
@@ -95,7 +115,7 @@ class AdminStudyEndApproveRejectE2ETest {
     @Test
     @DisplayName("End reject sets result_submit_status to REJECTED")
     void end_reject_sets_rejected() throws Exception {
-        var admin = new org.certis.studyplatform.shared.security.CurrentUser(staffId, "admin", "a@b.c", "admin", "STAFF");
+        var admin = new CurrentUser(staffId, "admin", "a@b.c", "admin", "STAFF");
 
         dsl.update(STUDY)
                 .set(STUDY.RESULT_SUBMIT_STATUS, "INPROGRESS")
@@ -105,8 +125,8 @@ class AdminStudyEndApproveRejectE2ETest {
 
         mockMvc.perform(post("/api/v1/admin/study/end/reject")
                         .with(user(admin))
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("studyId", String.valueOf(studyId)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"studyId\":" + studyId + "}"))
                 .andDo(print())
                 .andExpect(status().isOk());
 
