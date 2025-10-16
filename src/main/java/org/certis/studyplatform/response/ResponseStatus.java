@@ -70,6 +70,7 @@ public enum ResponseStatus {
     PROJECT_MEETING_DELETE_SUCCESS(HttpStatus.OK, "프로젝트 회의록이 성공적으로 삭제되었습니다"),
 
     PROJECT_PARTICIPANT_JOIN_REGISTERED(HttpStatus.CREATED, "프로젝트 참가 신청이 성공했습니다"),
+    PROJECT_PARTICIPANT_JOIN_RESTORED(HttpStatus.CREATED, "프로젝트 참가 신청이 성공했습니다"),
     PROJECT_PARTICIPANT_JOIN_CANCELED(HttpStatus.OK, "프로젝트 참가 취소가 성공했습니다"),
     PROJECT_PARTICIPANT_JOIN_APPROVED(HttpStatus.OK, "프로젝트 참가가 승인되었습니다"),
     PROJECT_PARTICIPANT_JOIN_REJECTED(HttpStatus.OK, "프로젝트 참가가 거절되었습니다"),
