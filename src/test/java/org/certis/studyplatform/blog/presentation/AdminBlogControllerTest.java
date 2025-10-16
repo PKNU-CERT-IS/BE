@@ -4,13 +4,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.certis.studyplatform.blog.domain.repository.BlogRedisRepository;
 import org.certis.studyplatform.blog.presentation.dto.request.BlogTogglePublicRequestDto;
 import org.certis.studyplatform.config.TestEmbeddedPostgresConfig;
+import org.certis.studyplatform.config.TestRedisMockConfig;
 import org.certis.studyplatform.config.TestWebMvcConfig;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.mockito.Mock;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
@@ -42,7 +45,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import({TestEmbeddedPostgresConfig.class, TestWebMvcConfig.class})
+@Import({TestEmbeddedPostgresConfig.class, TestWebMvcConfig.class, TestRedisMockConfig.class, AdminBlogControllerTest.MockConfig.class})
 @ActiveProfiles("test")
 @TestPropertySource(locations = "classpath:application-test.yml")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
@@ -59,7 +62,7 @@ class AdminBlogControllerTest {
     @Autowired
     private DSLContext dsl;
 
-    @Mock
+    @Autowired
     private BlogRedisRepository blogRedisRepository;
 
     // 테스트 상수
@@ -182,6 +185,15 @@ class AdminBlogControllerTest {
                 // Then: 400 에러 응답
                 .andExpect(status().isBadRequest());
 
+    }
+
+    @TestConfiguration
+    static class MockConfig {
+        @Bean
+        @Primary
+        BlogRedisRepository blogRedisRepository() {
+            return org.mockito.Mockito.mock(BlogRedisRepository.class);
+        }
     }
 
     // =================================================================

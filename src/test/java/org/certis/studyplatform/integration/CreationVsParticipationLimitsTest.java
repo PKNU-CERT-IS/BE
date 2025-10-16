@@ -96,7 +96,6 @@ class CreationVsParticipationLimitsTest {
                 studyCommandRepository,
                 studyQueryRepository,
                 memberDomainService,
-                s3FileService,
                 studyParticipantQueryRepository,
                 projectParticipantQueryRepository,
                 projectQueryRepository
@@ -115,16 +114,13 @@ class CreationVsParticipationLimitsTest {
                 projectCommandRepository,
                 projectQueryRepository,
                 memberDomainService,
-                projectParticipantQueryRepository,
-                studyParticipantQueryRepository,
-                studyQueryRepository
+                projectParticipantQueryRepository
         );
         
         projectParticipantDomainService = new ProjectParticipantDomainService(
                 projectParticipantCommandRepository,
                 projectParticipantQueryRepository,
                 projectQueryRepository,
-                studyQueryRepository,
                 memberQueryRepository
         );
     }
@@ -211,6 +207,10 @@ class CreationVsParticipationLimitsTest {
             when(studyParticipantQueryRepository.countActiveStudiesByMemberId(memberId)).thenReturn(0L);
             when(projectParticipantQueryRepository.countActiveProjectsByMemberId(memberId)).thenReturn(0L);
 
+            // 생성(leader) 기준 진행 중 스터디 2건으로 집계되도록 카운트 API 스텁 (도메인 로직은 집계 카운트를 사용)
+            when(studyQueryRepository.countActiveStudiesCreatedByMemberId(memberId)).thenReturn(2L);
+            when(projectQueryRepository.countActiveProjectsCreatedByMemberId(memberId)).thenReturn(0L);
+
             // 활성 스터디 목록(요약) 2건 반환
             var monday = OffsetDateTime.now().plusWeeks(1).with(DayOfWeek.MONDAY);
             var summaries = java.util.List.of(
@@ -283,6 +283,10 @@ class CreationVsParticipationLimitsTest {
 
             // 참여 중 카운트는 0
             when(projectParticipantQueryRepository.countActiveProjectsByMemberId(memberId)).thenReturn(0L);
+
+            // 생성(leader) 기준 진행 중 프로젝트 1건으로 집계되도록 카운트 API 스텁 (도메인 로직은 집계 카운트를 사용)
+            when(projectQueryRepository.countActiveProjectsCreatedByMemberId(memberId)).thenReturn(1L);
+            when(studyQueryRepository.countActiveStudiesCreatedByMemberId(memberId)).thenReturn(0L);
 
             // 활성 프로젝트 목록(요약) 1건 반환
             var monday = OffsetDateTime.now().plusWeeks(1).with(DayOfWeek.MONDAY);

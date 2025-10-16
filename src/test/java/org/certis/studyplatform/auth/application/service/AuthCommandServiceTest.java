@@ -2,7 +2,6 @@ package org.certis.studyplatform.auth.application.service;
 
 import org.certis.studyplatform.auth.application.object.command.RefreshTokenCommand;
 import org.certis.studyplatform.auth.domain.model.vo.AccessTokenVo;
-import org.certis.studyplatform.auth.domain.model.vo.RefreshTokenVo;
 import org.certis.studyplatform.auth.domain.service.AuthDomainService;
 import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.shared.security.JwtTokenProvider;
@@ -45,11 +44,9 @@ class AuthCommandServiceTest {
     private static final String TEST_NAME = "김테스트";
     private static final MemberRole TEST_ROLE = MemberRole.PLAYER;
     private static final String TEST_ACCESS_TOKEN = "test.access.token";
-    private static final String TEST_REFRESH_TOKEN = "test.refresh.token";
 
     private RefreshTokenCommand mockCommand;
     private AccessTokenVo mockAccessToken;
-    private RefreshTokenVo mockRefreshToken;
 
     @BeforeEach
     void setUp() {
@@ -64,12 +61,6 @@ class AuthCommandServiceTest {
         mockAccessToken = new AccessTokenVo(
                 TEST_ACCESS_TOKEN,
                 LocalDateTime.now().plusHours(1)
-        );
-
-        mockRefreshToken = new RefreshTokenVo(
-                TEST_REFRESH_TOKEN,
-                LocalDateTime.now().plusDays(1),
-                TEST_MEMBER_ID
         );
     }
 

@@ -1,7 +1,6 @@
 package org.certis.studyplatform.study.presentation;
 
 import org.certis.studyplatform.config.TestEmbeddedPostgresConfig;
-import org.certis.studyplatform.response.ResponseStatus;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,7 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.annotation.DirtiesContext;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -34,6 +33,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @ActiveProfiles("test")
 @TestPropertySource(locations = "classpath:application-test.yml")
 @DisplayName("🧪 Admin Study Creation Approve/Reject Flow")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class AdminStudyCreationFlowTest {
 
     @Autowired private MockMvc mockMvc;
@@ -45,8 +45,8 @@ class AdminStudyCreationFlowTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        dsl.execute("TRUNCATE TABLE study RESTART IDENTITY CASCADE");
-        dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
+        truncateTableIfExists("study");
+        truncateTableIfExists("member");
 
         // Insert minimal member
         OffsetDateTime now = OffsetDateTime.now();
@@ -91,6 +91,14 @@ class AdminStudyCreationFlowTest {
                 .orderBy(STUDY.ID.desc())
                 .fetchOne();
         studyId = rec.getId();
+    }
+
+    private void truncateTableIfExists(String tableName) {
+        try {
+            dsl.execute("TRUNCATE TABLE " + tableName + " RESTART IDENTITY CASCADE");
+        } catch (Exception ignored) {
+            // 테이블이 아직 생성되지 않은 초기 구동 시점에서는 무시
+        }
     }
 
     @Test

@@ -1,18 +1,17 @@
 package org.certis.studyplatform.auth.application.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.certis.studyplatform.auth.application.object.command.RefreshTokenCommand;
 import org.certis.studyplatform.auth.application.object.query.ValidateRefreshTokenQuery;
 import org.certis.studyplatform.auth.domain.model.vo.AccessTokenVo;
 import org.certis.studyplatform.auth.domain.model.vo.RefreshTokenVo;
 import org.certis.studyplatform.auth.domain.repository.RedisRefreshTokenRepository;
-import org.certis.studyplatform.auth.domain.service.AuthDomainService;
 import org.certis.studyplatform.auth.presentation.dto.response.RefreshAccessTokenResponseDto;
 import org.certis.studyplatform.member.application.command.GetMemberTokenInfoQuery;
 import org.certis.studyplatform.member.application.query.MemberQueryService;
 import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.vo.MemberTokenInfoVo;
 import org.certis.studyplatform.shared.security.JwtTokenProvider;
+import org.certis.studyplatform.exception.DomainException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -62,12 +61,9 @@ class AuthFacadeServiceTest {
     private static final String TEST_NAME = "김테스트";
     private static final MemberRole TEST_ROLE = MemberRole.PLAYER;
     private static final String TEST_REFRESH_TOKEN = "test.refresh.token";
-    private static final String TEST_ACCESS_TOKEN = "test.access.token";
     private static final String TEST_NEW_ACCESS_TOKEN = "new.access.token";
-    private static final String TEST_NEW_REFRESH_TOKEN = "new.refresh.token";
 
     private RefreshTokenVo mockRefreshToken;
-    private RefreshTokenVo mockNewRefreshToken;
     private AccessTokenVo mockNewAccessToken;
     private MemberTokenInfoVo mockMemberInfo;
 
@@ -80,11 +76,6 @@ class AuthFacadeServiceTest {
                 TEST_MEMBER_ID
         );
 
-        mockNewRefreshToken = new RefreshTokenVo(
-                TEST_NEW_REFRESH_TOKEN,
-                LocalDateTime.now().plusDays(1),
-                TEST_MEMBER_ID
-        );
 
         mockNewAccessToken = new AccessTokenVo(
                 TEST_NEW_ACCESS_TOKEN,
@@ -134,8 +125,8 @@ class AuthFacadeServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> authFacadeService.refreshAccessToken(TEST_REFRESH_TOKEN))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("만료된 토큰");
+                .isInstanceOf(DomainException.class)
+                .hasMessageContaining("토큰 갱신에 실패했습니다.");
 
         // 토큰 갱신이 호출되지 않았는지 확인
         verify(authCommandService, never()).refreshAccessToken(any(RefreshTokenCommand.class));
@@ -150,8 +141,8 @@ class AuthFacadeServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> authFacadeService.refreshAccessToken(TEST_REFRESH_TOKEN))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("잘못된 토큰");
+                .isInstanceOf(DomainException.class)
+                .hasMessageContaining("토큰 갱신에 실패했습니다.");
 
         // 토큰 검증이 호출되지 않았는지 확인
         verify(authQueryService, never()).validateRefreshToken(any(ValidateRefreshTokenQuery.class));
@@ -169,10 +160,99 @@ class AuthFacadeServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> authFacadeService.refreshAccessToken(TEST_REFRESH_TOKEN))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("사용자 정보를 찾을 수 없습니다");
+                .isInstanceOf(DomainException.class)
+                .hasMessageContaining("토큰 갱신에 실패했습니다.");
 
         // 토큰 갱신이 호출되지 않았는지 확인
+        verify(authCommandService, never()).refreshAccessToken(any(RefreshTokenCommand.class));
+    }
+
+    // =================================================================
+    // JWT 예외 처리 테스트
+    // =================================================================
+
+    @Test
+    @DisplayName("JWT 토큰 만료 예외 처리 테스트")
+    void refreshAccessToken_Failure_JwtExpiredException() {
+        // Given
+        when(jwtTokenProvider.getUserIdFromToken(TEST_REFRESH_TOKEN))
+                .thenThrow(new io.jsonwebtoken.ExpiredJwtException(null, null, "JWT expired"));
+
+        // When & Then
+        assertThatThrownBy(() -> authFacadeService.refreshAccessToken(TEST_REFRESH_TOKEN))
+                .isInstanceOf(DomainException.class)
+                .hasMessageContaining("토큰 갱신에 실패했습니다");
+
+        // 토큰 검증이 호출되지 않았는지 확인
+        verify(authQueryService, never()).validateRefreshToken(any(ValidateRefreshTokenQuery.class));
+        verify(authCommandService, never()).refreshAccessToken(any(RefreshTokenCommand.class));
+    }
+
+    @Test
+    @DisplayName("JWT 토큰 형식 오류 예외 처리 테스트")
+    void refreshAccessToken_Failure_MalformedJwtException() {
+        // Given
+        when(jwtTokenProvider.getUserIdFromToken(TEST_REFRESH_TOKEN))
+                .thenThrow(new io.jsonwebtoken.MalformedJwtException("Malformed JWT token"));
+
+        // When & Then
+        assertThatThrownBy(() -> authFacadeService.refreshAccessToken(TEST_REFRESH_TOKEN))
+                .isInstanceOf(DomainException.class)
+                .hasMessageContaining("토큰 갱신에 실패했습니다");
+
+        // 토큰 검증이 호출되지 않았는지 확인
+        verify(authQueryService, never()).validateRefreshToken(any(ValidateRefreshTokenQuery.class));
+        verify(authCommandService, never()).refreshAccessToken(any(RefreshTokenCommand.class));
+    }
+
+    @Test
+    @DisplayName("JWT 토큰 서명 오류 예외 처리 테스트")
+    void refreshAccessToken_Failure_SignatureException() {
+        // Given
+        when(jwtTokenProvider.getUserIdFromToken(TEST_REFRESH_TOKEN))
+                .thenThrow(new io.jsonwebtoken.security.SignatureException("JWT signature does not match"));
+
+        // When & Then
+        assertThatThrownBy(() -> authFacadeService.refreshAccessToken(TEST_REFRESH_TOKEN))
+                .isInstanceOf(DomainException.class)
+                .hasMessageContaining("토큰 갱신에 실패했습니다");
+
+        // 토큰 검증이 호출되지 않았는지 확인
+        verify(authQueryService, never()).validateRefreshToken(any(ValidateRefreshTokenQuery.class));
+        verify(authCommandService, never()).refreshAccessToken(any(RefreshTokenCommand.class));
+    }
+
+    @Test
+    @DisplayName("JWT 토큰 지원하지 않는 형식 예외 처리 테스트")
+    void refreshAccessToken_Failure_UnsupportedJwtException() {
+        // Given
+        when(jwtTokenProvider.getUserIdFromToken(TEST_REFRESH_TOKEN))
+                .thenThrow(new io.jsonwebtoken.UnsupportedJwtException("Unsupported JWT token"));
+
+        // When & Then
+        assertThatThrownBy(() -> authFacadeService.refreshAccessToken(TEST_REFRESH_TOKEN))
+                .isInstanceOf(DomainException.class)
+                .hasMessageContaining("토큰 갱신에 실패했습니다");
+
+        // 토큰 검증이 호출되지 않았는지 확인
+        verify(authQueryService, never()).validateRefreshToken(any(ValidateRefreshTokenQuery.class));
+        verify(authCommandService, never()).refreshAccessToken(any(RefreshTokenCommand.class));
+    }
+
+    @Test
+    @DisplayName("JWT 토큰 일반 예외 처리 테스트")
+    void refreshAccessToken_Failure_GeneralJwtException() {
+        // Given
+        when(jwtTokenProvider.getUserIdFromToken(TEST_REFRESH_TOKEN))
+                .thenThrow(new io.jsonwebtoken.JwtException("Invalid JWT token"));
+
+        // When & Then
+        assertThatThrownBy(() -> authFacadeService.refreshAccessToken(TEST_REFRESH_TOKEN))
+                .isInstanceOf(DomainException.class)
+                .hasMessageContaining("토큰 갱신에 실패했습니다");
+
+        // 토큰 검증이 호출되지 않았는지 확인
+        verify(authQueryService, never()).validateRefreshToken(any(ValidateRefreshTokenQuery.class));
         verify(authCommandService, never()).refreshAccessToken(any(RefreshTokenCommand.class));
     }
 }

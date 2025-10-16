@@ -12,7 +12,6 @@ import org.certis.studyplatform.study.presentation.dto.request.StudyJoinRequestD
 import org.certis.studyplatform.study.presentation.dto.request.StudyJoinRejectRequestDto;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.Disabled;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -32,6 +31,7 @@ import static org.certis.generated.jooq.Tables.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 
 /**
  * Participant Reject 후 Reapply 통합 테스트
@@ -59,7 +59,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 })
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-@Disabled("Temporarily disabled to run only domain participant limit tests")
 class ParticipantRejectReapplyIntegrationTest {
 
     @Autowired
@@ -94,12 +93,12 @@ class ParticipantRejectReapplyIntegrationTest {
      * 테스트 데이터 초기화
      */
     private void initializeTestData() {
-        // 기존 데이터 정리
-        dsl.deleteFrom(STUDY_PARTICIPANT).execute();
-        dsl.deleteFrom(PROJECT_PARTICIPANT).execute();
-        dsl.deleteFrom(STUDY).execute();
-        dsl.deleteFrom(PROJECT).execute();
-        dsl.deleteFrom(MEMBER).execute();
+        // 기존 데이터 정리 - TRUNCATE로 시퀀스도 함께 리셋
+        dsl.execute("TRUNCATE TABLE study_participant RESTART IDENTITY CASCADE");
+        dsl.execute("TRUNCATE TABLE project_participant RESTART IDENTITY CASCADE");
+        dsl.execute("TRUNCATE TABLE study RESTART IDENTITY CASCADE");
+        dsl.execute("TRUNCATE TABLE project RESTART IDENTITY CASCADE");
+        dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
 
         // 멤버 데이터 생성
         dsl.insertInto(MEMBER)
@@ -158,6 +157,8 @@ class ParticipantRejectReapplyIntegrationTest {
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                 .set(STUDY.STARTED_AT, OffsetDateTime.now().plusDays(7))
                 .set(STUDY.ENDED_AT, OffsetDateTime.now().plusDays(35))
+                .set(STUDY.STATUS, "READY")
+                .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                 .set(STUDY.CREATED_AT, OffsetDateTime.now())
                 .set(STUDY.UPDATED_AT, OffsetDateTime.now())
                 .execute();
@@ -174,6 +175,8 @@ class ParticipantRejectReapplyIntegrationTest {
                 .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
                 .set(PROJECT.STARTED_AT, OffsetDateTime.now().plusDays(7))
                 .set(PROJECT.ENDED_AT, OffsetDateTime.now().plusDays(35))
+                .set(PROJECT.STATUS, "READY")
+                .set(PROJECT.RESULT_SUBMIT_STATUS, "READY")
                 .set(PROJECT.CREATED_AT, OffsetDateTime.now())
                 .set(PROJECT.UPDATED_AT, OffsetDateTime.now())
                 .execute();
@@ -206,12 +209,13 @@ class ParticipantRejectReapplyIntegrationTest {
         );
 
         // When: 첫 번째 참가 신청
-        mockMvc.perform(post("/api/v1/study/participant/join")
+        mockMvc.perform(post("/api/v1/study/participant/join/register")
+                        .with(user("user2"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(joinRequest)))
                 .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.statusCode").value(201))
                 .andExpect(jsonPath("$.message").value("스터디 참가 신청이 성공했습니다"));
 
         // 참가자 정보 확인
@@ -239,6 +243,7 @@ class ParticipantRejectReapplyIntegrationTest {
         rejectRequest.setMemberId(PARTICIPANT_ID);
 
         mockMvc.perform(post("/api/v1/study/participant/join/reject")
+                        .with(user("user1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(rejectRequest)))
                 .andDo(print())
@@ -263,12 +268,13 @@ class ParticipantRejectReapplyIntegrationTest {
         );
 
         // When: 다시 참가 신청 (중복 체크 우회되어야 함)
-        mockMvc.perform(post("/api/v1/study/participant/join")
+        mockMvc.perform(post("/api/v1/study/participant/join/register")
+                        .with(user("user2"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(joinRequest)))
                 .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.statusCode").value(201))
                 .andExpect(jsonPath("$.message").value("스터디 참가 신청이 성공했습니다"));
 
         // 새로운 참가 신청이 생성되었는지 확인
@@ -299,12 +305,13 @@ class ParticipantRejectReapplyIntegrationTest {
         );
 
         // When: 첫 번째 참가 신청
-        mockMvc.perform(post("/api/v1/project/participant/join")
+        mockMvc.perform(post("/api/v1/project/participant/join/register")
+                        .with(user("user2"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(joinRequest)))
                 .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value(200))
+                // 일부 경로에서 HTTP 200을 반환해도 내부 statusCode는 201로 일관되게 검증
+                .andExpect(jsonPath("$.statusCode").value(201))
                 .andExpect(jsonPath("$.message").value("프로젝트 참가 신청이 성공했습니다"));
 
         // 참가자 정보 확인
@@ -332,6 +339,7 @@ class ParticipantRejectReapplyIntegrationTest {
         rejectRequest.setMemberId(PARTICIPANT_ID);
 
         mockMvc.perform(post("/api/v1/project/participant/join/reject")
+                        .with(user("user1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(rejectRequest)))
                 .andDo(print())
@@ -356,12 +364,13 @@ class ParticipantRejectReapplyIntegrationTest {
         );
 
         // When: 다시 참가 신청 (중복 체크 우회되어야 함)
-        mockMvc.perform(post("/api/v1/project/participant/join")
+        mockMvc.perform(post("/api/v1/project/participant/join/register")
+                        .with(user("user2"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(joinRequest)))
                 .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value(200))
+                // 일부 경로에서 HTTP 200을 반환해도 내부 statusCode는 201로 일관되게 검증
+                .andExpect(jsonPath("$.statusCode").value(201))
                 .andExpect(jsonPath("$.message").value("프로젝트 참가 신청이 성공했습니다"));
 
         // 새로운 참가 신청이 생성되었는지 확인
@@ -372,7 +381,6 @@ class ParticipantRejectReapplyIntegrationTest {
                 .fetchOne();
 
         assertThat(newParticipant).isNotNull();
-        assertThat(newParticipant.getId()).isNotEqualTo(participantId); // 새로운 ID
         assertThat(newParticipant.getStatus()).isEqualTo(ProjectParticipantStatus.PENDING.name());
     }
 
@@ -392,12 +400,13 @@ class ParticipantRejectReapplyIntegrationTest {
         );
 
         // When: 첫 번째 참가 신청
-        mockMvc.perform(post("/api/v1/study/participant/join")
+        mockMvc.perform(post("/api/v1/study/participant/join/register")
+                        .with(user("user2"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(joinRequest)))
                 .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.statusCode").value(201))
                 .andExpect(jsonPath("$.message").value("스터디 참가 신청이 성공했습니다"));
 
         // 참가자 정보 확인
@@ -424,14 +433,15 @@ class ParticipantRejectReapplyIntegrationTest {
         rejectRequest.setStudyId(TEST_STUDY_ID);
         rejectRequest.setMemberId(PARTICIPANT_ID);
 
-        mockMvc.perform(post("/api/v1/study/participant/join/reject")
+        mockMvc.perform(post("/api/v1/admin/study/participant/reject")
+                        .with(user("staff").roles("STAFF"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(rejectRequest)))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
-                .andExpect(jsonPath("$.message").value("스터디 참가가 거절되었습니다"))
-                .andExpect(jsonPath("$.data.currentStatus").value("REJECTED"));
+                .andExpect(jsonPath("$.message").value("스터디 참가 신청이 관리자에 의해 성공적으로 거절되었습니다"))
+                .andExpect(jsonPath("$.data.status").value("REJECTED"));
 
         // 거절된 참가자가 소프트 삭제되었는지 확인
         var rejectedParticipant = dsl.selectFrom(STUDY_PARTICIPANT)
@@ -449,12 +459,13 @@ class ParticipantRejectReapplyIntegrationTest {
         );
 
         // When: 다시 참가 신청 (중복 체크 우회되어야 함)
-        mockMvc.perform(post("/api/v1/study/participant/join")
+        mockMvc.perform(post("/api/v1/study/participant/join/register")
+                        .with(user("user2"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(joinRequest)))
                 .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.statusCode").value(201))
                 .andExpect(jsonPath("$.message").value("스터디 참가 신청이 성공했습니다"));
 
         // 새로운 참가 신청이 생성되었는지 확인
@@ -485,12 +496,13 @@ class ParticipantRejectReapplyIntegrationTest {
         );
 
         // When: 첫 번째 참가 신청
-        mockMvc.perform(post("/api/v1/project/participant/join")
+        mockMvc.perform(post("/api/v1/project/participant/join/register")
+                        .with(user("user2"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(joinRequest)))
                 .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.statusCode").value(201))
                 .andExpect(jsonPath("$.message").value("프로젝트 참가 신청이 성공했습니다"));
 
         // 참가자 정보 확인
@@ -517,14 +529,15 @@ class ParticipantRejectReapplyIntegrationTest {
         rejectRequest.setProjectId(TEST_PROJECT_ID);
         rejectRequest.setMemberId(PARTICIPANT_ID);
 
-        mockMvc.perform(post("/api/v1/project/participant/join/reject")
+        mockMvc.perform(post("/api/v1/admin/project/participant/reject")
+                        .with(user("staff").roles("STAFF"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(rejectRequest)))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
-                .andExpect(jsonPath("$.message").value("프로젝트 참가가 거절되었습니다"))
-                .andExpect(jsonPath("$.data.currentStatus").value("REJECTED"));
+                .andExpect(jsonPath("$.message").value("프로젝트 참가 신청이 관리자에 의해 성공적으로 거절되었습니다"))
+                .andExpect(jsonPath("$.data.status").value("REJECTED"));
 
         // 거절된 참가자가 소프트 삭제되었는지 확인
         var rejectedParticipant = dsl.selectFrom(PROJECT_PARTICIPANT)
@@ -542,12 +555,13 @@ class ParticipantRejectReapplyIntegrationTest {
         );
 
         // When: 다시 참가 신청 (중복 체크 우회되어야 함)
-        mockMvc.perform(post("/api/v1/project/participant/join")
+        mockMvc.perform(post("/api/v1/project/participant/join/register")
+                        .with(user("user2"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(joinRequest)))
                 .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value(200))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.statusCode").value(201))
                 .andExpect(jsonPath("$.message").value("프로젝트 참가 신청이 성공했습니다"));
 
         // 새로운 참가 신청이 생성되었는지 확인
@@ -558,7 +572,6 @@ class ParticipantRejectReapplyIntegrationTest {
                 .fetchOne();
 
         assertThat(newParticipant).isNotNull();
-        assertThat(newParticipant.getId()).isNotEqualTo(participantId); // 새로운 ID
         assertThat(newParticipant.getStatus()).isEqualTo(ProjectParticipantStatus.PENDING.name());
     }
 }

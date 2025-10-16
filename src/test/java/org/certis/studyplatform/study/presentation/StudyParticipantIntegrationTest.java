@@ -12,7 +12,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -20,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.certis.studyplatform.shared.security.CurrentUser;
+import org.certis.studyplatform.shared.util.DateTimeUtils;
 
 import java.time.OffsetDateTime;
 
@@ -52,7 +52,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "spring.datasource.url=jdbc:postgresql://localhost:5432/test_certis",
         "spring.jpa.hibernate.ddl-auto=create-drop"
 })
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @DisplayName("StudyParticipantController 통합 테스트 - 새로운 비즈니스 규칙")
 class StudyParticipantIntegrationTest {
 
@@ -72,11 +72,41 @@ class StudyParticipantIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        // 테스트 데이터 초기화
+        // 테스트 데이터 초기화 - 의존성 역순으로 삭제
+        cleanupTestData();
+
         setupTestData();
         
         // 보안 컨텍스트 설정
         setupSecurityContext();
+    }
+
+    private void cleanupTestData() {
+        try {
+            // 의존성 역순으로 삭제 (외래키 제약조건 고려)
+            dsl.deleteFrom(STUDY_PARTICIPANT).execute();
+            dsl.deleteFrom(PROJECT_PARTICIPANT).execute();
+            dsl.deleteFrom(STUDY).execute();
+            dsl.deleteFrom(PROJECT).execute();
+            dsl.deleteFrom(MEMBER).execute();
+            
+            // 시퀀스 리셋
+            resetSequenceIfExists("study_id_seq");
+            resetSequenceIfExists("member_id_seq");
+            resetSequenceIfExists("project_id_seq");
+            resetSequenceIfExists("study_participant_id_seq");
+            resetSequenceIfExists("project_participant_id_seq");
+        } catch (Exception e) {
+            // 테이블이 없는 경우 무시
+        }
+    }
+    
+    private void resetSequenceIfExists(String sequenceName) {
+        try {
+            dsl.execute("ALTER SEQUENCE IF EXISTS " + sequenceName + " RESTART WITH 1");
+        } catch (Exception e) {
+            // 시퀀스가 없는 경우 무시
+        }
     }
 
     @Nested
@@ -199,28 +229,21 @@ class StudyParticipantIntegrationTest {
         @DisplayName("거절 시 소프트 삭제 수행")
         void shouldSoftDeleteOnReject() throws Exception {
             // Given: 스터디와 참가 신청 생성
-            // 기존 데이터 삭제
-            dsl.deleteFrom(STUDY).where(STUDY.ID.eq(TEST_STUDY_ID)).execute();
-            dsl.deleteFrom(MEMBER).where(MEMBER.ID.eq(TEST_MEMBER_ID)).execute();
-            dsl.deleteFrom(MEMBER).where(MEMBER.ID.eq(3L)).execute();
-            dsl.deleteFrom(MEMBER).where(MEMBER.ID.eq(9999L)).execute();
+            Long customStudyId = 999L;
+            createStudy(customStudyId, 9999L); // 스터디 생성자가 만든 스터디
             
-            // 멤버 생성
-            setupTestData();
-            
-            createStudy(999L, TEST_MEMBER_ID);
-            
-            // 디버깅: 스터디가 제대로 생성되었는지 확인
-            var studyRecord = dsl.selectFrom(STUDY).where(STUDY.ID.eq(999L)).fetchOne();
-            
-            createStudyParticipant(TEST_STUDY_PARTICIPANT_ID, 999L, TEST_MEMBER_ID, StudyParticipantStatus.PENDING);
+            createStudyParticipant(TEST_STUDY_PARTICIPANT_ID, customStudyId, TEST_MEMBER_ID, StudyParticipantStatus.PENDING);
 
             // When: 거절 요청
             // 권한: 스터디 생성자 또는 관리자만 거절 가능 → 관리자 컨텍스트 설정
             setupAdminSecurityContext();
+            StudyJoinRejectRequestDto rejectRequest = new StudyJoinRejectRequestDto();
+            rejectRequest.setStudyId(customStudyId);
+            rejectRequest.setMemberId(TEST_MEMBER_ID);
+
             mockMvc.perform(post("/api/v1/study/participant/join/reject")
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(createStudyJoinRejectRequest())))
+                            .content(objectMapper.writeValueAsString(rejectRequest)))
                     .andDo(print())
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.message").value("스터디 참가가 거절되었습니다"))
@@ -292,23 +315,7 @@ class StudyParticipantIntegrationTest {
     // ================================================================
 
     private void setupTestData() {
-        // 기본 스터디 생성
-        dsl.insertInto(STUDY)
-                .set(STUDY.ID, TEST_STUDY_ID)
-                .set(STUDY.TITLE, "테스트 스터디")
-                .set(STUDY.DESCRIPTION, "테스트 설명")
-                .set(STUDY.CONTENT, "테스트 내용")
-                .set(STUDY.CATEGORY, "CTF")
-                .set(STUDY.SUBCATEGORY, "포너블")
-                .set(STUDY.STARTED_AT, OffsetDateTime.now().minusDays(1))
-                .set(STUDY.ENDED_AT, OffsetDateTime.now().plusDays(30))
-                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
-                .set(STUDY.MEMBER_ID, 9999L)
-                .set(STUDY.CREATED_AT, OffsetDateTime.now())
-                .set(STUDY.UPDATED_AT, OffsetDateTime.now())
-                .execute();
-
-        // 기본 멤버 생성
+        // 멤버 선행 생성 (FK 충돌 방지)
         dsl.insertInto(MEMBER)
                 .set(MEMBER.ID, TEST_MEMBER_ID)
                 .set(MEMBER.NAME, "테스트 사용자")
@@ -322,7 +329,6 @@ class StudyParticipantIntegrationTest {
                 .set(MEMBER.UPDATED_AT, OffsetDateTime.now())
                 .execute();
 
-        // 관리자 멤버 생성
         dsl.insertInto(MEMBER)
                 .set(MEMBER.ID, TEST_ADMIN_ID)
                 .set(MEMBER.NAME, "관리자")
@@ -350,6 +356,24 @@ class StudyParticipantIntegrationTest {
                 .set(MEMBER.UPDATED_AT, OffsetDateTime.now())
                 .execute();
 
+        // 기본 스터디 생성 (멤버 존재 후 생성)
+        dsl.insertInto(STUDY)
+                .set(STUDY.ID, TEST_STUDY_ID)
+                .set(STUDY.TITLE, "테스트 스터디")
+                .set(STUDY.DESCRIPTION, "테스트 설명")
+                .set(STUDY.CONTENT, "테스트 내용")
+                .set(STUDY.CATEGORY, "CTF")
+                .set(STUDY.SUBCATEGORY, "포너블")
+                .set(STUDY.STARTED_AT, DateTimeUtils.calculateStudyStartWeek(OffsetDateTime.now()))
+                .set(STUDY.ENDED_AT, DateTimeUtils.calculateEndWeek(DateTimeUtils.calculateStudyStartWeek(OffsetDateTime.now()), 4))
+                .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
+                .set(STUDY.MEMBER_ID, 9999L)
+                .set(STUDY.STATUS, "READY")
+                .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
+                .set(STUDY.CREATED_AT, OffsetDateTime.now())
+                .set(STUDY.UPDATED_AT, OffsetDateTime.now())
+                .execute();
+
     }
 
     private OffsetDateTime defaultBirthday() {
@@ -372,7 +396,7 @@ class StudyParticipantIntegrationTest {
     }
 
     private void setupOtherUserSecurityContext() {
-        CurrentUser otherUser = new CurrentUser(999L, "other", "other@example.com", "다른 사용자", "PLAYER");
+        CurrentUser otherUser = new CurrentUser(TEST_MEMBER_ID, "other", "other@example.com", "다른 사용자", "PLAYER");
         UsernamePasswordAuthenticationToken authentication = 
                 new UsernamePasswordAuthenticationToken(otherUser, null, otherUser.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -386,13 +410,6 @@ class StudyParticipantIntegrationTest {
 
     private StudyJoinApproveRequestDto createStudyJoinApproveRequest() {
         StudyJoinApproveRequestDto request = new StudyJoinApproveRequestDto();
-        request.setStudyId(TEST_STUDY_ID);
-        request.setMemberId(TEST_MEMBER_ID);
-        return request;
-    }
-
-    private StudyJoinRejectRequestDto createStudyJoinRejectRequest() {
-        StudyJoinRejectRequestDto request = new StudyJoinRejectRequestDto();
         request.setStudyId(TEST_STUDY_ID);
         request.setMemberId(TEST_MEMBER_ID);
         return request;
@@ -413,10 +430,12 @@ class StudyParticipantIntegrationTest {
                 .set(STUDY.CONTENT, "테스트 내용")
                 .set(STUDY.CATEGORY, "CTF")
                 .set(STUDY.SUBCATEGORY, "포너블")
-                .set(STUDY.STARTED_AT, OffsetDateTime.now().minusDays(1))
-                .set(STUDY.ENDED_AT, OffsetDateTime.now().plusDays(30))
+                .set(STUDY.STARTED_AT, DateTimeUtils.calculateStudyStartWeek(OffsetDateTime.now()))
+                .set(STUDY.ENDED_AT, DateTimeUtils.calculateEndWeek(DateTimeUtils.calculateStudyStartWeek(OffsetDateTime.now()), 4))
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                 .set(STUDY.MEMBER_ID, memberId)
+                .set(STUDY.STATUS, "READY")
+                .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                 .set(STUDY.CREATED_AT, OffsetDateTime.now())
                 .set(STUDY.UPDATED_AT, OffsetDateTime.now())
                 .set(STUDY.DELETED_AT, (OffsetDateTime) null)
@@ -436,18 +455,10 @@ class StudyParticipantIntegrationTest {
                 .set(STUDY.ENDED_AT, OffsetDateTime.now().plusDays(30))
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                 .set(STUDY.MEMBER_ID, memberId)
+                .set(STUDY.STATUS, "READY")
+                .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                 .set(STUDY.CREATED_AT, OffsetDateTime.now())
                 .set(STUDY.UPDATED_AT, OffsetDateTime.now())
-                .execute();
-
-        // 승인된 참가자 생성
-        dsl.insertInto(STUDY_PARTICIPANT)
-                .set(STUDY_PARTICIPANT.ID, studyId + 20000L)
-                .set(STUDY_PARTICIPANT.STUDY_ID, studyId)
-                .set(STUDY_PARTICIPANT.MEMBER_ID, memberId)
-                .set(STUDY_PARTICIPANT.STATUS, StudyParticipantStatus.APPROVED.name())
-                .set(STUDY_PARTICIPANT.CREATED_AT, OffsetDateTime.now())
-                .set(STUDY_PARTICIPANT.UPDATED_AT, OffsetDateTime.now())
                 .execute();
     }
 
@@ -463,7 +474,9 @@ class StudyParticipantIntegrationTest {
                 .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 10)
                 .set(PROJECT.STARTED_AT, OffsetDateTime.now().minusDays(1))
                 .set(PROJECT.ENDED_AT, OffsetDateTime.now().plusDays(30))
-                .set(PROJECT.MEMBER_ID, 1L)
+                .set(PROJECT.MEMBER_ID, memberId)
+                .set(PROJECT.STATUS, "READY")
+                .set(PROJECT.RESULT_SUBMIT_STATUS, "READY")
                 .set(PROJECT.CREATED_AT, OffsetDateTime.now())
                 .set(PROJECT.UPDATED_AT, OffsetDateTime.now())
                 .execute();
@@ -499,17 +512,6 @@ class StudyParticipantIntegrationTest {
         assertThat(participant).isNull();
     }
 
-    private void verifyParticipantCreated(Long studyId, Long memberId, StudyParticipantStatus expectedStatus) {
-        var participant = dsl.selectFrom(STUDY_PARTICIPANT)
-                .where(STUDY_PARTICIPANT.STUDY_ID.eq(studyId))
-                .and(STUDY_PARTICIPANT.MEMBER_ID.eq(memberId))
-                .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
-                .fetchOne();
-
-        assertThat(participant).isNotNull();
-        assertThat(participant.getStatus()).isEqualTo(expectedStatus.name());
-    }
-
     private void verifyParticipantStatusInDatabase(Long participantId, StudyParticipantStatus expectedStatus) {
         var participant = dsl.selectFrom(STUDY_PARTICIPANT)
                 .where(STUDY_PARTICIPANT.ID.eq(participantId))
@@ -520,22 +522,14 @@ class StudyParticipantIntegrationTest {
         assertThat(participant.getStatus()).isEqualTo(expectedStatus.name());
     }
 
-    private void verifyParticipantSoftDeletedInDatabase(Long participantId) {
-        var participant = dsl.selectFrom(STUDY_PARTICIPANT)
-                .where(STUDY_PARTICIPANT.ID.eq(participantId))
-                .fetchOne();
-
-        assertThat(participant).isNotNull();
-        assertThat(participant.getDeletedAt()).isNotNull();
-    }
-
     private void verifyParticipantStatusUpdatedInDatabase(Long participantId) {
         var participant = dsl.selectFrom(STUDY_PARTICIPANT)
                 .where(STUDY_PARTICIPANT.ID.eq(participantId))
                 .fetchOne();
 
         assertThat(participant).isNotNull();
-        assertThat(participant.getStatus()).isEqualTo("REJECTED");
+        // 거절은 소프트 삭제이므로 deleted_at이 설정되어 있어야 함
+        assertThat(participant.getDeletedAt()).isNotNull();
     }
 
     private void verifyParticipantHardDeletedInDatabase(Long participantId) {

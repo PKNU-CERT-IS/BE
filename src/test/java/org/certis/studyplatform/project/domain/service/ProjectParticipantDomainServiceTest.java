@@ -5,7 +5,6 @@ import org.certis.studyplatform.project.domain.ProjectParticipantStatus;
 import org.certis.studyplatform.project.domain.repository.ProjectParticipantCommandRepository;
 import org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository;
 import org.certis.studyplatform.project.domain.repository.ProjectQueryRepository;
-import org.certis.studyplatform.study.domain.repository.StudyQueryRepository;
 import org.certis.studyplatform.project.domain.vo.ProjectParticipantCreatedVo;
 import org.certis.studyplatform.project.domain.vo.ProjectParticipantStatusUpdatedVo;
 import org.certis.studyplatform.project.domain.vo.ProjectParticipantVo;
@@ -58,9 +57,6 @@ class ProjectParticipantDomainServiceTest {
     private ProjectQueryRepository projectQueryRepository;
     
     @Mock
-    private StudyQueryRepository studyQueryRepository;
-    
-    @Mock
     private MemberQueryRepository memberQueryRepository;
 
     private ProjectParticipantDomainService domainService;
@@ -71,7 +67,6 @@ class ProjectParticipantDomainServiceTest {
                 commandRepository,
                 queryRepository,
                 projectQueryRepository,
-                studyQueryRepository,
                 memberQueryRepository
         );
     }

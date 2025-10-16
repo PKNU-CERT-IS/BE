@@ -26,8 +26,11 @@ import static org.certis.generated.jooq.Tables.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.certis.studyplatform.shared.service.S3FileService;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import org.certis.studyplatform.shared.service.S3ObjectInfo;
 
@@ -53,14 +56,14 @@ import org.certis.studyplatform.shared.service.S3ObjectInfo;
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import({TestEmbeddedPostgresConfig.class, TestWebMvcConfig.class})
+@Import({TestEmbeddedPostgresConfig.class, TestWebMvcConfig.class, StudyMeetingControllerTest.MockConfig.class})
 @ActiveProfiles("test")
 @TestPropertySource(locations = "classpath:application-test.yml")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @DisplayName("🚀 StudyMeetingController 새로운 통합 테스트")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class StudyMeetingControllerTest {
-    @MockBean
+    @Autowired
     private S3FileService s3FileService;
 
     @Autowired
@@ -99,6 +102,15 @@ class StudyMeetingControllerTest {
         cleanupTestData();
     }
 
+    @TestConfiguration
+    static class MockConfig {
+        @Bean
+        @Primary
+        S3FileService s3FileService() {
+            return mock(S3FileService.class);
+        }
+    }
+
     // =================================================================
     // 🎯 비즈니스 시나리오 기반 통합 테스트
     // =================================================================
@@ -106,6 +118,7 @@ class StudyMeetingControllerTest {
     @Test
     @Order(1)
     @DisplayName("📝 스터디 회의록 생성 - 성공적인 비즈니스 시나리오")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     void createStudyMeeting_SuccessfulBusinessScenario() throws Exception {
         // Given: 유효한 스터디와 참여자들이 존재하고, 회의록 생성 요청이 준비됨
         StudyMeetingCreateRequestDto request = createValidMeetingRequest();
@@ -129,6 +142,7 @@ class StudyMeetingControllerTest {
     @Test
     @Order(25)
     @DisplayName("🔁 스터디 회의록 링크 교체 및 S3 메타 반영")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     void updateStudyMeeting_ReplacesLinks_AndReturnsS3EnrichedLinks() throws Exception {
         // Given: 회의록 생성 및 초기 링크 2개
         StudyMeetingCreateRequestDto create = createValidMeetingRequest();
@@ -402,6 +416,7 @@ class StudyMeetingControllerTest {
     @Test
     @Order(20)
     @DisplayName("🔗 여러 링크가 있는 스터디 회의록 생성 - 다중 링크 저장")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     void createStudyMeeting_WithMultipleLinks_SuccessfulMultipleLinkStorage() throws Exception {
         // Given: 여러 링크가 포함된 스터디 회의록 생성 요청
         StudyMeetingCreateRequestDto request = createValidMeetingRequest();
@@ -431,6 +446,7 @@ class StudyMeetingControllerTest {
     @Test
     @Order(21)
     @DisplayName("📋 스터디 상세 조회 - isParticipantable 필드 포함")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     void getStudyDetail_IncludesParticipantableField() throws Exception {
         // Given: 유효한 스터디가 존재함
         setupTestData();
@@ -494,6 +510,7 @@ class StudyMeetingControllerTest {
     @Test
     @Order(23)
     @DisplayName("📎 스터디 상세 조회 - attachments 필드 포함")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     void getStudyDetail_IncludesAttachmentsField() throws Exception {
         // Given: 첨부파일이 있는 스터디가 존재함
         setupTestData();
@@ -589,6 +606,7 @@ class StudyMeetingControllerTest {
     @Test
     @Order(25)
     @DisplayName("🔗 /meeting/all 링크가 회의록별로 올바르게 매핑되어야 한다")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     void meetingAll_ShouldReturnLinksPerMeeting() throws Exception {
         // Given: 동일 스터디에 회의록 2개를 만들고, 첫 번째 생성 시 링크를 1개 추가
         setupTestData();
@@ -643,6 +661,7 @@ class StudyMeetingControllerTest {
     @Test
     @Order(26)
     @DisplayName("🚫 한 회의록에 추가한 links가 다른 회의록 detail에 섞이면 안 된다")
+    @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     void creatingLinks_ShouldNotAffectOtherMeetingDetails() throws Exception {
         // Given: 회의록 2개 생성 후, 첫 번째에만 링크 생성
         setupTestData();
@@ -759,6 +778,8 @@ class StudyMeetingControllerTest {
                     .set(STUDY.CATEGORY, "웹 개발")
                     .set(STUDY.SUBCATEGORY, "풀스택")
                     .set(STUDY.MAX_PARTICIPANTS_NUMBER, 5)
+                    .set(STUDY.STATUS, "READY")
+                    .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                     .set(STUDY.STARTED_AT, now.plusDays(1))
                     .set(STUDY.ENDED_AT, now.plusDays(30))
                     .set(STUDY.CREATED_AT, now)

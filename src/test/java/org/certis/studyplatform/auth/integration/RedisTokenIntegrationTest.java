@@ -1,6 +1,5 @@
 package org.certis.studyplatform.auth.integration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.certis.studyplatform.auth.domain.model.vo.RefreshTokenVo;
 import org.certis.studyplatform.auth.infrastructure.persistence.RedisRefreshTokenRepositoryImpl;
 import org.certis.studyplatform.member.domain.vo.MemberIdVo;
@@ -9,16 +8,10 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
-import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -35,7 +28,6 @@ class RedisTokenIntegrationTest {
 
     private RedisTemplate<String, Object> redisTemplate;
     private RedisRefreshTokenRepositoryImpl repository;
-    private ObjectMapper objectMapper;
     private ValueOperations<String, Object> valueOperations;
     private RedisConnection redisConnection;
     private RedisConnectionFactory connectionFactory;
@@ -44,10 +36,11 @@ class RedisTokenIntegrationTest {
     private static final String TEST_TOKEN = "test.refresh.token.integration";
 
     @BeforeEach
+    @SuppressWarnings({"unchecked"})
     void setUp() {
         // Mock 객체 생성
-        redisTemplate = mock(RedisTemplate.class);
-        valueOperations = mock(ValueOperations.class);
+        redisTemplate = (RedisTemplate<String, Object>) mock(RedisTemplate.class);
+        valueOperations = (ValueOperations<String, Object>) mock(ValueOperations.class);
         redisConnection = mock(RedisConnection.class);
         connectionFactory = mock(RedisConnectionFactory.class);
         
@@ -58,7 +51,6 @@ class RedisTokenIntegrationTest {
         
         // Repository 초기화
         repository = new RedisRefreshTokenRepositoryImpl(redisTemplate);
-        objectMapper = new ObjectMapper();
         
         System.out.println("✅ Mock Redis 설정 완료");
     }

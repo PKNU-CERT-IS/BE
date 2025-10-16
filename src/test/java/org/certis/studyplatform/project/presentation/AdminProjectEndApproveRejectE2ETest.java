@@ -13,6 +13,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.certis.studyplatform.shared.security.CurrentUser;
 
 import java.time.OffsetDateTime;
 
@@ -40,8 +41,9 @@ class AdminProjectEndApproveRejectE2ETest {
 
     @BeforeEach
     void setUp() {
-        dsl.execute("TRUNCATE TABLE project RESTART IDENTITY CASCADE");
-        dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
+        // 테이블이 존재하는 경우에만 TRUNCATE 실행
+        truncateTableIfExists("project");
+        truncateTableIfExists("member");
 
         OffsetDateTime now = OffsetDateTime.now();
 
@@ -69,6 +71,8 @@ class AdminProjectEndApproveRejectE2ETest {
                 .set(PROJECT.STARTED_AT, now.plusDays(1))
                 .set(PROJECT.ENDED_AT, now.plusDays(7))
                 .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(PROJECT.STATUS, "READY")
+                .set(PROJECT.RESULT_SUBMIT_STATUS, "READY")
                 .set(PROJECT.CREATED_AT, now)
                 .set(PROJECT.UPDATED_AT, now)
                 .returning(PROJECT.ID)
@@ -79,12 +83,12 @@ class AdminProjectEndApproveRejectE2ETest {
     @Test
     @DisplayName("End approve sets result_submit_status to COMPLETED")
     void end_approve_sets_completed() throws Exception {
-        var admin = new org.certis.studyplatform.shared.security.CurrentUser(staffId, "admin", "a@b.c", "admin", "STAFF");
+        var admin = new CurrentUser(staffId, "admin", "a@b.c", "admin", "STAFF");
 
         mockMvc.perform(post("/api/v1/admin/project/end/approve")
                         .with(user(admin))
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("projectId", String.valueOf(projectId)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"projectId\": " + projectId + "}"))
                 .andDo(print())
                 .andExpect(status().isOk());
 
@@ -95,7 +99,7 @@ class AdminProjectEndApproveRejectE2ETest {
     @Test
     @DisplayName("End reject sets result_submit_status to REJECTED and clears attachment")
     void end_reject_sets_rejected_and_clears_attachment() throws Exception {
-        var admin = new org.certis.studyplatform.shared.security.CurrentUser(staffId, "admin", "a@b.c", "admin", "STAFF");
+        var admin = new CurrentUser(staffId, "admin", "a@b.c", "admin", "STAFF");
 
         // simulate a prior submission with attachment
         dsl.update(PROJECT)
@@ -106,8 +110,8 @@ class AdminProjectEndApproveRejectE2ETest {
 
         mockMvc.perform(post("/api/v1/admin/project/end/reject")
                         .with(user(admin))
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("projectId", String.valueOf(projectId)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"projectId\": " + projectId + "}"))
                 .andDo(print())
                 .andExpect(status().isOk());
 
@@ -115,6 +119,26 @@ class AdminProjectEndApproveRejectE2ETest {
         assertThat(rec.get("result_submit_status", String.class)).isEqualTo("REJECTED");
         // storage deletion is side-effect; DB still may retain url or null depending on impl.
         // We assert status, which drives business logic.
+    }
+
+    /**
+     * 테이블이 존재하는 경우에만 TRUNCATE 실행
+     */
+    private void truncateTableIfExists(String tableName) {
+        try {
+            // 테이블 존재 여부 확인
+            var result = dsl.select()
+                    .from("information_schema.tables")
+                    .where("table_name = ? AND table_schema = 'public'", tableName)
+                    .fetch();
+            
+            if (!result.isEmpty()) {
+                dsl.execute("TRUNCATE TABLE " + tableName + " RESTART IDENTITY CASCADE");
+            }
+        } catch (Exception e) {
+            // 테이블이 존재하지 않거나 다른 오류가 발생한 경우 무시
+            // 테스트에서는 테이블이 아직 생성되지 않았을 수 있음
+        }
     }
 }
 

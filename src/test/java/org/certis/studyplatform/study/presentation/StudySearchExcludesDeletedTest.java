@@ -12,11 +12,13 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.time.OffsetDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.certis.generated.jooq.Tables.STUDY;
+import static org.certis.generated.jooq.Tables.MEMBER;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -27,6 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @TestPropertySource(locations = "classpath:application-test.yml")
 @DisplayName("🔎 study/search excludes soft-deleted rows")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class StudySearchExcludesDeletedTest {
 
     @Autowired private MockMvc mockMvc;
@@ -34,8 +37,24 @@ class StudySearchExcludesDeletedTest {
 
     @BeforeEach
     void setUp() {
+        dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
         dsl.execute("TRUNCATE TABLE study RESTART IDENTITY CASCADE");
         OffsetDateTime now = OffsetDateTime.now();
+
+        // Ensure a valid member exists to satisfy FK on study.member_id
+        Long memberId = dsl.insertInto(MEMBER)
+                .set(MEMBER.NAME, "tester")
+                .set(MEMBER.STUDENT_NUMBER, "20200001")
+                .set(MEMBER.ROLE, "STAFF")
+                .set(MEMBER.GRADE, "SENIOR")
+                .set(MEMBER.MAJOR, "컴퓨터공학과")
+                .set(MEMBER.BIRTHDAY, now.minusYears(20))
+                .set(MEMBER.GENDER, "M")
+                .set(MEMBER.CREATED_AT, now)
+                .set(MEMBER.UPDATED_AT, now)
+                .returning(MEMBER.ID)
+                .fetchOne()
+                .get(MEMBER.ID);
 
         // Visible row (not deleted)
         dsl.insertInto(STUDY)
@@ -44,10 +63,12 @@ class StudySearchExcludesDeletedTest {
                 .set(STUDY.CONTENT, "content")
                 .set(STUDY.CATEGORY, "CS")
                 .set(STUDY.SUBCATEGORY, "BE")
-                .set(STUDY.MEMBER_ID, 1L)
+                .set(STUDY.MEMBER_ID, memberId)
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 5)
                 .set(STUDY.STARTED_AT, now.plusDays(1))
                 .set(STUDY.ENDED_AT, now.plusDays(10))
+                .set(STUDY.STATUS, "READY")
+                .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                 .set(STUDY.CREATED_AT, now)
                 .set(STUDY.UPDATED_AT, now)
                 .execute();
@@ -59,10 +80,12 @@ class StudySearchExcludesDeletedTest {
                 .set(STUDY.CONTENT, "content")
                 .set(STUDY.CATEGORY, "CS")
                 .set(STUDY.SUBCATEGORY, "BE")
-                .set(STUDY.MEMBER_ID, 1L)
+                .set(STUDY.MEMBER_ID, memberId)
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 5)
                 .set(STUDY.STARTED_AT, now.plusDays(1))
                 .set(STUDY.ENDED_AT, now.plusDays(10))
+                .set(STUDY.STATUS, "READY")
+                .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
                 .set(STUDY.CREATED_AT, now)
                 .set(STUDY.UPDATED_AT, now)
                 .set(STUDY.DELETED_AT, now)

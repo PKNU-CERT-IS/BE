@@ -27,8 +27,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.certis.studyplatform.shared.service.S3FileService;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import org.certis.studyplatform.shared.service.S3ObjectInfo;
 
@@ -54,14 +57,14 @@ import org.certis.studyplatform.shared.service.S3ObjectInfo;
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import({TestEmbeddedPostgresConfig.class, TestWebMvcConfig.class})
+@Import({TestEmbeddedPostgresConfig.class, TestWebMvcConfig.class, ProjectMeetingControllerTest.MockConfig.class})
 @ActiveProfiles("test")
 @TestPropertySource(locations = "classpath:application-test.yml")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @DisplayName("🚀 ProjectMeetingController 새로운 통합 테스트")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ProjectMeetingControllerTest {
-    @MockBean
+    @Autowired
     private S3FileService s3FileService;
 
 
@@ -91,13 +94,37 @@ class ProjectMeetingControllerTest {
     @BeforeEach
     void setUp() {
         // 데이터 충돌 방지: 관련 테이블 초기화
-        dsl.execute("TRUNCATE TABLE project_meeting_link RESTART IDENTITY CASCADE");
-        dsl.execute("TRUNCATE TABLE project_meeting RESTART IDENTITY CASCADE");
-        dsl.execute("TRUNCATE TABLE project_participant RESTART IDENTITY CASCADE");
-        dsl.execute("TRUNCATE TABLE project RESTART IDENTITY CASCADE");
-        dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
+        truncateTableIfExists("project_meeting_link");
+        truncateTableIfExists("project_meeting");
+        truncateTableIfExists("project_participant");
+        truncateTableIfExists("project");
+        truncateTableIfExists("member");
 
         setupTestData();
+    }
+
+    @TestConfiguration
+    static class MockConfig {
+        @Bean
+        @Primary
+        S3FileService s3FileService() {
+            return mock(S3FileService.class);
+        }
+    }
+
+    private void truncateTableIfExists(String tableName) {
+        try {
+            var result = dsl.select()
+                    .from("information_schema.tables")
+                    .where("table_name = ? AND table_schema = 'public'", tableName)
+                    .fetch();
+
+            if (!result.isEmpty()) {
+                dsl.execute("TRUNCATE TABLE " + tableName + " RESTART IDENTITY CASCADE");
+            }
+        } catch (Exception e) {
+            // Ignore if table does not exist
+        }
     }
 
     @AfterEach
@@ -926,25 +953,7 @@ class ProjectMeetingControllerTest {
         try {
             OffsetDateTime now = OffsetDateTime.now();
             
-            // 프로젝트 데이터 생성
-            dsl.insertInto(PROJECT)
-                    .set(PROJECT.ID, TEST_PROJECT_ID)
-                    .set(PROJECT.TITLE, TEST_PROJECT_NAME)
-                    .set(PROJECT.DESCRIPTION, "통합 테스트용 프로젝트")
-                    .set(PROJECT.CONTENT, "프로젝트 상세 내용")
-                    .set(PROJECT.MEMBER_ID, TEST_MEMBER_ID)
-                    .set(PROJECT.CATEGORY, "웹 개발")
-                    .set(PROJECT.SUBCATEGORY, "풀스택")
-                    .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
-                    .set(PROJECT.STARTED_AT, now.plusDays(1))
-                    .set(PROJECT.ENDED_AT, now.plusDays(30))
-                    .set(PROJECT.STATUS, "READY")
-                    .set(PROJECT.CREATED_AT, now)
-                    .set(PROJECT.UPDATED_AT, now)
-                    .onDuplicateKeyIgnore()
-                    .execute();
-
-            // 멤버 데이터 생성
+            // 멤버 데이터 생성 (FK 선행 보장)
             dsl.insertInto(MEMBER)
                     .set(MEMBER.ID, TEST_MEMBER_ID)
                     .set(MEMBER.NAME, TEST_MEMBER_NAME)
@@ -970,6 +979,25 @@ class ProjectMeetingControllerTest {
                     .set(MEMBER.MAJOR, "정보보안학과")
                     .set(MEMBER.CREATED_AT, now)
                     .set(MEMBER.UPDATED_AT, now)
+                    .onDuplicateKeyIgnore()
+                    .execute();
+
+            // 프로젝트 데이터 생성 (멤버 생성 후)
+            dsl.insertInto(PROJECT)
+                    .set(PROJECT.ID, TEST_PROJECT_ID)
+                    .set(PROJECT.TITLE, TEST_PROJECT_NAME)
+                    .set(PROJECT.DESCRIPTION, "통합 테스트용 프로젝트")
+                    .set(PROJECT.CONTENT, "프로젝트 상세 내용")
+                    .set(PROJECT.MEMBER_ID, TEST_MEMBER_ID)
+                    .set(PROJECT.CATEGORY, "웹 개발")
+                    .set(PROJECT.SUBCATEGORY, "풀스택")
+                    .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
+                    .set(PROJECT.STARTED_AT, now.plusDays(1))
+                    .set(PROJECT.ENDED_AT, now.plusDays(30))
+                    .set(PROJECT.STATUS, "READY")
+                    .set(PROJECT.RESULT_SUBMIT_STATUS, "READY")
+                    .set(PROJECT.CREATED_AT, now)
+                    .set(PROJECT.UPDATED_AT, now)
                     .onDuplicateKeyIgnore()
                     .execute();
 

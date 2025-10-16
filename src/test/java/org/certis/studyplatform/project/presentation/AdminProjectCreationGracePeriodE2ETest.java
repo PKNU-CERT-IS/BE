@@ -42,8 +42,9 @@ class AdminProjectCreationGracePeriodE2ETest {
 
     @BeforeEach
     void setUp() {
-        dsl.execute("TRUNCATE TABLE project RESTART IDENTITY CASCADE");
-        dsl.execute("TRUNCATE TABLE member RESTART IDENTITY CASCADE");
+        // 테이블이 존재하는 경우에만 TRUNCATE 실행
+        truncateTableIfExists("project");
+        truncateTableIfExists("member");
 
         OffsetDateTime now = OffsetDateTime.now();
 
@@ -88,6 +89,8 @@ class AdminProjectCreationGracePeriodE2ETest {
                 .set(PROJECT.STARTED_AT, now.plusDays(2))
                 .set(PROJECT.ENDED_AT, now.plusDays(30))
                 .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(PROJECT.STATUS, "READY")
+                .set(PROJECT.RESULT_SUBMIT_STATUS, "READY")
                 .set(PROJECT.CREATED_AT, now)
                 .set(PROJECT.UPDATED_AT, now)
                 .returning(PROJECT.ID)
@@ -105,6 +108,8 @@ class AdminProjectCreationGracePeriodE2ETest {
                 .set(PROJECT.STARTED_AT, now.plusDays(3))
                 .set(PROJECT.ENDED_AT, now.plusDays(31))
                 .set(PROJECT.MAX_PARTICIPANTS_NUMBER, 5)
+                .set(PROJECT.STATUS, "READY")
+                .set(PROJECT.RESULT_SUBMIT_STATUS, "READY")
                 .set(PROJECT.CREATED_AT, now)
                 .set(PROJECT.UPDATED_AT, now)
                 .returning(PROJECT.ID)
@@ -123,8 +128,8 @@ class AdminProjectCreationGracePeriodE2ETest {
 
         mockMvc.perform(post("/api/v1/admin/project/create/approve")
                         .with(user(admin))
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("projectId", String.valueOf(projectIdByUpsolver)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"projectId\": " + projectIdByUpsolver + "}"))
                 .andDo(print())
                 .andExpect(status().isOk());
 
@@ -140,14 +145,34 @@ class AdminProjectCreationGracePeriodE2ETest {
 
         mockMvc.perform(post("/api/v1/admin/project/create/reject")
                         .with(user(admin))
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("projectId", String.valueOf(projectIdToReject)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"projectId\": " + projectIdToReject + "}"))
                 .andDo(print())
                 .andExpect(status().isOk());
 
         var rec = dsl.selectFrom(PROJECT).where(PROJECT.ID.eq(projectIdToReject)).fetchOne();
         assertThat(rec).isNotNull();
         assertThat(rec.getDeletedAt()).isNotNull();
+    }
+
+    /**
+     * 테이블이 존재하는 경우에만 TRUNCATE 실행
+     */
+    private void truncateTableIfExists(String tableName) {
+        try {
+            // 테이블 존재 여부 확인
+            var result = dsl.select()
+                    .from("information_schema.tables")
+                    .where("table_name = ? AND table_schema = 'public'", tableName)
+                    .fetch();
+            
+            if (!result.isEmpty()) {
+                dsl.execute("TRUNCATE TABLE " + tableName + " RESTART IDENTITY CASCADE");
+            }
+        } catch (Exception e) {
+            // 테이블이 존재하지 않거나 다른 오류가 발생한 경우 무시
+            // 테스트에서는 테이블이 아직 생성되지 않았을 수 있음
+        }
     }
 }
 

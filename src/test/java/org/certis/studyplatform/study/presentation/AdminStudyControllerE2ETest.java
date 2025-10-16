@@ -1,6 +1,5 @@
 package org.certis.studyplatform.study.presentation;
 
-import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.study.application.StudyFacadeService;
 import org.certis.studyplatform.study.application.StudyParticipantFacadeService;
@@ -11,14 +10,17 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
+import static org.mockito.Mockito.mock;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 
 import java.time.OffsetDateTime;
-import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
@@ -27,21 +29,38 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = AdminStudyController.class)
+@Import(AdminStudyControllerE2ETest.MockConfig.class)
 class AdminStudyControllerE2ETest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @Autowired
     private StudyFacadeService studyFacadeService;
-
-    @MockBean
-    private StudyParticipantFacadeService studyParticipantFacadeService;
-
-    @MockBean
-    private org.certis.studyplatform.shared.security.JwtTokenProvider jwtTokenProvider;
+    
 
     // No S3 in WebMvcTest slice; facade returns fully built DTO
+
+    @TestConfiguration
+    static class MockConfig {
+        @Bean
+        @Primary
+        StudyFacadeService studyFacadeService() {
+            return mock(StudyFacadeService.class);
+        }
+
+        @Bean
+        @Primary
+        StudyParticipantFacadeService studyParticipantFacadeService() {
+            return mock(StudyParticipantFacadeService.class);
+        }
+
+        @Bean
+        @Primary
+        org.certis.studyplatform.shared.security.JwtTokenProvider jwtTokenProvider() {
+            return mock(org.certis.studyplatform.shared.security.JwtTokenProvider.class);
+        }
+    }
 
     @Test
     @WithMockUser(username = "admin", roles = {"STAFF"})
