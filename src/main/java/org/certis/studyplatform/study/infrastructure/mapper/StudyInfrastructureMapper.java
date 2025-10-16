@@ -147,9 +147,6 @@ public class StudyInfrastructureMapper {
         // ✅ [MODIFICATION] StudyVo 생성자 인자 순서 변경 (createdAt, updatedAt 추가)
         OffsetDateTime endedAt = firstRecord.get("ended_at", OffsetDateTime.class);
         // Safely read optional columns that may not be selected in some queries
-        OffsetDateTime deletedAt = firstRecord.field("deleted_at") != null
-                ? firstRecord.get("deleted_at", OffsetDateTime.class)
-                : null;
         ResultSubmitStatus submitStatus = firstRecord.field("result_submit_status") != null
                 ? firstRecord.get("result_submit_status", ResultSubmitStatus.class)
                 : null;
@@ -157,8 +154,10 @@ public class StudyInfrastructureMapper {
             submitStatus = ResultSubmitStatus.READY;
         }
         
-        // DB에 저장된 상태를 그대로 사용 (계산하지 않음)
-        String resolvedStatusFromRecord = resolveStatusFromRecord(firstRecord, null);
+        // 동적 상태 계산: DB 상태가 REJECTED/COMPLETED가 아니면 시간 기반으로 계산
+        String dbStatus = resolveStatusFromRecord(firstRecord, null);
+        String resolvedStatusFromRecord = resolveDynamicStatus(dbStatus,
+                firstRecord.get("started_at", OffsetDateTime.class), endedAt);
 
         return new StudyVo(
                 firstRecord.get("id", Long.class),
@@ -210,9 +209,6 @@ public class StudyInfrastructureMapper {
 
         // ✅ [MODIFICATION] StudyVo 생성자 인자 순서 변경 (createdAt, updatedAt 추가)
         OffsetDateTime endedAt = firstRecord.get("ended_at", OffsetDateTime.class);
-        OffsetDateTime deletedAt = firstRecord.field("deleted_at") != null
-                ? firstRecord.get("deleted_at", OffsetDateTime.class)
-                : null;
         ResultSubmitStatus submitStatus;
         if (firstRecord.field("result_submit_status") != null) {
             String statusString = firstRecord.get("result_submit_status", String.class);
@@ -221,8 +217,10 @@ public class StudyInfrastructureMapper {
             submitStatus = ResultSubmitStatus.READY;
         }
         
-        // DB에 저장된 상태를 그대로 사용 (계산하지 않음)
-        String resolvedStatusFromRecord2 = resolveStatusFromRecord(firstRecord, null);
+        // 동적 상태 계산: DB 상태가 REJECTED/COMPLETED가 아니면 시간 기반으로 계산
+        String dbStatus2 = resolveStatusFromRecord(firstRecord, null);
+        String resolvedStatusFromRecord2 = resolveDynamicStatus(dbStatus2,
+                firstRecord.get("started_at", OffsetDateTime.class), endedAt);
 
         return new StudyVo(
                 firstRecord.get("id", Long.class),
@@ -298,16 +296,15 @@ public class StudyInfrastructureMapper {
 
         MemberGrade memberGrade = safeParseMemberGrade(firstRecord.get("creator_grade", String.class));
         OffsetDateTime endedAt = firstRecord.get("ended_at", OffsetDateTime.class);
-        OffsetDateTime deletedAt = firstRecord.field("deleted_at") != null
-                ? firstRecord.get("deleted_at", OffsetDateTime.class)
-                : null;
         ResultSubmitStatus submitStatus = firstRecord.get("result_submit_status", ResultSubmitStatus.class);
         if (submitStatus == null) {
             submitStatus = ResultSubmitStatus.READY;
         }
 
-        // DB에 저장된 상태를 그대로 사용 (계산하지 않음)
-        String resolvedStatusFromRecord3 = resolveStatusFromRecord(firstRecord, null);
+        // 동적 상태 계산: DB 상태가 REJECTED/COMPLETED가 아니면 시간 기반으로 계산
+        String dbStatus3 = resolveStatusFromRecord(firstRecord, null);
+        String resolvedStatusFromRecord3 = resolveDynamicStatus(dbStatus3,
+                firstRecord.get("started_at", OffsetDateTime.class), endedAt);
 
         return StudySummaryVo.of(
                 studyId,
@@ -421,7 +418,7 @@ public class StudyInfrastructureMapper {
                 record.get("study_id", Long.class),
                 record.get("member_id", Long.class),
                 record.get("member_name", String.class),
-                record.get("status", org.certis.studyplatform.study.domain.StudyParticipantStatus.class),
+                record.get("status", StudyParticipantStatus.class),
                 record.get("created_at", OffsetDateTime.class),
                 record.get("updated_at", OffsetDateTime.class)
         );
@@ -522,40 +519,6 @@ public class StudyInfrastructureMapper {
             return year + "-2"; // 2학기
         }
     }
-
-    /**
-     * 스터디 상태를 StudyStatus enum으로 계산
-     */
-    private String calculateStatusString(OffsetDateTime startDate, OffsetDateTime endDate,
-                                         OffsetDateTime deletedAt,
-                                         ResultSubmitStatus resultSubmitStatus) {
-        if (deletedAt != null) {
-            return StudyStatus.REJECTED.name();
-        }
-
-        OffsetDateTime now = OffsetDateTime.now();
-
-        // 종료 승인 또는 종료 시간이 현재와 같거나 이전이면 완료 처리
-        if (resultSubmitStatus == ResultSubmitStatus.COMPLETED) {
-            return StudyStatus.COMPLETED.name();
-        }
-        if (endDate != null && (now.isAfter(endDate) || now.isEqual(endDate))) {
-            return StudyStatus.COMPLETED.name();
-        }
-
-        if (startDate == null || endDate == null) {
-            return StudyStatus.READY.name();
-        }
-
-        if (now.isBefore(startDate)) {
-            return StudyStatus.READY.name();
-        }
-        if (now.isBefore(endDate)) {
-            return StudyStatus.INPROGRESS.name();
-        }
-        return StudyStatus.COMPLETED.name();
-    }
-
     /**
      * Record에 DB의 명시적 status 컬럼이 포함되어 있으면 그 값을 우선 사용한다.
      * 없거나 비어있으면 계산된 상태 문자열을 반환한다.
@@ -577,4 +540,37 @@ public class StudyInfrastructureMapper {
         }
         return calculatedFallback;
     }
-}
+
+    /**
+     * DB 상태가 REJECTED/COMPLETED가 아닌 경우, 시간 기반으로 READY/INPROGRESS/COMPLETED를 계산한다.
+     */
+    private String resolveDynamicStatus(String dbStatus, OffsetDateTime startedAt, OffsetDateTime endedAt) {
+        try {
+            String upper = dbStatus != null ? dbStatus.trim().toUpperCase() : null;
+            if ("REJECTED".equals(upper)) {
+                return "REJECTED";
+            }
+            // COMPLETED는 종료 이후라면 동적으로도 COMPLETED이므로 그대로 유지
+            if ("COMPLETED".equals(upper)) {
+                return "COMPLETED";
+            }
+            // APPROVED 상태는 검색 매핑에서 READY 그룹에 포함되므로 응답에서는 그대로 유지
+            if ("APPROVED".equals(upper)) {
+                return "APPROVED";
+            }
+        } catch (Exception ignore) { }
+
+        // 시간 기반 계산
+        if (startedAt == null || endedAt == null) {
+            return StudyStatus.READY.name();
+        }
+        OffsetDateTime now = OffsetDateTime.now();
+        if (endedAt.isBefore(now) || endedAt.isEqual(now)) {
+            return StudyStatus.COMPLETED.name();
+        }
+        if (now.isBefore(startedAt)) {
+            return StudyStatus.READY.name();
+        }
+        return StudyStatus.INPROGRESS.name();
+    }
+}   
