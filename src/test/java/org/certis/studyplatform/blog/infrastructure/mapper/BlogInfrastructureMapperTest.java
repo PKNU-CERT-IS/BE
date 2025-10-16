@@ -2,11 +2,10 @@ package org.certis.studyplatform.blog.infrastructure.mapper;
 
 import org.certis.studyplatform.blog.domain.ArticleReferenceType;
 import org.certis.studyplatform.blog.domain.repository.BlogRedisRepository;
-import org.certis.studyplatform.blog.domain.repository.BlogViewQueryRepository;
 import org.certis.studyplatform.blog.domain.vo.BlogIdVo;
 import org.certis.studyplatform.blog.infrastructure.persistence.entity.BlogEntity;
-import org.certis.studyplatform.blog.infrastructure.persistence.entity.BlogViewEntity;
 import org.jooq.Record;
+import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -181,7 +180,6 @@ class BlogInfrastructureMapperTest {
     @DisplayName("BlogViewEntity → BlogVo 변환 - view_count 포함")
     void toBlogVoWithViewCount_FromBlogViewEntity() {
         // Given: BlogViewEntity와 jOOQ Record
-        BlogViewEntity viewEntity = createTestBlogViewEntity();
         Record record = createTestBlogRecord();
 
         // When: BlogViewEntity와 Record → BlogVo 변환
@@ -219,24 +217,13 @@ class BlogInfrastructureMapperTest {
     }
 
     /**
-     * 테스트용 BlogViewEntity 생성
-     */
-    private BlogViewEntity createTestBlogViewEntity() {
-        return BlogViewEntity.builder()
-                .id(1L)
-                .blogId(TEST_BLOG_ID)
-                .viewNumber(TEST_VIEW_COUNT)
-                .createdAt(TEST_CREATED_AT)
-                .build();
-    }
-
-    /**
      * 테스트용 jOOQ Record 생성 (Study 참조)
      */
     private Record createTestBlogRecord() {
-        var dsl = DSL.using(org.jooq.SQLDialect.POSTGRES);
+        var dsl = DSL.using(SQLDialect.POSTGRES);
         var record = dsl.newRecord(BLOG.ID, BLOG.TITLE, BLOG.DESCRIPTION, BLOG.CONTENT, BLOG.CATEGORY,
                 BLOG.CREATED_AT, BLOG.UPDATED_AT, BLOG.MEMBER_ID, MEMBER.NAME.as("creator_name"),
+                MEMBER.PROFILE_IMAGE.as("creator_profile_image"),
                 BLOG.STUDY_ID, BLOG.PROJECT_ID, STUDY.TITLE.as("study_title"),
                 PROJECT.TITLE.as("project_title"), BLOG.IS_PUBLIC, BLOG_VIEW.VIEW_NUMBER.as("view_count"));
         record.setValue(BLOG.ID, TEST_BLOG_ID);
@@ -248,6 +235,7 @@ class BlogInfrastructureMapperTest {
         record.setValue(BLOG.UPDATED_AT, TEST_UPDATED_AT);
         record.setValue(BLOG.MEMBER_ID, TEST_MEMBER_ID);
         record.setValue(MEMBER.NAME.as("creator_name"), TEST_CREATOR_NAME);
+        record.setValue(MEMBER.PROFILE_IMAGE.as("creator_profile_image"), "/test/profile/image.jpg");
         record.setValue(BLOG.STUDY_ID, TEST_STUDY_ID);
         record.setValue(BLOG.PROJECT_ID, null);
         record.setValue(STUDY.TITLE.as("study_title"), TEST_STUDY_TITLE);
@@ -261,9 +249,10 @@ class BlogInfrastructureMapperTest {
      * 테스트용 jOOQ Record 생성 (Project 참조)
      */
     private Record createTestProjectBlogRecord() {
-        var dsl = DSL.using(org.jooq.SQLDialect.POSTGRES);
+        var dsl = DSL.using(SQLDialect.POSTGRES);
         var record = dsl.newRecord(BLOG.ID, BLOG.TITLE, BLOG.DESCRIPTION, BLOG.CONTENT, BLOG.CATEGORY,
                 BLOG.CREATED_AT, BLOG.UPDATED_AT, BLOG.MEMBER_ID, MEMBER.NAME.as("creator_name"),
+                MEMBER.PROFILE_IMAGE.as("creator_profile_image"),
                 BLOG.STUDY_ID, BLOG.PROJECT_ID, STUDY.TITLE.as("study_title"),
                 PROJECT.TITLE.as("project_title"), BLOG.IS_PUBLIC, BLOG_VIEW.VIEW_NUMBER.as("view_count"));
         record.setValue(BLOG.ID, TEST_BLOG_ID);
@@ -275,6 +264,7 @@ class BlogInfrastructureMapperTest {
         record.setValue(BLOG.UPDATED_AT, TEST_UPDATED_AT);
         record.setValue(BLOG.MEMBER_ID, TEST_MEMBER_ID);
         record.setValue(MEMBER.NAME.as("creator_name"), TEST_CREATOR_NAME);
+        record.setValue(MEMBER.PROFILE_IMAGE.as("creator_profile_image"), "/test/profile/image.jpg");
         record.setValue(BLOG.STUDY_ID, null);
         record.setValue(BLOG.PROJECT_ID, 1L);
         record.setValue(STUDY.TITLE.as("study_title"), null);
@@ -288,9 +278,10 @@ class BlogInfrastructureMapperTest {
      * 테스트용 jOOQ Record 생성 (참조 없음)
      */
     private Record createTestBlogRecordWithoutReference() {
-        var dsl = DSL.using(org.jooq.SQLDialect.POSTGRES);
+        var dsl = DSL.using(SQLDialect.POSTGRES);
         var record = dsl.newRecord(BLOG.ID, BLOG.TITLE, BLOG.DESCRIPTION, BLOG.CONTENT, BLOG.CATEGORY,
                 BLOG.CREATED_AT, BLOG.UPDATED_AT, BLOG.MEMBER_ID, MEMBER.NAME.as("creator_name"),
+                MEMBER.PROFILE_IMAGE.as("creator_profile_image"),
                 BLOG.STUDY_ID, BLOG.PROJECT_ID, STUDY.TITLE.as("study_title"),
                 PROJECT.TITLE.as("project_title"), BLOG.IS_PUBLIC, BLOG_VIEW.VIEW_NUMBER.as("view_count"));
         record.setValue(BLOG.ID, TEST_BLOG_ID);
@@ -302,6 +293,7 @@ class BlogInfrastructureMapperTest {
         record.setValue(BLOG.UPDATED_AT, TEST_UPDATED_AT);
         record.setValue(BLOG.MEMBER_ID, TEST_MEMBER_ID);
         record.setValue(MEMBER.NAME.as("creator_name"), TEST_CREATOR_NAME);
+        record.setValue(MEMBER.PROFILE_IMAGE.as("creator_profile_image"), "/test/profile/image.jpg");
         record.setValue(BLOG.STUDY_ID, null);
         record.setValue(BLOG.PROJECT_ID, null);
         record.setValue(STUDY.TITLE.as("study_title"), null);
