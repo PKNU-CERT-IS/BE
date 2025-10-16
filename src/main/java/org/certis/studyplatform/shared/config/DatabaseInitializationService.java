@@ -24,7 +24,6 @@ import java.util.List;
 public class DatabaseInitializationService {
 
     private final JdbcTemplate jdbcTemplate;
-    private final TransactionTemplate transactionTemplate;
     private final Environment environment;
 
     @Value("${app.mock-data.enabled:false}")
@@ -38,7 +37,6 @@ public class DatabaseInitializationService {
                                          TransactionTemplate transactionTemplate,
                                          Environment environment) {
         this.jdbcTemplate = jdbcTemplate;
-        this.transactionTemplate = transactionTemplate;
         this.environment = environment;
     }
 
