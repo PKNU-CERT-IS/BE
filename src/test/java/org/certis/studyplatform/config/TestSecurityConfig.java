@@ -1,7 +1,6 @@
 package org.certis.studyplatform.config;
 
 import lombok.RequiredArgsConstructor;
-import org.certis.studyplatform.config.TestAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;

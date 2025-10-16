@@ -21,7 +21,7 @@ import static org.jooq.impl.DSL.*;
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import(TestEmbeddedPostgresConfig.class)
-@ActiveProfiles("test")
+@ActiveProfiles("redis-test")
 class BoardSyncSchedulerTest {
 
     @Autowired private BoardSyncScheduler scheduler;

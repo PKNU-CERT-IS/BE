@@ -3,10 +3,8 @@ package org.certis.studyplatform.study.application.command;
 import org.certis.studyplatform.member.application.GracePeriodService;
 import org.certis.studyplatform.shared.service.S3FileService;
 import org.certis.studyplatform.study.domain.repository.StudyCommandRepository;
-import org.certis.studyplatform.study.domain.repository.StudyQueryRepository;
 import org.certis.studyplatform.study.domain.service.StudyDomainService;
 import org.certis.studyplatform.study.domain.service.StudyParticipantDomainService;
-import org.certis.studyplatform.study.domain.vo.StudyVo;
 import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,14 +19,12 @@ class StudyEndApprovalBranchingTest {
 
     private StudyCommandService newService(StudyDomainService studyDomainService,
                                            StudyParticipantDomainService participantDomainService,
-                                           StudyQueryRepository queryRepository,
                                            StudyCommandRepository commandRepository,
                                            S3FileService s3FileService,
                                            GracePeriodService gracePeriodService) {
         return new StudyCommandService(
                 studyDomainService,
                 participantDomainService,
-                queryRepository,
                 commandRepository,
                 s3FileService,
                 gracePeriodService
@@ -41,7 +37,6 @@ class StudyEndApprovalBranchingTest {
         // Given
         StudyDomainService studyDomainService = mock(StudyDomainService.class);
         StudyParticipantDomainService studyParticipantDomainService = mock(StudyParticipantDomainService.class);
-        StudyQueryRepository studyQueryRepository = mock(StudyQueryRepository.class);
         StudyCommandRepository studyCommandRepository = mock(StudyCommandRepository.class);
         S3FileService s3FileService = mock(S3FileService.class);
         GracePeriodService gracePeriodService = mock(GracePeriodService.class);
@@ -49,7 +44,6 @@ class StudyEndApprovalBranchingTest {
         StudyCommandService service = newService(
                 studyDomainService,
                 studyParticipantDomainService,
-                studyQueryRepository,
                 studyCommandRepository,
                 s3FileService,
                 gracePeriodService
@@ -72,7 +66,6 @@ class StudyEndApprovalBranchingTest {
         // Given
         StudyDomainService studyDomainService = mock(StudyDomainService.class);
         StudyParticipantDomainService studyParticipantDomainService = mock(StudyParticipantDomainService.class);
-        StudyQueryRepository studyQueryRepository = mock(StudyQueryRepository.class);
         StudyCommandRepository studyCommandRepository = mock(StudyCommandRepository.class);
         S3FileService s3FileService = mock(S3FileService.class);
         GracePeriodService gracePeriodService = mock(GracePeriodService.class);
@@ -80,7 +73,6 @@ class StudyEndApprovalBranchingTest {
         StudyCommandService service = newService(
                 studyDomainService,
                 studyParticipantDomainService,
-                studyQueryRepository,
                 studyCommandRepository,
                 s3FileService,
                 gracePeriodService

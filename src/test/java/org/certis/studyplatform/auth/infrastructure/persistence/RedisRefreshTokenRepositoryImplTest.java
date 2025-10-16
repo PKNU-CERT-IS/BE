@@ -1,6 +1,5 @@
 package org.certis.studyplatform.auth.infrastructure.persistence;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.certis.studyplatform.auth.domain.model.vo.RefreshTokenVo;
 import org.certis.studyplatform.member.domain.vo.MemberIdVo;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,7 +17,6 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -39,7 +37,6 @@ class RedisRefreshTokenRepositoryImplTest {
     private ValueOperations<String, Object> valueOperations;
 
     private RedisRefreshTokenRepositoryImpl repository;
-    private ObjectMapper objectMapper;
 
     private static final Long TEST_MEMBER_ID = 1L;
     private static final String TEST_TOKEN = "test.refresh.token";
@@ -47,7 +44,6 @@ class RedisRefreshTokenRepositoryImplTest {
 
     @BeforeEach
     void setUp() {
-        objectMapper = new ObjectMapper();
         repository = new RedisRefreshTokenRepositoryImpl(redisTemplate);
     }
 

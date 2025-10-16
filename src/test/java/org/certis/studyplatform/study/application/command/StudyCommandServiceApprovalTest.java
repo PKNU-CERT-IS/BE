@@ -3,7 +3,6 @@ package org.certis.studyplatform.study.application.command;
 import org.certis.studyplatform.member.application.GracePeriodService;
 import org.certis.studyplatform.shared.service.S3FileService;
 import org.certis.studyplatform.study.domain.repository.StudyCommandRepository;
-import org.certis.studyplatform.study.domain.repository.StudyQueryRepository;
 import org.certis.studyplatform.study.domain.service.StudyDomainService;
 import org.certis.studyplatform.study.domain.service.StudyParticipantDomainService;
 import org.certis.studyplatform.study.domain.vo.StudyVo;
@@ -26,7 +25,6 @@ class StudyCommandServiceApprovalTest {
         // Given
         StudyDomainService studyDomainService = mock(StudyDomainService.class);
         StudyParticipantDomainService studyParticipantDomainService = mock(StudyParticipantDomainService.class);
-        StudyQueryRepository studyQueryRepository = mock(StudyQueryRepository.class);
         StudyCommandRepository studyCommandRepository = mock(StudyCommandRepository.class);
         S3FileService s3FileService = mock(S3FileService.class);
         GracePeriodService gracePeriodService = mock(GracePeriodService.class);
@@ -34,7 +32,6 @@ class StudyCommandServiceApprovalTest {
         StudyCommandService service = new StudyCommandService(
                 studyDomainService,
                 studyParticipantDomainService,
-                studyQueryRepository,
                 studyCommandRepository,
                 s3FileService,
                 gracePeriodService

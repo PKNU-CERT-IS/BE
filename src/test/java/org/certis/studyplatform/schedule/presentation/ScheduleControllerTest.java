@@ -22,7 +22,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.certis.generated.jooq.Tables.*;
@@ -489,7 +488,7 @@ class ScheduleControllerTest {
     private void createApprovedScheduleInDatabase() {
         OffsetDateTime now = OffsetDateTime.now();
 
-        var scheduleId = dsl.insertInto(SCHEDULE)
+        dsl.insertInto(SCHEDULE)
                 .set(SCHEDULE.ID, TEST_SCHEDULE_ID)
                 .set(SCHEDULE.MEMBER_ID, TEST_USER_ID)
                 .set(SCHEDULE.TITLE, TEST_SCHEDULE_TITLE)
