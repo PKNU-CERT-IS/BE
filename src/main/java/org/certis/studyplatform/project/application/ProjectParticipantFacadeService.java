@@ -14,6 +14,7 @@ import org.certis.studyplatform.project.application.query.ProjectQueryService;
 import org.certis.studyplatform.member.application.query.MemberQueryService;
 import org.certis.studyplatform.member.application.object.query.GetMemberByIdQuery;
 import org.certis.studyplatform.member.domain.vo.MemberVo;
+import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.project.domain.ProjectParticipantStatus;
 import org.certis.studyplatform.project.domain.vo.ProjectParticipantCreatedVo;
 import org.certis.studyplatform.project.domain.vo.ProjectParticipantStatusUpdatedVo;
@@ -60,12 +61,26 @@ public class ProjectParticipantFacadeService {
     public ProjectJoinResponseDto registerJoinProject(ProjectJoinRequestDto requestDto, Long requesterId) {
         log.info("Facade: Registering project join - projectId: {}", requestDto.getProjectId());
 
-        // DTO → Command Object 변환
-        CreateProjectParticipantCommand command = commandMapper
-                .toCreateProjectParticipantCommand(requestDto, requesterId);
+        // 재신청 복원 시나리오: 소프트 삭제(REJECTED)된 최근 신청 복원 시 OK
+        boolean restored = participantCommandService.restoreLatestSoftDeleted(requestDto.getProjectId(), requesterId);
 
-        // Command Service 호출
-        ProjectParticipantCreatedVo createdVo = participantCommandService.createParticipant(command);
+        ProjectParticipantCreatedVo createdVo;
+        if (!restored) {
+            // DTO → Command Object 변환 후 신규 생성
+            CreateProjectParticipantCommand command = commandMapper
+                    .toCreateProjectParticipantCommand(requestDto, requesterId);
+            // Command Service 호출
+            createdVo = participantCommandService.createParticipant(command);
+        } else {
+            // 복원된 경우: 응답은 동일 구조이나 HTTP 200을 위해 createdAt을 null 로 설정
+            createdVo = ProjectParticipantCreatedVo.of(
+                    null,
+                    requestDto.getProjectId(),
+                    requesterId,
+                    ProjectParticipantStatus.PENDING,
+                    null
+            );
+        }
 
         // VO → Response DTO 변환
         ProjectJoinResponseDto responseDto = dtoMapper.toProjectJoinResponseDto(createdVo);
@@ -96,11 +111,16 @@ public class ProjectParticipantFacadeService {
     public ProjectParticipantStatusUpdateResponseDto approveJoinProject(ProjectJoinApproveRequestDto requestDto,  Long requesterId) {
         log.info("Facade: Approving project join - projectId: {}, memberId: {}", requestDto.getProjectId(), requestDto.getMemberId());
 
-        // 권한 검증: 현재 사용자가 프로젝트 생성자인지 확인
+        // 권한 검증: 프로젝트 생성자 또는 관리자(STAFF 이상)만 승인 가능
         ProjectVo projectVo = projectQueryService.getProjectById(GetProjectByIdQuery.of(requestDto.getProjectId()));
-        if (!projectVo.creatorId().equals(requesterId)) {
+        boolean isLeader = projectVo.creatorId().equals(requesterId);
+        var requesterMember = memberQueryService.getMemberById(new GetMemberByIdQuery(requesterId));
+        boolean isAdmin = requesterMember != null
+                && requesterMember.role() != null
+                && MemberRole.isStaffOrAbove(requesterMember.role());
+        if (!(isLeader || isAdmin)) {
             throw new ApplicationException(ExceptionStatus.PROJECT_DOMAIN_PERMISSION_DENINED,
-                    "프로젝트 생성자가 아니므로 승인/거절 권한이 없습니다.");
+                    "프로젝트 생성자 또는 관리자만 참가 승인/거절을 할 수 있습니다.");
         }
 
         // 참가 신청 resolve: (projectId, memberId) → participantId
@@ -130,11 +150,16 @@ public class ProjectParticipantFacadeService {
     public ProjectParticipantStatusUpdateResponseDto rejectJoinProject(ProjectJoinRejectRequestDto requestDto, Long requesterId) {
         log.info("Facade: Rejecting project join - projectId: {}, memberId: {}", requestDto.getProjectId(), requestDto.getMemberId());
 
-        // 권한 검증: 현재 사용자가 프로젝트 생성자인지 확인
+        // 권한 검증: 프로젝트 생성자 또는 관리자(STAFF 이상)만 거절 가능
         ProjectVo projectVo = projectQueryService.getProjectById(GetProjectByIdQuery.of(requestDto.getProjectId()));
-        if (!projectVo.creatorId().equals(requesterId)) {
+        boolean isLeader = projectVo.creatorId().equals(requesterId);
+        var requesterMember = memberQueryService.getMemberById(new GetMemberByIdQuery(requesterId));
+        boolean isAdmin = requesterMember != null
+                && requesterMember.role() != null
+                && MemberRole.isStaffOrAbove(requesterMember.role());
+        if (!(isLeader || isAdmin)) {
             throw new ApplicationException(ExceptionStatus.PROJECT_DOMAIN_PERMISSION_DENINED,
-                    "프로젝트 생성자가 아니므로 승인/거절 권한이 없습니다.");
+                    "프로젝트 생성자 또는 관리자만 참가 승인/거절을 할 수 있습니다.");
         }
 
         // 참가 신청 resolve: (projectId, memberId) → participantId
@@ -318,7 +343,7 @@ public class ProjectParticipantFacadeService {
         AdminProjectParticipantApprovalResponseDto responseDto = dtoMapper
                 .toAdminProjectParticipantApprovalResponseDto(
                         participantVo, projectVo, updatedVo.currentStatus(), adminId, adminName,
-                        null, updatedVo.updatedAt());
+                        "자격 요건 충족", updatedVo.updatedAt());
 
         log.info("Facade: Admin approved project participant successfully with projectId and memberId - projectId: {}, memberId: {}", 
                 request.getProjectId(), request.getMemberId());
@@ -357,7 +382,7 @@ public class ProjectParticipantFacadeService {
         AdminProjectParticipantApprovalResponseDto responseDto = dtoMapper
                 .toAdminProjectParticipantApprovalResponseDto(
                         participantVo, projectVo, updatedVo.currentStatus(), adminId, adminName,
-                        null, updatedVo.updatedAt());
+                        "자격 요건 미충족", updatedVo.updatedAt());
 
         log.info("Facade: Admin rejected project participant successfully with projectId and memberId - projectId: {}, memberId: {}", 
                 request.getProjectId(), request.getMemberId());

@@ -69,12 +69,12 @@ public class MemberContact extends TableImpl<MemberContactRecord> {
     /**
      * The column <code>public.member_contact.github_url</code>.
      */
-    public final TableField<MemberContactRecord, String> GITHUB_URL = createField(DSL.name("github_url"), SQLDataType.VARCHAR(2000), this, "");
+    public final TableField<MemberContactRecord, String> GITHUB_URL = createField(DSL.name("github_url"), SQLDataType.VARCHAR, this, "");
 
     /**
      * The column <code>public.member_contact.linkedin_url</code>.
      */
-    public final TableField<MemberContactRecord, String> LINKEDIN_URL = createField(DSL.name("linkedin_url"), SQLDataType.VARCHAR(2000), this, "");
+    public final TableField<MemberContactRecord, String> LINKEDIN_URL = createField(DSL.name("linkedin_url"), SQLDataType.VARCHAR, this, "");
 
     /**
      * The column <code>public.member_contact.phone_number</code>.

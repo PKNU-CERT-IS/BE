@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.study.domain.repository.StudyQueryRepository;
 import org.certis.studyplatform.study.domain.StudyParticipantStatus;
+import org.certis.studyplatform.study.domain.StudyStatus;
 import org.certis.studyplatform.study.domain.vo.*;
 import org.certis.studyplatform.study.infrastructure.mapper.StudyInfrastructureMapper;
 import org.jooq.*;
@@ -13,12 +14,17 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
-
+import org.certis.studyplatform.study.infrastructure.persistence.entity.StudyEntity;
 import org.certis.studyplatform.member.domain.MemberGrade;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
+import org.certis.studyplatform.study.domain.vo.StudySummaryVo;
+import org.certis.studyplatform.shared.util.DateTimeUtils;
+import org.jooq.Table;
+import java.util.stream.Collectors;
+
 
 import static org.certis.generated.jooq.Tables.*;
 import static org.jooq.impl.DSL.*;
@@ -69,7 +75,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                             select(count())
                                     .from(STUDY_PARTICIPANT)
                                     .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
-                                    .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
+                                    .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.toString()))
                                     .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
                                     .asField("current_participants"),
                             s.MAX_PARTICIPANTS_NUMBER
@@ -82,7 +88,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
         ).map(r -> {
             String resultSubmitStatusString = r.get(s.RESULT_SUBMIT_STATUS);
             ResultSubmitStatus resultSubmitStatus = resultSubmitStatusString != null ? ResultSubmitStatus.valueOf(resultSubmitStatusString) : null;
-            org.certis.studyplatform.study.domain.StudyStatus studyStatus = r.get("status", org.certis.studyplatform.study.domain.StudyStatus.class);
+            StudyStatus studyStatus = r.get("status", StudyStatus.class);
             return new StudyEndSubmissionInfoVo(
                     r.get(s.ID),
                     studyStatus,
@@ -135,7 +141,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
                                                 .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
-                                                .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
+                                                .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.toString()))
                                                 .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
                                                 .asField("current_participants"),
                                         // StudyAttached 정보
@@ -152,8 +158,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .and(s.DELETED_AT.isNull())
                                 .fetch()
                                 .stream()
-                                .map(record -> (Record) record)
-                                .collect(java.util.stream.Collectors.toList())
+                                .collect(Collectors.toList())
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.toStudyVoFromRecordsWithAttachments(records));
 
@@ -231,20 +236,20 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .fetch()
                                 .stream()
                                 .map(record -> (Record) record)
-                                .collect(java.util.stream.Collectors.toList())
+                                .collect(Collectors.toList())
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.groupRecordsByStudyIdToSummaryVos(records))
                 .orElse(List.of());
         // Ensure all attachments are included (post-fetch expansion)
         studySummaries = studySummaries.stream().map(vo ->
-                org.certis.studyplatform.study.domain.vo.StudySummaryVo.of(
+                StudySummaryVo.of(
                         vo.id(), vo.title(), vo.description(), vo.category(), vo.subcategory(),
                         vo.startDate(), vo.endDate(), vo.studyCreatorName(), vo.studyCreatorGrade(),
                         vo.semester(), vo.status(), vo.isParticipantable(),
                         findAttachmentsByStudyId(vo.id()),
                         vo.maxParticipants(), vo.currentParticipants(), vo.resultSubmitStatus()
                 )
-        ).collect(java.util.stream.Collectors.toList());
+        ).collect(Collectors.toList());
 
         log.debug("jOOQ: Data query executed successfully, found {} study summaries",
                 studySummaries.size());
@@ -300,7 +305,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
                                                 .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
-                                                .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
+                                                .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.toString()))
                                                 .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
                                                 .asField("current_participants"),
                                         sa.ID.as("attached_id"),
@@ -319,19 +324,19 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .fetch()
                                 .stream()
                                 .map(record -> (Record) record)
-                                .collect(java.util.stream.Collectors.toList())
+                                .collect(Collectors.toList())
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.groupRecordsByStudyIdToSummaryVos(records))
                 .orElse(List.of());
         studySummaries = studySummaries.stream().map(vo ->
-                org.certis.studyplatform.study.domain.vo.StudySummaryVo.of(
+                StudySummaryVo.of(
                         vo.id(), vo.title(), vo.description(), vo.category(), vo.subcategory(),
                         vo.startDate(), vo.endDate(), vo.studyCreatorName(), vo.studyCreatorGrade(),
                         vo.semester(), vo.status(), vo.isParticipantable(),
                         findAttachmentsByStudyId(vo.id()),
                         vo.maxParticipants(), vo.currentParticipants(), vo.resultSubmitStatus()
                 )
-        ).collect(java.util.stream.Collectors.toList());
+        ).collect(Collectors.toList());
 
         return createSearchResult(studySummaries, total, pageable);
     }
@@ -392,19 +397,19 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .fetch()
                                 .stream()
                                 .map(record -> (Record) record)
-                                .collect(java.util.stream.Collectors.toList())
+                                .collect(Collectors.toList())
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.groupRecordsByStudyIdToSummaryVos(records))
                 .orElse(List.of());
         studySummaries = studySummaries.stream().map(vo ->
-                org.certis.studyplatform.study.domain.vo.StudySummaryVo.of(
+                StudySummaryVo.of(
                         vo.id(), vo.title(), vo.description(), vo.category(), vo.subcategory(),
                         vo.startDate(), vo.endDate(), vo.studyCreatorName(), vo.studyCreatorGrade(),
                         vo.semester(), vo.status(), vo.isParticipantable(),
                         findAttachmentsByStudyId(vo.id()),
                         vo.maxParticipants(), vo.currentParticipants(), vo.resultSubmitStatus()
                 )
-        ).collect(java.util.stream.Collectors.toList());
+        ).collect(Collectors.toList());
 
         return createSearchResult(studySummaries, total, pageable);
     }
@@ -467,19 +472,19 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .fetch()
                                 .stream()
                                 .map(record -> (Record) record)
-                                .collect(java.util.stream.Collectors.toList())
+                                .collect(Collectors.toList())
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.groupRecordsByStudyIdToSummaryVos(records))
                 .orElse(List.of());
         studySummaries = studySummaries.stream().map(vo ->
-                org.certis.studyplatform.study.domain.vo.StudySummaryVo.of(
+                StudySummaryVo.of(
                         vo.id(), vo.title(), vo.description(), vo.category(), vo.subcategory(),
                         vo.startDate(), vo.endDate(), vo.studyCreatorName(), vo.studyCreatorGrade(),
                         vo.semester(), vo.status(), vo.isParticipantable(),
                         findAttachmentsByStudyId(vo.id()),
                         vo.maxParticipants(), vo.currentParticipants(), vo.resultSubmitStatus()
                 )
-        ).collect(java.util.stream.Collectors.toList());
+        ).collect(Collectors.toList());
 
         return createSearchResult(studySummaries, total, pageable);
     }
@@ -503,7 +508,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
     }
 
     @Override
-    public java.util.List<StudyEndSubmissionInfoVo> findEndSubmissionsInProgress() {
+    public List<StudyEndSubmissionInfoVo> findEndSubmissionsInProgress() {
         var s = STUDY.as("s");
         var m = MEMBER.as("m");
         return dsl.select(
@@ -531,13 +536,13 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                 )
                 .from(s)
                 .leftJoin(m).on(s.MEMBER_ID.eq(m.ID))
-                .where(s.RESULT_SUBMIT_STATUS.eq(org.certis.studyplatform.shared.domain.ResultSubmitStatus.INPROGRESS.name()))
+                .where(s.RESULT_SUBMIT_STATUS.eq(ResultSubmitStatus.INPROGRESS.toString()))
                 .and(s.DELETED_AT.isNull())
                 .orderBy(s.RESULT_SUBMITTED_AT.desc())
                 .fetch(r -> new StudyEndSubmissionInfoVo(
                         r.get(s.ID),
-                        r.get("status", org.certis.studyplatform.study.domain.StudyStatus.class),
-                        org.certis.studyplatform.shared.domain.ResultSubmitStatus.valueOf(r.get(s.RESULT_SUBMIT_STATUS)),
+                        r.get("status", StudyStatus.class),
+                        ResultSubmitStatus.valueOf(r.get(s.RESULT_SUBMIT_STATUS)),
                         r.get(s.RESULT_SUBMITTED_AT),
                         r.get(s.RESULT_ATTACHED_URL),
                         r.get(s.CATEGORY),
@@ -596,7 +601,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                         select(count())
                                                 .from(STUDY_PARTICIPANT)
                                                 .where(STUDY_PARTICIPANT.STUDY_ID.eq(s.ID))
-                                                .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
+                                                .and(STUDY_PARTICIPANT.STATUS.eq(StudyParticipantStatus.APPROVED.toString()))
                                                 .and(STUDY_PARTICIPANT.DELETED_AT.isNull())
                                                 .asField("current_participants"),
                                         sa.ID.as("attached_id"),
@@ -615,19 +620,19 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .fetch()
                                 .stream()
                                 .map(record -> (Record) record)
-                                .collect(java.util.stream.Collectors.toList())
+                                .collect(Collectors.toList())
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.groupRecordsByStudyIdToSummaryVos(records))
                 .orElse(List.of());
         studySummaries = studySummaries.stream().map(vo ->
-                org.certis.studyplatform.study.domain.vo.StudySummaryVo.of(
+                StudySummaryVo.of(
                         vo.id(), vo.title(), vo.description(), vo.category(), vo.subcategory(),
                         vo.startDate(), vo.endDate(), vo.studyCreatorName(), vo.studyCreatorGrade(),
                         vo.semester(), vo.status(), vo.isParticipantable(),
                         findAttachmentsByStudyId(vo.id()),
                         vo.maxParticipants(), vo.currentParticipants(), vo.resultSubmitStatus()
                 )
-        ).collect(java.util.stream.Collectors.toList());
+        ).collect(Collectors.toList());
 
         return createSearchResult(studySummaries, total, pageable);
     }
@@ -690,19 +695,19 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .fetch()
                                 .stream()
                                 .map(record -> (Record) record)
-                                .collect(java.util.stream.Collectors.toList())
+                                .collect(Collectors.toList())
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.groupRecordsByStudyIdToSummaryVos(records))
                 .orElse(List.of());
         studySummaries = studySummaries.stream().map(vo ->
-                org.certis.studyplatform.study.domain.vo.StudySummaryVo.of(
+                StudySummaryVo.of(
                         vo.id(), vo.title(), vo.description(), vo.category(), vo.subcategory(),
                         vo.startDate(), vo.endDate(), vo.studyCreatorName(), vo.studyCreatorGrade(),
                         vo.semester(), vo.status(), vo.isParticipantable(),
                         findAttachmentsByStudyId(vo.id()),
                         vo.maxParticipants(), vo.currentParticipants(), vo.resultSubmitStatus()
                 )
-        ).collect(java.util.stream.Collectors.toList());
+        ).collect(Collectors.toList());
 
         return createSearchResult(studySummaries, total, pageable);
     }
@@ -766,19 +771,19 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .fetch()
                                 .stream()
                                 .map(record -> (Record) record)
-                                .collect(java.util.stream.Collectors.toList())
+                                .collect(Collectors.toList())
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.groupRecordsByStudyIdToSummaryVos(records))
                 .orElse(List.of());
         studies = studies.stream().map(vo ->
-                org.certis.studyplatform.study.domain.vo.StudySummaryVo.of(
+                StudySummaryVo.of(
                         vo.id(), vo.title(), vo.description(), vo.category(), vo.subcategory(),
                         vo.startDate(), vo.endDate(), vo.studyCreatorName(), vo.studyCreatorGrade(),
                         vo.semester(), vo.status(), vo.isParticipantable(),
                         findAttachmentsByStudyId(vo.id()),
                         vo.maxParticipants(), vo.currentParticipants(), vo.resultSubmitStatus()
                 )
-        ).collect(java.util.stream.Collectors.toList());
+        ).collect(Collectors.toList());
 
         return new PageImpl<>(studies, pageable, totalCount);
     }
@@ -827,19 +832,19 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .fetch()
                                 .stream()
                                 .map(record -> (Record) record)
-                                .collect(java.util.stream.Collectors.toList())
+                                .collect(Collectors.toList())
                 ).filter(records -> !records.isEmpty())
                 .map(mapper::groupRecordsByStudyIdToSummaryVos)
                 .orElse(List.of())
                 .stream()
-                .map(vo -> org.certis.studyplatform.study.domain.vo.StudySummaryVo.of(
+                .map(vo -> StudySummaryVo.of(
                         vo.id(), vo.title(), vo.description(), vo.category(), vo.subcategory(),
                         vo.startDate(), vo.endDate(), vo.studyCreatorName(), vo.studyCreatorGrade(),
                         vo.semester(), vo.status(), vo.isParticipantable(),
                         findAttachmentsByStudyId(vo.id()),
                         vo.maxParticipants(), vo.currentParticipants(), vo.resultSubmitStatus()
                 ))
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
     }
 
     // ================= Additional Helper Methods for Domain Service =================
@@ -885,8 +890,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
         var m = MEMBER.as("m");
         var sa = STUDY_ATTACHED.as("sa");
 
-        Optional<StudyVo> result = Optional.of(
-                        dsl.select(
+        List<Record> records = dsl.select(
                                         s.ID,
                                         s.STATUS.as("status"),
                                         s.TITLE,
@@ -922,12 +926,14 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .leftJoin(m).on(s.MEMBER_ID.eq(m.ID))
                                 .leftJoin(sa).on(s.ID.eq(sa.STUDY_ID).and(sa.DELETED_AT.isNull()))
                                 .where(s.ID.eq(studyId))
+                                .and(s.DELETED_AT.isNull())
                                 .fetch()
                                 .stream()
-                                .map(record -> (Record) record)
-                                .collect(java.util.stream.Collectors.toList())
-                ).filter(records -> !records.isEmpty())
-                .map(records -> mapper.toStudyVoFromRecordsWithAttachments(records));
+                                .collect(Collectors.toList());
+
+        Optional<StudyVo> result = records.isEmpty() ? 
+                Optional.empty() : 
+                Optional.of(mapper.toStudyVoFromRecordsWithAttachments(records));
 
         log.info("jOOQ: Study VO found - ID: {}", studyId);
         return result;
@@ -981,8 +987,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                                 .and(s.DELETED_AT.isNull())
                                 .fetch()
                                 .stream()
-                                .map(record -> (Record) record)
-                                .collect(java.util.stream.Collectors.toList())
+                                .collect(Collectors.toList())
                 ).filter(records -> !records.isEmpty())
                 .map(records -> mapper.toStudyVoFromRecordsWithAttachments(records));
 
@@ -1031,7 +1036,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
         if (criteria.semester() != null && !criteria.semester().trim().isEmpty()) {
             try {
                 // DateTimeUtils를 사용하여 semester 기간 파싱
-                var semesterPeriod = org.certis.studyplatform.shared.util.DateTimeUtils.parseSemesterPeriod(criteria.semester());
+                var semesterPeriod = DateTimeUtils.parseSemesterPeriod(criteria.semester());
 
                 // 스터디 기간이 학기 기간과 겹치는 경우를 검색
                 conditions = conditions.and(
@@ -1061,17 +1066,22 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
     }
 
     /**
-     * 스터디 상태 조건 구성 (상태 매핑 로직 적용)
-     * READY → READY, APPROVED
-     * INPROGRESS → INPROGRESS
-     * COMPLETED → COMPLETED
+     * 스터디 상태 조건 구성
+     * READY → (STATUS in [READY, APPROVED]) AND 미래 시작 (started_at > now)
+     * INPROGRESS → 과거 시작 & 미래 종료 (started_at <= now < ended_at)
+     * COMPLETED → 과거 종료 (ended_at <= now)
      */
-    private Condition buildStudyStatusCondition(String status, org.jooq.Table<?> s) {
-        var sTable = STUDY.as("s");
+    private Condition buildStudyStatusCondition(String status, Table<?> s) {
+        // Use the same table alias instance passed from the caller to avoid alias mismatches
+        OffsetDateTime now = OffsetDateTime.now();
+
         return switch (status) {
-            case "READY" -> sTable.STATUS.in("READY", "APPROVED");
-            case "INPROGRESS" -> sTable.STATUS.eq("INPROGRESS");
-            case "COMPLETED" -> sTable.STATUS.eq("COMPLETED");
+            case "READY" -> ((org.jooq.Table<?>) s).field(STUDY.STARTED_AT).cast(OffsetDateTime.class).gt(now)
+                    .and(((org.jooq.Table<?>) s).field(STUDY.STATUS).eq("READY")
+                            .or(((org.jooq.Table<?>) s).field(STUDY.STATUS).eq("APPROVED")));
+            case "INPROGRESS" -> ((org.jooq.Table<?>) s).field(STUDY.STARTED_AT).cast(OffsetDateTime.class).le(now)
+                    .and(((org.jooq.Table<?>) s).field(STUDY.ENDED_AT).cast(OffsetDateTime.class).gt(now));
+            case "COMPLETED" -> ((org.jooq.Table<?>) s).field(STUDY.ENDED_AT).cast(OffsetDateTime.class).le(now);
             default -> {
                 log.warn("jOOQ: Unknown study status: {}", status);
                 yield null;
@@ -1177,7 +1187,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                         record.get(sa.SIZE),
                         record.get(sa.ATTACHED_URL)
                 ))
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
 
         log.info("jOOQ: Found {} attachments for study ID: {}", attachments.size(), studyId);
         return attachments;
@@ -1195,14 +1205,14 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                 .fetch()
                 .stream()
                 .map(record -> record.get(STUDY.ID))
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
 
         log.info("jOOQ: Found {} approved studies started before {}", studyIds.size(), currentTime);
         return studyIds;
     }
 
     @Override
-    public Optional<org.certis.studyplatform.study.infrastructure.persistence.entity.StudyEntity> findEntityById(Long studyId) {
+    public Optional<StudyEntity> findEntityById(Long studyId) {
         log.info("jOOQ: Finding study entity by ID - {}", studyId);
         
         // JPA Repository를 통해 Entity 직접 조회
@@ -1213,7 +1223,7 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                 .fetchOne()
         ).map(record -> {
             // Record를 StudyEntity로 변환
-            return org.certis.studyplatform.study.infrastructure.persistence.entity.StudyEntity.builder()
+            return StudyEntity.builder()
                 .id(record.get(STUDY.ID))
                 .memberId(record.get(STUDY.MEMBER_ID))
                 .title(record.get(STUDY.TITLE))
@@ -1229,11 +1239,11 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
                 .deletedAt(record.get(STUDY.DELETED_AT))
                 .resultSubmittedAt(record.get(STUDY.RESULT_SUBMITTED_AT))
                 .resultSubmitStatus(record.get(STUDY.RESULT_SUBMIT_STATUS) != null ? 
-                    org.certis.studyplatform.shared.domain.ResultSubmitStatus.valueOf(record.get(STUDY.RESULT_SUBMIT_STATUS)) : null)
+                    ResultSubmitStatus.valueOf(record.get(STUDY.RESULT_SUBMIT_STATUS)) : null)
                 .resultAttachmentUrl(record.get(STUDY.RESULT_ATTACHED_URL))
                 .status(record.get(STUDY.STATUS) != null ? 
-                    org.certis.studyplatform.study.domain.StudyStatus.valueOf(record.get(STUDY.STATUS)) : 
-                    org.certis.studyplatform.study.domain.StudyStatus.READY)
+                    StudyStatus.valueOf(record.get(STUDY.STATUS)) : 
+                    StudyStatus.READY)
                 .build();
         });
     }

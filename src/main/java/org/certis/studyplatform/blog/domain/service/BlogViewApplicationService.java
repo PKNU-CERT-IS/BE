@@ -1,4 +1,4 @@
-package org.certis.studyplatform.blog.application.service;
+package org.certis.studyplatform.blog.domain.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

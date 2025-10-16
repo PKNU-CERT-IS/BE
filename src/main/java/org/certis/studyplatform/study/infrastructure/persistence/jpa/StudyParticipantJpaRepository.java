@@ -85,7 +85,7 @@ public interface StudyParticipantJpaRepository extends JpaRepository<StudyPartic
      * JPA JPQL은 LIMIT를 지원하지 않으므로 nativeQuery 사용
      */
     @Modifying(clearAutomatically = true)
-    @Query(value = "UPDATE study_participant p SET deleted_at = NULL, updated_at = :updatedAt " +
+    @Query(value = "UPDATE study_participant p SET deleted_at = NULL, updated_at = :updatedAt, status = 'PENDING' " +
             "WHERE p.id = (SELECT id FROM study_participant WHERE study_id = :studyId AND member_id = :memberId " +
             "AND deleted_at IS NOT NULL ORDER BY updated_at DESC LIMIT 1)", nativeQuery = true)
     int restoreLatestByStudyIdAndMemberId(@Param("studyId") Long studyId,

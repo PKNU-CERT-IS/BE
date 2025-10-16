@@ -23,6 +23,9 @@ import org.certis.studyplatform.member.application.query.MemberQueryService;
 import org.certis.studyplatform.member.domain.vo.MemberCreatedVo;
 import org.certis.studyplatform.member.domain.vo.MemberTokenInfoVo;
 import org.certis.studyplatform.shared.security.JwtTokenProvider;
+import org.certis.studyplatform.exception.DomainException;
+import org.certis.studyplatform.exception.ExceptionStatus;
+import org.certis.studyplatform.exception.InfrastructureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -93,32 +96,45 @@ public class AuthFacadeService {
     public RefreshAccessTokenResponseDto refreshAccessToken(String refreshToken) {
         log.info("안전한 토큰 갱신 시작");
 
-        // 1. RefreshToken 검증 및 사용자 ID 추출
-        Long tokenMemberId  = jwtTokenProvider.getUserIdFromToken(refreshToken);
-        ValidateRefreshTokenQuery validateQuery = ValidateRefreshTokenQuery.of(tokenMemberId);
-        RefreshTokenVo validationResult = authQueryService.validateRefreshToken(validateQuery);
+        try {
+            // 1. RefreshToken 검증 및 사용자 ID 추출
+            Long tokenMemberId = jwtTokenProvider.getUserIdFromToken(refreshToken);
+            ValidateRefreshTokenQuery validateQuery = ValidateRefreshTokenQuery.of(tokenMemberId);
+            RefreshTokenVo validationResult = authQueryService.validateRefreshToken(validateQuery);
 
-        Long verifiedMemberId = validationResult.memberId();
-        log.info("RefreshToken 검증 완료: memberId={}", verifiedMemberId);
+            Long verifiedMemberId = validationResult.memberId();
+            log.info("RefreshToken 검증 완료: memberId={}", verifiedMemberId);
 
-        // 2. DB에서 최신 사용자 정보 조회
-        GetMemberTokenInfoQuery memberQuery = GetMemberTokenInfoQuery.of(verifiedMemberId);
-        MemberTokenInfoVo memberInfo = memberQueryService.getMemberTokenInfo(memberQuery);
+            // 2. DB에서 최신 사용자 정보 조회
+            GetMemberTokenInfoQuery memberQuery = GetMemberTokenInfoQuery.of(verifiedMemberId);
+            MemberTokenInfoVo memberInfo = memberQueryService.getMemberTokenInfo(memberQuery);
 
-        // 3. 새 AccessToken 생성 Command 생성
-        RefreshTokenCommand command = RefreshTokenCommand.of(
-                memberInfo.memberId(),
-                memberInfo.studentNumber(),
-                memberInfo.email(),
-                memberInfo.name(),
-                memberInfo.role()
-        );
+            // 3. 새 AccessToken 생성 Command 생성
+            RefreshTokenCommand command = RefreshTokenCommand.of(
+                    memberInfo.memberId(),
+                    memberInfo.studentNumber(),
+                    memberInfo.email(),
+                    memberInfo.name(),
+                    memberInfo.role()
+            );
 
-        // 4. 새 AccessToken 생성 (RefreshToken 로테이션 없음)
-        AccessTokenVo newAccessToken = authCommandService.refreshAccessToken(command);
+            // 4. 새 AccessToken 생성 (RefreshToken 로테이션 없음)
+            AccessTokenVo newAccessToken = authCommandService.refreshAccessToken(command);
 
-        log.info("안전한 토큰 갱신 완료: memberId={}, role={}", memberInfo.memberId(), memberInfo.role());
-        return new RefreshAccessTokenResponseDto(newAccessToken.value());
+            log.info("안전한 토큰 갱신 완료: memberId={}, role={}", memberInfo.memberId(), memberInfo.role());
+            return new RefreshAccessTokenResponseDto(newAccessToken.value());
+            
+        } catch (InfrastructureException e) {
+            if (e.getStatus() == ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_TOKEN_EXPIRED) {
+                log.warn("만료된 RefreshToken으로 갱신 시도: {}", e.getMessage());
+                throw new DomainException(ExceptionStatus.AUTH_DOMAIN_JWT_TOKEN_EXPIRED, "RefreshToken이 만료되었습니다. 다시 로그인해주세요.");
+            }
+            log.error("토큰 갱신 중 인프라 오류 발생: {}", e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            log.error("토큰 갱신 중 예상치 못한 오류 발생: {}", e.getMessage(), e);
+            throw new DomainException(ExceptionStatus.AUTH_DOMAIN_JWT_TOKEN_PARSE_ERROR, "토큰 갱신에 실패했습니다.");
+        }
     }
 
     @Transactional

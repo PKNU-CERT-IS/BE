@@ -8,6 +8,7 @@ import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.member.application.query.MemberQueryService;
 import org.certis.studyplatform.member.application.object.query.GetMemberByIdQuery;
 import org.certis.studyplatform.member.domain.vo.MemberVo;
+import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.study.application.query.StudyQueryService;
 import org.certis.studyplatform.study.application.object.query.GetStudyByIdQuery;
 import org.certis.studyplatform.study.domain.vo.StudyVo;
@@ -18,8 +19,8 @@ import org.certis.studyplatform.study.domain.vo.StudyParticipantVo;
 import org.certis.studyplatform.study.presentation.dto.request.StudyJoinApproveRequestDto;
 import org.certis.studyplatform.study.presentation.dto.request.StudyJoinCancelRequestDto;
 import org.certis.studyplatform.study.presentation.dto.request.StudyJoinRejectRequestDto;
-import org.certis.studyplatform.study.presentation.dto.request.StudyJoinRequestDto;
 import org.certis.studyplatform.study.presentation.dto.request.AdminStudyParticipantApprovalRequestDto;
+import org.certis.studyplatform.study.presentation.dto.request.StudyJoinRequestDto;
 import org.certis.studyplatform.study.presentation.dto.response.StudyJoinResponseDto;
 import org.certis.studyplatform.study.presentation.dto.response.StudyParticipantStatusUpdateResponseDto;
 import org.certis.studyplatform.study.presentation.dto.response.AdminStudyParticipantApprovalResponseDto;
@@ -95,11 +96,17 @@ public class StudyParticipantFacadeService {
     public StudyParticipantStatusUpdateResponseDto approveJoinStudy(StudyJoinApproveRequestDto requestDto, Long currentUserId) {
         log.info("Facade: Approving study join - studyId: {}, memberId: {}", requestDto.getStudyId(), requestDto.getMemberId());
 
-        // 권한 검증: 현재 사용자가 스터디 생성자인지 확인
+        // 권한 검증: 스터디 생성자 또는 관리자(STAFF 이상)만 승인 가능
         StudyVo studyVo = studyQueryService.getStudyById(GetStudyByIdQuery.of(requestDto.getStudyId()));
-        if (!studyVo.creatorId().equals(currentUserId)) {
-            throw new ApplicationException(ExceptionStatus.STUDY_DOMAIN_PERMISSION_DENINED,
-                    "스터디 생성자가 아니므로 승인/거절 권한이 없습니다.");
+        boolean isLeader = studyVo.creatorId().equals(currentUserId);
+        MemberVo requesterMember = memberQueryService.getMemberById(new GetMemberByIdQuery(currentUserId));
+        boolean isAdmin = requesterMember != null
+                && requesterMember.role() != null
+                && MemberRole.isStaffOrAbove(requesterMember.role());
+        if (!(isLeader || isAdmin)) {
+            throw new ApplicationException(
+                    ExceptionStatus.STUDY_DOMAIN_PERMISSION_DENINED,
+                    "스터디 생성자 또는 관리자만 참가 승인/거절을 할 수 있습니다.");
         }
 
         // 참가 신청 resolve: (studyId, memberId) → participantId
@@ -119,7 +126,7 @@ public class StudyParticipantFacadeService {
         // Response 변환
         StudyParticipantStatusUpdateResponseDto responseDto = dtoMapper
                 .toStudyParticipantStatusUpdateResponseDto(updatedVo);
-        log.info("Facade: Study join approved successfully - participantId: {}", responseDto.getStudyId());
+        log.info("Facade: Study join approved successfully - participantId: {}", updatedVo.id());
         return responseDto;
     }
 
@@ -129,11 +136,17 @@ public class StudyParticipantFacadeService {
     public StudyParticipantStatusUpdateResponseDto rejectJoinStudy(StudyJoinRejectRequestDto requestDto, Long currentUserId) {
         log.info("Facade: Rejecting study join - studyId: {}, memberId: {}", requestDto.getStudyId(), requestDto.getMemberId());
 
-        // 권한 검증: 현재 사용자가 스터디 생성자인지 확인
+        // 권한 검증: 스터디 생성자 또는 관리자(STAFF 이상)만 거절 가능
         StudyVo studyVo = studyQueryService.getStudyById(GetStudyByIdQuery.of(requestDto.getStudyId()));
-        if (!studyVo.creatorId().equals(currentUserId)) {
-            throw new ApplicationException(ExceptionStatus.STUDY_DOMAIN_PERMISSION_DENINED,
-                    "스터디 생성자가 아니므로 승인/거절 권한이 없습니다.");
+        boolean isLeader = studyVo.creatorId().equals(currentUserId);
+        MemberVo requesterMember = memberQueryService.getMemberById(new GetMemberByIdQuery(currentUserId));
+        boolean isAdmin = requesterMember != null
+                && requesterMember.role() != null
+                && MemberRole.isStaffOrAbove(requesterMember.role());
+        if (!(isLeader || isAdmin)) {
+            throw new ApplicationException(
+                    ExceptionStatus.STUDY_DOMAIN_PERMISSION_DENINED,
+                    "스터디 생성자 또는 관리자만 참가 승인/거절을 할 수 있습니다.");
         }
 
         // 참가 신청 resolve: (studyId, memberId) → participantId
@@ -153,7 +166,7 @@ public class StudyParticipantFacadeService {
         // Response 변환
         StudyParticipantStatusUpdateResponseDto responseDto = dtoMapper
                 .toStudyParticipantStatusUpdateResponseDto(updatedVo);
-        log.info("Facade: Study join rejected successfully - participantId: {}", responseDto.getStudyId());
+        log.info("Facade: Study join rejected successfully - participantId: {}", updatedVo.id());
         return responseDto;
     }
 
@@ -244,8 +257,6 @@ public class StudyParticipantFacadeService {
             adminName = adminVo != null ? adminVo.name() : null;
         }
 
-        String reason = request.getReason();
-
         // VO → Response DTO 변환 (실데이터 적용)
         AdminStudyParticipantApprovalResponseDto responseDto = dtoMapper
                 .toAdminStudyParticipantApprovalResponseDto(
@@ -254,8 +265,7 @@ public class StudyParticipantFacadeService {
                         memberName,
                         StudyParticipantStatus.APPROVED,
                         adminId,
-                        adminName,
-                        reason
+                        adminName
                 );
 
         log.info("Facade: Admin study participant approved successfully - participantId: {}", 
@@ -295,8 +305,6 @@ public class StudyParticipantFacadeService {
             adminName = adminVo != null ? adminVo.name() : null;
         }
 
-        String reason = request.getReason();
-
         // VO → Response DTO 변환 (실데이터 적용)
         AdminStudyParticipantApprovalResponseDto responseDto = dtoMapper
                 .toAdminStudyParticipantApprovalResponseDto(
@@ -305,8 +313,7 @@ public class StudyParticipantFacadeService {
                         memberName,
                         StudyParticipantStatus.REJECTED,
                         adminId,
-                        adminName,
-                        reason
+                        adminName
                 );
 
         log.info("Facade: Admin study participant rejected successfully - participantId: {}", 
@@ -318,14 +325,15 @@ public class StudyParticipantFacadeService {
      * 관리자가 스터디 참가 신청을 승인 (studyId, memberId 사용)
      */
     public AdminStudyParticipantApprovalResponseDto approveParticipantByAdminWithStudyAndMember(
-            StudyJoinApproveRequestDto request, Long adminId) {
+            AdminStudyParticipantApprovalRequestDto request, Long adminId) {
         log.info("Facade: Admin approving study participant with studyId and memberId - studyId: {}, memberId: {}, adminId: {}", 
                 request.getStudyId(), request.getMemberId(), adminId);
 
         // 1. 참가자 정보 조회 (studyId, memberId로)
         StudyParticipantVo participantVo = participantQueryService
                 .getByStudyIdAndMemberId(request.getStudyId(), request.getMemberId())
-                .orElseThrow(() -> new IllegalArgumentException("참가 신청을 찾을 수 없습니다: studyId=" + request.getStudyId() + ", memberId=" + request.getMemberId()));
+                .orElseThrow(() -> new ApplicationException(ExceptionStatus.STUDY_DOMAIN_NOT_FOUND,
+                        "참가 신청을 찾을 수 없습니다"));
 
         // 2. 스터디 정보 조회
         StudyVo studyVo = studyQueryService.getStudyById(GetStudyByIdQuery.of(participantVo.studyId()));
@@ -350,8 +358,7 @@ public class StudyParticipantFacadeService {
                         participantVo.memberName(),
                         StudyParticipantStatus.APPROVED,
                         adminId,
-                        adminName,
-                        null
+                        adminName
                 );
 
         log.info("Facade: Admin approved study participant successfully with studyId and memberId - studyId: {}, memberId: {}", 
@@ -363,14 +370,15 @@ public class StudyParticipantFacadeService {
      * 관리자가 스터디 참가 신청을 거절 (studyId, memberId 사용)
      */
     public AdminStudyParticipantApprovalResponseDto rejectParticipantByAdminWithStudyAndMember(
-            StudyJoinRejectRequestDto request, Long adminId) {
+            AdminStudyParticipantApprovalRequestDto request, Long adminId) {
         log.info("Facade: Admin rejecting study participant with studyId and memberId - studyId: {}, memberId: {}, adminId: {}", 
                 request.getStudyId(), request.getMemberId(), adminId);
 
         // 1. 참가자 정보 조회 (studyId, memberId로)
         StudyParticipantVo participantVo = participantQueryService
                 .getByStudyIdAndMemberId(request.getStudyId(), request.getMemberId())
-                .orElseThrow(() -> new IllegalArgumentException("참가 신청을 찾을 수 없습니다: studyId=" + request.getStudyId() + ", memberId=" + request.getMemberId()));
+                .orElseThrow(() -> new ApplicationException(ExceptionStatus.STUDY_DOMAIN_NOT_FOUND,
+                        "참가 신청을 찾을 수 없습니다"));
 
         // 2. 스터디 정보 조회
         StudyVo studyVo = studyQueryService.getStudyById(GetStudyByIdQuery.of(participantVo.studyId()));
@@ -395,8 +403,7 @@ public class StudyParticipantFacadeService {
                         participantVo.memberName(),
                         StudyParticipantStatus.REJECTED,
                         adminId,
-                        adminName,
-                        null
+                        adminName
                 );
 
         log.info("Facade: Admin rejected study participant successfully with studyId and memberId - studyId: {}, memberId: {}", 

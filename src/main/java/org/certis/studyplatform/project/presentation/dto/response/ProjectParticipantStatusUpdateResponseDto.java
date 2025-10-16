@@ -10,6 +10,7 @@ import java.time.OffsetDateTime;
 @Builder(toBuilder = true)
 public class ProjectParticipantStatusUpdateResponseDto {
 
+    private Long participantId;
     private Long projectId;
     private Long memberId;
     private ProjectParticipantStatus previousStatus;

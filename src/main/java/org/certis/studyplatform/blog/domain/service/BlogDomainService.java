@@ -77,8 +77,8 @@ public class BlogDomainService {
     public BlogVo createBlog(CreateBlogCommand command) {
         log.info("Domain: Creating blog from command - {}", command.title());
 
-        // referenceType에 따라 참조 제목 조회
-        String referenceTitle = getReferenceTitle(command.referenceType(), command.referenceId());
+        // referenceType에 따라 참조 제목 조회 및 참조 검증
+        String referenceTitle = validateAndGetReferenceTitle(command.referenceType(), command.referenceId());
 
         // BlogVo.createNew() 사용 - 조회된 referenceTitle 포함
         BlogVo blogVo = BlogVo.createNew(
@@ -376,8 +376,45 @@ public class BlogDomainService {
     // ================================================================
 
     /**
+     * 블로그 생성 시 참조 검증 및 제목 조회
+     * 참조 대상이 존재하지 않으면 DomainException 발생
+     */
+    private String validateAndGetReferenceTitle(ArticleReferenceType referenceType, Long referenceId) {
+        if (referenceType == null || referenceId == null) {
+            throw new DomainException(ExceptionStatus.BLOG_DOMAIN_INVALID_REFERENCE, 
+                "블로그 참조 타입과 ID는 필수입니다");
+        }
+
+        try {
+            switch (referenceType) {
+                case STUDY -> {
+                    StudyVo studyVo = studyDomainService.getStudyById(new GetStudyByIdQuery(referenceId));
+                    return studyVo.title();
+                }
+                case PROJECT -> {
+                    ProjectVo projectVo = projectDomainService.getProjectById(new GetProjectByIdQuery(referenceId));
+                    return projectVo.title();
+                }
+                default -> {
+                    throw new DomainException(ExceptionStatus.BLOG_DOMAIN_INVALID_REFERENCE, 
+                        "지원하지 않는 참조 타입입니다: " + referenceType);
+                }
+            }
+        } catch (DomainException e) {
+            // Study나 Project를 찾을 수 없는 경우
+            if (e.getStatus() == ExceptionStatus.STUDY_DOMAIN_NOT_FOUND ||
+                    e.getStatus() == ExceptionStatus.PROJECT_DOMAIN_NOT_FOUND) {
+                throw new DomainException(ExceptionStatus.BLOG_DOMAIN_INVALID_REFERENCE, 
+                    "존재하지 않는 " + referenceType.name() + "를 참조할 수 없습니다 (ID: " + referenceId + ")");
+            }
+            throw e;
+        }
+    }
+
+    /**
      * referenceType과 referenceId를 통해 참조 제목 조회
      * Study 또는 Project의 제목을 동적으로 조회
+     * 참조 대상이 없어도 null을 반환 (블로그 조회 시 사용)
      */
     private String getReferenceTitle(ArticleReferenceType referenceType, Long referenceId) {
         if (referenceType == null || referenceId == null) {

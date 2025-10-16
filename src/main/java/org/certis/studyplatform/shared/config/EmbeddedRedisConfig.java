@@ -23,7 +23,7 @@ import java.net.ServerSocket;
  */
 @Slf4j
 @Component
-@Profile({"local", "test"})
+@Profile({"local", "test", "redis-test"})
 @Order(1) // Redis 관련 다른 빈들보다 먼저 실행
 @ConditionalOnProperty(name = "embedded.redis.enabled", havingValue = "true", matchIfMissing = true)
 public class EmbeddedRedisConfig {

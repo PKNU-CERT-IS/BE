@@ -410,6 +410,8 @@ public class ProjectCommandService {
         // Mark result submission rejected only; keep deletedAt as-is (null) for visibility
         OffsetDateTime now = OffsetDateTime.now();
         projectJpaRepository.rejectEnd(projectId, ResultSubmitStatus.REJECTED, now);
+        // Also mark project as completely rejected (soft delete) per branching rules
+        projectJpaRepository.rejectCompletely(projectId, now);
     }
 
     /**

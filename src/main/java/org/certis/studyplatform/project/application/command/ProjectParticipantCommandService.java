@@ -76,4 +76,12 @@ public class ProjectParticipantCommandService {
         log.info("Command: Participant rejected successfully - ID: {}", result.id());
         return result;
     }
+
+    /**
+     * 소프트 삭제된 참가 신청 복원 (있으면 true)
+     */
+    @Transactional
+    public boolean restoreLatestSoftDeleted(Long projectId, Long memberId) {
+        return domainService.restoreLatestSoftDeleted(projectId, memberId);
+    }
 }

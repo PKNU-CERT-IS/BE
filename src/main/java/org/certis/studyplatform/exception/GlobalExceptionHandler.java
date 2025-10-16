@@ -20,6 +20,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.security.SignatureException;
+import io.jsonwebtoken.UnsupportedJwtException;
 
 import java.time.OffsetDateTime;
 import java.util.HashMap;
@@ -481,6 +486,85 @@ public class GlobalExceptionHandler {
     }
 
     // =================================================================
+    // JWT EXCEPTIONS
+    // =================================================================
+
+    /**
+     * JWT 토큰 만료 예외 처리
+     */
+    @ExceptionHandler(ExpiredJwtException.class)
+    public ResponseEntity<GlobalResponseHandler<Object>> handleExpiredJwtException(
+            ExpiredJwtException ex, WebRequest request) {
+        log.warn("JWT token expired: {}", ex.getMessage());
+
+        return GlobalResponseHandler.error(
+                ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_TOKEN_EXPIRED.getStatusCode(),
+                ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_TOKEN_EXPIRED.getMessage(),
+                createErrorDetails("JWT_EXPIRED", request)
+        );
+    }
+
+    /**
+     * JWT 토큰 형식 오류 예외 처리
+     */
+    @ExceptionHandler(MalformedJwtException.class)
+    public ResponseEntity<GlobalResponseHandler<Object>> handleMalformedJwtException(
+            MalformedJwtException ex, WebRequest request) {
+        log.warn("Malformed JWT token: {}", ex.getMessage());
+
+        return GlobalResponseHandler.error(
+                ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_TOKEN_INVALID_FORMAT.getStatusCode(),
+                ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_TOKEN_INVALID_FORMAT.getMessage(),
+                createErrorDetails("JWT_MALFORMED", request)
+        );
+    }
+
+    /**
+     * JWT 토큰 서명 오류 예외 처리
+     */
+    @ExceptionHandler(SignatureException.class)
+    public ResponseEntity<GlobalResponseHandler<Object>> handleSignatureException(
+            SignatureException ex, WebRequest request) {
+        log.warn("JWT signature invalid: {}", ex.getMessage());
+
+        return GlobalResponseHandler.error(
+                ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_TOKEN_INVALID_SIGNATURE.getStatusCode(),
+                ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_TOKEN_INVALID_SIGNATURE.getMessage(),
+                createErrorDetails("JWT_SIGNATURE_INVALID", request)
+        );
+    }
+
+    /**
+     * 지원하지 않는 JWT 토큰 예외 처리
+     */
+    @ExceptionHandler(UnsupportedJwtException.class)
+    public ResponseEntity<GlobalResponseHandler<Object>> handleUnsupportedJwtException(
+            UnsupportedJwtException ex, WebRequest request) {
+        log.warn("Unsupported JWT token: {}", ex.getMessage());
+
+        return GlobalResponseHandler.error(
+                ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_TOKEN_UNSUPPORTED.getStatusCode(),
+                ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_TOKEN_UNSUPPORTED.getMessage(),
+                createErrorDetails("JWT_UNSUPPORTED", request)
+        );
+    }
+
+    /**
+     * 일반적인 JWT 예외 처리
+     */
+    @ExceptionHandler(JwtException.class)
+    public ResponseEntity<GlobalResponseHandler<Object>> handleJwtException(
+            JwtException ex, WebRequest request) {
+        log.warn("JWT exception: {}", ex.getMessage());
+
+        return GlobalResponseHandler.error(
+                ExceptionStatus.AUTH_INFRASTRUCTURE_INVALID_ACCESS_TOKEN.getStatusCode(),
+                ExceptionStatus.AUTH_INFRASTRUCTURE_INVALID_ACCESS_TOKEN.getMessage(),
+                createErrorDetails("JWT_INVALID", request)
+        );
+    }
+
+    // =================================================================
     // HELPER METHODS
     // =================================================================
 
@@ -607,6 +691,47 @@ public class GlobalExceptionHandler {
                     HttpStatus.CONFLICT.value(),
                     illegalStateEx.getMessage(),
                     createErrorDetails("BUSINESS_RULE_VIOLATION", request)
+            );
+        }
+
+        // JWT 예외들
+        if (cause instanceof ExpiredJwtException) {
+            return GlobalResponseHandler.error(
+                    ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_TOKEN_EXPIRED.getStatusCode(),
+                    ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_TOKEN_EXPIRED.getMessage(),
+                    createErrorDetails("JWT_EXPIRED", request)
+            );
+        }
+
+        if (cause instanceof MalformedJwtException) {
+            return GlobalResponseHandler.error(
+                    ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_TOKEN_INVALID_FORMAT.getStatusCode(),
+                    ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_TOKEN_INVALID_FORMAT.getMessage(),
+                    createErrorDetails("JWT_MALFORMED", request)
+            );
+        }
+
+        if (cause instanceof SignatureException) {
+            return GlobalResponseHandler.error(
+                    ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_TOKEN_INVALID_SIGNATURE.getStatusCode(),
+                    ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_TOKEN_INVALID_SIGNATURE.getMessage(),
+                    createErrorDetails("JWT_SIGNATURE_INVALID", request)
+            );
+        }
+
+        if (cause instanceof UnsupportedJwtException) {
+            return GlobalResponseHandler.error(
+                    ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_TOKEN_UNSUPPORTED.getStatusCode(),
+                    ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_TOKEN_UNSUPPORTED.getMessage(),
+                    createErrorDetails("JWT_UNSUPPORTED", request)
+            );
+        }
+
+        if (cause instanceof JwtException) {
+            return GlobalResponseHandler.error(
+                    ExceptionStatus.AUTH_INFRASTRUCTURE_INVALID_ACCESS_TOKEN.getStatusCode(),
+                    ExceptionStatus.AUTH_INFRASTRUCTURE_INVALID_ACCESS_TOKEN.getMessage(),
+                    createErrorDetails("JWT_INVALID", request)
             );
         }
 

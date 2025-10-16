@@ -120,11 +120,31 @@ public class JwtTokenProvider {
     }
 
     private Claims getClaimsFromToken(String token){
-        return  Jwts.parser()
-                .verifyWith(key)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+        try {
+            return Jwts.parser()
+                    .verifyWith(key)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+        } catch (ExpiredJwtException e) {
+            log.debug("JWT token expired: {}", e.getMessage());
+            throw new InfrastructureException(ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_TOKEN_EXPIRED);
+        } catch (UnsupportedJwtException e) {
+            log.warn("Unsupported JWT token: {}", e.getMessage());
+            throw new InfrastructureException(ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_TOKEN_UNSUPPORTED);
+        } catch (MalformedJwtException e) {
+            log.warn("Malformed JWT token: {}", e.getMessage());
+            throw new InfrastructureException(ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_TOKEN_INVALID_FORMAT);
+        } catch (SecurityException e) {
+            log.warn("Invalid JWT signature: {}", e.getMessage());
+            throw new InfrastructureException(ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_TOKEN_INVALID_SIGNATURE);
+        } catch (IllegalArgumentException e) {
+            log.warn("JWT token compact invalid: {}", e.getMessage());
+            throw new InfrastructureException(ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_TOKEN_MISSING_CLAIMS);
+        } catch (JwtException e) {
+            log.warn("JWT 유효성 검증 실패: {}", e.getMessage());
+            throw new InfrastructureException(ExceptionStatus.AUTH_INFRASTRUCTURE_JWT_TOKEN_PARSE_ERROR);
+        }
     }
 
     // 토큰에서 사용자 ID 추출

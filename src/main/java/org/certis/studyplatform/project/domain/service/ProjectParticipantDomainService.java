@@ -8,6 +8,7 @@ import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.member.domain.repository.query.MemberQueryRepository;
 import org.certis.studyplatform.member.domain.vo.MemberIdVo;
 import org.certis.studyplatform.project.application.object.command.*;
+import org.certis.studyplatform.project.domain.ProjectStatus;
 import org.certis.studyplatform.project.domain.ProjectParticipantStatus;
 import org.certis.studyplatform.project.domain.repository.ProjectParticipantCommandRepository;
 import org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository;
@@ -154,16 +155,16 @@ public class ProjectParticipantDomainService {
         // 3. 프로젝트 생성자 권한 확인
         validateProjectLeaderPermission(participant.projectId(), command.requesterId());
 
-        // 4. 거절 처리 (소프트 삭제)
-        commandRepository.softDeleteById(command.participantId());
+        // 4. 거절 처리: 소프트 삭제 수행 (상태는 논리적으로 REJECTED로 간주)
+        commandRepository.softDeleteById(participant.id());
 
-        // 5. 결과 VO 생성 (거절된 상태로 반환)
         ProjectParticipantStatusUpdatedVo result = ProjectParticipantStatusUpdatedVo.of(
                 participant.id(),
                 participant.projectId(),
                 participant.memberId(),
-                participant.status(), // 이전 상태 (PENDING)
-                ProjectParticipantStatus.REJECTED); // 현재 상태 (REJECTED)
+                participant.status(),
+                ProjectParticipantStatus.REJECTED
+        );
 
         log.info("Domain: Participant rejected (soft deleted) - ID: {}", result.id());
         return result;
@@ -194,6 +195,15 @@ public class ProjectParticipantDomainService {
         commandRepository.deleteByIdHard(participantId);
 
         log.info("Domain: Approved participant cancelled (hard deleted) - ID: {}", participantId);
+    }
+
+    /**
+     * 소프트 삭제된 참가 신청 복원 (가장 최신 1건)
+     * @return 복원 성공 여부
+     */
+    public boolean restoreLatestSoftDeleted(Long projectId, Long memberId) {
+        int restored = commandRepository.restoreByProjectIdAndMemberId(projectId, memberId);
+        return restored > 0;
     }
 
     /**
@@ -250,7 +260,7 @@ public class ProjectParticipantDomainService {
                         "프로젝트를 찾을 수 없습니다."));
 
         // 프로젝트 종료 여부 확인 (시간 비교가 아닌, DB에 저장된 status 기준)
-        if (org.certis.studyplatform.project.domain.ProjectStatus.fromStatusString(project.status()).isCompleted()) {
+        if (ProjectStatus.fromStatusString(project.status()).isCompleted()) {
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_DEADLINE_PASSED,
                     "종료된 프로젝트에는 참가할 수 없습니다.");
         }

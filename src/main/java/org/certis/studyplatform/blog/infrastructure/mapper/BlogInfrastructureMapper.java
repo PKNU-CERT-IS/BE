@@ -135,9 +135,7 @@ public class BlogInfrastructureMapper {
         String projectTitle = record.get("project_title", String.class);
         Long memberId = record.get(BLOG.MEMBER_ID);
         String creatorName = record.get("creator_name", String.class);
-        String creatorProfileImage = record.get("creator_profile_image", String.class);
         OffsetDateTime createdAt = record.get(BLOG.CREATED_AT);
-        OffsetDateTime updatedAt = record.get(BLOG.UPDATED_AT);
         Boolean isPublic = record.get(BLOG.IS_PUBLIC);
 
         // 참조 타입 및 정보 결정
@@ -198,10 +196,10 @@ public class BlogInfrastructureMapper {
         OffsetDateTime createdAt = record.get(BLOG.CREATED_AT);
         OffsetDateTime updatedAt = record.get(BLOG.UPDATED_AT);
         String creatorName = record.get("creator_name", String.class);
-        String creatorProfileImage = record.get("creator_profile_image", String.class);
-        if (creatorProfileImage == null) {
-            creatorProfileImage = record.get("profile_image", String.class);
-        }
+        String creatorProfileImage = null;
+        
+        // creator_profile_image 필드 조회
+        creatorProfileImage = record.get("creator_profile_image", String.class);
         
         // 디버그 로그 추가 - 모든 필드 확인
         log.debug("BlogSummaryVo mapping - blogId: {}, creatorName: {}, creatorProfileImage: {}", 
@@ -327,50 +325,6 @@ public class BlogInfrastructureMapper {
             return ArticleReferenceType.STUDY;
         } else if (projectId != null) {
             return ArticleReferenceType.PROJECT;
-        }
-        return null;
-    }
-
-    /**
-     * BlogEntity의 studyId, projectId를 이용해서 referenceId 결정
-     */
-    private Long determineReferenceId(Long studyId, Long projectId) {
-        if (studyId != null) {
-            return studyId;
-        } else if (projectId != null) {
-            return projectId;
-        }
-        return null;
-    }
-
-    /**
-     * Category 문자열을 List<String>으로 변환 (BlogVo용 - 여전히 List<String> 사용)
-     */
-    private List<String> convertCategoryStringToList(String categoryStr) {
-        if (categoryStr == null || categoryStr.trim().isEmpty()) {
-            return Collections.emptyList();
-        }
-        return Arrays.asList(categoryStr.split(","));
-    }
-
-    /**
-     * Category List<String>을 문자열로 변환 (Entity 저장용)
-     */
-    private String convertCategoryListToString(List<String> categories) {
-        if (categories == null || categories.isEmpty()) {
-            return "";
-        }
-        return String.join(",", categories);
-    }
-
-    /**
-     * 참조 제목 결정 (JOIN 결과에서)
-     */
-    private String determineReferenceTitle(Long studyId, Long projectId, String studyTitle, String projectTitle) {
-        if (studyId != null && studyTitle != null) {
-            return studyTitle;
-        } else if (projectId != null && projectTitle != null) {
-            return projectTitle;
         }
         return null;
     }

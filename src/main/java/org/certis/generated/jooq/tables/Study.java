@@ -139,7 +139,7 @@ public class Study extends TableImpl<StudyRecord> {
     /**
      * The column <code>public.study.result_submit_status</code>.
      */
-    public final TableField<StudyRecord, String> RESULT_SUBMIT_STATUS = createField(DSL.name("result_submit_status"), SQLDataType.VARCHAR(20).defaultValue(DSL.field(DSL.raw("'READY'::character varying"), SQLDataType.VARCHAR)), this, "");
+    public final TableField<StudyRecord, String> RESULT_SUBMIT_STATUS = createField(DSL.name("result_submit_status"), SQLDataType.VARCHAR(20).nullable(false).defaultValue(DSL.field(DSL.raw("'READY'::character varying"), SQLDataType.VARCHAR)), this, "");
 
     /**
      * The column <code>public.study.status</code>.

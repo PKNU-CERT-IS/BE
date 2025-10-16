@@ -4,12 +4,11 @@ spring:
       on-profile: test
 
   datasource:
-    # 테스트에서 트랜잭션 제어를 위한 설정
     hikari:
-      auto-commit: false # autoCommit 비활성화하여 트랜잭션 제어 가능하게 함
+      auto-commit: false
       connection-timeout: 60000
-      maximum-pool-size: 2
-      minimum-idle: 1
+      maximum-pool-size: 5 # 증가
+      minimum-idle: 2 # 증가
       validation-timeout: 10000
       idle-timeout: 300000
       max-lifetime: 600000
@@ -22,7 +21,7 @@ spring:
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
         implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
-    show-sql: false # 테스트 시 로그 최소화
+    show-sql: false
     properties:
       hibernate:
         format_sql: false
@@ -30,33 +29,18 @@ spring:
           lob:
             non_contextual_creation: true
         connection:
-          autocommit: false # Hibernate 레벨에서도 autoCommit 비활성화
+          autocommit: false
+    defer-datasource-initialization: false # false로 변경
 
   sql:
     init:
-      mode: never # 테스트에서는 SQL 초기화 비활성화
+      mode: never
 
   flyway:
     enabled: false
-
-  # Redis 설정 (EmbeddedRedis 사용)
-  data:
-    redis:
-      client-type: lettuce
-      host: ${embedded.redis.host:localhost}
-      port: ${embedded.redis.actual.port:6379}
-      timeout: 2000ms
-      database: 0
-      lettuce:
-        pool:
-          max-active: 8
-          max-idle: 8
-          min-idle: 0
-
-  # Redisson 자동 설정을 위한 표준 spring.redis 속성
-  redis:
-    host: ${embedded.redis.host:localhost}
-    port: ${embedded.redis.actual.port:6379}
+    locations: classpath:db/migration/common
+    baseline-on-migrate: true
+    clean-disabled: false # 테스트에서는 clean 허용
 
   # 캐시 비활성화
   cache:
@@ -65,7 +49,7 @@ spring:
 # 애플리케이션 설정
 app:
   jwt:
-    secret: test-secret-key-for-testing-only
+    secret: test-secret-key-for-testing-only-must-be-at-least-32-characters-long
     access-token-expiry: 3600000
     refresh-token-expiry: 86400000
   cors:
@@ -78,39 +62,29 @@ app:
 
 # AWS 설정
 aws:
-  access-key-id: ${AWS_ACCESS_KEY_ID:}
-  secret-access-key: ${AWS_SECRET_ACCESS_KEY:}
-  region: ${AWS_DEFAULT_REGION:ap-northeast-2}
+  access-key-id: test-key
+  secret-access-key: test-secret
+  region: ap-northeast-2
   s3:
-    bucket: ${AWS_S3_BUCKET:test-bucket}
+    bucket: test-bucket
 
-# Embedded PostgreSQL 설정은 TestEmbeddedPostgresConfig에서 처리
-
-# 로깅 설정 (트랜잭션 디버깅을 위한 설정)
+# 로깅 설정
 logging:
   level:
     org.certis.studyplatform: DEBUG
     org.springframework.transaction: DEBUG
-    org.hibernate.engine.transaction: DEBUG
-    org.springframework.orm.jpa: DEBUG
+    org.springframework.test.context.cache: DEBUG # Context 캐시 관련 로그 추가
+    org.springframework.boot.test.context: DEBUG # 테스트 컨텍스트 로그 추가
     org.hibernate: WARN
-    io.zonky.test.db.postgres: WARN
+    io.zonky.test.db.postgres: INFO # Embedded Postgres 로그 보기
+    org.flywaydb: INFO # Flyway 로그 보기
     org.springframework: WARN
     root: WARN
-
-# 환경변수 설정 (테스트에서는 SQL 초기화 비활성화)
-SQL_INIT_MODE: always
 
 # Management 비활성화
 management:
   endpoints:
     enabled-by-default: false
 
-# Embedded servers for testing
-embedded:
-  redis:
-    enabled: true
-    port: 6379
-
-# Redis 데이터 저장소 비활성화 (테스트에서는 Redis Repository 사용 안함)
+# Redis 데이터 저장소 비활성화
 spring.data.redis.repositories.enabled: false

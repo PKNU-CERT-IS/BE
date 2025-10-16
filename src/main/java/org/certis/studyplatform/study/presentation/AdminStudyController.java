@@ -10,8 +10,7 @@ import org.certis.studyplatform.shared.security.CurrentUser;
 import org.certis.studyplatform.study.application.StudyParticipantFacadeService;
 
 import org.springframework.web.bind.annotation.PathVariable;
-import org.certis.studyplatform.study.presentation.dto.request.StudyJoinApproveRequestDto;
-import org.certis.studyplatform.study.presentation.dto.request.StudyJoinRejectRequestDto;
+import org.certis.studyplatform.study.presentation.dto.request.AdminStudyParticipantApprovalRequestDto;
 import org.certis.studyplatform.study.presentation.dto.response.AdminStudyEndSubmissionResponseDto;
 import org.certis.studyplatform.study.presentation.dto.response.AdminStudyParticipantApprovalResponseDto;
 import org.certis.studyplatform.study.application.StudyFacadeService;
@@ -22,6 +21,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.certis.studyplatform.study.presentation.dto.request.AdminStudyUpdateRequestDto;
+import org.certis.studyplatform.study.presentation.dto.request.AdminStudyApprovalRequestDto;
 
 /**
  * Admin Study Controller
@@ -49,7 +49,7 @@ public class AdminStudyController {
     @PostMapping("/participant/approve")
     @Operation(summary = "스터디 참가 신청 승인", description = "스터디 참가 신청을 승인합니다")
     public ResponseEntity<GlobalResponseHandler<AdminStudyParticipantApprovalResponseDto>> approveStudyParticipant(
-            @Valid @RequestBody StudyJoinApproveRequestDto request,
+            @Valid @RequestBody AdminStudyParticipantApprovalRequestDto request,
             @AuthenticationPrincipal CurrentUser currentUser
     ) {
         log.info("Admin: Approving study participant - studyId: {}, memberId: {}, adminId: {}", 
@@ -74,7 +74,7 @@ public class AdminStudyController {
     @PostMapping("/participant/reject")
     @Operation(summary = "스터디 참가 신청 거절", description = "스터디 참가 신청을 거절합니다")
     public ResponseEntity<GlobalResponseHandler<AdminStudyParticipantApprovalResponseDto>> rejectStudyParticipant(
-            @Valid @RequestBody StudyJoinRejectRequestDto request,
+            @Valid @RequestBody AdminStudyParticipantApprovalRequestDto request,
             @AuthenticationPrincipal CurrentUser currentUser
     ) {
         log.info("Admin: Rejecting study participant - studyId: {}, memberId: {}, adminId: {}", 
@@ -105,7 +105,7 @@ public class AdminStudyController {
     @PostMapping("/end/approve")
     @Operation(summary = "스터디 종료 제출 승인", description = "스터디 종료 제출을 승인하고 endedAt을 설정합니다")
     public ResponseEntity<GlobalResponseHandler<Void>> approveStudyEnd(
-            @Valid @RequestBody org.certis.studyplatform.study.presentation.dto.request.AdminStudyApprovalRequestDto request,
+            @Valid @RequestBody AdminStudyApprovalRequestDto request,
             @AuthenticationPrincipal CurrentUser currentUser) {
         studyFacadeService.approveStudyEnd(request.getStudyId(), currentUser.getId());
         return GlobalResponseHandler.success(ResponseStatus.STUDY_END_SUCCESS);
@@ -114,7 +114,7 @@ public class AdminStudyController {
     @PostMapping("/end/reject")
     @Operation(summary = "스터디 종료 제출 거절", description = "스터디 종료 제출을 거절하고 첨부를 삭제합니다")
     public ResponseEntity<GlobalResponseHandler<Void>> rejectStudyEnd(
-            @Valid @RequestBody org.certis.studyplatform.study.presentation.dto.request.AdminStudyApprovalRequestDto request,
+            @Valid @RequestBody AdminStudyApprovalRequestDto request,
             @AuthenticationPrincipal CurrentUser currentUser) {
         studyFacadeService.rejectStudyEnd(request.getStudyId(), currentUser.getId());
         return GlobalResponseHandler.success(ResponseStatus.STUDY_END_REJECT_SUCCESS);
@@ -138,7 +138,7 @@ public class AdminStudyController {
     @PostMapping("/create/approve")
     @Operation(summary = "스터디 생성 승인", description = "스터디 생성 요청을 승인하고 유예기간을 연장합니다")
     public ResponseEntity<GlobalResponseHandler<Void>> approveStudyCreation(
-            @Valid @RequestBody org.certis.studyplatform.study.presentation.dto.request.AdminStudyApprovalRequestDto request,
+            @Valid @RequestBody AdminStudyApprovalRequestDto request,
             @AuthenticationPrincipal CurrentUser currentUser) {
         studyFacadeService.approveStudyCreation(request.getStudyId(), currentUser.getId());
         return GlobalResponseHandler.success(ResponseStatus.STUDY_UPDATE_SUCCESS);
@@ -147,7 +147,7 @@ public class AdminStudyController {
     @PostMapping("/create/reject")
     @Operation(summary = "스터디 생성 거절", description = "스터디 생성 요청을 거절하고 소프트 삭제합니다")
     public ResponseEntity<GlobalResponseHandler<Void>> rejectStudyCreation(
-            @Valid @RequestBody org.certis.studyplatform.study.presentation.dto.request.AdminStudyApprovalRequestDto request,
+            @Valid @RequestBody AdminStudyApprovalRequestDto request,
             @AuthenticationPrincipal CurrentUser currentUser) {
         studyFacadeService.rejectStudyCreation(request.getStudyId(), currentUser.getId());
         return GlobalResponseHandler.success(ResponseStatus.STUDY_DELETE_SUCCESS);

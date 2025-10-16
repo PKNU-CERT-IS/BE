@@ -6,7 +6,6 @@ UPDATE study
 SET result_submit_status = 'READY' 
 WHERE result_submit_status IS NULL;
 
--- NOT NULL 제약 추가
 ALTER TABLE study 
 ALTER COLUMN result_submit_status SET NOT NULL;
 
@@ -16,6 +15,5 @@ UPDATE project
 SET result_submit_status = 'READY' 
 WHERE result_submit_status IS NULL;
 
--- NOT NULL 제약 추가
 ALTER TABLE project 
 ALTER COLUMN result_submit_status SET NOT NULL;

@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
-import javax.sql.DataSource;
 import java.util.Arrays;
 import java.util.List;
 
@@ -23,7 +22,6 @@ import java.util.List;
 @Order(1) // 다른 초기화보다 먼저 실행
 public class FlywayConfig implements CommandLineRunner {
 
-    private final DataSource dataSource;
     private final Flyway flyway;
 
     @Value("${app.flyway.auto-clean:false}")
@@ -38,8 +36,7 @@ public class FlywayConfig implements CommandLineRunner {
     @Value("${spring.flyway.locations:}")
     private List<String> flywayLocations;
 
-    public FlywayConfig(DataSource dataSource, Flyway flyway) {
-        this.dataSource = dataSource;
+    public FlywayConfig(Flyway flyway) {
         this.flyway = flyway;
     }
 

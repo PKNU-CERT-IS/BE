@@ -254,6 +254,7 @@ public class ProjectApplicationDtoMapper {
         };
 
         return ProjectParticipantStatusUpdateResponseDto.builder()
+                .participantId(vo.id())
                 .projectId(vo.projectId())
                 .memberId(vo.memberId())
                 .previousStatus(vo.previousStatus())
@@ -268,6 +269,10 @@ public class ProjectApplicationDtoMapper {
      */
     public ProjectParticipantSummaryResponseDto toProjectParticipantSummaryResponseDto(
             ProjectParticipantSummaryVo vo) {
+        String normalizedProfileUrl = normalizeUrl(vo.memberProfileImageUrl());
+        if (normalizedProfileUrl == null) {
+            normalizedProfileUrl = ""; // ensure field exists in JSON
+        }
         return ProjectParticipantSummaryResponseDto.builder()
                 .id(vo.id())
                 .memberId(vo.memberId())
@@ -275,7 +280,7 @@ public class ProjectApplicationDtoMapper {
                 .memberGrade(vo.memberGrade())
                 .status(vo.status())
                 .createdAt(vo.createdAt())
-                .profileImageUrl(normalizeUrl(vo.memberProfileImageUrl()))
+                .profileImageUrl(normalizedProfileUrl)
                 .build();
     }
 
