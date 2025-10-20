@@ -65,7 +65,7 @@ public class BoardEntity {
         this.content = content;
         this.category = category;
         this.description = description;
-                this.createdAt = createdAt;
+        this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.deletedAt = deletedAt;
     }

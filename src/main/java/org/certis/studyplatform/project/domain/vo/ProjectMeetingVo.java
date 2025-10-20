@@ -4,7 +4,6 @@ import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 
 /**
  * Project Meeting Value Object

@@ -1,11 +1,7 @@
 package org.certis.studyplatform.member.domain.vo;
 
 import jakarta.persistence.Embeddable;
-import org.certis.studyplatform.exception.DomainException;
-import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.member.domain.MemberGrade;
-
-import java.util.Set;
 
 /**
  * 학년 Value Object

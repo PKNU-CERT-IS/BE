@@ -384,8 +384,7 @@ public class StudyApplicationDtoMapper {
             String memberName,
             org.certis.studyplatform.study.domain.StudyParticipantStatus status,
             Long adminId,
-            String adminName,
-            String reason
+            String adminName
     ) {
         return AdminStudyParticipantApprovalResponseDto.builder()
                 .studyId(vo.studyId())
@@ -393,7 +392,6 @@ public class StudyApplicationDtoMapper {
                 .memberId(vo.memberId())
                 .memberName(memberName)
                 .status(status)
-                .reason(reason)
                 .adminId(adminId)
                 .adminName(adminName)
                 .processedAt(vo.updatedAt())

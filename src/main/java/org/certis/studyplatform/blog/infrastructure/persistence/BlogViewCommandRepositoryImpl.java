@@ -2,15 +2,11 @@ package org.certis.studyplatform.blog.infrastructure.persistence;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.certis.studyplatform.blog.domain.repository.BlogCommandRepository;
 import org.certis.studyplatform.blog.domain.repository.BlogViewCommandRepository;
 import org.certis.studyplatform.blog.infrastructure.persistence.entity.BlogViewEntity;
-import org.certis.studyplatform.blog.infrastructure.persistence.jpa.BlogJpaRepository;
 import org.certis.studyplatform.blog.infrastructure.persistence.jpa.BlogViewJpaRepository;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor

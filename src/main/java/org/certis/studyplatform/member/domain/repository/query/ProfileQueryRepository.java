@@ -1,6 +1,5 @@
 package org.certis.studyplatform.member.domain.repository.query;
 
-import org.certis.studyplatform.member.domain.Profile;
 import org.certis.studyplatform.member.domain.vo.*;
 
 import java.util.List;

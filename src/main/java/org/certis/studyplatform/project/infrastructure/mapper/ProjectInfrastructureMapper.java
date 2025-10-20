@@ -7,12 +7,10 @@ import org.certis.studyplatform.project.infrastructure.persistence.entity.Projec
 import org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectParticipantEntity;
 import org.jooq.Record;
 import org.springframework.stereotype.Component;
-import org.certis.studyplatform.project.domain.ProjectParticipantStatus;
 import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 import java.time.OffsetDateTime;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -173,7 +171,6 @@ public class ProjectInfrastructureMapper {
         }
 
         OffsetDateTime endedAt = record.get(PROJECT.ENDED_AT);
-        OffsetDateTime deletedAt = record.get(PROJECT.DELETED_AT);
         ResultSubmitStatus submitStatus = record.get("result_submit_status", ResultSubmitStatus.class);
         if (submitStatus == null) {
             submitStatus = ResultSubmitStatus.READY;
@@ -323,7 +320,6 @@ public class ProjectInfrastructureMapper {
         }
 
         OffsetDateTime endedAt = firstRecord.get(PROJECT.ENDED_AT);
-        OffsetDateTime deletedAt = firstRecord.get(PROJECT.DELETED_AT);
         ResultSubmitStatus submitStatus = firstRecord.get("result_submit_status", ResultSubmitStatus.class);
         if (submitStatus == null) {
             submitStatus = ResultSubmitStatus.READY;
@@ -400,7 +396,6 @@ public class ProjectInfrastructureMapper {
         }
 
         OffsetDateTime endedAt = record.get(PROJECT.ENDED_AT);
-        OffsetDateTime deletedAt = record.get(PROJECT.DELETED_AT);
         ResultSubmitStatus submitStatus = record.get("result_submit_status", ResultSubmitStatus.class);
         if (submitStatus == null) {
             submitStatus = ResultSubmitStatus.READY;
@@ -442,74 +437,6 @@ public class ProjectInfrastructureMapper {
     // PRIVATE HELPER METHODS
     // ================================================================
 
-    /**
-     * PostgreSQL 배열을 List<String>으로 변환
-     */
-    private List<String> convertArrayToList(Object skillsArray) {
-        if (skillsArray == null) {
-            return new ArrayList<>();
-        }
-
-        if (skillsArray instanceof String[]) {
-            return Arrays.asList((String[]) skillsArray);
-        }
-
-        if (skillsArray instanceof Object[]) {
-            Object[] objects = (Object[]) skillsArray;
-            List<String> skills = new ArrayList<>();
-            for (Object obj : objects) {
-                if (obj != null) {
-                    skills.add(obj.toString());
-                }
-            }
-            return skills;
-        }
-
-        return new ArrayList<>();
-    }
-
-    /**
-     * category, subCategory를 List로 변환 (ProjectSummaryVo용)
-     */
-    private List<String> buildCategoryList(String category, String subCategory) {
-        List<String> categories = new ArrayList<>();
-        if (category != null) {
-            categories.add(category);
-        }
-        if (subCategory != null) {
-            categories.add(subCategory);
-        }
-        return categories;
-    }
-
-    /**
-     * 프로젝트 상태를 ProjectStatus enum으로 계산
-     */
-    private String calculateStatusString(OffsetDateTime startDate, OffsetDateTime endDate,
-                                         OffsetDateTime deletedAt,
-                                         ResultSubmitStatus resultSubmitStatus) {
-        if (deletedAt != null) {
-            return ProjectStatus.REJECTED.name();
-        }
-        OffsetDateTime now = OffsetDateTime.now();
-        // 종료 승인 또는 종료 시간이 현재와 같거나 이전이면 완료 처리
-        if (resultSubmitStatus == ResultSubmitStatus.COMPLETED) {
-            return ProjectStatus.COMPLETED.name();
-        }
-        if (endDate != null && (now.isAfter(endDate) || now.isEqual(endDate))) {
-            return ProjectStatus.COMPLETED.name();
-        }
-        if (startDate == null || endDate == null) {
-            return ProjectStatus.READY.name();
-        }
-        if (now.isBefore(startDate)) {
-            return ProjectStatus.READY.name();
-        }
-        if (now.isBefore(endDate)) {
-            return ProjectStatus.INPROGRESS.name();
-        }
-        return ProjectStatus.INPROGRESS.name();
-    }
 
     /**
      * Record에 DB의 명시적 status 컬럼이 포함되어 있으면 그 값을 우선 사용한다.

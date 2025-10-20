@@ -2,8 +2,6 @@ package org.certis.studyplatform.study.application.object.query;
 
 import org.springframework.data.domain.Pageable;
 
-import java.util.List;
-
 /**
  * Search Studies Query
  *

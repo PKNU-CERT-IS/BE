@@ -1,9 +1,6 @@
 package org.certis.studyplatform.schedule.domain.repository;
 
 import org.certis.studyplatform.member.domain.vo.MemberIdVo;
-import org.certis.studyplatform.schedule.application.object.query.GetAllApprovedScheduleRequestsQuery;
-import org.certis.studyplatform.schedule.application.object.query.GetMyRequestsQuery;
-import org.certis.studyplatform.schedule.application.object.query.GetPendingScheduleRequestsQuery;
 import org.certis.studyplatform.schedule.domain.model.vo.AdminScheduleVo;
 import org.certis.studyplatform.schedule.domain.model.vo.ScheduleDateVo;
 import org.certis.studyplatform.schedule.domain.model.vo.ScheduleIdVo;

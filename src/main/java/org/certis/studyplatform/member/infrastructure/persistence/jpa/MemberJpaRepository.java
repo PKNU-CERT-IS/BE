@@ -1,12 +1,7 @@
 package org.certis.studyplatform.member.infrastructure.persistence.jpa;
 
 import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberEntity;
-import org.certis.studyplatform.member.domain.MemberRole;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-import java.util.List;
-import java.util.Optional;
 
 /**
  * Member JPA Repository

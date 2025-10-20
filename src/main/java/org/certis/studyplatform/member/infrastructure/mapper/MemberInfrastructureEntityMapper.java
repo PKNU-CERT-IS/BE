@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -216,34 +215,6 @@ public class MemberInfrastructureEntityMapper {
                 .toArray(String[]::new);
     }
 
-    /**
-     * List<String>을 String[] 배열로 변환
-     */
-    private String[] convertSkillsListToArray(List<String> skills) {
-        if (skills == null || skills.isEmpty()) {
-            return new String[0];
-        }
-
-        return skills.stream()
-                .filter(skill -> skill != null && !skill.trim().isEmpty())
-                .map(String::trim)
-                .toArray(String[]::new);
-    }
-
-    /**
-     * String[] 배열을 검색용 문자열로 변환
-     */
-    private String joinSkillsArray(String[] skillsArray) {
-        if (skillsArray == null || skillsArray.length == 0) {
-            return "";
-        }
-
-        return Arrays.stream(skillsArray)
-                .filter(skill -> skill != null && !skill.trim().isEmpty())
-                .reduce((a, b) -> a + "," + b)
-                .orElse("");
-    }
-
     // =================================================================
     // VO → Primitive 값 추출 헬퍼 메서드들
     // 각 VO에서 안전하게 primitive 값을 추출
@@ -267,16 +238,6 @@ public class MemberInfrastructureEntityMapper {
             throw new IllegalArgumentException("StudentNumberVo는 필수입니다");
         }
         return studentNumberVo.value();
-    }
-
-    /**
-     * GradeVo → String 추출
-     */
-    private MemberGrade extractGradeValue(GradeVo gradeVo) {
-        if (gradeVo == null) {
-            throw new IllegalArgumentException("GradeVo는 필수입니다");
-        }
-        return gradeVo.grade();
     }
 
     /**

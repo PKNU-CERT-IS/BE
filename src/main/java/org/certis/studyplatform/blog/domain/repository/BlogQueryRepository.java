@@ -5,7 +5,6 @@ import org.certis.studyplatform.blog.domain.vo.BlogSummaryVo;
 import org.certis.studyplatform.blog.domain.vo.BlogSearchCriteriaVo;
 import org.certis.studyplatform.blog.domain.vo.BlogSearchResultVo;
 import org.certis.studyplatform.blog.domain.vo.BlogEnableReferenceVo;
-import org.certis.studyplatform.blog.domain.ArticleReferenceType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

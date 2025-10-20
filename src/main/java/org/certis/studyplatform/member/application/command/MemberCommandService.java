@@ -2,13 +2,11 @@ package org.certis.studyplatform.member.application.command;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.certis.studyplatform.member.application.mapper.MemberApplicationMapper;
 import org.certis.studyplatform.member.application.object.command.*;
 import org.certis.studyplatform.member.domain.service.MemberDomainService;
 import org.certis.studyplatform.member.domain.vo.AdminMemberUpdateResultVo;
 import org.certis.studyplatform.member.domain.vo.MemberCreatedVo;
 import org.certis.studyplatform.member.domain.vo.MemberUpdatedVo;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,8 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class MemberCommandService {
 
     private final MemberDomainService memberDomainService;
-    private final MemberApplicationMapper memberApplicationMapper; // VO → DTO 변환용
-    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 회원 생성

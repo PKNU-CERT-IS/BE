@@ -1,10 +1,8 @@
 package org.certis.studyplatform.member.application.mapper;
 
 import lombok.RequiredArgsConstructor;
-import org.certis.studyplatform.member.application.object.command.CreateMemberCommand;
 import org.certis.studyplatform.member.application.object.command.DeleteMemberCommand;
 import org.certis.studyplatform.member.application.object.command.UpdateMemberCommand;
-import org.certis.studyplatform.member.presentation.dto.request.MemberCreateRequestDto;
 import org.certis.studyplatform.member.presentation.dto.request.MemberUpdateRequestDto;
 import org.springframework.stereotype.Component;
 

@@ -1,7 +1,5 @@
 package org.certis.studyplatform.study.domain.vo;
 
-import java.util.List;
-
 /**
  * 스터디 검색 조건 VO
  *

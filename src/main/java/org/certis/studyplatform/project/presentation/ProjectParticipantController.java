@@ -1,7 +1,6 @@
 package org.certis.studyplatform.project.presentation;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.project.application.ProjectParticipantFacadeService;
@@ -54,7 +53,7 @@ public class ProjectParticipantController {
 
         log.info("Controller: Project join registered successfully - projectId: {}",
                 responseDto.getProjectId());
-
+        // 재신청(복원)도 신규 생성과 동일하게 201 Created로 응답
         return GlobalResponseHandler.success(ResponseStatus.PROJECT_PARTICIPANT_JOIN_REGISTERED, responseDto);
     }
 

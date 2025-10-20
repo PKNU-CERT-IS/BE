@@ -2,8 +2,6 @@ package org.certis.studyplatform.board.domain.repository;
 
 import org.certis.studyplatform.board.domain.model.vo.BoardIdVo;
 
-import java.util.List;
-
 public interface BoardRedisRepository {
 
     // 초기 설정 ( 조회수, 좋아요 수 )

@@ -4,18 +4,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.blog.domain.repository.BlogCommandRepository;
 import org.certis.studyplatform.blog.domain.vo.BlogVo;
-import org.certis.studyplatform.blog.domain.vo.BlogIdVo;
 import org.certis.studyplatform.blog.infrastructure.persistence.jpa.BlogJpaRepository;
-import org.certis.studyplatform.blog.infrastructure.persistence.jpa.BlogViewJpaRepository;
 import org.certis.studyplatform.blog.infrastructure.persistence.entity.BlogEntity;
-import org.certis.studyplatform.blog.infrastructure.persistence.entity.BlogViewEntity;
 import org.certis.studyplatform.blog.infrastructure.mapper.BlogInfrastructureMapper;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
-import java.util.Optional;
-
 /**
  * Blog Command Repository Implementation
  *
@@ -33,7 +28,6 @@ import java.util.Optional;
 public class BlogCommandRepositoryImpl implements BlogCommandRepository {
 
     private final BlogJpaRepository jpaRepository;
-    private final BlogViewJpaRepository blogViewJpaRepository;
     private final BlogInfrastructureMapper mapper;
 
     /**

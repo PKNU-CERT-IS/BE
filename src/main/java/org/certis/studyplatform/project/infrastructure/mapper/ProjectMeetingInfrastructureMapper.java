@@ -1,6 +1,5 @@
 package org.certis.studyplatform.project.infrastructure.mapper;
 
-import lombok.RequiredArgsConstructor;
 import org.certis.studyplatform.project.domain.vo.ProjectMeetingSummaryVo;
 import org.certis.studyplatform.project.domain.vo.ProjectMeetingVo;
 import org.certis.studyplatform.project.domain.vo.ProjectMeetingLinkVo;

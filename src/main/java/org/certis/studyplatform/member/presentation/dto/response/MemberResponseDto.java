@@ -1,6 +1,5 @@
 package org.certis.studyplatform.member.presentation.dto.response;
 
-import org.certis.studyplatform.member.domain.Member;
 import lombok.*;
 
 import java.time.OffsetDateTime;

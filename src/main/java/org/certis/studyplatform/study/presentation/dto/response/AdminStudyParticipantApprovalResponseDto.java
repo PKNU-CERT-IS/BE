@@ -24,7 +24,6 @@ public class AdminStudyParticipantApprovalResponseDto {
     private Long memberId;
     private String memberName;
     private StudyParticipantStatus status;
-    private String reason;
     private Long adminId;
     private String adminName;
     private OffsetDateTime processedAt;

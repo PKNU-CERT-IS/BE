@@ -1,7 +1,6 @@
 package org.certis.studyplatform.project.domain.vo;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 
 /**
  * Project Meeting Created Value Object

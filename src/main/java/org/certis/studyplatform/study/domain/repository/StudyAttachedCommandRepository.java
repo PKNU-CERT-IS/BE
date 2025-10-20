@@ -2,8 +2,6 @@ package org.certis.studyplatform.study.domain.repository;
 
 import org.certis.studyplatform.study.domain.vo.StudyAttachedVo;
 
-import java.util.List;
-
 /**
  * Study Attached Command Repository Interface
  *

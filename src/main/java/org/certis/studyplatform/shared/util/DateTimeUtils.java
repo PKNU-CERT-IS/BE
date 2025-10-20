@@ -51,7 +51,6 @@ public final class DateTimeUtils {
      */
     public static boolean isAfterSundayAt6PM() {
         OffsetDateTime now = OffsetDateTime.now();
-        OffsetDateTime sundayAt6PM = getSundayAt6PM(now);
 
         // 현재가 일요일이고 6시 이후인 경우
         if (now.getDayOfWeek() == DayOfWeek.SUNDAY && now.getHour() >= 18) {

@@ -1058,35 +1058,6 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
         };
     }
 
-    /**
-     * ✅ jOOQ 생성 테이블로 프로젝트 상태 조건 구성
-     */
-    private Condition buildStatusCondition(String status) {
-        String upperStatus = status.toUpperCase();
-        OffsetDateTime now = OffsetDateTime.now();
-        log.debug("jOOQ: Building status condition for '{}' with current time: {}", upperStatus, now);
-
-        var p = PROJECT.as("p");
-
-        switch (upperStatus) {
-            case "READY":
-                Condition readyCondition = p.STARTED_AT.greaterThan(now);
-                log.debug("jOOQ: READY condition: p.started_at > {}", now);
-                return readyCondition;
-            case "INPROGRESS":
-                Condition inProgressCondition = p.STARTED_AT.lessOrEqual(now)
-                        .and(p.ENDED_AT.greaterOrEqual(now));
-                log.debug("jOOQ: INPROGRESS condition: p.started_at <= {} AND p.ended_at >= {}", now, now);
-                return inProgressCondition;
-            case "COMPLETED":
-                Condition completedCondition = p.ENDED_AT.lessThan(now);
-                log.debug("jOOQ: COMPLETED condition: p.ended_at < {}", now);
-                return completedCondition;
-            default:
-                log.warn("jOOQ: Unknown project status: {}", status);
-                return null;
-        }
-    }
 
     /**
      * ✅ jOOQ 생성 테이블로 정렬 조건 구성

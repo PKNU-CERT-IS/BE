@@ -12,11 +12,9 @@ import org.certis.studyplatform.study.infrastructure.mapper.StudyInfrastructureM
 import org.certis.studyplatform.study.infrastructure.persistence.entity.StudyParticipantEntity;
 import org.certis.studyplatform.study.infrastructure.persistence.jpa.StudyParticipantJpaRepository;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import org.certis.studyplatform.exception.DomainException;
-import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.study.domain.StudyParticipantStatus;
 import org.springframework.dao.DataIntegrityViolationException;
 

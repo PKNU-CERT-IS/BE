@@ -13,7 +13,6 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
 import java.time.OffsetDateTime;
-import java.util.Arrays;
 
 @Entity
 @Table(name = "member")
@@ -89,7 +88,7 @@ public class MemberEntity {
         this.major = major;
         this.birthday = birthday;
         this.gender = gender;
-        this.gracePeriod =gracePeriod;
+        this.gracePeriod = gracePeriod;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.deletedAt = deletedAt;
