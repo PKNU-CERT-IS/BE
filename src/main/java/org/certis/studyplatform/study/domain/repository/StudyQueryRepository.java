@@ -111,12 +111,12 @@ public interface StudyQueryRepository {
     List<Long> findApprovedStudiesStartedBefore(OffsetDateTime currentTime);
 
     /**
-     * 스터디 엔티티 직접 조회 (상태 업데이트용)
-     * 
+     * 스터디 상태 검증용 VO 조회 (엔티티의 명시 상태 기준으로 매핑)
+     *
      * @param studyId 스터디 ID
-     * @return 스터디 엔티티
+     * @return 스터디 VO (DB status를 그대로 반영)
      */
-    java.util.Optional<org.certis.studyplatform.study.infrastructure.persistence.entity.StudyEntity> findEntityById(Long studyId);
+    Optional<StudyVo> findVoByIdForStatusCheck(Long studyId);
 
 
     /**
