@@ -1212,39 +1212,40 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
     }
 
     @Override
-    public Optional<StudyEntity> findEntityById(Long studyId) {
-        log.info("jOOQ: Finding study entity by ID - {}", studyId);
-        
-        // JPA Repository를 통해 Entity 직접 조회
+    public Optional<StudyVo> findVoByIdForStatusCheck(Long studyId) {
+        log.info("jOOQ: Finding study VO (for status check) by ID - {}", studyId);
+
         return Optional.ofNullable(
-            dsl.selectFrom(STUDY)
-                .where(STUDY.ID.eq(studyId))
-                .and(STUDY.DELETED_AT.isNull())
-                .fetchOne()
+                dsl.selectFrom(STUDY)
+                        .where(STUDY.ID.eq(studyId))
+                        .and(STUDY.DELETED_AT.isNull())
+                        .fetchOne()
         ).map(record -> {
-            // Record를 StudyEntity로 변환
-            return StudyEntity.builder()
-                .id(record.get(STUDY.ID))
-                .memberId(record.get(STUDY.MEMBER_ID))
-                .title(record.get(STUDY.TITLE))
-                .description(record.get(STUDY.DESCRIPTION))
-                .content(record.get(STUDY.CONTENT))
-                .category(record.get(STUDY.CATEGORY))
-                .subcategory(record.get(STUDY.SUBCATEGORY))
-                .maxParticipantsNumber(record.get(STUDY.MAX_PARTICIPANTS_NUMBER))
-                .startedAt(record.get(STUDY.STARTED_AT))
-                .endedAt(record.get(STUDY.ENDED_AT))
-                .createdAt(record.get(STUDY.CREATED_AT))
-                .updatedAt(record.get(STUDY.UPDATED_AT))
-                .deletedAt(record.get(STUDY.DELETED_AT))
-                .resultSubmittedAt(record.get(STUDY.RESULT_SUBMITTED_AT))
-                .resultSubmitStatus(record.get(STUDY.RESULT_SUBMIT_STATUS) != null ? 
-                    ResultSubmitStatus.valueOf(record.get(STUDY.RESULT_SUBMIT_STATUS)) : null)
-                .resultAttachmentUrl(record.get(STUDY.RESULT_ATTACHED_URL))
-                .status(record.get(STUDY.STATUS) != null ? 
-                    StudyStatus.valueOf(record.get(STUDY.STATUS)) : 
-                    StudyStatus.READY)
-                .build();
+            // Record를 StudyEntity로 변환 후 Mapper를 통해 VO로 매핑 (엔티티의 명시 status 사용)
+            StudyEntity entity = StudyEntity.builder()
+                    .id(record.get(STUDY.ID))
+                    .memberId(record.get(STUDY.MEMBER_ID))
+                    .title(record.get(STUDY.TITLE))
+                    .description(record.get(STUDY.DESCRIPTION))
+                    .content(record.get(STUDY.CONTENT))
+                    .category(record.get(STUDY.CATEGORY))
+                    .subcategory(record.get(STUDY.SUBCATEGORY))
+                    .maxParticipantsNumber(record.get(STUDY.MAX_PARTICIPANTS_NUMBER))
+                    .startedAt(record.get(STUDY.STARTED_AT))
+                    .endedAt(record.get(STUDY.ENDED_AT))
+                    .createdAt(record.get(STUDY.CREATED_AT))
+                    .updatedAt(record.get(STUDY.UPDATED_AT))
+                    .deletedAt(record.get(STUDY.DELETED_AT))
+                    .resultSubmittedAt(record.get(STUDY.RESULT_SUBMITTED_AT))
+                    .resultSubmitStatus(record.get(STUDY.RESULT_SUBMIT_STATUS) != null ?
+                            ResultSubmitStatus.valueOf(record.get(STUDY.RESULT_SUBMIT_STATUS)) : ResultSubmitStatus.READY)
+                    .resultAttachmentUrl(record.get(STUDY.RESULT_ATTACHED_URL))
+                    .status(record.get(STUDY.STATUS) != null ?
+                            StudyStatus.valueOf(record.get(STUDY.STATUS)) :
+                            StudyStatus.READY)
+                    .build();
+
+            return mapper.toVo(entity);
         });
     }
 }
