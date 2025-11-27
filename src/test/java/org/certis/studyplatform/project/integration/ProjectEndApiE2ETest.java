@@ -4,11 +4,15 @@ import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 import org.certis.studyplatform.project.application.ProjectFacadeService;
 import org.certis.studyplatform.project.presentation.dto.request.ProjectEndRequestDto;
 import org.certis.studyplatform.project.presentation.dto.response.ProjectDetailResponseDto;
+import org.certis.studyplatform.config.TestEmbeddedPostgresConfig;
+import org.certis.studyplatform.config.TestRedisMockConfig;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
@@ -18,6 +22,8 @@ import static org.certis.generated.jooq.Tables.MEMBER;
 import static org.certis.generated.jooq.Tables.PROJECT;
 
 @SpringBootTest
+@Import({TestEmbeddedPostgresConfig.class, TestRedisMockConfig.class})
+@ActiveProfiles("test")
 @Transactional
 class ProjectEndApiE2ETest {
 
