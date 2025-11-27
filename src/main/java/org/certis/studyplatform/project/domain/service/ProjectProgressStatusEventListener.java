@@ -7,6 +7,7 @@ import org.certis.studyplatform.shared.domain.service.ProgressStatusService;
 import org.certis.studyplatform.project.domain.ProjectStatus;
 import org.certis.studyplatform.project.domain.repository.ProjectCommandRepository;
 import org.certis.studyplatform.project.domain.repository.ProjectQueryRepository;
+import org.certis.studyplatform.project.domain.vo.ProjectVo;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,33 +35,39 @@ public class ProjectProgressStatusEventListener {
 
         try {
             log.info("Processing project progress status update for project ID: {}", event.getEntityId());
-            
-            var projectEntity = projectQueryRepository.findEntityById(event.getEntityId());
-            if (projectEntity.isEmpty()) {
+
+            var projectVoOpt = projectQueryRepository.findVoByIdForStatusCheck(event.getEntityId());
+            if (projectVoOpt.isEmpty()) {
                 log.warn("Project not found with ID: {}", event.getEntityId());
                 return;
             }
 
-            var entity = projectEntity.get();
+            var vo = projectVoOpt.get();
             var currentTime = event.getCurrentTime();
             
             // 현재 시간이 started_at 이후인지 확인
-            if (currentTime.isAfter(entity.getStartedAt())) {
+            if (currentTime.isAfter(vo.startDate())) {
                 var result = progressStatusService.calculateProjectStatus(
-                    entity.getStatus(),
-                    entity.getResultSubmitStatus(),
-                    entity.getStartedAt(),
-                    entity.getEndedAt(),
+                    ProjectStatus.valueOf(vo.status()),
+                    vo.resultSubmitStatus(),
+                    vo.startDate(),
+                    vo.endDate(),
                     currentTime
                 );
 
                 // 상태가 변경된 경우에만 업데이트
-                if (!entity.getStatus().equals(result.status()) || 
-                    !entity.getResultSubmitStatus().equals(result.resultSubmitStatus())) {
-                    
-                    entity.setStatus((ProjectStatus) result.status());
-                    entity.setResultSubmitStatus(result.resultSubmitStatus());
-                    projectCommandRepository.save(entity);
+                if (!ProjectStatus.valueOf(vo.status()).equals(result.status()) || 
+                    !vo.resultSubmitStatus().equals(result.resultSubmitStatus())) {
+
+                    ProjectVo updated = ProjectVo.of(
+                        vo.id(), vo.title(), vo.description(), vo.content(), vo.category(), vo.subCategory(),
+                        vo.startDate(), vo.endDate(), vo.creatorId(), vo.creatorName(), vo.creatorGrade(),
+                        vo.semester(), ((ProjectStatus) result.status()).name(), result.resultSubmitStatus(),
+                        vo.githubUrl(), vo.externalUrl(), vo.demoUrl(), vo.thumbnailUrl(),
+                        vo.maxParticipants(), vo.currentParticipants(), vo.isParticipantable(),
+                        vo.attached(), vo.meetingSummaryVos()
+                    );
+                    projectCommandRepository.save(updated);
                     
                     log.info("Updated project {} status to {} and resultSubmitStatus to {}", 
                         event.getEntityId(), result.status(), result.resultSubmitStatus());
