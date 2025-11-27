@@ -413,16 +413,22 @@ public class StudyDomainService {
     public StudyVo endStudy(EndStudyCommand command) {
         log.info("Domain: Ending study from command - ID: {}", command.studyId());
 
-        // 기존 스터디 조회
+        // 기존 스터디 조회 (VO와 Entity를 각각 조회)
+        // VO는 반환 용도로 사용하고, 상태 검증은 엔티티의 DB 상태로만 판단한다.
         StudyVo existingStudy = queryRepository.findById(command.studyId())
                 .orElseThrow(() -> new DomainException(ExceptionStatus.STUDY_DOMAIN_NOT_FOUND,
                         "스터디를 찾을 수 없습니다: " + command.studyId()));
 
+        StudyVo statusCheckVo =
+                queryRepository.findVoByIdForStatusCheck(command.studyId())
+                        .orElseThrow(() -> new DomainException(ExceptionStatus.STUDY_DOMAIN_NOT_FOUND,
+                                "스터디를 찾을 수 없습니다: " + command.studyId()));
+
         // 권한 검증: STAFF 이상이거나 스터디 생성자인지 확인
         validateStudyEndPermission(command.requesterId(), existingStudy.creatorId());
 
-        // 이미 종료된 스터디인지 검증 (시간 비교가 아닌, DB에 저장된 status 기준)
-        if (StudyStatus.fromStatusString(existingStudy.status()).isCompleted()) {
+        // 이미 종료된 스터디인지 검증 (endedAt 무관, DB status 기준)
+        if (StudyStatus.fromStatusString(statusCheckVo.status()).isCompleted()) {
             throw new DomainException(ExceptionStatus.STUDY_DOMAIN_RULE_VIOLATION,
                     "이미 종료된 스터디입니다");
         }
