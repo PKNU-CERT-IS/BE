@@ -12,6 +12,8 @@ import org.certis.studyplatform.study.domain.repository.StudyParticipantQueryRep
 import org.certis.studyplatform.study.domain.repository.StudyQueryRepository;
 import org.certis.studyplatform.study.domain.vo.StudyVo;
 import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
+import org.certis.studyplatform.study.infrastructure.persistence.entity.StudyEntity;
+import org.certis.studyplatform.study.domain.StudyStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -69,6 +71,25 @@ class StudyDomainServiceStatusValidationTest {
         );
 
         when(queryRepository.findById(studyId)).thenReturn(Optional.of(completed));
+        when(queryRepository.findVoByIdForStatusCheck(studyId)).thenReturn(Optional.of(
+                StudyVo.of(
+                        studyId,
+                        "t", "d", "c",
+                        "cat", "sub",
+                        OffsetDateTime.now().minusDays(10),
+                        OffsetDateTime.now().minusDays(1),
+                        OffsetDateTime.now().minusDays(10),
+                        OffsetDateTime.now().minusDays(1),
+                        creatorId,
+                        "creator", null, null,
+                        null,
+                        StudyStatus.COMPLETED.name(),
+                        ResultSubmitStatus.READY,
+                        5, 0,
+                        false,
+                        java.util.Collections.emptyList()
+                )
+        ));
         when(memberDomainService.getMemberVo(any())).thenReturn(
                 MemberVo.of(requesterId, "name", "s", null, null, MemberRole.PLAYER, java.util.List.of(), null, null, OffsetDateTime.now(), OffsetDateTime.now())
         );

@@ -153,10 +153,10 @@ public interface ProjectQueryRepository {
     List<Long> findApprovedProjectsStartedBefore(OffsetDateTime currentTime);
 
     /**
-     * 프로젝트 엔티티 직접 조회 (상태 업데이트용)
-     * 
+     * 프로젝트 상태 검증용 VO 조회 (엔티티의 명시 상태 기준으로 매핑)
+     *
      * @param projectId 프로젝트 ID
-     * @return 프로젝트 엔티티
+     * @return 프로젝트 VO (DB status를 그대로 반영)
      */
-    java.util.Optional<org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectEntity> findEntityById(Long projectId);
+    Optional<ProjectVo> findVoByIdForStatusCheck(Long projectId);
 }

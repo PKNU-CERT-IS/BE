@@ -317,12 +317,12 @@ class NewFeaturesIntegrationTest {
                 .andDo(print())
                 .andExpect(status().isBadRequest()); // validation 에러로 400
         
-        // 3. 토큰 갱신 엔드포인트도 인증 없이 접근 가능
-        mockMvc.perform(post("/api/v1/auth/refresh")
+        // 3. 토큰 갱신 엔드포인트 - 인증 필요로 401 반환
+        mockMvc.perform(post("/api/v1/auth/token/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andDo(print())
-                .andExpect(status().isNotFound()); // 컨트롤러가 없어서 404
+                .andExpect(status().isUnauthorized()); // 인증 필요로 401
     }
 
     @Test

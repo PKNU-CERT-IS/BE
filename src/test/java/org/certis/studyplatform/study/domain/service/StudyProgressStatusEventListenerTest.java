@@ -4,7 +4,7 @@ import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 import org.certis.studyplatform.shared.domain.event.ProgressStatusUpdateEvent;
 import org.certis.studyplatform.shared.domain.service.ProgressStatusService;
 import org.certis.studyplatform.study.domain.StudyStatus;
-import org.certis.studyplatform.study.infrastructure.persistence.entity.StudyEntity;
+import org.certis.studyplatform.study.domain.vo.StudyVo;
 import org.certis.studyplatform.study.domain.repository.StudyCommandRepository;
 import org.certis.studyplatform.study.domain.repository.StudyQueryRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,15 +56,25 @@ class StudyProgressStatusEventListenerTest {
         OffsetDateTime currentTime = OffsetDateTime.now();
         ProgressStatusUpdateEvent event = ProgressStatusUpdateEvent.forStudy(studyId, currentTime);
 
-        StudyEntity studyEntity = StudyEntity.builder()
-            .id(studyId)
-            .status(StudyStatus.APPROVED)
-            .resultSubmitStatus(ResultSubmitStatus.READY)
-            .startedAt(currentTime.minusHours(1))
-            .endedAt(currentTime.plusDays(1))
-            .build();
+        StudyVo studyVo = StudyVo.of(
+            studyId,
+            "t", "d", "c",
+            "cat", "sub",
+            currentTime.minusHours(1),
+            currentTime.plusDays(1),
+            currentTime.minusDays(1),
+            currentTime.minusHours(2),
+            10L,
+            "creator", null, null,
+            null,
+            StudyStatus.APPROVED.name(),
+            ResultSubmitStatus.READY,
+            5, 0,
+            false,
+            java.util.Collections.emptyList()
+        );
 
-        when(studyQueryRepository.findEntityById(studyId)).thenReturn(Optional.of(studyEntity));
+        when(studyQueryRepository.findVoByIdForStatusCheck(studyId)).thenReturn(Optional.of(studyVo));
         when(progressStatusService.calculateStudyStatus(
             any(), any(), any(), any(), any()
         )).thenReturn(new ProgressStatusService.ProgressStatusResult(
@@ -75,12 +85,12 @@ class StudyProgressStatusEventListenerTest {
         eventListener.handleProgressStatusUpdate(event);
 
         // Then
-        ArgumentCaptor<StudyEntity> captor = ArgumentCaptor.forClass(StudyEntity.class);
+        ArgumentCaptor<StudyVo> captor = ArgumentCaptor.forClass(StudyVo.class);
         verify(studyCommandRepository).save(captor.capture());
         
-        StudyEntity savedEntity = captor.getValue();
-        assertThat(savedEntity.getStatus()).isEqualTo(StudyStatus.INPROGRESS);
-        assertThat(savedEntity.getResultSubmitStatus()).isEqualTo(ResultSubmitStatus.READY);
+        StudyVo savedVo = captor.getValue();
+        assertThat(savedVo.status()).isEqualTo(StudyStatus.INPROGRESS.name());
+        assertThat(savedVo.resultSubmitStatus()).isEqualTo(ResultSubmitStatus.READY);
     }
 
     @Test
@@ -91,15 +101,25 @@ class StudyProgressStatusEventListenerTest {
         OffsetDateTime currentTime = OffsetDateTime.now();
         ProgressStatusUpdateEvent event = ProgressStatusUpdateEvent.forStudy(studyId, currentTime);
 
-        StudyEntity studyEntity = StudyEntity.builder()
-            .id(studyId)
-            .status(StudyStatus.APPROVED)
-            .resultSubmitStatus(ResultSubmitStatus.READY)
-            .startedAt(currentTime.minusHours(1))
-            .endedAt(currentTime.plusDays(1))
-            .build();
+        StudyVo studyVo2 = StudyVo.of(
+            studyId,
+            "t", "d", "c",
+            "cat", "sub",
+            currentTime.minusHours(1),
+            currentTime.plusDays(1),
+            currentTime.minusDays(1),
+            currentTime.minusHours(2),
+            10L,
+            "creator", null, null,
+            null,
+            StudyStatus.APPROVED.name(),
+            ResultSubmitStatus.READY,
+            5, 0,
+            false,
+            java.util.Collections.emptyList()
+        );
 
-        when(studyQueryRepository.findEntityById(studyId)).thenReturn(Optional.of(studyEntity));
+        when(studyQueryRepository.findVoByIdForStatusCheck(studyId)).thenReturn(Optional.of(studyVo2));
         when(progressStatusService.calculateStudyStatus(
             any(), any(), any(), any(), any()
         )).thenReturn(new ProgressStatusService.ProgressStatusResult(
@@ -110,7 +130,7 @@ class StudyProgressStatusEventListenerTest {
         eventListener.handleProgressStatusUpdate(event);
 
         // Then
-        verify(studyCommandRepository, never()).save(any(org.certis.studyplatform.study.infrastructure.persistence.entity.StudyEntity.class));
+        verify(studyCommandRepository, never()).save(any(StudyVo.class));
     }
 
     @Test
@@ -121,13 +141,13 @@ class StudyProgressStatusEventListenerTest {
         OffsetDateTime currentTime = OffsetDateTime.now();
         ProgressStatusUpdateEvent event = ProgressStatusUpdateEvent.forStudy(studyId, currentTime);
 
-        when(studyQueryRepository.findEntityById(studyId)).thenReturn(Optional.empty());
+        when(studyQueryRepository.findVoByIdForStatusCheck(studyId)).thenReturn(Optional.empty());
 
         // When
         eventListener.handleProgressStatusUpdate(event);
 
         // Then
-        verify(studyCommandRepository, never()).save(any(org.certis.studyplatform.study.infrastructure.persistence.entity.StudyEntity.class));
+        verify(studyCommandRepository, never()).save(any(StudyVo.class));
         verify(progressStatusService, never()).calculateStudyStatus(any(), any(), any(), any(), any());
     }
 
@@ -139,21 +159,31 @@ class StudyProgressStatusEventListenerTest {
         OffsetDateTime currentTime = OffsetDateTime.now();
         ProgressStatusUpdateEvent event = ProgressStatusUpdateEvent.forStudy(studyId, currentTime);
 
-        StudyEntity studyEntity = StudyEntity.builder()
-            .id(studyId)
-            .status(StudyStatus.APPROVED)
-            .resultSubmitStatus(ResultSubmitStatus.READY)
-            .startedAt(currentTime.plusHours(1)) // 미래 시간
-            .endedAt(currentTime.plusDays(1))
-            .build();
+        StudyVo studyVo3 = StudyVo.of(
+            studyId,
+            "t", "d", "c",
+            "cat", "sub",
+            currentTime.plusHours(1), // 미래 시간
+            currentTime.plusDays(1),
+            currentTime.minusDays(1),
+            currentTime.minusHours(2),
+            10L,
+            "creator", null, null,
+            null,
+            StudyStatus.APPROVED.name(),
+            ResultSubmitStatus.READY,
+            5, 0,
+            false,
+            java.util.Collections.emptyList()
+        );
 
-        when(studyQueryRepository.findEntityById(studyId)).thenReturn(Optional.of(studyEntity));
+        when(studyQueryRepository.findVoByIdForStatusCheck(studyId)).thenReturn(Optional.of(studyVo3));
 
         // When
         eventListener.handleProgressStatusUpdate(event);
 
         // Then
-        verify(studyCommandRepository, never()).save(any(org.certis.studyplatform.study.infrastructure.persistence.entity.StudyEntity.class));
+        verify(studyCommandRepository, never()).save(any(StudyVo.class));
         verify(progressStatusService, never()).calculateStudyStatus(any(), any(), any(), any(), any());
     }
 

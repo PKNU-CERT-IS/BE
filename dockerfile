@@ -1,5 +1,5 @@
 # Use official OpenJDK base image
-FROM openjdk:21-jdk-slim
+FROM eclipse-temurin:21-jdk-jammy
 
 # Install curl and unzip
 RUN apt-get update && apt-get install -y curl unzip
