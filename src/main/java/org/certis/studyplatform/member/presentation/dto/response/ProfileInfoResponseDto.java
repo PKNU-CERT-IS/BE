@@ -1,5 +1,6 @@
 package org.certis.studyplatform.member.presentation.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,6 +18,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonInclude(JsonInclude.Include.ALWAYS)
 public class ProfileInfoResponseDto {
     private Long memberId;
     private String name;
