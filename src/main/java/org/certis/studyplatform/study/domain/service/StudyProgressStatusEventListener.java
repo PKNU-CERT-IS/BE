@@ -10,6 +10,7 @@ import org.certis.studyplatform.study.domain.repository.StudyQueryRepository;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.certis.studyplatform.study.domain.vo.StudyVo;
 
 /**
  * Study Progress Status Event Listener
@@ -35,32 +36,39 @@ public class StudyProgressStatusEventListener {
         try {
             log.info("Processing study progress status update for study ID: {}", event.getEntityId());
             
-            var studyEntity = studyQueryRepository.findEntityById(event.getEntityId());
-            if (studyEntity.isEmpty()) {
+            var studyVoOpt = studyQueryRepository.findVoByIdForStatusCheck(event.getEntityId());
+            if (studyVoOpt.isEmpty()) {
                 log.warn("Study not found with ID: {}", event.getEntityId());
                 return;
             }
 
-            var entity = studyEntity.get();
+            var vo = studyVoOpt.get();
             var currentTime = event.getCurrentTime();
             
             // 현재 시간이 started_at 이후인지 확인
-            if (currentTime.isAfter(entity.getStartedAt())) {
+            if (currentTime.isAfter(vo.startDate())) {
                 var result = progressStatusService.calculateStudyStatus(
-                    entity.getStatus(),
-                    entity.getResultSubmitStatus(),
-                    entity.getStartedAt(),
-                    entity.getEndedAt(),
+                    org.certis.studyplatform.study.domain.StudyStatus.fromStatusString(vo.status()),
+                    vo.resultSubmitStatus(),
+                    vo.startDate(),
+                    vo.endDate(),
                     currentTime
                 );
 
                 // 상태가 변경된 경우에만 업데이트
-                if (!entity.getStatus().equals(result.status()) || 
-                    !entity.getResultSubmitStatus().equals(result.resultSubmitStatus())) {
-                    
-                    entity.setStatus((StudyStatus) result.status());
-                    entity.setResultSubmitStatus(result.resultSubmitStatus());
-                    studyCommandRepository.save(entity);
+                if (!org.certis.studyplatform.study.domain.StudyStatus.fromStatusString(vo.status()).equals(result.status()) || 
+                    !vo.resultSubmitStatus().equals(result.resultSubmitStatus())) {
+                    // 변경된 상태를 반영한 VO 저장
+                    StudyVo updated = new StudyVo(
+                        vo.id(), vo.title(), vo.description(), vo.content(), vo.category(), vo.subCategory(),
+                        vo.startDate(), vo.endDate(), vo.createdAt(), vo.updatedAt(), vo.creatorId(), vo.creatorName(),
+                        vo.creatorGrade(), vo.creatorProfileImageUrl(), vo.semester(),
+                        ((org.certis.studyplatform.study.domain.StudyStatus) result.status()).name(),
+                        result.resultSubmitStatus(),
+                        vo.maxParticipants(), vo.currentParticipants(), vo.isParticipantable(),
+                        vo.attached(), vo.summaryVoList(), vo.participantVoList()
+                    );
+                    studyCommandRepository.save(updated);
                     
                     log.info("Updated study {} status to {} and resultSubmitStatus to {}", 
                         event.getEntityId(), result.status(), result.resultSubmitStatus());
