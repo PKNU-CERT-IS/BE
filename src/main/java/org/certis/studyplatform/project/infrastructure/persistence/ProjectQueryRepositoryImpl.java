@@ -1194,43 +1194,40 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
     }
 
     @Override
-    public Optional<org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectEntity> findEntityById(Long projectId) {
-        log.info("jOOQ: Finding project entity by ID - {}", projectId);
-        
-        // JOOQ를 통해 Entity 직접 조회
+    public Optional<ProjectVo> findVoByIdForStatusCheck(Long projectId) {
+        log.info("jOOQ: Finding project VO (for status check) by ID - {}", projectId);
+
         return Optional.ofNullable(
-            dsl.selectFrom(PROJECT)
-                .where(PROJECT.ID.eq(projectId))
-                .and(PROJECT.DELETED_AT.isNull())
-                .fetchOne()
+                dsl.selectFrom(PROJECT)
+                        .where(PROJECT.ID.eq(projectId))
+                        .and(PROJECT.DELETED_AT.isNull())
+                        .fetchOne()
         ).map(record -> {
-            // Record를 ProjectEntity로 변환
-            return org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectEntity.builder()
-                .id(record.get(PROJECT.ID))
-                .memberId(record.get(PROJECT.MEMBER_ID))
-                .title(record.get(PROJECT.TITLE))
-                .description(record.get(PROJECT.DESCRIPTION))
-                .content(record.get(PROJECT.CONTENT))
-                .category(record.get(PROJECT.CATEGORY))
-                .subcategory(record.get(PROJECT.SUBCATEGORY))
-                .maxParticipantsNumber(record.get(PROJECT.MAX_PARTICIPANTS_NUMBER))
-                .githubUrl(record.get(PROJECT.GITHUB_URL))
-                .externalUrl(record.get(PROJECT.EXTERNAL_URL))
-                .demoUrl(record.get(PROJECT.DEMO_URL))
-                .thumbnailUrl(record.get(PROJECT.THUMBNAIL_URL))
-                .startedAt(record.get(PROJECT.STARTED_AT))
-                .endedAt(record.get(PROJECT.ENDED_AT))
-                .createdAt(record.get(PROJECT.CREATED_AT))
-                .updatedAt(record.get(PROJECT.UPDATED_AT))
-                .deletedAt(record.get(PROJECT.DELETED_AT))
-                .resultSubmittedAt(record.get(PROJECT.RESULT_SUBMITTED_AT))
-                .resultSubmitStatus(record.get(PROJECT.RESULT_SUBMIT_STATUS) != null ? 
-                    org.certis.studyplatform.shared.domain.ResultSubmitStatus.valueOf(record.get(PROJECT.RESULT_SUBMIT_STATUS)) : null)
-                .resultAttachmentUrl(record.get(PROJECT.RESULT_ATTACHED_URL))
-                .status(record.get(PROJECT.STATUS) != null ? 
-                    org.certis.studyplatform.project.domain.ProjectStatus.valueOf(record.get(PROJECT.STATUS)) : 
-                    org.certis.studyplatform.project.domain.ProjectStatus.READY)
-                .build();
+            var entity = org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectEntity.builder()
+                    .id(record.get(PROJECT.ID))
+                    .memberId(record.get(PROJECT.MEMBER_ID))
+                    .title(record.get(PROJECT.TITLE))
+                    .description(record.get(PROJECT.DESCRIPTION))
+                    .content(record.get(PROJECT.CONTENT))
+                    .category(record.get(PROJECT.CATEGORY))
+                    .subcategory(record.get(PROJECT.SUBCATEGORY))
+                    .maxParticipantsNumber(record.get(PROJECT.MAX_PARTICIPANTS_NUMBER))
+                    .githubUrl(record.get(PROJECT.GITHUB_URL))
+                    .externalUrl(record.get(PROJECT.EXTERNAL_URL))
+                    .demoUrl(record.get(PROJECT.DEMO_URL))
+                    .thumbnailUrl(record.get(PROJECT.THUMBNAIL_URL))
+                    .startedAt(record.get(PROJECT.STARTED_AT))
+                    .endedAt(record.get(PROJECT.ENDED_AT))
+                    .createdAt(record.get(PROJECT.CREATED_AT))
+                    .updatedAt(record.get(PROJECT.UPDATED_AT))
+                    .deletedAt(record.get(PROJECT.DELETED_AT))
+                    .resultSubmittedAt(record.get(PROJECT.RESULT_SUBMITTED_AT))
+                    .resultSubmitStatus(record.get(PROJECT.RESULT_SUBMIT_STATUS) != null ?
+                            ResultSubmitStatus.valueOf(record.get(PROJECT.RESULT_SUBMIT_STATUS)) : ResultSubmitStatus.READY)
+                    .status(record.get(PROJECT.STATUS) != null ?
+                            ProjectStatus.valueOf(record.get(PROJECT.STATUS)) : ProjectStatus.READY)
+                    .build();
+            return mapper.toVo(entity);
         });
     }
 }
