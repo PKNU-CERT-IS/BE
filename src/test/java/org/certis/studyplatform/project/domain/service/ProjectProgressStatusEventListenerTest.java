@@ -4,7 +4,7 @@ import org.certis.studyplatform.shared.domain.ResultSubmitStatus;
 import org.certis.studyplatform.shared.domain.event.ProgressStatusUpdateEvent;
 import org.certis.studyplatform.shared.domain.service.ProgressStatusService;
 import org.certis.studyplatform.project.domain.ProjectStatus;
-import org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectEntity;
+import org.certis.studyplatform.project.domain.vo.ProjectVo;
 import org.certis.studyplatform.project.domain.repository.ProjectCommandRepository;
 import org.certis.studyplatform.project.domain.repository.ProjectQueryRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,15 +56,25 @@ class ProjectProgressStatusEventListenerTest {
         OffsetDateTime currentTime = OffsetDateTime.now();
         ProgressStatusUpdateEvent event = ProgressStatusUpdateEvent.forProject(projectId, currentTime);
 
-        ProjectEntity projectEntity = ProjectEntity.builder()
-            .id(projectId)
-            .status(ProjectStatus.APPROVED)
-            .resultSubmitStatus(ResultSubmitStatus.READY)
-            .startedAt(currentTime.minusHours(1))
-            .endedAt(currentTime.plusDays(1))
-            .build();
+        ProjectVo projectVo = ProjectVo.of(
+            projectId,
+            "t", "d", "c",
+            "cat", "sub",
+            currentTime.minusHours(1),
+            currentTime.plusDays(1),
+            10L,
+            "creator", null,
+            null,
+            ProjectStatus.APPROVED.name(),
+            ResultSubmitStatus.READY,
+            null, (org.certis.studyplatform.project.domain.vo.ExternalUrlVo) null, null, null,
+            5, 0,
+            false,
+            java.util.Collections.emptyList(),
+            java.util.Collections.emptyList()
+        );
 
-        when(projectQueryRepository.findEntityById(projectId)).thenReturn(Optional.of(projectEntity));
+        when(projectQueryRepository.findVoByIdForStatusCheck(projectId)).thenReturn(Optional.of(projectVo));
         when(progressStatusService.calculateProjectStatus(
             any(), any(), any(), any(), any()
         )).thenReturn(new ProgressStatusService.ProgressStatusResult(
@@ -75,12 +85,12 @@ class ProjectProgressStatusEventListenerTest {
         eventListener.handleProgressStatusUpdate(event);
 
         // Then
-        ArgumentCaptor<ProjectEntity> captor = ArgumentCaptor.forClass(ProjectEntity.class);
+        ArgumentCaptor<ProjectVo> captor = ArgumentCaptor.forClass(ProjectVo.class);
         verify(projectCommandRepository).save(captor.capture());
         
-        ProjectEntity savedEntity = captor.getValue();
-        assertThat(savedEntity.getStatus()).isEqualTo(ProjectStatus.INPROGRESS);
-        assertThat(savedEntity.getResultSubmitStatus()).isEqualTo(ResultSubmitStatus.READY);
+        ProjectVo savedVo = captor.getValue();
+        assertThat(savedVo.status()).isEqualTo(ProjectStatus.INPROGRESS.name());
+        assertThat(savedVo.resultSubmitStatus()).isEqualTo(ResultSubmitStatus.READY);
     }
 
     @Test
@@ -91,15 +101,25 @@ class ProjectProgressStatusEventListenerTest {
         OffsetDateTime currentTime = OffsetDateTime.now();
         ProgressStatusUpdateEvent event = ProgressStatusUpdateEvent.forProject(projectId, currentTime);
 
-        ProjectEntity projectEntity = ProjectEntity.builder()
-            .id(projectId)
-            .status(ProjectStatus.APPROVED)
-            .resultSubmitStatus(ResultSubmitStatus.READY)
-            .startedAt(currentTime.minusHours(1))
-            .endedAt(currentTime.plusDays(1))
-            .build();
+        ProjectVo projectVo2 = ProjectVo.of(
+            projectId,
+            "t", "d", "c",
+            "cat", "sub",
+            currentTime.minusHours(1),
+            currentTime.plusDays(1),
+            10L,
+            "creator", null,
+            null,
+            ProjectStatus.APPROVED.name(),
+            ResultSubmitStatus.READY,
+            null, (org.certis.studyplatform.project.domain.vo.ExternalUrlVo) null, null, null,
+            5, 0,
+            false,
+            java.util.Collections.emptyList(),
+            java.util.Collections.emptyList()
+        );
 
-        when(projectQueryRepository.findEntityById(projectId)).thenReturn(Optional.of(projectEntity));
+        when(projectQueryRepository.findVoByIdForStatusCheck(projectId)).thenReturn(Optional.of(projectVo2));
         when(progressStatusService.calculateProjectStatus(
             any(), any(), any(), any(), any()
         )).thenReturn(new ProgressStatusService.ProgressStatusResult(
@@ -110,7 +130,7 @@ class ProjectProgressStatusEventListenerTest {
         eventListener.handleProgressStatusUpdate(event);
 
         // Then
-        verify(projectCommandRepository, never()).save(any(org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectEntity.class));
+        verify(projectCommandRepository, never()).save(any(ProjectVo.class));
     }
 
     @Test
@@ -121,13 +141,13 @@ class ProjectProgressStatusEventListenerTest {
         OffsetDateTime currentTime = OffsetDateTime.now();
         ProgressStatusUpdateEvent event = ProgressStatusUpdateEvent.forProject(projectId, currentTime);
 
-        when(projectQueryRepository.findEntityById(projectId)).thenReturn(Optional.empty());
+        when(projectQueryRepository.findVoByIdForStatusCheck(projectId)).thenReturn(Optional.empty());
 
         // When
         eventListener.handleProgressStatusUpdate(event);
 
         // Then
-        verify(projectCommandRepository, never()).save(any(org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectEntity.class));
+        verify(projectCommandRepository, never()).save(any(ProjectVo.class));
         verify(progressStatusService, never()).calculateProjectStatus(any(), any(), any(), any(), any());
     }
 
@@ -139,21 +159,31 @@ class ProjectProgressStatusEventListenerTest {
         OffsetDateTime currentTime = OffsetDateTime.now();
         ProgressStatusUpdateEvent event = ProgressStatusUpdateEvent.forProject(projectId, currentTime);
 
-        ProjectEntity projectEntity = ProjectEntity.builder()
-            .id(projectId)
-            .status(ProjectStatus.APPROVED)
-            .resultSubmitStatus(ResultSubmitStatus.READY)
-            .startedAt(currentTime.plusHours(1)) // 미래 시간
-            .endedAt(currentTime.plusDays(1))
-            .build();
+        ProjectVo projectVo3 = ProjectVo.of(
+            projectId,
+            "t", "d", "c",
+            "cat", "sub",
+            currentTime.plusHours(1), // 미래 시간
+            currentTime.plusDays(1),
+            10L,
+            "creator", null,
+            null,
+            ProjectStatus.APPROVED.name(),
+            ResultSubmitStatus.READY,
+            null, (org.certis.studyplatform.project.domain.vo.ExternalUrlVo) null, null, null,
+            5, 0,
+            false,
+            java.util.Collections.emptyList(),
+            java.util.Collections.emptyList()
+        );
 
-        when(projectQueryRepository.findEntityById(projectId)).thenReturn(Optional.of(projectEntity));
+        when(projectQueryRepository.findVoByIdForStatusCheck(projectId)).thenReturn(Optional.of(projectVo3));
 
         // When
         eventListener.handleProgressStatusUpdate(event);
 
         // Then
-        verify(projectCommandRepository, never()).save(any(org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectEntity.class));
+        verify(projectCommandRepository, never()).save(any(ProjectVo.class));
         verify(progressStatusService, never()).calculateProjectStatus(any(), any(), any(), any(), any());
     }
 
@@ -170,7 +200,7 @@ class ProjectProgressStatusEventListenerTest {
 
         // Then
         verify(projectQueryRepository, never()).findById(any());
-        verify(projectCommandRepository, never()).save(any(org.certis.studyplatform.project.infrastructure.persistence.entity.ProjectEntity.class));
+        verify(projectCommandRepository, never()).save(any(ProjectVo.class));
         verify(progressStatusService, never()).calculateProjectStatus(any(), any(), any(), any(), any());
     }
 }
