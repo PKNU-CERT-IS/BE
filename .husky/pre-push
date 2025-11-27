@@ -1,0 +1,54 @@
+#!/bin/sh
+
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+cd "$ROOT_DIR" || exit 1
+
+echo "🚀 Running tests (test failures are allowed for success-rate calculation)..."
+
+# 테스트 실패(exit code=1)해도 멈추지 않게 함
+./gradlew clean test || true
+
+echo "📊 Calculating test pass rate..."
+
+# 테스트 결과 XML 파일 경로 탐색
+TEST_RESULT_FILE=$(ls -t build/test-results/test/TEST-*.xml | head -n 1)
+
+if [ ! -f "$TEST_RESULT_FILE" ]; then
+  echo "Test result file not found! Push canceled!"
+  exit 1
+fi
+
+# XML 값 파싱
+TOTAL=$(grep -o 'tests="[0-9]*"' "$TEST_RESULT_FILE" | head -1 | sed 's/tests="//;s/"//')
+FAILURES=$(grep -o 'failures="[0-9]*"' "$TEST_RESULT_FILE" | head -1 | sed 's/failures="//;s/"//')
+ERRORS=$(grep -o 'errors="[0-9]*"' "$TEST_RESULT_FILE" | head -1 | sed 's/errors="//;s/"//')
+SKIPPED=$(grep -o 'skipped="[0-9]*"' "$TEST_RESULT_FILE" | head -1 | sed 's/skipped="//;s/"//')
+
+# 성공 개수
+SUCCESS=$((TOTAL - FAILURES - ERRORS))
+
+# 성공률 계산
+SUCCESS_RATE=$(echo "scale=4; $SUCCESS / $TOTAL * 100" | bc)
+
+echo "------------------------------------"
+echo "✔ Total: $TOTAL"
+echo "✔ Success: $SUCCESS"
+echo "✔ Failures: $FAILURES"
+echo "✔ Errors: $ERRORS"
+echo "✔ Skipped: $SKIPPED"
+echo "✔ Success Rate: $SUCCESS_RATE%"
+echo "------------------------------------"
+
+# 성공률 기준
+THRESHOLD=80
+
+# float 비교
+CHECK=$(echo "$SUCCESS_RATE >= $THRESHOLD" | bc)
+
+if [ "$CHECK" -eq 1 ]; then
+  echo "🎉 Success rate >= ${THRESHOLD}% → Push allowed!"
+  exit 0
+else
+  echo "❌ Success rate < ${THRESHOLD}% → Push canceled!"
+  exit 1
+fi
