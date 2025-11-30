@@ -25,10 +25,9 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      # [추가됨] 1. 오늘 날짜로 태그 변수 만들기 (예: v20251130)
+      # [추가됨] 1. 오늘 날짜로 태그 변수 만들기 (예: v20251130-X9)
       - name: Generate Tag
-        run: echo "DATE_TAG=v$(date +'%Y%m%d')" >> $GITHUB_ENV
-
+        run: echo "DATE_TAG=v$(date +'%Y%m%d')-$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 2)" >> $GITHUB_ENV
       # 2. 빌드 (테스트 제외)
       - name: Build with Gradle
         run: |
@@ -64,10 +63,10 @@ jobs:
             cd /home/ubuntu/Prod
             
             # 2. 특정 파일(-f)을 지정해서 최신 이미지 받기
-            docker-compose -f docker-compose-prod-was.yml pull backend
+            docker compose -f docker-compose-prod-was.yml pull backend
             
             # 3. 특정 파일(-f)을 지정해서 백엔드 컨테이너만 교체
-            docker-compose -f docker-compose-prod-was.yml up -d --no-deps backend
+            docker compose -f docker-compose-prod-was.yml up -d --no-deps backend
             
             # 4. 이미지 정리
             docker image prune -f
