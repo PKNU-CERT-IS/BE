@@ -1,0 +1,112 @@
+name: Backend CD
+
+on:
+  workflow_run:
+    workflows: ["Backend CI (Build Only)"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    # ci 가 성공 했을 때만 실행
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'dev' }}
+    runs-on: ubuntu-latest
+    # 타임존 설정 (한국 시간 기준 날짜를 얻기 위해)
+    env:
+      TZ: Asia/Seoul
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      # [추가됨] 1. 오늘 날짜로 태그 변수 만들기 (예: v20251130)
+      - name: Generate Tag
+        run: echo "DATE_TAG=v$(date +'%Y%m%d')" >> $GITHUB_ENV
+
+      # 2. 빌드 (테스트 제외)
+      - name: Build with Gradle
+        run: |
+          chmod +x gradlew
+          ./gradlew clean build -x test
+
+      # 3. 도커 로그인
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # [수정됨] 4. 이미지 빌드 & 업로드 (태그 2개 동시에!)
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/certis-backend:latest
+            ${{ secrets.DOCKER_USERNAME }}/certis-backend:${{ env.DATE_TAG }}
+
+      # 5. EC2 배포 (latest를 당겨와서 실행 만약 배포시 헬스체크 오류가 난다면 이전 날짜 버전의 이미지를 수동으로 끌어다 다시 실행)
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # 1. 프로젝트 폴더로 이동 
+            cd /home/ubuntu/Prod
+            
+            # 2. 특정 파일(-f)을 지정해서 최신 이미지 받기
+            docker-compose -f docker-compose-prod-was.yml pull backend
+            
+            # 3. 특정 파일(-f)을 지정해서 백엔드 컨테이너만 교체
+            docker-compose -f docker-compose-prod-was.yml up -d --no-deps backend
+            
+            # 4. 이미지 정리
+            docker image prune -f
+            
+
+      #  6. Prod 레포지토리의 서브모듈 업데이트하기
+      - name: Update Submodule in Prod Repo
+        if: success()
+        run: |
+          # 1. 깃 설정 (커밋할 때 남을 이름)
+          git config --global user.name "minwoonggi"
+          git config --global user.email "d34sda334@gmail.com"
+
+          # 2. Prod 레포지토리 클론 
+          git clone https://${{ secrets.GH_PAT }}@github.com/PKNU-CERT-IS/Prod.git temp_prod
+          
+          # 3. 서브모듈 폴더로 이동 및 업데이트
+          cd temp_prod
+        
+          git submodule update --init --recursive BE
+          
+          # 이제 BE 폴더 안으로 들어가서 최신 dev 내용을 받아옵니다.
+          cd BE
+          git checkout dev
+          git pull origin dev
+          
+          # 4. Prod 레포지토리 루트로 돌아와서 변경사항 감지
+          cd ..
+          
+          # 변경사항이 있는지 확인 (서브모듈 커밋 해시가 바뀌었는지)
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Submodule updated. Committing..."
+            git add BE
+            git commit -m "chore: Update BE submodule to latest commit (${{ github.sha }})"
+            git push origin main  # Prod의 메인 브랜치가 'main'인지 확인 (이미지상 main 맞음)
+          else
+            echo "No changes in submodule."
+          fi
+          
+          # 5. 뒷정리 (임시 폴더 삭제)
+          cd ..
+          rm -rf temp_prod
