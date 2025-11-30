@@ -62,13 +62,15 @@ jobs:
             # 1. 프로젝트 폴더로 이동 
             cd /home/ubuntu/Prod
             
-            # 2. 특정 파일(-f)을 지정해서 최신 이미지 받기
-            docker compose -f docker-compose-prod-was.yml pull backend
+            # [추가됨] 3. 기존 컨테이너가 있다면 강제로 멈추고 삭제 (이름 충돌 방지) 다른 세션으로 인한 문제점
+            # || true 를 붙이면, 컨테이너가 없어서 에러가 나도 무시하고 계속 진행합니다.
+            docker stop certis-backend || true
+            docker rm certis-backend || true
             
-            # 3. 특정 파일(-f)을 지정해서 백엔드 컨테이너만 교체
+            # 4. 백엔드 컨테이너 새로 실행
             docker compose -f docker-compose-prod-was.yml up -d --no-deps backend
             
-            # 4. 이미지 정리
+            # 5. 이미지 정리
             docker image prune -f
             
 
