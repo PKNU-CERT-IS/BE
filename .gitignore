@@ -72,3 +72,7 @@ package.json
 package-lock.json
 
 node_modules/
+
+.secrets
+
+workflow_run_payload.json
