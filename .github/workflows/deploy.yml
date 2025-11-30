@@ -9,7 +9,7 @@ on:
 jobs:
   deploy:
     # ci 가 성공 했을 때만 실행
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'dev' }}
     runs-on: ubuntu-latest
     # 타임존 설정 (한국 시간 기준 날짜를 얻기 위해)
     env:
