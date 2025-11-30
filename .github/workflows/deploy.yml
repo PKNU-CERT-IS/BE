@@ -71,3 +71,42 @@ jobs:
             
             # 4. 이미지 정리
             docker image prune -f
+            
+
+      #  6. Prod 레포지토리의 서브모듈 업데이트하기
+      - name: Update Submodule in Prod Repo
+        if: success()
+        run: |
+          # 1. 깃 설정 (커밋할 때 남을 이름)
+          git config --global user.name "minwoonggi"
+          git config --global user.email "d34sda334@gmail.com"
+
+          # 2. Prod 레포지토리 클론 
+          git clone https://${{ secrets.GH_PAT }}@github.com/PKNU-CERT-IS/Prod.git temp_prod
+          
+          # 3. 서브모듈 폴더로 이동 및 업데이트
+          cd temp_prod
+        
+          git submodule update --init --recursive BE
+          
+          # 이제 BE 폴더 안으로 들어가서 최신 dev 내용을 받아옵니다.
+          cd BE
+          git checkout dev
+          git pull origin dev
+          
+          # 4. Prod 레포지토리 루트로 돌아와서 변경사항 감지
+          cd ..
+          
+          # 변경사항이 있는지 확인 (서브모듈 커밋 해시가 바뀌었는지)
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Submodule updated. Committing..."
+            git add BE
+            git commit -m "chore: Update BE submodule to latest commit (${{ github.sha }})"
+            git push origin main  # Prod의 메인 브랜치가 'main'인지 확인 (이미지상 main 맞음)
+          else
+            echo "No changes in submodule."
+          fi
+          
+          # 5. 뒷정리 (임시 폴더 삭제)
+          cd ..
+          rm -rf temp_prod
