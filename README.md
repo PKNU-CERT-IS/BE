@@ -7,8 +7,9 @@
 ### Key Architectural Concepts
 
 **Clean Architecture & Partial DDD**
-   - 비즈니스 로직(Domain/Application)을 프레임워크나 데이터베이스(Infrastructure)로부터 분리하여 독립성을 보장합니다.
-   - **Partial DDD (부분적 도메인 주도 설계)**: 도메인 엔티티 내에 비즈니스 로직을 응집시키는 DDD의 전술적 패턴을 일부 도입하여, 서비스 계층이 비대해지는 것을 방지하고 객체지향적인 설계를 지향했습니다.
+
+- 비즈니스 로직(Domain/Application)을 프레임워크나 데이터베이스(Infrastructure)로부터 분리하여 독립성을 보장합니다.
+- **Partial DDD (부분적 도메인 주도 설계)**: 도메인 엔티티 내에 비즈니스 로직을 응집시키는 DDD의 전술적 패턴을 일부 도입하여, 서비스 계층이 비대해지는 것을 방지하고 객체지향적인 설계를 지향했습니다.
 
 ```mermaid
 graph TD
@@ -18,21 +19,20 @@ graph TD
     end
 
     subgraph Application ["Application Layer (CQRS)"]
+        Facade["Facade"]
+
         subgraph CommandSide ["Command Side"]
-            CommandFacade["Command Facade"]
             CommandService["Command Service"]
-            CommandDTO["Command DTO"]
+            CommandObject["Command Object"]
         end
-        
+
         subgraph QuerySide ["Query Side"]
-            QueryFacade["Query Facade"]
             QueryService["Query Service"]
-            QueryDTO["Read DTO"]
+            QueryObject["Read Object"]
         end
     end
-    
+
     subgraph Domain ["Domain Layer (Unified)"]
-        DomainModel["Domain Model/Entity"]
         DomainService["Domain Service"]
         RepoInterface["Repository Interface"]
     end
@@ -41,62 +41,58 @@ graph TD
         subgraph WriteInfra ["Command Infrastructure"]
             JPA_Impl["JPA Repository Impl"]
         end
-        
+
         subgraph ReadInfra ["Query Infrastructure"]
             JOOQ_Impl["jOOQ Repository Impl"]
         end
-        
+
         dbs[("Database")]
     end
 
     %% Controller to Application
-    Controller --> |"Write Request"| CommandFacade
-    Controller --> |"Read Request"| QueryFacade
-    
+    Controller --> Facade
+
+    %% Facade to Command/Query
+    Facade --> |"Write"| CommandService
+    Facade --> |"Read"| QueryService
+
     %% Application to Domain
-    CommandFacade --> CommandService
-    QueryFacade --> QueryService
-    
-    CommandService --> DomainModel
     CommandService --> DomainService
     QueryService --> DomainService
-    
+
     %% Domain to Repository Interface
-    DomainModel --> RepoInterface
     DomainService --> RepoInterface
-    
+
     %% Infrastructure Implementation (Inversion of Control)
     JPA_Impl -.-> |"Implements (Write)"| RepoInterface
     JOOQ_Impl -.-> |"Implements (Read)"| RepoInterface
-    
+
     %% Database Interaction
     JPA_Impl --> |"Entity Based Write"| dbs
     JOOQ_Impl --> |"SQL Type-Safe Read"| dbs
-    
+
     style CommandSide fill:#fff4e6
     style QuerySide fill:#e6f3ff
     style WriteInfra fill:#fff4e6
     style ReadInfra fill:#e6f3ff
 ```
 
+**Facade Pattern with CQRS (Command Query Responsibility Segregation)**
 
-**2. Facade Pattern with CQRS (Command Query Responsibility Segregation)**
-   - 애플리케이션 계층의 진입점으로 Command/Query Facade를 각각 두어, 복잡한 하위 서비스 간의 조율을 담당하고 컨트롤러와 비즈니스 로직 간의 결합도를 낮췄습니다.
-   - **CQRS (명령 조회 책임 분리)**: 명령(Command)과 조회(Query)의 책임을 분리하여 각자의 역할에 최적화된 로직을 구현했습니다.
-   - 트랜잭션 단위 및 유스케이스 흐름을 명확하게 관리하며, 데이터 모델의 읽기와 쓰기 분리를 통해 성능 병목을 해소하고 확장성을 높였습니다.
+- 애플리케이션 계층의 진입점으로 Facade를 두어, 복잡한 하위 서비스 간의 조율을 담당하고 컨트롤러와 비즈니스 로직 간의 결합도를 낮췄습니다.
+- **CQRS (명령 조회 책임 분리)**: Facade 내에서 명령(Command)과 조회(Query)의 책임을 분리하여 각자의 역할에 최적화된 서비스 로직으로 분기합니다.
+- 트랜잭션 단위 및 유스케이스 흐름을 명확하게 관리하며, 데이터 모델의 읽기와 쓰기 분리를 통해 성능 병목을 해소하고 확장성을 높였습니다.
+
 ```mermaid
 classDiagram
     class ClientController {
         +executeWriteRequest()
         +executeReadRequest()
     }
-    class CommandFacade {
+    class Facade {
         +orchestrateWriteProcess()
-        -@Transactional
-    }
-    class QueryFacade {
         +orchestrateReadProcess()
-        -@Transactional(readOnly=true)
+        -@Transactional
     }
     class UserService {
         +updateUser()
@@ -114,59 +110,69 @@ classDiagram
         +findUserDetails()
     }
 
-    ClientController --> CommandFacade : Write Operations
-    ClientController --> QueryFacade : Read Operations
-    CommandFacade --> UserService : Calls
-    CommandFacade --> ProjectService : Calls
-    CommandFacade --> NotificationService : Calls
-    QueryFacade --> StatisticsQueryService : Calls
-    QueryFacade --> UserQueryService : Calls
+    ClientController --> Facade : All Operations
+    Facade --> UserService : Write Operations
+    Facade --> ProjectService : Write Operations
+    Facade --> NotificationService : Write Operations
+    Facade --> StatisticsQueryService : Read Operations
+    Facade --> UserQueryService : Read Operations
 ```
 
 **CQRS 적용 계층별 전략:**
+
 ```mermaid
 flowchart LR
     Client((Client))
-    
+
     subgraph Application ["Application Layer - CQRS Entry Point"]
-        CommandFacade[Command Facade]
-        QueryFacade[Query Facade]
+        Facade[Facade]
+
+        subgraph Services ["Services"]
+            CommandService[Command Service]
+            QueryService[Query Service]
+        end
     end
-    
+
     subgraph Domain ["Domain Layer - Unified Business Logic"]
         DomainService[Domain Service]
     end
-    
+
     subgraph Infrastructure ["Infrastructure Layer - Technology Separation"]
         JPA[JPA Repository]
         JOOQ[jOOQ Repository]
     end
-    
+
     subgraph Database
         DB[("Database")]
     end
 
     Client -- "Write Request
-    (POST/PUT/DELETE)" --> CommandFacade
+    (POST/PUT/DELETE)" --> Facade
     Client -- "Read Request
-    (GET)" --> QueryFacade
-    
-    CommandFacade --> DomainService
-    QueryFacade --> DomainService
-    
+    (GET)" --> Facade
+
+    Facade --> |"Write"| CommandService
+    Facade --> |"Read"| QueryService
+
+    CommandService --> DomainService
+    QueryService --> DomainService
+
     DomainService --> JPA
     DomainService --> JOOQ
-    
+
     JPA --> |"Entity-based Write"| DB
     JOOQ --> |"SQL Type-Safe Read"| DB
 
 ```
 
-- **Application Layer**: Command/Query Facade를 분리하여 각 유스케이스의 진입점을 명확히 구분
-  - Command Facade: 쓰기 작업 조율, 트랜잭션 관리, 복잡한 비즈니스 프로세스 흐름 제어
-  - Query Facade: 읽기 작업 조율, 읽기 전용 트랜잭션, 여러 조회 서비스 통합
+- **Application Layer**: 단일 Facade가 Command/Query 작업을 분기하여 각 유스케이스의 진입점 역할을 수행
+
+  - Facade: 모든 요청의 진입점으로, 쓰기/읽기 작업을 구분하여 적절한 서비스로 라우팅
+  - Command Service: 쓰기 작업 조율, 트랜잭션 관리, 복잡한 비즈니스 프로세스 흐름 제어
+  - Query Service: 읽기 작업 조율, 읽기 전용 트랜잭션, 여러 조회 서비스 통합
 
 - **Domain Layer**: 비즈니스 규칙의 일관성을 위해 Command/Query가 동일한 도메인 모델과 서비스를 공유
+
   - 핵심 비즈니스 로직이 중복되지 않고 단일 도메인 모델에서 관리됨
   - Repository Interface를 통해 구현 기술로부터 독립성 유지
 
@@ -192,21 +198,22 @@ graph TD
         QR["Query Repository
         (jOOQ)"]
     end
-    
+
     subgraph Database
         DB[(Database)]
     end
 
-    Service -- "Write / Update / Delete 
+    Service -- "Write / Update / Delete
     (Entity Based)" --> CR
-    Service -- "Complex Read / Statistics 
+    Service -- "Complex Read / Statistics
     (SQL Type-Safe)" --> QR
-    
+
     CR -- "Hibernate / Spring Data JPA" --> DB
     QR -- "Clean SQL Execution" --> DB
 ```
 
 - **WRITE (Command) - JPA (Spring Data JPA)**
+
   - 엔티티의 상태 변경, 비즈니스 규칙 적용, 도메인 모델링에 강점이 있는 JPA를 사용합니다.
   - 객체 중심의 데이터 조작과 변경 감지(Dirty Checking)를 통해 생산성을 극대화합니다.
 
@@ -218,8 +225,8 @@ graph TD
 
 ## <span id="member">🧑🏻‍💻 프로젝트 멤버</span>
 
-| 이름 | 역할 |
-| :---------: | :------------------- |
+|                  이름                   | 역할               |
+| :-------------------------------------: | :----------------- |
 | [민영재](https://github.com/yeomin4242) | PM, FE, BE, Design |
-| [민웅기](https://github.com/minwoonggi) | FE, BE, Design |
-| [김주희](https://github.com/joooii) | FE, Design |
+| [민웅기](https://github.com/minwoonggi) | FE, BE, Design     |
+|   [김주희](https://github.com/joooii)   | FE, Design         |
