@@ -1,9 +1,9 @@
 package org.certis.studyplatform.shared.config;
 
 import lombok.RequiredArgsConstructor;
-// import org.certis.studyplatform.shared.security.JwtAuthenticationFilter;  // 🔥 JWT 비활성화
-// import org.certis.studyplatform.shared.security.JwtTokenProvider;        // 🔥 JWT 비활성화
 import org.certis.studyplatform.shared.security.JwtAuthenticationFilter;
+import org.certis.studyplatform.shared.security.JwtTokenProvider;
+import org.certis.studyplatform.shared.security.RateLimitingFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -21,16 +21,20 @@ import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(prePostEnabled = true) // @PreAuthorize 활성화
+@EnableMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
-@Profile("!test") // 테스트 환경이 아닐 때만 활성화
+@Profile("!test")
 public class SecurityConfig {
 
     private final CorsConfigurationSource corsConfigurationSource;
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final RateLimitingFilter rateLimitingFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        // JWT 필터 인스턴스 생성
+        JwtAuthenticationFilter jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtTokenProvider);
+
         http
                 // CORS 설정 적용
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
@@ -39,10 +43,6 @@ public class SecurityConfig {
                 // 세션 사용하지 않음 (JWT는 Stateless)
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
-                // H2 Console을 위한 설정 (개발환경용)
-                .headers(headers ->
-                        headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
                 )
                 // 경로별 권한 설정
                 .authorizeHttpRequests(auths -> auths
@@ -53,13 +53,12 @@ public class SecurityConfig {
                                 "/api/v1/member/**",
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/logout",
-                                "/api/v1/auth/register",  // 회원가입 추가
-                                "/api/v1/auth/token/refresh",   // 토큰 갱신
-                                "/api/v1/blog",              // 블로그 목록 조회
-                                "/api/v1/blog/detail",       // 블로그 상세 조회
-                                "/api/v1/blog/search",       // 블로그 검색
-                                "/api/v1/blog/search/keyword", // 블로그 고급 검색
-                
+                                "/api/v1/auth/register",
+                                "/api/v1/auth/token/refresh",
+                                "/api/v1/blog",
+                                "/api/v1/blog/detail",
+                                "/api/v1/blog/search",
+                                "/api/v1/blog/search/keyword",
                                 
                                 //문서 모니터링
                                 "/api/v1/board",
@@ -97,14 +96,14 @@ public class SecurityConfig {
                                 "/api/v1/study/participant/{studyId}/participants/pending",
                                 "/api/v1/study/participant/{studyId}/participants/approved",
 
-                                // Swagger/OpenAPI 관련 경로 (더 포괄적으로 수정)
-                                "/swagger-ui/**",           // 모든 swagger-ui 하위 경로
+                                // Swagger/OpenAPI 관련 경로
+                                "/swagger-ui/**",
                                 "/swagger-ui.html",
-                                "/v3/api-docs/**",          // 모든 api-docs 하위 경로
-                                "/swagger-resources/**",    // Swagger 리소스
-                                "/webjars/**",             // Swagger UI 웹 자원
-                                "/configuration/ui",        // Swagger UI 설정
-                                "/configuration/security",  // Swagger 보안 설정
+                                "/v3/api-docs/**",
+                                "/swagger-resources/**",
+                                "/webjars/**",
+                                "/configuration/ui",
+                                "/configuration/security",
                                 "/v3/api-docs",
                                 "/actuator/health",
                                 "/favicon.ico",
@@ -116,7 +115,9 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
 
-                // JWT 인증 필터 등록
+                // 필터 등록: Rate Limiting 필터를 JWT 필터 앞에 추가
+                .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
+                // JWT 인증 필터를 UsernamePasswordAuthenticationFilter 앞에 추가
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
 
                 // 기본 폼 로그인 비활성화
@@ -129,7 +130,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    @Profile("!test") // 테스트 환경이 아닐 때만 활성화
+    @Profile("!test")
     public PasswordEncoder passwordEncoder(){
         return new BCryptPasswordEncoder();
     }

@@ -60,6 +60,7 @@ public enum ExceptionStatus {
 
     // Auth - Presentation Layer
     AUTH_PRESENTATION_INVALID_REQUEST(HttpStatus.BAD_REQUEST, "인증 요청 데이터가 유효하지 않습니다"),
+    AUTH_PRESENTATION_RATE_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "토큰 갱신 요청 횟수가 제한을 초과했습니다"),
 
     // Auth - Domain Layer
     AUTH_DOMAIN_JWT_TOKEN_PARSE_ERROR(HttpStatus.BAD_REQUEST, "JWT 토큰 파싱 중 오류가 발생했습니다"),

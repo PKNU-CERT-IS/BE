@@ -68,10 +68,15 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.springframework.boot:spring-boot-starter-cache'
     implementation 'redis.clients:jedis'
-    implementation('org.redisson:redisson-spring-boot-starter:3.37.0') {
+    implementation('org.redisson:redisson-spring-boot-starter:3.35.0') {
         exclude group: 'commons-logging'
     }
     implementation 'it.ozimov:embedded-redis:0.7.3'
+
+    // ✅ Bucket4j - Rate Limiting
+    implementation 'com.bucket4j:bucket4j_jdk17-core:8.12.1'
+    implementation 'com.bucket4j:bucket4j_jdk17-redis-common:8.12.1'
+    implementation 'com.bucket4j:bucket4j_jdk17-redisson:8.12.1'
 
     // ✅ jOOQ (CQRS Query Side)
     implementation 'org.springframework.boot:spring-boot-starter-jooq'
@@ -146,11 +151,6 @@ test {
     testLogging {
         events "passed", "skipped", "failed"
     }
-    
-    // Mockito agent configuration to avoid self-attaching warning
-    jvmArgs = [
-        '-javaagent:' + configurations.testRuntimeClasspath.find { it.name.contains('byte-buddy-agent') }.absolutePath
-    ]
 }
 
 // ===================================================================
