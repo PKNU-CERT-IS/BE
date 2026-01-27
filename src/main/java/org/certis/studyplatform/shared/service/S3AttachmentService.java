@@ -3,6 +3,7 @@ package org.certis.studyplatform.shared.service;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.exception.InfrastructureException;
+import org.certis.studyplatform.shared.type.ImageCategory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,6 +24,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,6 +43,9 @@ public class S3AttachmentService {
 
     @Value("${aws.s3.bucket-name:${AWS_S3_BUCKET:test-bucket}}")
     private String bucketName;
+
+    @Value("${aws.s3.image-bucket-name:${AWS_S3_IMAGE_BUCKET:test-bucket}}")
+    private String imageBucketName;
 
     @Value("${aws.s3.region:${AWS_DEFAULT_REGION:ap-northeast-2}}")
     private String region;
@@ -157,6 +162,7 @@ public class S3AttachmentService {
             throw new InfrastructureException(ExceptionStatus.S3_INFRASTRUCTURE_UPLOAD_FAILED);
         }
     }
+
 
     /**
      * 파일을 S3에 업로드하고 URL 반환 (커스텀 파일명 사용)
@@ -609,9 +615,8 @@ public class S3AttachmentService {
             
             // 고유한 파일명 생성
             String originalFileName = file.getOriginalFilename();
-            String extension = originalFileName != null && originalFileName.contains(".") 
-                    ? originalFileName.substring(originalFileName.lastIndexOf("."))
-                    : "";
+            String extension =getExtension(originalFileName);
+
             String uniqueFileName = UUID.randomUUID().toString() + extension;
             
             // S3 키 생성 (도메인별로 폴더 구분)
@@ -647,6 +652,47 @@ public class S3AttachmentService {
                     domain, entityId, e.getMessage());
             throw new InfrastructureException(ExceptionStatus.S3_INFRASTRUCTURE_UPLOAD_FAILED);
         }
+    }
+
+
+    /**
+     * Image 파일을 S3에 업로드하고 URL 반환 (10MB 제한)
+     */
+    public String uploadImageByCategory(MultipartFile file, ImageCategory imageCategory){
+    try {
+
+
+        if (file == null || file.isEmpty()) {
+            throw new InfrastructureException(ExceptionStatus.S3_INFRASTRUCTURE_INVALID_FILE_TYPE);
+        }
+
+        // 프로필 이미지 파일 크기 제한: 10MB
+        validateFileSize(file, 10);
+
+        // 이미지 파일 타입 검증
+        validateImageFileType(file);
+
+        String datePath = LocalDateTime.now().toString().replace("-", "/");
+
+        String extension = getExtension(file.getOriginalFilename());
+        String uniqueFileName = UUID.randomUUID() + extension;
+
+        String s3Key = String.format("%s/%s/%s", imageCategory.getS3Folder(), datePath, uniqueFileName);
+
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                .bucket(imageBucketName)
+                .key(s3Key)
+                .contentType(file.getContentType())
+                .build();
+
+        s3Client.putObject(putObjectRequest, RequestBody.fromBytes(file.getBytes()));
+
+        return buildS3Url(bucketName, region, s3Key);
+
+        }catch (Exception e) {
+        log.error("프로필 이미지 S3 업로드 중 예상치 못한 오류 발생:  error={}", e.getMessage());
+        throw new InfrastructureException(ExceptionStatus.S3_INFRASTRUCTURE_UPLOAD_FAILED);
+    }
     }
 
     /**
@@ -721,5 +767,11 @@ public class S3AttachmentService {
             // Fallback to raw key if encoding fails (should not happen)
             return "https://" + bucket + ".s3." + regionName + ".amazonaws.com/" + key;
         }
+    }
+
+    private String getExtension(String fileName) {
+        return fileName != null && fileName.contains(".")
+                ? fileName.substring(fileName.lastIndexOf("."))
+                : "";
     }
 }
