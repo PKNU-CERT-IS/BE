@@ -76,3 +76,5 @@ node_modules/
 .secrets
 
 workflow_run_payload.json
+
+db/
