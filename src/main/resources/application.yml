@@ -119,7 +119,8 @@ spring:
 aws:
   s3:
     bucket-name: ${AWS_S3_BUCKET:test-bucket}
-    region: ${AWS_DEFAULT_REGION:ap-northeast-2}
+    image-bucket-name: ${AWS_S3_IMAGE_BUCKET:test-bucket}
+    region: ${AWS_DEFAULT_REGION:ap-southeast-2}
     access-key-id: ${AWS_ACCESS_KEY_ID:}
     secret-access-key: ${AWS_SECRET_ACCESS_KEY:}
 
