@@ -47,7 +47,7 @@ public class S3AttachmentService {
     @Value("${aws.s3.image-bucket-name:${AWS_S3_IMAGE_BUCKET:test-bucket}}")
     private String imageBucketName;
 
-    @Value("${aws.s3.region:${AWS_DEFAULT_REGION:ap-northeast-2}}")
+    @Value("${aws.s3.region:${AWS_DEFAULT_REGION:ap-southeast-2}}")
     private String region;
 
     @Value("${aws.s3.access-key-id:${AWS_ACCESS_KEY_ID:}}")
@@ -687,10 +687,10 @@ public class S3AttachmentService {
 
         s3Client.putObject(putObjectRequest, RequestBody.fromBytes(file.getBytes()));
 
-        return buildS3Url(bucketName, region, s3Key);
+        return buildS3Url(imageBucketName, region, s3Key);
 
         }catch (Exception e) {
-        log.error("프로필 이미지 S3 업로드 중 예상치 못한 오류 발생:  error={}", e.getMessage());
+        log.error("이미지 S3 업로드 중 예상치 못한 오류 발생:  error={}", e.getMessage());
         throw new InfrastructureException(ExceptionStatus.S3_INFRASTRUCTURE_UPLOAD_FAILED);
     }
     }
