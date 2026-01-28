@@ -398,7 +398,7 @@ public enum ExceptionStatus {
     S3_INFRASTRUCTURE_CONNECTION_FAILED(HttpStatus.BAD_REQUEST, "S3 연결에 실패했습니다"),
     S3_INFRASTRUCTURE_UPLOAD_FAILED(HttpStatus.BAD_REQUEST, "S3 파일 업로드에 실패했습니다"),
     S3_INFRASTRUCTURE_DELETE_FAILED(HttpStatus.BAD_REQUEST, "S3 파일 삭제에 실패했습니다"),
-    S3_INFRASTRUCTURE_FILE_TOO_LARGE(HttpStatus.BAD_REQUEST, "파일 크기가 제한을 초과했습니다"),
+    S3_INFRASTRUCTURE_FILE_TOO_LARGE(HttpStatus.BAD_REQUEST, "파일 크기가 제한(10MB)을 초과했습니다"),
     S3_INFRASTRUCTURE_INVALID_FILE_TYPE(HttpStatus.BAD_REQUEST, "지원하지 않는 파일 형식입니다"),
     
     // Project - Application Layer (S3 관련)

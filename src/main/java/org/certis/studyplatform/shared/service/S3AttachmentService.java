@@ -691,7 +691,7 @@ public class S3AttachmentService {
 
         }catch (Exception e) {
         log.error("이미지 S3 업로드 중 예상치 못한 오류 발생:  error={}", e.getMessage());
-        throw new InfrastructureException(ExceptionStatus.S3_INFRASTRUCTURE_UPLOAD_FAILED);
+        throw new InfrastructureException(ExceptionStatus.S3_INFRASTRUCTURE_UPLOAD_FAILED,e.getMessage());
     }
     }
 
