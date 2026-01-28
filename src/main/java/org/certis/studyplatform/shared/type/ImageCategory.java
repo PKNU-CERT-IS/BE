@@ -11,6 +11,8 @@ import org.certis.studyplatform.exception.InfrastructureException;
 @RequiredArgsConstructor
 public enum ImageCategory {
     BLOG("blog","blog-image"),
+    BOARD("board","board-image"),
+    STUDY("study","study-image"),
     PROJECT("project","project-image");
 
     private final String requestType; // 프론트에서 보내는 값
@@ -22,7 +24,7 @@ public enum ImageCategory {
                 return category;
             }
         }
-        throw new InfrastructureException(ExceptionStatus.FILE_INFRASTRUCTURE_STORAGE_ERROR);
+        throw new InfrastructureException(ExceptionStatus.FILE_INFRASTRUCTURE_STORAGE_ERROR,"적절하지 않은 분류의 이미지 입니다");
     }
 
 }
