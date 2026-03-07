@@ -20,6 +20,11 @@ public interface ProjectMeetingLinkQueryRepository {
     List<ProjectMeetingLinkVo> findByMeetingId(Long meetingId);
 
     /**
+     * 여러 회의록의 링크 목록을 일괄 조회
+     */
+    List<ProjectMeetingLinkVo> findByMeetingIds(List<Long> meetingIds);
+
+    /**
      * 회의록별 링크 목록 페이징 조회
      */
     Page<ProjectMeetingLinkVo> findByMeetingId(Long meetingId, Pageable pageable);
