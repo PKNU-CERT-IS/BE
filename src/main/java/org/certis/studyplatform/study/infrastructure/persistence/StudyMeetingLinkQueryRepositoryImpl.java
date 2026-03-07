@@ -195,6 +195,33 @@ public class StudyMeetingLinkQueryRepositoryImpl implements StudyMeetingLinkQuer
         return result;
     }
 
+    @Override
+    public List<StudyMeetingLinkVo> findByMeetingIds(List<Long> meetingIds) {
+        if (meetingIds == null || meetingIds.isEmpty()) {
+            return List.of();
+        }
+
+        log.info("jOOQ: Finding study meeting links by meetingIds - count: {}", meetingIds.size());
+
+        List<StudyMeetingLinkVo> result = dsl.select(
+                        STUDY_MEETING_LINK.ID,
+                        STUDY_MEETING_LINK.MEETING_ID,
+                        STUDY_MEETING_LINK.MEMBER_ID,
+                        STUDY_MEETING_LINK.NAME,
+                        STUDY_MEETING_LINK.ATTACHED_URL,
+                        STUDY_MEETING_LINK.CREATED_AT,
+                        STUDY_MEETING_LINK.UPDATED_AT
+                )
+                .from(STUDY_MEETING_LINK)
+                .where(STUDY_MEETING_LINK.MEETING_ID.in(meetingIds))
+                .and(STUDY_MEETING_LINK.DELETED_AT.isNull())
+                .orderBy(STUDY_MEETING_LINK.MEETING_ID.asc(), STUDY_MEETING_LINK.CREATED_AT.desc())
+                .fetch(mapper::toVoFromRecord);
+
+        log.info("jOOQ: Found {} study meeting links for {} meetingIds", result.size(), meetingIds.size());
+        return result;
+    }
+
     /**
      * 링크 존재 여부 확인 (ID 기반)
      */
