@@ -9,6 +9,7 @@ import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 import java.time.Duration;
 
@@ -20,6 +21,7 @@ import java.time.Duration;
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
+@Profile("!test")
 public class Bucket4jConfig {
 
     private final RedissonClient redissonClient;
