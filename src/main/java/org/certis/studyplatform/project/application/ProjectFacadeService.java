@@ -11,13 +11,10 @@ import org.certis.studyplatform.project.application.object.command.CreateProject
 import org.certis.studyplatform.project.application.object.command.DeleteProjectCommand;
 import org.certis.studyplatform.project.application.object.command.EndProjectCommand;
 import org.certis.studyplatform.project.application.object.command.UpdateProjectCommand;
-import org.certis.studyplatform.project.application.object.query.GetAllProjectMeetingsQuery;
 import org.certis.studyplatform.project.application.object.query.GetAllProjectsQuery;
 import org.certis.studyplatform.project.application.object.query.GetProjectByIdQuery;
 import org.certis.studyplatform.project.application.object.query.SearchProjectsQuery;
-import org.certis.studyplatform.project.application.query.ProjectMeetingQueryService;
 import org.certis.studyplatform.project.application.query.ProjectQueryService;
-import org.certis.studyplatform.project.domain.vo.ProjectMeetingPageResultVo;
 import org.certis.studyplatform.project.domain.vo.ProjectSummaryVo;
 import org.certis.studyplatform.project.domain.vo.ProjectVo;
 import org.certis.studyplatform.project.presentation.dto.request.ProjectCreateRequestDto;
@@ -33,7 +30,6 @@ import org.certis.studyplatform.project.presentation.dto.response.ProjectSummary
 import org.certis.studyplatform.project.application.mapper.ProjectApplicationDtoMapper;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
@@ -70,7 +66,6 @@ public class ProjectFacadeService {
 
     @Qualifier("virtualThreadTaskExecutor")
     private final Executor virtualThreadExecutor;
-    private final ProjectMeetingQueryService projectMeetingQueryService;
     private final ProjectMeetingFacadeService projectMeetingFacadeService;
     private final S3FileService s3FileService;
     private final ProjectDomainService projectDomainService;
@@ -148,52 +143,12 @@ public class ProjectFacadeService {
     public ProjectDetailResponseDto getProjectDetail(ProjectDetailRequestDto requestDto) {
         log.info("Facade: Getting project detail - ID: {}", requestDto.getProjectId());
 
-        Long projectId = requestDto.getProjectId();
+        GetProjectByIdQuery query = queryMapper.toGetProjectByIdQuery(requestDto.getProjectId());
+        ProjectVo projectVo = projectQueryService.getProjectById(query);
+        ProjectDetailResponseDto result = dtoMapper.toProjectDetailResponseDto(projectVo);
 
-        // 가상 스레드 Executor 사용
-        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
-
-            // 1. 프로젝트 기본 정보 조회
-            CompletableFuture<ProjectVo> projectFuture = CompletableFuture
-                    .supplyAsync(() -> {
-                        GetProjectByIdQuery query = queryMapper.toGetProjectByIdQuery(projectId);
-                        return projectQueryService.getProjectById(query);
-                    }, executor);
-
-            // 2. 프로젝트 회의록 목록 조회
-            CompletableFuture<ProjectMeetingPageResultVo> meetingSummariesFuture = CompletableFuture
-                    .supplyAsync(() -> {
-                        // GetAllProjectMeetingsQuery 객체 생성
-                        Pageable pageable = PageRequest.of(0, Integer.MAX_VALUE); // 전체 조회
-                        GetAllProjectMeetingsQuery query = new GetAllProjectMeetingsQuery(projectId, pageable);
-
-                        return projectMeetingQueryService.getAllProjectMeetings(query);
-                    }, executor);
-
-            // 3. 모든 비동기 작업 완료 대기 및 결과 조합
-            CompletableFuture<ProjectDetailResponseDto> resultFuture = projectFuture
-                    .thenCombine(meetingSummariesFuture, (projectVo, meetingSummaries) -> {
-                        // 프로젝트 VO → DTO 변환
-                        ProjectDetailResponseDto responseDto = dtoMapper.toProjectDetailResponseDto(projectVo);
-
-                        // 회의록 목록을 DTO 리스트로 변환
-                        List<ProjectMeetingSummaryResponseDto> meetingSummaryDtos =
-                                dtoMapper.toProjectMeetingSummaryResponseDtoList(meetingSummaries);
-
-                        return responseDto.toBuilder()
-                                .meetingSummaries(meetingSummaryDtos)
-                                .build();
-                    });
-
-            // 최종 결과 반환
-            ProjectDetailResponseDto result = resultFuture.join(); // 예외 발생 시 전역 핸들러로 전파됨
-
-            log.info("Facade: Project detail retrieved successfully - ID: {}, meetingSummaries: {}",
-                    result.getId(),
-                    result.getMeetingSummaries() != null ? result.getMeetingSummaries().size() : 0);
-
-            return result;
-        }
+        log.info("Facade: Project detail retrieved successfully - ID: {}", result.getId());
+        return result;
     }
 
     /**
