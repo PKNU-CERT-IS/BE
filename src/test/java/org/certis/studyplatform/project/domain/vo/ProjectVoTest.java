@@ -475,8 +475,8 @@ class ProjectVoTest {
     @DisplayName("create - 시작일이 월요일이 아니면 예외")
     void create_whenStartDateIsNotMonday_shouldThrow() {
         OffsetDateTime now = OffsetDateTime.now();
-        OffsetDateTime nonMondayStart = now.plusDays(1); // 요일 보장은 못하지만 대부분 월요일이 아님
-        OffsetDateTime end = nonMondayStart.plusDays(7);
+        OffsetDateTime nonMondayStart = alignToNextMonday(now).plusDays(1);
+        OffsetDateTime end = alignToKstSunday(nonMondayStart);
 
         assertThatThrownBy(() -> new ProjectVo(
             null,

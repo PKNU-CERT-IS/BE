@@ -141,7 +141,7 @@ class StudyMeetingControllerTest {
 
     @Test
     @Order(25)
-    @DisplayName("🔁 스터디 회의록 링크 교체 및 S3 메타 반영")
+    @DisplayName("🔁 스터디 회의록 링크 교체 후 원본 링크 정보 유지")
     @WithMockUser(username = "user1", roles = {"UPSOLVER"})
     void updateStudyMeeting_ReplacesLinks_AndReturnsS3EnrichedLinks() throws Exception {
         // Given: 회의록 생성 및 초기 링크 2개
@@ -166,10 +166,6 @@ class StudyMeetingControllerTest {
         String newUrl = "https://bucket.s3.ap-northeast-2.amazonaws.com/study-end-attachments/1/new.pdf";
         update.setLinks(List.of(new LinkDto("new-title", newUrl)));
 
-        // Mock S3 metadata
-        when(s3FileService.getObjectInfo(newUrl))
-                .thenReturn(new S3ObjectInfo("new.pdf", "application/pdf", 123L, newUrl));
-
         mockMvc.perform(put("/api/v1/study/meeting/edit")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(update)))
@@ -179,14 +175,14 @@ class StudyMeetingControllerTest {
         var remaining = dsl.fetch("select count(*) as c from study_meeting_link where meeting_id = ? and deleted_at is null", 1L);
         assertThat(remaining.get(0).get("c", Integer.class)).isEqualTo(1);
 
-        // And: 상세 조회 시 S3 메타에서 가져온 name/url이 노출
+        // And: 상세 조회 시 DB 원본 title/url이 노출
         var res = mockMvc.perform(get("/api/v1/study/meeting/detail").param("meetingId", "1"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andReturn();
 
         var json = objectMapper.readTree(res.getResponse().getContentAsString());
-        assertThat(json.at("/data/links/0/title").asText()).isEqualTo("new.pdf");
+        assertThat(json.at("/data/links/0/title").asText()).isEqualTo("new-title");
         assertThat(json.at("/data/links/0/url").asText()).isEqualTo(newUrl);
     }
 
