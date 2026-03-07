@@ -16,7 +16,8 @@ import java.util.stream.Collectors;
 public record ProjectMeetingPageResultVo(
         Page<ProjectMeetingSummaryWithLinksVo> meetings,
         long totalLinkCount,
-        Map<Long, Integer> linkCountByMeetingId
+        Map<Long, Integer> linkCountByMeetingId,
+        Map<Long, List<ProjectMeetingLinkVo>> linksByMeetingId
 ) {
 
     /**
@@ -26,11 +27,14 @@ public record ProjectMeetingPageResultVo(
             Page<ProjectMeetingSummaryVo> meetingPage,
             List<ProjectMeetingLinkVo> allLinks) {
 
+        Map<Long, List<ProjectMeetingLinkVo>> linksByMeetingId = allLinks.stream()
+                .collect(Collectors.groupingBy(ProjectMeetingLinkVo::meetingId));
+
         // 회의록별 링크 개수 계산
-        Map<Long, Integer> linkCountByMeetingId = allLinks.stream()
-                .collect(Collectors.groupingBy(
-                        ProjectMeetingLinkVo::meetingId,
-                        Collectors.collectingAndThen(Collectors.counting(), Math::toIntExact)
+        Map<Long, Integer> linkCountByMeetingId = linksByMeetingId.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue().size()
                 ));
 
         // 회의록 요약 정보와 링크 개수를 조합
@@ -51,7 +55,8 @@ public record ProjectMeetingPageResultVo(
         return new ProjectMeetingPageResultVo(
                 pageWithLinks,
                 allLinks.size(),
-                linkCountByMeetingId
+                linkCountByMeetingId,
+                linksByMeetingId
         );
     }
 
