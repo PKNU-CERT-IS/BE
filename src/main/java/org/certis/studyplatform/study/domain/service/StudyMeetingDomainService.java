@@ -180,13 +180,16 @@ public class StudyMeetingDomainService {
         log.info("MeetingDomain: Getting all study meetings - studyId: {}",
                 query.studyId());
 
-
         // 회의록 목록 조회 (페이징)
         Page<StudyMeetingSummaryVo> meetings = studyMeetingQueryRepository.findByStudyId(
                 query.studyId(), query.pageable());
 
-        // 해당 스터디의 모든 링크 조회
-        List<StudyMeetingLinkVo> allLinks = studyMeetingLinkQueryRepository.findByStudyId(query.studyId());
+        List<Long> meetingIds = meetings.getContent().stream()
+                .map(StudyMeetingSummaryVo::id)
+                .toList();
+
+        // 현재 페이지의 회의록 ID들에 대해서만 링크를 일괄 조회한다.
+        List<StudyMeetingLinkVo> allLinks = studyMeetingLinkQueryRepository.findByMeetingIds(meetingIds);
         log.info("MeetingDomain: Found {} total links for study - studyId: {}", allLinks.size(), query.studyId());
 
         // 링크 정보를 포함한 페이지 결과 생성
