@@ -138,28 +138,11 @@ public class StudyFacadeService {
     public StudyDetailResponseDto getStudyDetail(StudyDetailRequestDto requestDto) {
         log.info("Facade: Getting study detail - ID: {}", requestDto.getStudyId());
 
-        Long studyId = requestDto.getStudyId();
-
-        // 순차 실행로 단순화하여 트랜잭션 간 경쟁과 예외 래핑을 방지
-        GetStudyByIdQuery studyQuery = queryMapper.toGetStudyByIdQuery(studyId);
+        GetStudyByIdQuery studyQuery = queryMapper.toGetStudyByIdQuery(requestDto.getStudyId());
         StudyVo studyVo = studyQueryService.getStudyById(studyQuery);
+        StudyDetailResponseDto result = dtoMapper.toStudyDetailResponseDto(studyVo);
 
-        Pageable pageable = PageRequest.of(0, Integer.MAX_VALUE);
-        GetAllStudyMeetingsQuery meetingsQuery = new GetAllStudyMeetingsQuery(studyId, pageable);
-        StudyMeetingPageResultVo meetingSummaries = studyMeetingQueryService.getAllStudyMeetings(meetingsQuery);
-
-        StudyDetailResponseDto responseDto = dtoMapper.toStudyDetailResponseDto(studyVo);
-        List<StudyMeetingSummaryResponseDto> meetingSummaryDtos =
-                dtoMapper.toStudyMeetingSummaryResponseDtoList(meetingSummaries);
-
-        StudyDetailResponseDto result = responseDto.toBuilder()
-                .meetingSummaries(meetingSummaryDtos)
-                .build();
-
-        log.info("Facade: Study detail retrieved successfully - ID: {}, meetingSummaries: {}",
-                result.getId(),
-                result.getMeetingSummaries() != null ? result.getMeetingSummaries().size() : 0);
-
+        log.info("Facade: Study detail retrieved successfully - ID: {}", result.getId());
         return result;
     }
 
