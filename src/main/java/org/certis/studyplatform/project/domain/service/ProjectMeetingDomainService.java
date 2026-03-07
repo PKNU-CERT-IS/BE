@@ -179,15 +179,16 @@ public class ProjectMeetingDomainService {
         log.info("MeetingDomain: Getting all project meetings - projectId: {}",
                 query.projectId());
 
-
         // 회의록 목록 조회 (페이징)
         Page<ProjectMeetingSummaryVo> meetings = projectMeetingQueryRepository.findByProjectId(
                 query.projectId(), query.pageable());
 
-        // 해당 프로젝트의 모든 링크 조회 (해당 페이지의 회의록 ID들 기준)
-        List<ProjectMeetingLinkVo> allLinks = meetings.getContent().stream()
-                .flatMap(summary -> projectMeetingLinkQueryRepository.findByMeetingId(summary.id()).stream())
+        List<Long> meetingIds = meetings.getContent().stream()
+                .map(ProjectMeetingSummaryVo::id)
                 .toList();
+
+        // 현재 페이지의 회의록 ID들에 대해서만 링크를 일괄 조회한다.
+        List<ProjectMeetingLinkVo> allLinks = projectMeetingLinkQueryRepository.findByMeetingIds(meetingIds);
         log.info("MeetingDomain: Found {} total links for project - projectId: {}", allLinks.size(), query.projectId());
 
         // 링크 정보를 포함한 페이지 결과 생성
