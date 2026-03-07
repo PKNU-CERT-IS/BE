@@ -87,6 +87,33 @@ public class ProjectMeetingLinkQueryRepositoryImpl implements ProjectMeetingLink
         return result;
     }
 
+    @Override
+    public List<ProjectMeetingLinkVo> findByMeetingIds(List<Long> meetingIds) {
+        if (meetingIds == null || meetingIds.isEmpty()) {
+            return List.of();
+        }
+
+        log.info("jOOQ: Finding project meeting links by meetingIds - count: {}", meetingIds.size());
+
+        List<ProjectMeetingLinkVo> result = dsl.select(
+                        PROJECT_MEETING_LINK.ID,
+                        PROJECT_MEETING_LINK.MEETING_ID,
+                        PROJECT_MEETING_LINK.MEMBER_ID,
+                        PROJECT_MEETING_LINK.NAME,
+                        PROJECT_MEETING_LINK.ATTACHED_URL,
+                        PROJECT_MEETING_LINK.CREATED_AT,
+                        PROJECT_MEETING_LINK.UPDATED_AT
+                )
+                .from(PROJECT_MEETING_LINK)
+                .where(PROJECT_MEETING_LINK.MEETING_ID.in(meetingIds))
+                .and(PROJECT_MEETING_LINK.DELETED_AT.isNull())
+                .orderBy(PROJECT_MEETING_LINK.MEETING_ID.asc(), PROJECT_MEETING_LINK.CREATED_AT.desc())
+                .fetch(mapper::toVoFromRecord);
+
+        log.info("jOOQ: Found {} project meeting links for {} meetingIds", result.size(), meetingIds.size());
+        return result;
+    }
+
     /**
      * 프로젝트별 링크 목록 페이징 조회
      */
