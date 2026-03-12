@@ -100,6 +100,11 @@ public interface ProjectQueryRepository {
      */
     Optional<ProjectVo> findById(Long projectId);
 
+    /**
+     * 프로젝트 행을 잠근 뒤 조회합니다.
+     */
+    Optional<ProjectVo> findByIdForUpdate(Long projectId);
+
 
     /**
      * ✅ 프로젝트 종료되지 않은 프로젝트 조회 (Domain Service용)
