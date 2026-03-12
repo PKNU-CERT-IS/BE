@@ -1,6 +1,7 @@
 package org.certis.studyplatform.study.domain.service;
 
 import org.certis.studyplatform.study.application.object.command.CreateStudyCommand;
+import org.certis.studyplatform.member.domain.repository.query.MemberQueryRepository;
 import org.certis.studyplatform.study.domain.repository.StudyCommandRepository;
 import org.certis.studyplatform.study.domain.repository.StudyQueryRepository;
 import org.certis.studyplatform.study.domain.vo.StudyVo;
@@ -50,6 +51,9 @@ class StudyDomainServiceTest {
     private MemberDomainService memberDomainService;
 
     @Mock
+    private MemberQueryRepository memberQueryRepository;
+
+    @Mock
     private StudyParticipantQueryRepository studyParticipantQueryRepository;
 
     @Mock
@@ -66,10 +70,13 @@ class StudyDomainServiceTest {
                 commandRepository,
                 queryRepository,
                 memberDomainService,
+                memberQueryRepository,
                 studyParticipantQueryRepository,
                 projectParticipantQueryRepository,
                 projectQueryRepository
         );
+        lenient().when(memberQueryRepository.findByIdForUpdate(any()))
+                .thenReturn(java.util.Optional.of(mock(org.certis.studyplatform.member.domain.vo.MemberVo.class)));
     }
 
     @Nested

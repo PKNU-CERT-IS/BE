@@ -80,6 +80,8 @@ class StudyParticipantDomainServiceTest {
                 projectQueryRepository,
                 memberQueryRepository
         );
+        lenient().when(studyQueryRepository.findByIdForUpdate(anyLong()))
+                .thenAnswer(invocation -> studyQueryRepository.findById(invocation.getArgument(0, Long.class)));
     }
 
     @Nested

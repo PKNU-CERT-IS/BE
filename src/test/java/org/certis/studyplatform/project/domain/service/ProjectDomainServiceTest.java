@@ -2,6 +2,7 @@ package org.certis.studyplatform.project.domain.service;
 
 import org.certis.studyplatform.project.application.object.command.CreateProjectCommand;
 import org.certis.studyplatform.project.domain.vo.ExternalUrlVo;
+import org.certis.studyplatform.member.domain.repository.query.MemberQueryRepository;
 import org.certis.studyplatform.project.domain.repository.ProjectCommandRepository;
 import org.certis.studyplatform.project.domain.repository.ProjectQueryRepository;
 import org.certis.studyplatform.project.domain.vo.ProjectVo;
@@ -53,6 +54,9 @@ class ProjectDomainServiceTest {
     private MemberDomainService memberDomainService;
 
     @Mock
+    private MemberQueryRepository memberQueryRepository;
+
+    @Mock
     private ProjectParticipantQueryRepository projectParticipantQueryRepository;
 
     private ProjectDomainService domainService;
@@ -63,8 +67,11 @@ class ProjectDomainServiceTest {
                 commandRepository,
                 queryRepository,
                 memberDomainService,
+                memberQueryRepository,
                 projectParticipantQueryRepository
         );
+        lenient().when(memberQueryRepository.findByIdForUpdate(any()))
+                .thenReturn(java.util.Optional.of(mock(org.certis.studyplatform.member.domain.vo.MemberVo.class)));
     }
 
     @Nested

@@ -69,6 +69,8 @@ class ProjectParticipantDomainServiceTest {
                 projectQueryRepository,
                 memberQueryRepository
         );
+        lenient().when(projectQueryRepository.findByIdForUpdate(anyLong()))
+                .thenAnswer(invocation -> projectQueryRepository.findById(invocation.getArgument(0, Long.class)));
     }
 
     @Nested
