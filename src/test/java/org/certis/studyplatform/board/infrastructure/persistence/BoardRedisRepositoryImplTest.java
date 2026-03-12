@@ -11,6 +11,7 @@ import org.redisson.api.RAtomicLong;
 import org.redisson.api.RSet;
 import org.redisson.api.RedissonClient;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -133,14 +134,25 @@ class BoardRedisRepositoryImplTest {
     @DisplayName("좋아요 수 조회: Redis에서 카운트 반환")
     void getLikeCount_ReturnsCountFromRedis() {
         BoardIdVo boardId = BoardIdVo.of(1L);
-        Long expectedCount = 5L;
+        RAtomicLong likeActive = org.mockito.Mockito.mock(RAtomicLong.class);
+        RAtomicLong likeFlush = org.mockito.Mockito.mock(RAtomicLong.class);
+        RAtomicLong viewActive = org.mockito.Mockito.mock(RAtomicLong.class);
+        RAtomicLong viewFlush = org.mockito.Mockito.mock(RAtomicLong.class);
 
-        given(redissonClient.getAtomicLong(anyString())).willReturn(atomicLong);
-        given(atomicLong.get()).willReturn(expectedCount);
+        given(redissonClient.getAtomicLong(BoardStatRedisKeys.likeActive(boardId.value()))).willReturn(likeActive);
+        given(redissonClient.getAtomicLong(BoardStatRedisKeys.likeFlush(boardId.value()))).willReturn(likeFlush);
+        given(redissonClient.getAtomicLong(BoardStatRedisKeys.viewActive(boardId.value()))).willReturn(viewActive);
+        given(redissonClient.getAtomicLong(BoardStatRedisKeys.viewFlush(boardId.value()))).willReturn(viewFlush);
+        given(likeActive.get()).willReturn(3L);
+        given(likeFlush.get()).willReturn(2L);
+        given(viewActive.get()).willReturn(0L);
+        given(viewFlush.get()).willReturn(0L);
 
-        repository.getLikeCount(boardId);
+        Long result = repository.getLikeCount(boardId);
 
-        then(atomicLong).should(times(1)).get();
+        assertThat(result).isEqualTo(5L);
+        then(likeActive).should(times(1)).get();
+        then(likeFlush).should(times(1)).get();
     }
 
     @Test
@@ -204,13 +216,24 @@ class BoardRedisRepositoryImplTest {
     @DisplayName("조회수 조회: Redis에서 카운트 반환")
     void getViewCount_ReturnsCountFromRedis() {
         BoardIdVo boardId = BoardIdVo.of(1L);
-        Long expectedCount = 100L;
+        RAtomicLong likeActive = org.mockito.Mockito.mock(RAtomicLong.class);
+        RAtomicLong likeFlush = org.mockito.Mockito.mock(RAtomicLong.class);
+        RAtomicLong viewActive = org.mockito.Mockito.mock(RAtomicLong.class);
+        RAtomicLong viewFlush = org.mockito.Mockito.mock(RAtomicLong.class);
 
-        given(redissonClient.getAtomicLong(anyString())).willReturn(atomicLong);
-        given(atomicLong.get()).willReturn(expectedCount);
+        given(redissonClient.getAtomicLong(BoardStatRedisKeys.likeActive(boardId.value()))).willReturn(likeActive);
+        given(redissonClient.getAtomicLong(BoardStatRedisKeys.likeFlush(boardId.value()))).willReturn(likeFlush);
+        given(redissonClient.getAtomicLong(BoardStatRedisKeys.viewActive(boardId.value()))).willReturn(viewActive);
+        given(redissonClient.getAtomicLong(BoardStatRedisKeys.viewFlush(boardId.value()))).willReturn(viewFlush);
+        given(likeActive.get()).willReturn(0L);
+        given(likeFlush.get()).willReturn(0L);
+        given(viewActive.get()).willReturn(70L);
+        given(viewFlush.get()).willReturn(30L);
 
-        repository.getViewCount(boardId);
+        Long result = repository.getViewCount(boardId);
 
-        then(atomicLong).should(times(1)).get();
+        assertThat(result).isEqualTo(100L);
+        then(viewActive).should(times(1)).get();
+        then(viewFlush).should(times(1)).get();
     }
 }

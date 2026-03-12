@@ -96,6 +96,7 @@ class CreationVsParticipationLimitsTest {
                 studyCommandRepository,
                 studyQueryRepository,
                 memberDomainService,
+                memberQueryRepository,
                 studyParticipantQueryRepository,
                 projectParticipantQueryRepository,
                 projectQueryRepository
@@ -114,6 +115,7 @@ class CreationVsParticipationLimitsTest {
                 projectCommandRepository,
                 projectQueryRepository,
                 memberDomainService,
+                memberQueryRepository,
                 projectParticipantQueryRepository
         );
         
@@ -123,6 +125,8 @@ class CreationVsParticipationLimitsTest {
                 projectQueryRepository,
                 memberQueryRepository
         );
+        when(memberQueryRepository.findByIdForUpdate(any()))
+                .thenReturn(Optional.of(mock(org.certis.studyplatform.member.domain.vo.MemberVo.class)));
     }
 
     @Nested
