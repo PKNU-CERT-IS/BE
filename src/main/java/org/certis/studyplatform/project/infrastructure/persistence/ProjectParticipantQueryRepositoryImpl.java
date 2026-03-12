@@ -3,6 +3,7 @@ package org.certis.studyplatform.project.infrastructure.persistence;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.project.domain.ProjectParticipantStatus;
+import org.certis.studyplatform.project.domain.ProjectStatus;
 import org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository;
 import org.certis.studyplatform.project.domain.vo.*;
 import org.certis.studyplatform.project.infrastructure.mapper.ProjectInfrastructureMapper;
@@ -349,8 +350,12 @@ public class ProjectParticipantQueryRepositoryImpl implements ProjectParticipant
                 .and(pp.STATUS.eq(ProjectParticipantStatus.APPROVED.name()))
                 .and(pp.DELETED_AT.isNull())
                 .and(pj.DELETED_AT.isNull())
-                .and(pj.STARTED_AT.le(currentOffsetDateTime()))
-                .and(pj.ENDED_AT.gt(currentOffsetDateTime()))
+                .and(pj.ENDED_AT.greaterOrEqual(currentOffsetDateTime()))
+                .and(pj.STATUS.in(
+                        ProjectStatus.READY.name(),
+                        ProjectStatus.APPROVED.name(),
+                        ProjectStatus.INPROGRESS.name()
+                ))
                 .fetchOne(0, long.class);
 
         log.info("jOOQ: Active projects count: {} - memberId: {}", count, memberId);

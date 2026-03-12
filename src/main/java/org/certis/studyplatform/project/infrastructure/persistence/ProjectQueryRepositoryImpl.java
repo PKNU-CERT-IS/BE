@@ -3,6 +3,7 @@ package org.certis.studyplatform.project.infrastructure.persistence;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.member.domain.MemberGrade;
+import org.certis.studyplatform.project.domain.ProjectParticipantStatus;
 import org.certis.studyplatform.project.domain.ProjectStatus;
 import org.certis.studyplatform.project.domain.repository.ProjectQueryRepository;
 import org.certis.studyplatform.project.domain.vo.ProjectVo;
@@ -15,13 +16,17 @@ import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.OrderField;
+import org.jooq.SQLDialect;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import org.certis.studyplatform.project.domain.vo.ProjectEndSubmissionInfoVo;
+import javax.sql.DataSource;
+import java.sql.Connection;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -51,6 +56,8 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
 
     @Qualifier("jooqDataSource")
     private final DSLContext dsl;
+    @Qualifier("dataSource")
+    private final DataSource transactionalDataSource;
 
     private final ProjectInfrastructureMapper mapper;
 
@@ -78,6 +85,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                                 org.jooq.impl.DSL.select(org.jooq.impl.DSL.count())
                                         .from(org.certis.generated.jooq.tables.ProjectParticipant.PROJECT_PARTICIPANT)
                                         .where(org.certis.generated.jooq.tables.ProjectParticipant.PROJECT_PARTICIPANT.PROJECT_ID.eq(p.ID))
+                                        .and(org.certis.generated.jooq.tables.ProjectParticipant.PROJECT_PARTICIPANT.STATUS.eq(ProjectParticipantStatus.APPROVED.name()))
                                         .and(org.certis.generated.jooq.tables.ProjectParticipant.PROJECT_PARTICIPANT.DELETED_AT.isNull())
                                         .asField("current_participants"),
                                 p.MAX_PARTICIPANTS_NUMBER
@@ -134,6 +142,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         org.jooq.impl.DSL.select(org.jooq.impl.DSL.count())
                                 .from(org.certis.generated.jooq.tables.ProjectParticipant.PROJECT_PARTICIPANT)
                                 .where(org.certis.generated.jooq.tables.ProjectParticipant.PROJECT_PARTICIPANT.PROJECT_ID.eq(p.ID))
+                                .and(org.certis.generated.jooq.tables.ProjectParticipant.PROJECT_PARTICIPANT.STATUS.eq(ProjectParticipantStatus.APPROVED.name()))
                                 .and(org.certis.generated.jooq.tables.ProjectParticipant.PROJECT_PARTICIPANT.DELETED_AT.isNull())
                                 .asField("current_participants"),
                         p.MAX_PARTICIPANTS_NUMBER
@@ -197,6 +206,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                                         select(count())
                                                 .from(PROJECT_PARTICIPANT)
                                                 .where(PROJECT_PARTICIPANT.PROJECT_ID.eq(p.ID))
+                                                .and(PROJECT_PARTICIPANT.STATUS.eq(ProjectParticipantStatus.APPROVED.name()))
                                                 .and(PROJECT_PARTICIPANT.DELETED_AT.isNull())
                                                 .asField("current_participants"),
                                         // ProjectAttached 정보
@@ -271,6 +281,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         select(count())
                                 .from(PROJECT_PARTICIPANT)
                                 .where(PROJECT_PARTICIPANT.PROJECT_ID.eq(p.ID))
+                                .and(PROJECT_PARTICIPANT.STATUS.eq(ProjectParticipantStatus.APPROVED.name()))
                                 .and(PROJECT_PARTICIPANT.DELETED_AT.isNull())
                                 .asField("current_participants")
                 )
@@ -361,6 +372,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         select(count())
                                 .from(PROJECT_PARTICIPANT)
                                 .where(PROJECT_PARTICIPANT.PROJECT_ID.eq(p.ID))
+                                .and(PROJECT_PARTICIPANT.STATUS.eq(ProjectParticipantStatus.APPROVED.name()))
                                 .and(PROJECT_PARTICIPANT.DELETED_AT.isNull())
                                 .asField("current_participants")
                 )
@@ -421,6 +433,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         select(count())
                                 .from(PROJECT_PARTICIPANT)
                                 .where(PROJECT_PARTICIPANT.PROJECT_ID.eq(p.ID))
+                                .and(PROJECT_PARTICIPANT.STATUS.eq(ProjectParticipantStatus.APPROVED.name()))
                                 .and(PROJECT_PARTICIPANT.DELETED_AT.isNull())
                                 .asField("current_participants")
                 )
@@ -483,6 +496,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         select(count())
                                 .from(PROJECT_PARTICIPANT)
                                 .where(PROJECT_PARTICIPANT.PROJECT_ID.eq(p.ID))
+                                .and(PROJECT_PARTICIPANT.STATUS.eq(ProjectParticipantStatus.APPROVED.name()))
                                 .and(PROJECT_PARTICIPANT.DELETED_AT.isNull())
                                 .asField("current_participants")
                 )
@@ -515,9 +529,13 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
         var p = PROJECT.as("p");
 
         OffsetDateTime now = OffsetDateTime.now();
-        Condition condition = p.STARTED_AT.lessOrEqual(now)
-                .and(p.ENDED_AT.greaterOrEqual(now))
+        Condition condition = p.ENDED_AT.greaterOrEqual(now)
                 .and(p.MEMBER_ID.eq(memberId))
+                .and(p.STATUS.in(
+                        ProjectStatus.READY.name(),
+                        ProjectStatus.APPROVED.name(),
+                        ProjectStatus.INPROGRESS.name()
+                ))
                 .and(p.DELETED_AT.isNull());
 
         return dsl.selectCount()
@@ -565,6 +583,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         select(count())
                                 .from(PROJECT_PARTICIPANT)
                                 .where(PROJECT_PARTICIPANT.PROJECT_ID.eq(p.ID))
+                                .and(PROJECT_PARTICIPANT.STATUS.eq(ProjectParticipantStatus.APPROVED.name()))
                                 .and(PROJECT_PARTICIPANT.DELETED_AT.isNull())
                                 .asField("current_participants")
                 )
@@ -617,6 +636,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         select(count())
                                 .from(PROJECT_PARTICIPANT)
                                 .where(PROJECT_PARTICIPANT.PROJECT_ID.eq(p.ID))
+                                .and(PROJECT_PARTICIPANT.STATUS.eq(ProjectParticipantStatus.APPROVED.name()))
                                 .and(PROJECT_PARTICIPANT.DELETED_AT.isNull())
                                 .asField("current_participants")
                 )
@@ -707,6 +727,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         select(count())
                                 .from(PROJECT_PARTICIPANT)
                                 .where(PROJECT_PARTICIPANT.PROJECT_ID.eq(p.ID))
+                                .and(PROJECT_PARTICIPANT.STATUS.eq(ProjectParticipantStatus.APPROVED.name()))
                                 .and(PROJECT_PARTICIPANT.DELETED_AT.isNull())
                                 .asField("current_participants"),
                         // ProjectAttached 정보
@@ -731,6 +752,26 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
         ProjectVo result = mapper.toProjectVoFromRecordsWithAttachments(records);
         log.info("jOOQ: Project VO found - ID: {}", projectId);
         return Optional.of(result);
+    }
+
+    @Override
+    public Optional<ProjectVo> findByIdForUpdate(Long projectId) {
+        Connection connection = DataSourceUtils.getConnection(transactionalDataSource);
+        try {
+            if (org.jooq.impl.DSL.using(connection, SQLDialect.POSTGRES)
+                    .selectOne()
+                    .from(PROJECT)
+                    .where(PROJECT.ID.eq(projectId)
+                            .and(PROJECT.DELETED_AT.isNull()))
+                    .forUpdate()
+                    .fetchOptional()
+                    .isEmpty()) {
+                return Optional.empty();
+            }
+        } finally {
+            DataSourceUtils.releaseConnection(connection, transactionalDataSource);
+        }
+        return findById(projectId);
     }
 
     public Optional<ProjectVo> findByIdAndDeletedAtIsNull(Long projectId) {
@@ -767,6 +808,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         select(count())
                                 .from(PROJECT_PARTICIPANT)
                                 .where(PROJECT_PARTICIPANT.PROJECT_ID.eq(p.ID))
+                                .and(PROJECT_PARTICIPANT.STATUS.eq(ProjectParticipantStatus.APPROVED.name()))
                                 .and(PROJECT_PARTICIPANT.DELETED_AT.isNull())
                                 .asField("current_participants"),
                         // ProjectAttached 정보
@@ -905,6 +947,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         select(count())
                                 .from(PROJECT_PARTICIPANT)
                                 .where(PROJECT_PARTICIPANT.PROJECT_ID.eq(p.ID))
+                                .and(PROJECT_PARTICIPANT.STATUS.eq(ProjectParticipantStatus.APPROVED.name()))
                                 .and(PROJECT_PARTICIPANT.DELETED_AT.isNull())
                                 .asField("current_participants")
                 )
