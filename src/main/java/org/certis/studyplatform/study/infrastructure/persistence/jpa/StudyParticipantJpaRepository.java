@@ -26,7 +26,7 @@ public interface StudyParticipantJpaRepository extends JpaRepository<StudyPartic
     @Query("UPDATE StudyParticipantEntity p SET " +
             "p.status = :status, " +
             "p.updatedAt = :updatedAt " +
-            "WHERE p.id = :id AND p.deletedAt IS NULL")
+            "WHERE p.id = :id AND p.deletedAt IS NULL AND p.status = org.certis.studyplatform.study.domain.StudyParticipantStatus.PENDING")
     int bulkUpdateStatus(@Param("id") Long id,
                          @Param("status") StudyParticipantStatus status,
                          @Param("updatedAt") OffsetDateTime updatedAt);
@@ -39,7 +39,7 @@ public interface StudyParticipantJpaRepository extends JpaRepository<StudyPartic
             "p.status = org.certis.studyplatform.study.domain.StudyParticipantStatus.REJECTED, " +
             "p.updatedAt = :deletedAt, " +
             "p.deletedAt = :deletedAt " +
-            "WHERE p.id = :id AND p.deletedAt IS NULL")
+            "WHERE p.id = :id AND p.deletedAt IS NULL AND p.status = org.certis.studyplatform.study.domain.StudyParticipantStatus.PENDING")
     int bulkRejectWithSoftDelete(@Param("id") Long id,
                                  @Param("deletedAt") OffsetDateTime deletedAt);
 
@@ -100,4 +100,3 @@ public interface StudyParticipantJpaRepository extends JpaRepository<StudyPartic
             Long memberId
     );
 }
-

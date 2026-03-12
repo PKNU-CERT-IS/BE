@@ -9,13 +9,17 @@ import org.certis.studyplatform.study.domain.vo.*;
 import org.certis.studyplatform.study.infrastructure.mapper.StudyInfrastructureMapper;
 import org.jooq.*;
 import org.jooq.Record;
+import org.jooq.SQLDialect;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.stereotype.Repository;
 import org.certis.studyplatform.study.infrastructure.persistence.entity.StudyEntity;
 import org.certis.studyplatform.member.domain.MemberGrade;
+import javax.sql.DataSource;
+import java.sql.Connection;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -50,6 +54,8 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
 
     @Qualifier("jooqDataSource")
     private final DSLContext dsl;
+    @Qualifier("dataSource")
+    private final DataSource transactionalDataSource;
 
     private final StudyInfrastructureMapper mapper;
     @Override
@@ -496,9 +502,13 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
         var s = STUDY.as("s");
 
         OffsetDateTime now = OffsetDateTime.now();
-        Condition condition = s.STARTED_AT.lessOrEqual(now)
-                .and(s.ENDED_AT.greaterOrEqual(now))
+        Condition condition = s.ENDED_AT.greaterOrEqual(now)
                 .and(s.MEMBER_ID.eq(memberId))
+                .and(s.STATUS.in(
+                        StudyStatus.READY.name(),
+                        StudyStatus.APPROVED.name(),
+                        StudyStatus.INPROGRESS.name()
+                ))
                 .and(s.DELETED_AT.isNull());
 
         return dsl.selectCount()
@@ -937,6 +947,26 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
 
         log.info("jOOQ: Study VO found - ID: {}", studyId);
         return result;
+    }
+
+    @Override
+    public Optional<StudyVo> findByIdForUpdate(Long studyId) {
+        Connection connection = DataSourceUtils.getConnection(transactionalDataSource);
+        try {
+            if (org.jooq.impl.DSL.using(connection, SQLDialect.POSTGRES)
+                    .selectOne()
+                    .from(STUDY)
+                    .where(STUDY.ID.eq(studyId)
+                            .and(STUDY.DELETED_AT.isNull()))
+                    .forUpdate()
+                    .fetchOptional()
+                    .isEmpty()) {
+                return Optional.empty();
+            }
+        } finally {
+            DataSourceUtils.releaseConnection(connection, transactionalDataSource);
+        }
+        return findById(studyId);
     }
 
     @Override

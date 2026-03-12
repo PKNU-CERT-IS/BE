@@ -3,6 +3,7 @@ package org.certis.studyplatform.study.infrastructure.persistence;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.study.domain.StudyParticipantStatus;
+import org.certis.studyplatform.study.domain.StudyStatus;
 import org.certis.studyplatform.study.domain.repository.StudyParticipantQueryRepository;
 import org.certis.studyplatform.study.domain.vo.StudyParticipantSummaryVo;
 import org.certis.studyplatform.study.domain.vo.StudyParticipantVo;
@@ -365,8 +366,12 @@ public class StudyParticipantQueryRepositoryImpl implements StudyParticipantQuer
                 .and(s.STATUS.eq(StudyParticipantStatus.APPROVED.name()))
                 .and(s.DELETED_AT.isNull())
                 .and(st.DELETED_AT.isNull())
-                .and(st.STARTED_AT.le(currentOffsetDateTime()))
-                .and(st.ENDED_AT.gt(currentOffsetDateTime()))
+                .and(st.ENDED_AT.greaterOrEqual(currentOffsetDateTime()))
+                .and(st.STATUS.in(
+                        StudyStatus.READY.name(),
+                        StudyStatus.APPROVED.name(),
+                        StudyStatus.INPROGRESS.name()
+                ))
                 .fetchOne(0, long.class);
 
         log.info("jOOQ: Active studies count: {} - memberId: {}", count, memberId);
