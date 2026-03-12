@@ -1,6 +1,10 @@
 package org.certis.studyplatform.board.domain.repository;
 
 import org.certis.studyplatform.board.domain.model.vo.BoardIdVo;
+import org.certis.studyplatform.board.domain.model.vo.BoardRedisDeltaVo;
+
+import java.util.List;
+import java.util.Map;
 
 public interface BoardRedisRepository {
 
@@ -22,6 +26,9 @@ public interface BoardRedisRepository {
     // 좋아요 수 조회
     Long getLikeCount(BoardIdVo boardId);
 
+    // 좋아요 수 일괄 조회
+    Map<Long, Long> getLikeCounts(List<BoardIdVo> boardIds);
+
     // 조회수 추가
     void addView(BoardIdVo boardId, Long viewerId);
 
@@ -31,6 +38,9 @@ public interface BoardRedisRepository {
     // 조회수 조회
     Long getViewCount(BoardIdVo boardId);
 
+    // 조회수 일괄 조회
+    Map<Long, Long> getViewCounts(List<BoardIdVo> boardIds);
+
     // 조회수 증가
     void incrementViewCount(BoardIdVo boardId);
 
@@ -39,5 +49,11 @@ public interface BoardRedisRepository {
 
     // 테스트용: 특정 값으로 조회수 설정
     void setViewCount(BoardIdVo boardId, Long count);
+
+    BoardRedisDeltaVo getDeltaSnapshot(BoardIdVo boardId);
+
+    BoardRedisDeltaVo rotateActiveDeltaToFlush(BoardIdVo boardId);
+
+    void clearFlushStats(BoardIdVo boardId);
 
 }
