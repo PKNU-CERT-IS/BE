@@ -37,6 +37,11 @@ public interface MemberQueryRepository {
     Optional<MemberVo> findById(MemberIdVo memberId);
 
     /**
+     * 회원 행을 잠근 뒤 조회합니다.
+     */
+    Optional<MemberVo> findByIdForUpdate(MemberIdVo memberId);
+
+    /**
      * 회원 권한만 조회
      */
     Optional<MemberRole> findRoleByMemberId(MemberIdVo memberId);
