@@ -16,11 +16,16 @@ import org.certis.studyplatform.member.infrastructure.persistence.entity.MemberE
 import org.jooq.*;
 import org.jooq.Record;
 import org.jooq.impl.DSL;
+import org.jooq.SQLDialect;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.stereotype.Repository;
 
+import javax.sql.DataSource;
+import java.sql.Connection;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +52,8 @@ import static org.jooq.impl.DSL.*;
 public class MemberQueryRepositoryImpl implements MemberQueryRepository {
 
     private final DSLContext dsl;
+    @Qualifier("dataSource")
+    private final DataSource transactionalDataSource;
     private final MemberInfrastructureMapper memberInfrastructureMapper;
 
     // 테이블 이름을 직접 사용 (jOOQ 코드 생성 전까지)
@@ -88,6 +95,30 @@ public class MemberQueryRepositoryImpl implements MemberQueryRepository {
             log.error("Error finding member by ID {}: {}", memberIdVo.value(), e.getMessage());
             return Optional.empty();
         }
+    }
+
+    @Override
+    public Optional<MemberVo> findByIdForUpdate(MemberIdVo memberIdVo) {
+        if (memberIdVo == null) {
+            return Optional.empty();
+        }
+
+        Connection connection = DataSourceUtils.getConnection(transactionalDataSource);
+        try {
+            if (DSL.using(connection, SQLDialect.POSTGRES)
+                    .selectOne()
+                    .from(MEMBER)
+                    .where(MEMBER.ID.eq(memberIdVo.value())
+                            .and(MEMBER.DELETED_AT.isNull()))
+                    .forUpdate()
+                    .fetchOptional()
+                    .isEmpty()) {
+                return Optional.empty();
+            }
+        } finally {
+            DataSourceUtils.releaseConnection(connection, transactionalDataSource);
+        }
+        return findById(memberIdVo);
     }
 
     @Override
