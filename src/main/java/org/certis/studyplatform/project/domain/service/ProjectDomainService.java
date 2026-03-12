@@ -6,8 +6,10 @@ import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.member.application.object.query.GetMemberByIdQuery;
 import org.certis.studyplatform.member.domain.MemberRole;
+import org.certis.studyplatform.member.domain.repository.query.MemberQueryRepository;
 import org.certis.studyplatform.member.domain.service.MemberDomainService;
 import org.certis.studyplatform.member.domain.vo.MemberVo;
+import org.certis.studyplatform.member.domain.vo.MemberIdVo;
 import org.certis.studyplatform.project.application.object.command.CreateProjectCommand;
 import org.certis.studyplatform.project.application.object.command.DeleteProjectCommand;
 import org.certis.studyplatform.project.application.object.command.EndProjectCommand;
@@ -24,6 +26,7 @@ import org.certis.studyplatform.project.domain.vo.ProjectVo;
 import org.certis.studyplatform.project.domain.vo.ProjectSummaryVo;
 import org.certis.studyplatform.project.domain.vo.ProjectSearchCriteriaVo;
 import org.certis.studyplatform.project.domain.vo.ProjectSearchResultVo;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
@@ -53,7 +56,11 @@ public class ProjectDomainService {
     private final ProjectCommandRepository commandRepository;
     private final ProjectQueryRepository queryRepository;
     private final MemberDomainService memberDomainService;
+    private final MemberQueryRepository memberQueryRepository;
     private final ProjectParticipantQueryRepository projectParticipantQueryRepository;
+
+    @Value("${benchmark.mode:after}")
+    private String benchmarkMode;
 
     // ================================================================
     // COMMAND OPERATIONS
@@ -74,6 +81,11 @@ public class ProjectDomainService {
         // 중복 검사 (Repository 의존성이 필요한 검증만 수행)
 //        validateProjectTitleDuplication(command.title());
         // Creation limit enforcement: consider created + joined actives
+        (isLegacyBenchmarkMode()
+                ? memberQueryRepository.findById(MemberIdVo.of(command.creatorId()))
+                : memberQueryRepository.findByIdForUpdate(MemberIdVo.of(command.creatorId())))
+                .orElseThrow(() -> new DomainException(ExceptionStatus.MEMBER_DOMAIN_NOT_FOUND,
+                        "프로젝트 생성자를 찾을 수 없습니다: " + command.creatorId()));
         enforceCreationLimits(command.creatorId());
 
         // ProjectVo.createNew() 사용 - 생성 시 자동으로 나머지 검증 수행
@@ -115,6 +127,10 @@ public class ProjectDomainService {
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_PERMISSION,
                     "진행 중인 프로젝트가 1개 있으면 추가 신청이 불가합니다.");
         }
+    }
+
+    private boolean isLegacyBenchmarkMode() {
+        return "before".equalsIgnoreCase(benchmarkMode);
     }
 
     /**

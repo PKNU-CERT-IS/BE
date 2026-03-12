@@ -14,6 +14,7 @@ import org.certis.studyplatform.project.domain.repository.ProjectParticipantComm
 import org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository;
 import org.certis.studyplatform.project.domain.repository.ProjectQueryRepository;
 import org.certis.studyplatform.project.domain.vo.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 // import removed: OffsetDateTime no longer used after switching to status-based validation
@@ -33,6 +34,9 @@ public class ProjectParticipantDomainService {
     private final ProjectParticipantQueryRepository queryRepository;
     private final ProjectQueryRepository projectQueryRepository;
     private final MemberQueryRepository memberQueryRepository;
+
+    @Value("${benchmark.mode:after}")
+    private String benchmarkMode;
 
     // ================================================================
     // COMMAND OPERATIONS
@@ -121,7 +125,9 @@ public class ProjectParticipantDomainService {
         validateProjectLeaderPermission(participant.projectId(), command.requesterId());
 
         // 4. 참가자 수 제한 재검증 (동시성 고려)
-        ProjectVo project = projectQueryRepository.findById(participant.projectId())
+        ProjectVo project = (isLegacyBenchmarkMode()
+                ? projectQueryRepository.findById(participant.projectId())
+                : projectQueryRepository.findByIdForUpdate(participant.projectId()))
                 .orElseThrow(() -> new DomainException(ExceptionStatus.PROJECT_DOMAIN_NOT_FOUND,
                         "프로젝트를 찾을 수 없습니다."));
         validateParticipantLimit(participant.projectId(), project.maxParticipants());
@@ -204,6 +210,10 @@ public class ProjectParticipantDomainService {
     public boolean restoreLatestSoftDeleted(Long projectId, Long memberId) {
         int restored = commandRepository.restoreByProjectIdAndMemberId(projectId, memberId);
         return restored > 0;
+    }
+
+    private boolean isLegacyBenchmarkMode() {
+        return "before".equalsIgnoreCase(benchmarkMode);
     }
 
     /**
