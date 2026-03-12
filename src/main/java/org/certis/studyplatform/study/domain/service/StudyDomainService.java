@@ -6,8 +6,10 @@ import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.member.application.object.query.GetMemberByIdQuery;
 import org.certis.studyplatform.member.domain.MemberRole;
+import org.certis.studyplatform.member.domain.repository.query.MemberQueryRepository;
 import org.certis.studyplatform.member.domain.service.MemberDomainService;
 import org.certis.studyplatform.member.domain.vo.MemberVo;
+import org.certis.studyplatform.member.domain.vo.MemberIdVo;
 import org.certis.studyplatform.study.application.object.command.CreateStudyCommand;
 import org.certis.studyplatform.study.application.object.command.DeleteStudyCommand;
 import org.certis.studyplatform.study.application.object.command.EndStudyCommand;
@@ -23,6 +25,7 @@ import org.certis.studyplatform.study.domain.vo.StudySearchCriteriaVo;
 import org.certis.studyplatform.study.domain.vo.StudySearchResultVo;
 import org.certis.studyplatform.study.domain.vo.StudySummaryVo;
 import org.certis.studyplatform.study.domain.vo.StudyVo;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
@@ -51,9 +54,13 @@ public class StudyDomainService {
     private final StudyCommandRepository commandRepository;
     private final StudyQueryRepository queryRepository;
     private final MemberDomainService memberDomainService;
+    private final MemberQueryRepository memberQueryRepository;
     private final org.certis.studyplatform.study.domain.repository.StudyParticipantQueryRepository studyParticipantQueryRepository;
     private final org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository projectParticipantQueryRepository;
     private final org.certis.studyplatform.project.domain.repository.ProjectQueryRepository projectQueryRepository;
+
+    @Value("${benchmark.mode:after}")
+    private String benchmarkMode;
 
     // ================================================================
     // COMMAND OPERATIONS
@@ -75,6 +82,11 @@ public class StudyDomainService {
 //        validateStudyTitleDuplication(command.title());
 
         // Creation limit enforcement: consider created + joined actives
+        (isLegacyBenchmarkMode()
+                ? memberQueryRepository.findById(MemberIdVo.of(command.creatorId()))
+                : memberQueryRepository.findByIdForUpdate(MemberIdVo.of(command.creatorId())))
+                .orElseThrow(() -> new DomainException(ExceptionStatus.MEMBER_DOMAIN_NOT_FOUND,
+                        "스터디 생성자를 찾을 수 없습니다: " + command.creatorId()));
         enforceCreationLimits(command.creatorId());
 
         // StudyVo.createNew() 사용 - 생성 시 자동으로 나머지 검증 수행
@@ -122,6 +134,10 @@ public class StudyDomainService {
             throw new DomainException(ExceptionStatus.STUDY_DOMAIN_PERMISSION_DENINED,
                     "프로젝트 진행 중에는 스터디 1개까지만 신청할 수 있습니다.");
         }
+    }
+
+    private boolean isLegacyBenchmarkMode() {
+        return "before".equalsIgnoreCase(benchmarkMode);
     }
 
     /**
