@@ -12,11 +12,8 @@ import org.certis.studyplatform.board.domain.model.vo.*;
 import org.certis.studyplatform.board.domain.repository.BoardCommandRepository;
 import org.certis.studyplatform.board.domain.repository.BoardQueryRepository;
 import org.certis.studyplatform.board.domain.repository.BoardRedisRepository;
-import org.certis.studyplatform.board.infrastructure.sync.BoardSyncBenchmarkCoordinator;
 import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.beans.factory.ObjectProvider;
 import org.certis.studyplatform.member.domain.MemberRole;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -36,10 +33,6 @@ public class BoardDomainService {
     private final BoardCommandRepository boardCommandRepository;
     private final BoardQueryRepository boardQueryRepository;
     private final BoardRedisRepository boardRedisRepository;
-    private final ObjectProvider<BoardSyncBenchmarkCoordinator> benchmarkCoordinatorProvider;
-
-    @Value("${benchmark.mode:after}")
-    private String benchmarkMode;
 
     /**
      * 게시글 생성
@@ -283,11 +276,7 @@ public class BoardDomainService {
 
         for (Long boardId : boardIds) {
             try {
-                if (isLegacyBenchmarkMode()) {
-                    syncSingleBoardStatsLegacy(boardId);
-                } else {
-                    syncSingleBoardStats(boardId);
-                }
+                syncSingleBoardStats(boardId);
                 successCount++;
             } catch (Exception e) {
                 log.error("Domain: Failed to sync stats for board: {}", boardId, e);
@@ -295,17 +284,9 @@ public class BoardDomainService {
             }
         }
 
-        if (isLegacyBenchmarkMode()) {
-            initializeRedisStatsAfterSync(boardIds);
-        }
-
         log.info("Domain: Board stats sync completed - Success: {}, Failed: {}", successCount, failCount);
 
         return successCount;
-    }
-
-    private boolean isLegacyBenchmarkMode() {
-        return "before".equalsIgnoreCase(benchmarkMode);
     }
 
     /**
@@ -324,13 +305,6 @@ public class BoardDomainService {
 
             // 2. active delta를 flush delta로 회전
             BoardRedisDeltaVo rotatedDelta = boardRedisRepository.rotateActiveDeltaToFlush(boardIdVo);
-            BoardSyncBenchmarkCoordinator coordinator = benchmarkCoordinatorProvider.getIfAvailable();
-            if (coordinator != null) {
-                coordinator.afterRotate(boardId);
-                if (coordinator.shouldFail(boardId)) {
-                    throw new IllegalStateException("Injected board sync failure for benchmark board=" + boardId);
-                }
-            }
 
             if (rotatedDelta.flushLikeCount() == 0L && rotatedDelta.flushViewCount() == 0L) {
                 log.debug("Domain: No Redis delta to sync for board: {} - skipping", boardId);
@@ -368,53 +342,6 @@ public class BoardDomainService {
             log.error("Domain: Failed to sync stats for board: {}", boardId, e);
             throw e; // 상위에서 처리하도록 재발생
         }
-    }
-
-    private void syncSingleBoardStatsLegacy(Long boardId) {
-        log.debug("Domain: Syncing legacy stats for board: {}", boardId);
-
-        BoardIdVo boardIdVo = BoardIdVo.of(boardId);
-        Long authorId = boardQueryRepository.getAuthorId(boardIdVo);
-        if (authorId == null) {
-            throw new DomainException(ExceptionStatus.BOARD_INFRASTRUCTURE_NOT_FOUND);
-        }
-        BoardSyncBenchmarkCoordinator coordinator = benchmarkCoordinatorProvider.getIfAvailable();
-
-        Long redisLikeCount = boardRedisRepository.getLikeCount(boardIdVo);
-        Long redisViewCount = boardRedisRepository.getViewCount(boardIdVo);
-        BoardStatsVo currentStats = boardQueryRepository.getBoardStats(boardIdVo);
-
-        if (coordinator != null && coordinator.shouldFail(boardId)) {
-            throw new IllegalStateException("Injected legacy board sync failure for benchmark board=" + boardId);
-        }
-
-        Long finalLikeCount = redisLikeCount > 0 ? redisLikeCount : currentStats.likeCount();
-        Long finalViewCount = redisViewCount > 0 ? redisViewCount : currentStats.viewCount();
-
-        boolean hasChanges = !finalLikeCount.equals(currentStats.likeCount())
-                || !finalViewCount.equals(currentStats.viewCount());
-
-        if (!hasChanges) {
-            log.debug("Domain: No legacy sync changes detected for board: {}", boardId);
-            return;
-        }
-
-        BoardStatsUpdateVo statsUpdateVo = BoardStatsUpdateVo.of(
-                boardIdVo.value(),
-                authorId,
-                finalLikeCount,
-                finalViewCount,
-                currentStats.likeCount(),
-                currentStats.viewCount(),
-                currentStats.likeId(),
-                currentStats.viewId()
-        );
-
-        boardCommandRepository.updateBoardStats(statsUpdateVo);
-
-        log.info("Domain: Legacy stats synced for board: {} - Likes: {} → {}, Views: {} → {}",
-                boardId, currentStats.likeCount(), finalLikeCount,
-                currentStats.viewCount(), finalViewCount);
     }
 
     // ================================================================
@@ -465,9 +392,6 @@ public class BoardDomainService {
 
     private Long getDisplayLikeCount(BoardIdVo boardIdVo) {
         try {
-            if (isLegacyBenchmarkMode()) {
-                return boardRedisRepository.getLikeCount(boardIdVo);
-            }
             return boardQueryRepository.getLikeCountFromDB(boardIdVo) + boardRedisRepository.getLikeCount(boardIdVo);
         } catch (Exception e) {
             log.error("Domain: Failed to calculate display like count - boardId: {}", boardIdVo.value(), e);
@@ -477,9 +401,6 @@ public class BoardDomainService {
 
     private Long getDisplayViewCount(BoardIdVo boardIdVo) {
         try {
-            if (isLegacyBenchmarkMode()) {
-                return boardRedisRepository.getViewCount(boardIdVo);
-            }
             return boardQueryRepository.getViewCountFromDB(boardIdVo) + boardRedisRepository.getViewCount(boardIdVo);
         } catch (Exception e) {
             log.error("Domain: Failed to calculate display view count - boardId: {}", boardIdVo.value(), e);
@@ -513,12 +434,8 @@ public class BoardDomainService {
 
         final Map<Long, Long> finalLikeDeltas = likeDeltas;
         final Map<Long, Long> finalViewDeltas = viewDeltas;
-        final Map<Long, Long> dbLikeCounts = isLegacyBenchmarkMode()
-                ? Collections.emptyMap()
-                : boardQueryRepository.getLikeCountsFromDB(boardIds);
-        final Map<Long, Long> dbViewCounts = isLegacyBenchmarkMode()
-                ? Collections.emptyMap()
-                : boardQueryRepository.getViewCountsFromDB(boardIds);
+        final Map<Long, Long> dbLikeCounts = boardQueryRepository.getLikeCountsFromDB(boardIds);
+        final Map<Long, Long> dbViewCounts = boardQueryRepository.getViewCountsFromDB(boardIds);
 
         return boards.stream()
                 .map(board -> BoardSummaryVo.of(
@@ -572,18 +489,4 @@ public class BoardDomainService {
         return isConsistent;
     }
 
-    private void initializeRedisStatsAfterSync(List<Long> boardIds) {
-        BoardSyncBenchmarkCoordinator coordinator = benchmarkCoordinatorProvider.getIfAvailable();
-
-        for (Long boardId : boardIds) {
-            try {
-                if (coordinator != null) {
-                    coordinator.beforeLegacyReset(boardId);
-                }
-                boardRedisRepository.initializeStats(BoardIdVo.of(boardId));
-            } catch (Exception e) {
-                log.error("Domain: Failed to initialize Redis stats for board: {}", boardId, e);
-            }
-        }
-    }
 }
