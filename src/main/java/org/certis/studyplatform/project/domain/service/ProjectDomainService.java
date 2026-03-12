@@ -26,7 +26,6 @@ import org.certis.studyplatform.project.domain.vo.ProjectVo;
 import org.certis.studyplatform.project.domain.vo.ProjectSummaryVo;
 import org.certis.studyplatform.project.domain.vo.ProjectSearchCriteriaVo;
 import org.certis.studyplatform.project.domain.vo.ProjectSearchResultVo;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
@@ -59,9 +58,6 @@ public class ProjectDomainService {
     private final MemberQueryRepository memberQueryRepository;
     private final ProjectParticipantQueryRepository projectParticipantQueryRepository;
 
-    @Value("${benchmark.mode:after}")
-    private String benchmarkMode;
-
     // ================================================================
     // COMMAND OPERATIONS
     // ================================================================
@@ -81,9 +77,7 @@ public class ProjectDomainService {
         // 중복 검사 (Repository 의존성이 필요한 검증만 수행)
 //        validateProjectTitleDuplication(command.title());
         // Creation limit enforcement: consider created + joined actives
-        (isLegacyBenchmarkMode()
-                ? memberQueryRepository.findById(MemberIdVo.of(command.creatorId()))
-                : memberQueryRepository.findByIdForUpdate(MemberIdVo.of(command.creatorId())))
+        memberQueryRepository.findByIdForUpdate(MemberIdVo.of(command.creatorId()))
                 .orElseThrow(() -> new DomainException(ExceptionStatus.MEMBER_DOMAIN_NOT_FOUND,
                         "프로젝트 생성자를 찾을 수 없습니다: " + command.creatorId()));
         enforceCreationLimits(command.creatorId());
@@ -127,10 +121,6 @@ public class ProjectDomainService {
             throw new DomainException(ExceptionStatus.PROJECT_DOMAIN_INVALID_PERMISSION,
                     "진행 중인 프로젝트가 1개 있으면 추가 신청이 불가합니다.");
         }
-    }
-
-    private boolean isLegacyBenchmarkMode() {
-        return "before".equalsIgnoreCase(benchmarkMode);
     }
 
     /**

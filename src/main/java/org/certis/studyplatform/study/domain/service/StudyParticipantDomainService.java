@@ -15,7 +15,6 @@ import org.certis.studyplatform.study.domain.vo.StudyParticipantCreatedVo;
 import org.certis.studyplatform.study.domain.vo.StudyParticipantStatusUpdatedVo;
 import org.certis.studyplatform.study.domain.vo.StudyParticipantVo;
 import org.certis.studyplatform.study.domain.vo.StudyVo;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository;
@@ -40,9 +39,6 @@ public class StudyParticipantDomainService {
     private final ProjectParticipantQueryRepository projectParticipantQueryRepository;
     private final org.certis.studyplatform.project.domain.repository.ProjectQueryRepository projectQueryRepository;
     private final MemberQueryRepository memberQueryRepository;
-
-    @Value("${benchmark.mode:after}")
-    private String benchmarkMode;
 
     // ================================================================
     // COMMAND OPERATIONS
@@ -131,9 +127,7 @@ public class StudyParticipantDomainService {
         validateStudyLeaderPermission(participant.studyId(), command.requesterId());
 
         // 4. 참가자 수 제한 재검증 (동시성 고려)
-        StudyVo study = (isLegacyBenchmarkMode()
-                ? studyQueryRepository.findById(participant.studyId())
-                : studyQueryRepository.findByIdForUpdate(participant.studyId()))
+        StudyVo study = studyQueryRepository.findByIdForUpdate(participant.studyId())
                 .orElseThrow(() -> new DomainException(ExceptionStatus.STUDY_DOMAIN_NOT_FOUND,
                         "스터디를 찾을 수 없습니다."));
         validateParticipantLimit(participant.studyId(), study.maxParticipants());
@@ -246,10 +240,6 @@ public class StudyParticipantDomainService {
 
         log.info("Domain: Study creator registered as participant - ID: {}", result.id());
         return result;
-    }
-
-    private boolean isLegacyBenchmarkMode() {
-        return "before".equalsIgnoreCase(benchmarkMode);
     }
 
 
