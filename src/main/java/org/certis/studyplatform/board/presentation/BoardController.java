@@ -14,6 +14,7 @@ import org.certis.studyplatform.response.ResponseStatus;
 import org.certis.studyplatform.shared.security.CurrentUser;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.certis.studyplatform.board.presentation.dto.response.BoardStatsResponseDto;
@@ -99,6 +100,7 @@ public class BoardController {
 
     // 관리자 수동 동기화 트리거
     @PostMapping("/admin/sync")
+    @PreAuthorize("hasRole('CHAIRMAN') or hasRole('ADMIN')") // 관리자 페이지의 회원 관리 api로 STAFF 이상의 권한이 필요함
     public ResponseEntity<GlobalResponseHandler<Void>> manualSync() {
         boardFacadeService.syncBoardStats();
         return GlobalResponseHandler.success(ResponseStatus.BOARD_SYNC_SUCCESS);
