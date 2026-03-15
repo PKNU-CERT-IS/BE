@@ -9,7 +9,8 @@ public enum MemberRole {
     VICECHAIRMAN(2, "부회장"),
     STAFF(3, "임원진"),
     PLAYER(4, "일반회원"),
-    NONE(5, "승인 대기");
+    NONE(5, "승인 대기"),
+    UPSOLVER(5,"권한 없음"),;
 
     private final int level;
     private final String description;
