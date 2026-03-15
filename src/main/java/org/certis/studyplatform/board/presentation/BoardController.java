@@ -14,6 +14,7 @@ import org.certis.studyplatform.response.ResponseStatus;
 import org.certis.studyplatform.shared.security.CurrentUser;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.certis.studyplatform.board.presentation.dto.response.BoardStatsResponseDto;
@@ -99,6 +100,7 @@ public class BoardController {
 
     // 관리자 수동 동기화 트리거
     @PostMapping("/admin/sync")
+    @PreAuthorize("hasRole('CHAIRMAN') or hasRole('ADMIN')") // redis, rdb 접근 및 반복문 로직이 있는 무거운 로직
     public ResponseEntity<GlobalResponseHandler<Void>> manualSync() {
         boardFacadeService.syncBoardStats();
         return GlobalResponseHandler.success(ResponseStatus.BOARD_SYNC_SUCCESS);
@@ -106,6 +108,7 @@ public class BoardController {
 
     // 오늘 통계 조회
     @GetMapping("/stats/today")
+    @PreAuthorize("hasRole('CHAIRMAN') or hasRole('ADMIN')") // redis, rdb 접근 및 반복문 로직이 있는 무거운 로직
     public ResponseEntity<GlobalResponseHandler<BoardStatsResponseDto>> getTodayStats() {
         BoardStatsResponseDto stats = boardFacadeService.getTodayStats();
         return GlobalResponseHandler.success(ResponseStatus.BOARD_STATS_FIND_SUCCESS, stats);

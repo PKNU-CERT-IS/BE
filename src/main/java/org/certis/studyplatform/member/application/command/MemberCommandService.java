@@ -41,29 +41,6 @@ public class MemberCommandService {
         return savedMember;
     }
 
-    /**
-     * 회원 정보 수정 - 통합 메서드 (기본정보 + 프로필 + 기술스택)
-     *
-     * ✅ 모든 수정 시나리오를 하나의 메서드로 처리
-     * ✅ null인 필드는 업데이트하지 않음 (부분 업데이트 지원)
-     *
-     * @param command 수정할 정보들 (null인 필드는 수정하지 않음)
-     * @return MemberUpdatedVo 수정된 회원 정보
-     */
-    @Transactional
-    public MemberUpdatedVo updateMember(UpdateMemberCommand command) {
-        log.info("Command: Updating member with ID: {} - fields to update: name={}, profileImage={}, grade={}, role={}, major={}, skills={}",
-                command.id(),
-                command.name() != null,
-                command.grade() != null,
-                command.role() != null,
-                command.major() != null,
-                command.skills() != null && !command.skills().isEmpty());
-
-        // 새로운 매퍼 사용: Domain → VO 변환
-        return memberDomainService.updateMember(command);
-    }
-
 
     /**
      * 회원 삭제

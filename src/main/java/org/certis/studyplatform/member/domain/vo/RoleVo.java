@@ -35,12 +35,12 @@ public record RoleVo(MemberRole role) {
     public  void validateCanManageRole(RoleVo targetCurrentRole, RoleVo newRole) {
         // 1. 대상자의 현재 권한보다 높은 등급인가?
         if (!this.role.canChangeRole(targetCurrentRole.role)) {
-            throw new DomainException(ExceptionStatus.MEMBER_DOMAIN_INSUFFICIENT_AUTHORITY);
+            throw new DomainException(ExceptionStatus.MEMBER_DOMAIN_INSUFFICIENT_AUTHORITY,"바꾸려는 대상의 권한보다 높지 않은 권한을 가지고 있습니다.");
         }
 
         // 2. 부여하려는 새 권한보다 높은 등급인가?
         if (!this.role.canChangeRole(newRole.role)) {
-            throw new DomainException(ExceptionStatus.MEMBER_DOMAIN_INSUFFICIENT_AUTHORITY);
+            throw new DomainException(ExceptionStatus.MEMBER_DOMAIN_INSUFFICIENT_AUTHORITY,"바꾸려는 대상의 바꿀 권한보다 높지 않은 권한을 가지고 있습니다.");
         }
     }
 }
