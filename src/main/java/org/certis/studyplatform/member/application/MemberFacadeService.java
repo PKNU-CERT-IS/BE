@@ -34,22 +34,6 @@ public class MemberFacadeService {
     private final MemberAdminApplicationMapper memberAdminApplicationMapper;
 
     /**
-     * 회원 정보 수정 (통합: 기본정보 + 프로필 + 기술스택)
-     */
-    public MemberUpdatedVo updateMember(Long memberId, MemberUpdateRequestDto requestDto) {
-        log.info("Facade: Updating member with ID: {}", memberId);
-
-        // DTO → Command Object 변환 (새로운 매퍼 사용)
-        UpdateMemberCommand command = memberApplicationCommandMapper.toMemberUpdateCommand(memberId, requestDto);
-
-        // Command Service 호출
-        MemberUpdatedVo updatedVo = memberCommandService.updateMember(command);
-
-        log.info("Facade: Member updated successfully with ID: {}", memberId);
-        return updatedVo;
-    }
-
-    /**
      * 회원 삭제
      */
     public void deleteMember(Long memberId) {

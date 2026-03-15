@@ -65,30 +65,30 @@ public class AdminMemberController {
         return GlobalResponseHandler.success(ResponseStatus.MEMBER_ADMIN_SEARCH_SUCCESS,result);
     }
 
-    /**
-     * 유예기간 부여
-     */
-    @PostMapping("/grace-period")
-    @Operation(summary = "유예기간 부여", description = "특정 회원에게 유예기간을 부여합니다")
-    public ResponseEntity<GlobalResponseHandler<Void>> grantGracePeriod(
-            @Valid @RequestBody GrantGracePeriodRequestDto request) {
-
-        memberFacadeService.grantGracePeriod(request);
-
-        return GlobalResponseHandler.success(ResponseStatus.MEMBER_ADMIN_GRACE_PERIOD_UPDATE_SUCCESS);
-    }
-
-    /**
-     * 벌점 부여
-     */
-    @PostMapping("/penalty")
-    @Operation(summary = "벌점 부여", description = "특정 회원에게 벌점을 부여합니다")
-    public ResponseEntity<GlobalResponseHandler<Void>> assignPenalty(
-            @Valid @RequestBody PenaltyRequestDto request) {
-
-        memberFacadeService.assignPenalty(request);
-        return GlobalResponseHandler.success(ResponseStatus.MEMBER_ADMIN_PENALTY_UPDATE_SUCCESS);
-    }
+//    /**
+//     * 유예기간 부여
+//     */
+//    @PostMapping("/grace-period")
+//    @Operation(summary = "유예기간 부여", description = "특정 회원에게 유예기간을 부여합니다")
+//    public ResponseEntity<GlobalResponseHandler<Void>> grantGracePeriod(
+//            @Valid @RequestBody GrantGracePeriodRequestDto request) {
+//
+//        memberFacadeService.grantGracePeriod(request);
+//
+//        return GlobalResponseHandler.success(ResponseStatus.MEMBER_ADMIN_GRACE_PERIOD_UPDATE_SUCCESS);
+//    }
+//
+//    /**
+//     * 벌점 부여
+//     */
+//    @PostMapping("/penalty")
+//    @Operation(summary = "벌점 부여", description = "특정 회원에게 벌점을 부여합니다")
+//    public ResponseEntity<GlobalResponseHandler<Void>> assignPenalty(
+//            @Valid @RequestBody PenaltyRequestDto request) {
+//
+//        memberFacadeService.assignPenalty(request);
+//        return GlobalResponseHandler.success(ResponseStatus.MEMBER_ADMIN_PENALTY_UPDATE_SUCCESS);
+//    }
 
     /**
      * 회원 삭제
