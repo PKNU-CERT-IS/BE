@@ -831,6 +831,17 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
         return result;
     }
 
+    @Override
+    public Optional<Long> findCreatorIdById(Long projectId) {
+        return Optional.ofNullable(
+                dsl.select(PROJECT.MEMBER_ID)
+                        .from(PROJECT)
+                        .where(PROJECT.ID.eq(projectId))
+                        .and(PROJECT.DELETED_AT.isNull())
+                        .fetchOne(PROJECT.MEMBER_ID)
+        );
+    }
+
 
     @Override
     public Page<ProjectSummaryVo> findCompletedProjectsByMember(Long memberId, Pageable pageable) {

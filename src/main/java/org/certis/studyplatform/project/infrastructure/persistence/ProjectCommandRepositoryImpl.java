@@ -154,4 +154,17 @@ public class ProjectCommandRepositoryImpl implements ProjectCommandRepository {
         }
         log.debug("Command: Project creation approved successfully - ID: {}", projectId);
     }
+
+    @Override
+    public boolean tryClaimApprovedSlot(Long projectId) {
+        return jpaRepository.tryClaimApprovedSlot(projectId, OffsetDateTime.now()) > 0;
+    }
+
+    @Override
+    public void releaseApprovedSlot(Long projectId) {
+        int affectedRows = jpaRepository.releaseApprovedSlot(projectId, OffsetDateTime.now());
+        if (affectedRows == 0) {
+            throw new IllegalStateException("No claimed project slot to release: " + projectId);
+        }
+    }
 }

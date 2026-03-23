@@ -52,6 +52,10 @@ public class ProjectEntity {
     @Column(nullable = false, name = "max_participants_number")
     private Integer maxParticipantsNumber;
 
+    @Column(nullable = false, name = "approved_slots_used")
+    @Builder.Default
+    private Integer approvedSlotsUsed = 0;
+
     @Column(name = "github_url")
     private String githubUrl;
 
