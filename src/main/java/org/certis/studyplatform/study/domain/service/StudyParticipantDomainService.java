@@ -8,6 +8,7 @@ import org.certis.studyplatform.study.application.object.command.CancelStudyPart
 import org.certis.studyplatform.study.application.object.command.CreateStudyParticipantCommand;
 import org.certis.studyplatform.study.application.object.command.UpdateStudyParticipantStatusCommand;
 import org.certis.studyplatform.study.domain.StudyParticipantStatus;
+import org.certis.studyplatform.study.domain.repository.StudyCommandRepository;
 import org.certis.studyplatform.study.domain.repository.StudyParticipantCommandRepository;
 import org.certis.studyplatform.study.domain.repository.StudyParticipantQueryRepository;
 import org.certis.studyplatform.study.domain.repository.StudyQueryRepository;
@@ -36,6 +37,7 @@ public class StudyParticipantDomainService {
     private final StudyParticipantCommandRepository commandRepository;
     private final StudyParticipantQueryRepository queryRepository;
     private final StudyQueryRepository studyQueryRepository;
+    private final StudyCommandRepository studyCommandRepository;
     private final ProjectParticipantQueryRepository projectParticipantQueryRepository;
     private final org.certis.studyplatform.project.domain.repository.ProjectQueryRepository projectQueryRepository;
     private final MemberQueryRepository memberQueryRepository;
@@ -127,10 +129,10 @@ public class StudyParticipantDomainService {
         validateStudyLeaderPermission(participant.studyId(), command.requesterId());
 
         // 4. 참가자 수 제한 재검증 (동시성 고려)
-        StudyVo study = studyQueryRepository.findByIdForUpdate(participant.studyId())
-                .orElseThrow(() -> new DomainException(ExceptionStatus.STUDY_DOMAIN_NOT_FOUND,
-                        "스터디를 찾을 수 없습니다."));
-        validateParticipantLimit(participant.studyId(), study.maxParticipants());
+        if (!studyCommandRepository.tryClaimApprovedSlot(participant.studyId())) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_PERMISSION_DENINED,
+                    "스터디 참가 인원이 가득찼습니다.");
+        }
 
         // 5. 승인 처리
         StudyParticipantVo updatedParticipant = participant.updateStatus(StudyParticipantStatus.APPROVED);
@@ -138,6 +140,38 @@ public class StudyParticipantDomainService {
 
         log.info("Domain: Participant approved - ID: {}", result.id());
         return result;
+    }
+
+    public StudyParticipantStatusUpdatedVo approveParticipant(Long studyId, Long memberId, Long requesterId) {
+        log.info("Domain: Approving participant by study/member - studyId: {}, memberId: {}, requesterId: {}",
+                studyId, memberId, requesterId);
+
+        validateStudyLeaderPermission(studyId, requesterId);
+
+        if (!studyCommandRepository.tryClaimApprovedSlot(studyId)) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_PERMISSION_DENINED,
+                    "스터디 참가 인원이 가득찼습니다.");
+        }
+
+        try {
+            StudyParticipantVo participant = queryRepository.findByStudyIdAndMemberId(studyId, memberId)
+                    .orElseThrow(() -> new DomainException(ExceptionStatus.STUDY_DOMAIN_NOT_FOUND,
+                            "참가 신청을 찾을 수 없습니다."));
+
+            if (!participant.isPending()) {
+                throw new DomainException(ExceptionStatus.STUDY_DOMAIN_PERMISSION_DENINED,
+                        "대기 중인 참가 신청만 승인할 수 있습니다.");
+            }
+
+            StudyParticipantVo updatedParticipant = participant.updateStatus(StudyParticipantStatus.APPROVED);
+            StudyParticipantStatusUpdatedVo result = commandRepository.updateStatus(updatedParticipant, requesterId);
+
+            log.info("Domain: Participant approved - ID: {}", result.id());
+            return result;
+        } catch (RuntimeException e) {
+            studyCommandRepository.releaseApprovedSlot(studyId);
+            throw e;
+        }
     }
 
     /**
@@ -200,6 +234,7 @@ public class StudyParticipantDomainService {
 
         // 4. 하드 삭제 처리
         commandRepository.deleteByIdHard(participantId);
+        studyCommandRepository.releaseApprovedSlot(participant.studyId());
 
         log.info("Domain: Approved participant cancelled (hard deleted) - ID: {}", participantId);
     }
@@ -232,6 +267,10 @@ public class StudyParticipantDomainService {
         }
 
         // 2. 스터디 생성자를 APPROVED 상태로 참가자 등록
+        if (!studyCommandRepository.tryClaimApprovedSlot(studyId)) {
+            throw new DomainException(ExceptionStatus.STUDY_DOMAIN_PERMISSION_DENINED,
+                    "스터디 참가 인원이 가득찼습니다.");
+        }
         StudyParticipantVo creatorParticipant = StudyParticipantVo.createApproved(
                 studyId, creatorId);
 
@@ -328,16 +367,19 @@ public class StudyParticipantDomainService {
      * 스터디 생성자 권한 확인
      */
     private void validateStudyLeaderPermission(Long studyId, Long requesterId) {
-        StudyVo study = studyQueryRepository.findByIdAndDeletedAtIsNull(studyId)
+        Long creatorId = studyQueryRepository.findCreatorIdById(studyId)
                 .orElseThrow(() -> new DomainException(ExceptionStatus.STUDY_DOMAIN_NOT_FOUND,
                         "스터디를 찾을 수 없습니다."));
 
-        boolean isLeader = study.creatorId().equals(requesterId);
+        if (creatorId.equals(requesterId)) {
+            return;
+        }
+
         boolean isAdmin = memberQueryRepository.findRoleByMemberId(new org.certis.studyplatform.member.domain.vo.MemberIdVo(requesterId))
                 .map(org.certis.studyplatform.member.domain.MemberRole::isStaffOrAbove)
                 .orElse(false);
 
-        if (!(isLeader || isAdmin)) {
+        if (!isAdmin) {
             throw new DomainException(ExceptionStatus.STUDY_DOMAIN_PERMISSION_DENINED,
                     "스터디 생성자 또는 관리자만 참가 승인/거절을 할 수 있습니다.");
         }

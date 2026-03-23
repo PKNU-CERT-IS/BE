@@ -133,6 +133,11 @@ public interface StudyQueryRepository {
     Optional<StudyVo> findByIdAndDeletedAtIsNull(Long studyId);
 
     /**
+     * 스터디 생성자 ID만 조회합니다.
+     */
+    Optional<Long> findCreatorIdById(Long studyId);
+
+    /**
      * ✅ 스터디 제목 존재 여부 확인
      *
      * @param title 스터디 제목
