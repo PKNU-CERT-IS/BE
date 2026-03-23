@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.boot.autoconfigure.flyway.FlywayMigrationInitializer;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.env.Environment;
 
 import javax.sql.DataSource;
 import java.io.IOException;
@@ -121,7 +122,11 @@ public class TestEmbeddedPostgresConfig {
 
     @Bean(destroyMethod = "close")
     @Primary
-    public DataSource testDataSource(EmbeddedPostgres embeddedPostgres, FlywayMigrationInitializer flywayMigrationInitializer) {
+    public DataSource testDataSource(
+            EmbeddedPostgres embeddedPostgres,
+            FlywayMigrationInitializer flywayMigrationInitializer,
+            Environment environment
+    ) {
         logger.info("Creating Test DataSource from Embedded PostgreSQL");
         
         // Flyway 마이그레이션이 완료된 후에만 DataSource를 생성하도록 보장
@@ -133,11 +138,15 @@ public class TestEmbeddedPostgresConfig {
             config.setUsername("postgres");
             config.setPassword("");
             config.setDriverClassName("org.postgresql.Driver");
+
+            int maxPoolSize = environment.getProperty("test.datasource.maximum-pool-size", Integer.class, 5);
+            int minimumIdle = environment.getProperty("test.datasource.minimum-idle", Integer.class, 2);
+            minimumIdle = Math.min(minimumIdle, maxPoolSize);
             
             config.setAutoCommit(false);
             config.setConnectionTimeout(60000);
-            config.setMaximumPoolSize(5); // 풀 크기 약간 증가
-            config.setMinimumIdle(2);
+            config.setMaximumPoolSize(maxPoolSize);
+            config.setMinimumIdle(minimumIdle);
             config.setConnectionTestQuery("SELECT 1");
             config.setValidationTimeout(10000);
             config.setIdleTimeout(300000);
@@ -160,7 +169,11 @@ public class TestEmbeddedPostgresConfig {
     }
 
     @Bean(value = "jooqDataSource", destroyMethod = "close")
-    public DataSource jooqDataSource(EmbeddedPostgres embeddedPostgres, FlywayMigrationInitializer flywayMigrationInitializer) {
+    public DataSource jooqDataSource(
+            EmbeddedPostgres embeddedPostgres,
+            FlywayMigrationInitializer flywayMigrationInitializer,
+            Environment environment
+    ) {
         logger.info("Creating jOOQ Test DataSource from Embedded PostgreSQL");
         
         try {
@@ -169,14 +182,18 @@ public class TestEmbeddedPostgresConfig {
             config.setUsername("postgres");
             config.setPassword("");
             config.setDriverClassName("org.postgresql.Driver");
+
+            int maxPoolSize = environment.getProperty("test.jooq-datasource.maximum-pool-size", Integer.class, 5);
+            int minimumIdle = environment.getProperty("test.jooq-datasource.minimum-idle", Integer.class, 2);
+            minimumIdle = Math.min(minimumIdle, maxPoolSize);
             
             config.setAutoCommit(true);
             config.setReadOnly(false);
             config.setConnectionTimeout(60000);
             config.setIdleTimeout(300000);
             config.setMaxLifetime(600000);
-            config.setMaximumPoolSize(5);
-            config.setMinimumIdle(2);
+            config.setMaximumPoolSize(maxPoolSize);
+            config.setMinimumIdle(minimumIdle);
             config.setPoolName("jOOQ-Test-HikariPool");
             config.setConnectionTestQuery("SELECT 1");
             config.setValidationTimeout(10000);

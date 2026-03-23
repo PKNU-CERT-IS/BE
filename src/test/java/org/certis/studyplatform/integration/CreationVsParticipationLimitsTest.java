@@ -106,6 +106,7 @@ class CreationVsParticipationLimitsTest {
                 studyParticipantCommandRepository,
                 studyParticipantQueryRepository,
                 studyQueryRepository,
+                studyCommandRepository,
                 projectParticipantQueryRepository,
                 projectQueryRepository,
                 memberQueryRepository
@@ -123,6 +124,7 @@ class CreationVsParticipationLimitsTest {
                 projectParticipantCommandRepository,
                 projectParticipantQueryRepository,
                 projectQueryRepository,
+                projectCommandRepository,
                 memberQueryRepository
         );
         when(memberQueryRepository.findByIdForUpdate(any()))

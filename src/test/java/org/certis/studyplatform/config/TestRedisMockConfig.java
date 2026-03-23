@@ -1,5 +1,9 @@
 package org.certis.studyplatform.config;
 
+import io.github.bucket4j.BucketConfiguration;
+import io.github.bucket4j.distributed.BucketProxy;
+import io.github.bucket4j.distributed.proxy.ProxyManager;
+import io.github.bucket4j.distributed.proxy.RemoteBucketBuilder;
 import org.mockito.Mockito;
 import org.redisson.api.RAtomicLong;
 import org.redisson.api.RKeys;
@@ -11,6 +15,8 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+
+import java.util.function.Supplier;
 
 /**
  * 테스트 프로필에서 Redis 의존성을 모킹하여 외부 Redis 없이 통합 테스트가 동작하도록 합니다.
@@ -42,6 +48,23 @@ public class TestRedisMockConfig {
 
     @Bean
     @Primary
+    public ProxyManager<String> proxyManagerMock() {
+        @SuppressWarnings("unchecked")
+        ProxyManager<String> proxyManager = Mockito.mock(ProxyManager.class);
+        @SuppressWarnings("unchecked")
+        RemoteBucketBuilder<String> bucketBuilder = Mockito.mock(RemoteBucketBuilder.class);
+        BucketProxy bucketProxy = Mockito.mock(BucketProxy.class);
+
+        Mockito.when(proxyManager.builder()).thenReturn(bucketBuilder);
+        Mockito.when(bucketBuilder.build(Mockito.anyString(), Mockito.<Supplier<BucketConfiguration>>any()))
+                .thenReturn(bucketProxy);
+        Mockito.when(bucketProxy.tryConsume(Mockito.anyLong())).thenReturn(true);
+
+        return proxyManager;
+    }
+
+    @Bean
+    @Primary
     public RedisConnectionFactory redisConnectionFactoryMock() {
         return Mockito.mock(RedisConnectionFactory.class);
     }
@@ -52,5 +75,3 @@ public class TestRedisMockConfig {
         return Mockito.mock(ReactiveRedisConnectionFactory.class);
     }
 }
-
-
