@@ -111,31 +111,11 @@ public class ProjectParticipantFacadeService {
     public ProjectParticipantStatusUpdateResponseDto approveJoinProject(ProjectJoinApproveRequestDto requestDto,  Long requesterId) {
         log.info("Facade: Approving project join - projectId: {}, memberId: {}", requestDto.getProjectId(), requestDto.getMemberId());
 
-        // 권한 검증: 프로젝트 생성자 또는 관리자(STAFF 이상)만 승인 가능
-        ProjectVo projectVo = projectQueryService.getProjectById(GetProjectByIdQuery.of(requestDto.getProjectId()));
-        boolean isLeader = projectVo.creatorId().equals(requesterId);
-        var requesterMember = memberQueryService.getMemberById(new GetMemberByIdQuery(requesterId));
-        boolean isAdmin = requesterMember != null
-                && requesterMember.role() != null
-                && MemberRole.isStaffOrAbove(requesterMember.role());
-        if (!(isLeader || isAdmin)) {
-            throw new ApplicationException(ExceptionStatus.PROJECT_DOMAIN_PERMISSION_DENINED,
-                    "프로젝트 생성자 또는 관리자만 참가 승인/거절을 할 수 있습니다.");
-        }
-
-        // 참가 신청 resolve: (projectId, memberId) → participantId
-        var participantVo = participantQueryService
-                .getByProjectIdAndMemberId(requestDto.getProjectId(), requestDto.getMemberId())
-                .orElseThrow(() -> new ApplicationException(ExceptionStatus.PROJECT_DOMAIN_NOT_FOUND,
-                        "참가 신청을 찾을 수 없습니다."));
-
-        // Command 생성 및 호출
-        UpdateProjectParticipantStatusCommand command = new UpdateProjectParticipantStatusCommand(
-                participantVo.id(),
-                ProjectParticipantStatus.APPROVED,
+        ProjectParticipantStatusUpdatedVo updatedVo = participantCommandService.approveParticipant(
+                requestDto.getProjectId(),
+                requestDto.getMemberId(),
                 requesterId
         );
-        ProjectParticipantStatusUpdatedVo updatedVo = participantCommandService.approveParticipant(command);
 
         // Response 변환
         ProjectParticipantStatusUpdateResponseDto responseDto = dtoMapper

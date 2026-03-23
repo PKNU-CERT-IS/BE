@@ -63,6 +63,17 @@ public class ProjectParticipantCommandService {
         return result;
     }
 
+    @Transactional
+    public ProjectParticipantStatusUpdatedVo approveParticipant(Long projectId, Long memberId, Long requesterId) {
+        log.info("Command: Approving participant by project/member - projectId: {}, memberId: {}, requesterId: {}",
+                projectId, memberId, requesterId);
+
+        ProjectParticipantStatusUpdatedVo result = domainService.approveParticipant(projectId, memberId, requesterId);
+
+        log.info("Command: Participant approved successfully - ID: {}", result.id());
+        return result;
+    }
+
     /**
      * 프로젝트 참가 거절
      */
