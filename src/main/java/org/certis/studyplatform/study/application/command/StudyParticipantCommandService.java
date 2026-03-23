@@ -66,6 +66,17 @@ public class StudyParticipantCommandService {
         return result;
     }
 
+    @Transactional
+    public StudyParticipantStatusUpdatedVo approveParticipant(Long studyId, Long memberId, Long requesterId) {
+        log.info("Command: Approving participant by study/member - studyId: {}, memberId: {}, requesterId: {}",
+                studyId, memberId, requesterId);
+
+        StudyParticipantStatusUpdatedVo result = domainService.approveParticipant(studyId, memberId, requesterId);
+
+        log.info("Command: Participant approved successfully - ID: {}", result.id());
+        return result;
+    }
+
     /**
      * 프로젝트 참가 거절
      */
