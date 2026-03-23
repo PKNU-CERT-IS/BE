@@ -115,6 +115,11 @@ public interface ProjectQueryRepository {
     Optional<ProjectVo> findByIdAndDeletedAtIsNull(Long projectId);
 
     /**
+     * 프로젝트 생성자 ID만 조회합니다.
+     */
+    Optional<Long> findCreatorIdById(Long projectId);
+
+    /**
      * ✅ 프로젝트 제목 존재 여부 확인
      *
      * @param title 프로젝트 제목

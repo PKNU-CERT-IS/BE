@@ -69,4 +69,8 @@ public interface ProjectCommandRepository {
      * @param projectId 승인할 프로젝트 ID
      */
     void approveCreation(Long projectId);
+
+    boolean tryClaimApprovedSlot(Long projectId);
+
+    void releaseApprovedSlot(Long projectId);
 }
