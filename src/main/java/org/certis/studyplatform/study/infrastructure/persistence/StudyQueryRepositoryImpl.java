@@ -1025,6 +1025,17 @@ public class StudyQueryRepositoryImpl implements StudyQueryRepository {
         return result;
     }
 
+    @Override
+    public Optional<Long> findCreatorIdById(Long studyId) {
+        return Optional.ofNullable(
+                dsl.select(STUDY.MEMBER_ID)
+                        .from(STUDY)
+                        .where(STUDY.ID.eq(studyId))
+                        .and(STUDY.DELETED_AT.isNull())
+                        .fetchOne(STUDY.MEMBER_ID)
+        );
+    }
+
     // ================================================================
     // PRIVATE HELPER METHODS
     // ================================================================
