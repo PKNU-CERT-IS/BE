@@ -156,111 +156,6 @@ public class MemberDomainService {
         return createdMember;
     }
 
-    /**
-     * 회원 정보 수정 (Command 기반) - Enhanced VO-Centric Flow
-     *
-     * 데이터 흐름:
-     * 1. Command Object (primitive) → VO 변환 (비즈니스 검증 자동 수행)
-     * 2. 개별 VO들을 복합 VO로 조합 (Builder Pattern)
-     * 3. 복합 비즈니스 규칙 검증
-     * 4. Repository 호출 (VO 전달 → Infrastructure에서 Entity 변환)
-     * 5. 결과 VO 반환 (Infrastructure에서 Entity → VO 변환)
-     */
-    public MemberUpdatedVo updateMember(UpdateMemberCommand command) {
-        log.info("🔄 Domain: Starting member update with ID: {}", command.id());
-
-        // ================================================================
-        // STEP 1: Command → MemberIdVo 변환 (검증 자동 수행)
-        // ================================================================
-
-        MemberIdVo memberIdVo = memberDomainMapper.toMemberIdVo(command.id());
-        log.debug("✅ MemberIdVo created: {}", memberIdVo.value());
-
-        // 기존 회원 존재 확인
-        validateMemberExists(memberIdVo);
-
-        // ================================================================
-        // STEP 2: Command → VO 변환 (중복 코드 제거)
-        // 각 필드를 개별적으로 VO로 변환 후 Builder에 직접 설정
-        // ================================================================
-
-        log.debug("📝 Converting Command fields to VOs with validation...");
-
-        MemberUpdateVo.Builder updateBuilder = MemberUpdateVo.builder();
-
-        // 이름 VO 변환 및 설정 (null-safe)
-        if (command.name() != null) {
-            NameVo nameVo = memberDomainMapper.toNameVo(command.name());
-            updateBuilder.name(nameVo);
-            log.debug("✅ NameVo converted and set: {}", nameVo.value());
-        }
-
-        // 학년 VO 변환 및 설정 (null-safe)
-        if (command.grade() != null) {
-            GradeVo gradeVo = memberDomainMapper.toGradeVo(command.grade());
-            updateBuilder.grade(gradeVo);
-            log.debug("✅ GradeVo converted and set: {}", gradeVo.grade());
-        }
-
-        // 역할 VO 변환 및 설정 (null-safe)
-        if (command.role() != null) {
-            RoleVo roleVo = memberDomainMapper.toRoleVo(command.role());
-            updateBuilder.role(roleVo);
-            log.debug("✅ RoleVo converted and set: {}", roleVo.role());
-        }
-
-        // 전공 VO 변환 및 설정 (null-safe)
-        if (command.major() != null) {
-            MajorVo majorVo = memberDomainMapper.toMajorVo(command.major());
-            updateBuilder.major(majorVo);
-            log.debug("✅ MajorVo converted and set: {}", majorVo.value());
-        }
-
-        // 기술스택 VO 변환 및 설정 (null-safe)
-        if (command.skills() != null) {
-            SkillsVo skillsVo = memberDomainMapper.toSkillsVo(command.skills());
-            updateBuilder.skills(skillsVo);
-            log.debug("✅ SkillsVo converted and set with {} skills", skillsVo.values().size());
-        }
-
-        // 설명 설정 (primitive type)
-        updateBuilder.description(command.description());
-        if (command.description() != null) {
-            log.debug("✅ Description set: {}", command.description());
-        }
-
-        // ================================================================
-        // STEP 3: 복합 VO 생성 및 검증
-        // ================================================================
-
-        log.debug("🔗 Building MemberUpdateVo from individual VOs...");
-        MemberUpdateVo updateVo = updateBuilder.build();
-        log.debug("✅ MemberUpdateVo built successfully");
-
-        // 업데이트할 내용이 있는지 확인
-        if (!updateVo.hasAnyUpdate()) {
-            throw new DomainException(ExceptionStatus.MEMBER_DOMAIN_INVALID_NAME,
-                    "수정할 정보가 없습니다");
-        }
-
-        // ================================================================
-        // STEP 4: 복합 비즈니스 규칙 검증
-        // ================================================================
-
-        log.debug("🔍 Validating complex business rules for update...");
-        validateMemberUpdate(updateVo);
-        log.debug("✅ Complex business rules validation passed");
-
-        // ================================================================
-        // STEP 5: Repository 호출 (VO → Infrastructure → Entity 변환)
-        // ================================================================
-
-        log.debug("💾 Calling repository to update member (VO → Entity)...");
-        MemberUpdatedVo updatedMember = memberCommandRepository.updateMember(memberIdVo, updateVo);
-        log.info("🎉 Domain: Member updated successfully with ID: {}", updatedMember.id());
-
-        return updatedMember;
-    }
 
     /**
      * 회원 삭제 (Command 기반)
@@ -551,10 +446,6 @@ public class MemberDomainService {
 
         MemberRole role = memberQueryRepository.findRoleByMemberId(memberIdVo)
                 .orElseThrow(() -> new DomainException(ExceptionStatus.MEMBER_INFRASTRUCTURE_NOT_FOUND));
-        if (role != MemberRole.UPSOLVER) {
-            throw new DomainException(ExceptionStatus.MEMBER_DOMAIN_INVALID_ROLE,
-                    "유예기간 부여는 UPSOLVER만 가능합니다.");
-        }
 
         memberCommandRepository.updateGracePeriod(memberIdVo, gracePeriodVo);
 
@@ -575,9 +466,9 @@ public class MemberDomainService {
         // STEP 2: 권한 검증
         MemberRole role = memberQueryRepository.findRoleByMemberId(memberIdVo)
                 .orElseThrow(() -> new DomainException(ExceptionStatus.MEMBER_INFRASTRUCTURE_NOT_FOUND));
-        if (!(role == MemberRole.UPSOLVER || role == MemberRole.PLAYER)) {
+        if (!(role == MemberRole.PLAYER)) {
             throw new DomainException(ExceptionStatus.MEMBER_DOMAIN_INVALID_ROLE,
-                    "패널티 부여는 UPSOLVER 또는 PLAYER만 가능합니다.");
+                    "패널티 부여는 PLAYER만 가능합니다.");
         }
 
         // STEP 3: Repository 호출 (VO 전달)

@@ -9,8 +9,8 @@ public enum MemberRole {
     VICECHAIRMAN(2, "부회장"),
     STAFF(3, "임원진"),
     PLAYER(4, "일반회원"),
-    UPSOLVER(4, "문제해결자"), // PLAYER와 동급
-    NONE(5, "승인 대기");
+    NONE(5, "승인 대기"),
+    UPSOLVER(5,"권한 없음"),;
 
     private final int level;
     private final String description;
@@ -42,7 +42,7 @@ public enum MemberRole {
         return memberRole.level <= STAFF.level;
     }
 
-    // Level 4 이상인가? (PLAYER, UPSOLVER 이상)
+    // Level 4 이상인가? (PLAYER 이상)
     public static boolean isLevel4OrAbove(MemberRole memberRole) {
         return memberRole.level <= PLAYER.level;
     }
