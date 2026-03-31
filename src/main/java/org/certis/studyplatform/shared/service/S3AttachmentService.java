@@ -24,10 +24,16 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * S3 첨부파일 서비스
@@ -40,6 +46,11 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 @Slf4j
 public class S3AttachmentService {
+
+    private static final String DETERMINISTIC_PREFIX = "idempotent-v1/";
+    private static final Duration DETERMINISTIC_OBJECT_CACHE_TTL = Duration.ofHours(1);
+    private static final int DETERMINISTIC_CACHE_CLEANUP_THRESHOLD = 2_048;
+    private static final int DETERMINISTIC_CACHE_CLEANUP_INTERVAL = 64;
 
     @Value("${aws.s3.bucket-name:${AWS_S3_BUCKET:test-bucket}}")
     private String bucketName;
@@ -61,6 +72,9 @@ public class S3AttachmentService {
     private AwsCredentialsProvider credentialsProvider;
     private final Map<String, S3Client> s3ClientByRegion = new ConcurrentHashMap<>();
     private final Map<String, S3Presigner> s3PresignerByRegion = new ConcurrentHashMap<>();
+    private final Map<String, Long> deterministicObjectCache = new ConcurrentHashMap<>();
+    private final Map<String, CompletableFuture<String>> deterministicUploadsInFlight = new ConcurrentHashMap<>();
+    private final AtomicInteger deterministicCacheCleanupTicker = new AtomicInteger();
 
     @PostConstruct
     public void initializeS3Client() {
@@ -260,6 +274,110 @@ public class S3AttachmentService {
     }
 
     /**
+     * 멱등 요청용 deterministic 업로드.
+     * key 패턴: idempotent-v1/{memberId}/{idempotencyKey}/{fileHash}.{ext}
+     */
+    public String uploadBytesDeterministic(
+            byte[] bytes,
+            String contentType,
+            String originalFileName,
+            String domain,
+            Long memberId,
+            String idempotencyKey
+    ) {
+        try {
+            if (bytes == null || bytes.length == 0) {
+                throw new InfrastructureException(ExceptionStatus.S3_INFRASTRUCTURE_INVALID_FILE_TYPE);
+            }
+
+            int maxMb = 20;
+            long sizeMb = Math.round(bytes.length / 1024.0 / 1024.0);
+            if (sizeMb > maxMb) {
+                throw new InfrastructureException(ExceptionStatus.S3_INFRASTRUCTURE_UPLOAD_FAILED);
+            }
+
+            String extension = getExtension(originalFileName);
+            if (extension.isBlank()) {
+                extension = extensionFromContentType(contentType);
+            }
+
+            String safeIdempotencyKey = sanitizeIdempotencyKey(idempotencyKey);
+            String fileHash = sha256Hex(bytes);
+            long safeMemberId = memberId != null ? memberId : 0L;
+
+            String s3Key = String.format(
+                    "idempotent-v1/%d/%s/%s%s",
+                    safeMemberId,
+                    safeIdempotencyKey,
+                    fileHash,
+                    extension
+            );
+
+            String s3Url = buildS3Url(bucketName, region, s3Key);
+            if (isDeterministicObjectCached(s3Url)) {
+                return s3Url;
+            }
+
+            CompletableFuture<String> inFlight = deterministicUploadsInFlight.get(s3Url);
+            if (inFlight != null) {
+                return awaitDeterministicUpload(inFlight);
+            }
+
+            CompletableFuture<String> newUpload = new CompletableFuture<>();
+            CompletableFuture<String> existingUpload = deterministicUploadsInFlight.putIfAbsent(s3Url, newUpload);
+            if (existingUpload != null) {
+                return awaitDeterministicUpload(existingUpload);
+            }
+
+            try {
+                if (isDeterministicObjectCached(s3Url)) {
+                    newUpload.complete(s3Url);
+                    return s3Url;
+                }
+
+                if (fileExists(s3Url)) {
+                    newUpload.complete(s3Url);
+                    return s3Url;
+                }
+
+                PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                        .bucket(bucketName)
+                        .key(s3Key)
+                        .contentType(contentType)
+                        .build();
+
+                s3Client.putObject(putObjectRequest, RequestBody.fromBytes(bytes));
+                cacheDeterministicObject(s3Url);
+                newUpload.complete(s3Url);
+            } catch (RuntimeException e) {
+                newUpload.completeExceptionally(e);
+                throw e;
+            } catch (Exception e) {
+                newUpload.completeExceptionally(e);
+                throw e;
+            } finally {
+                deterministicUploadsInFlight.remove(s3Url, newUpload);
+            }
+
+            log.info(
+                    "멱등 업로드 성공: memberId={}, idemKey={}, hash={}, domain={}, s3Key={}, size={}bytes",
+                    safeMemberId,
+                    safeIdempotencyKey,
+                    fileHash,
+                    domain,
+                    s3Key,
+                    bytes.length
+            );
+            return s3Url;
+        } catch (InfrastructureException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("S3 deterministic 업로드 중 오류: memberId={}, domain={}, error={}", memberId, domain, e.getMessage());
+            throw new InfrastructureException(ExceptionStatus.S3_INFRASTRUCTURE_UPLOAD_FAILED);
+        }
+    }
+
+    /**
      * S3에서 파일 삭제
      */
     public void deleteFile(String s3Url) {
@@ -285,6 +403,8 @@ public class S3AttachmentService {
                     .build();
 
             getRegionalS3Client(targetRegion != null ? targetRegion : region).deleteObject(deleteObjectRequest);
+            evictDeterministicObjectCache(s3Url);
+            deterministicUploadsInFlight.remove(s3Url);
             
             log.info("파일 삭제 성공: s3Key={}, url={}", s3Key, s3Url);
 
@@ -321,14 +441,19 @@ public class S3AttachmentService {
                     .build();
 
             getRegionalS3Client(targetRegion != null ? targetRegion : region).headObject(headObjectRequest);
+            cacheDeterministicObject(s3Url);
             
             log.debug("파일 존재 확인 성공: s3Key={}", s3Key);
             return true;
 
         } catch (NoSuchKeyException e) {
+            evictDeterministicObjectCache(s3Url);
             log.debug("파일이 존재하지 않음: url={}", s3Url);
             return false;
         } catch (S3Exception e) {
+            if (e.statusCode() == 404) {
+                evictDeterministicObjectCache(s3Url);
+            }
             log.error("S3 파일 존재 확인 중 오류 발생: url={}, error={}", s3Url, e.getMessage());
             return false;
         } catch (Exception e) {
@@ -773,5 +898,111 @@ public class S3AttachmentService {
         return fileName != null && fileName.contains(".")
                 ? fileName.substring(fileName.lastIndexOf("."))
                 : "";
+    }
+
+    private String extensionFromContentType(String contentType) {
+        if (contentType == null || contentType.isBlank()) {
+            return "";
+        }
+        return switch (contentType) {
+            case "image/png" -> ".png";
+            case "image/jpeg" -> ".jpg";
+            case "application/pdf" -> ".pdf";
+            case "application/zip" -> ".zip";
+            case "text/plain" -> ".txt";
+            default -> "";
+        };
+    }
+
+    private String sanitizeIdempotencyKey(String idempotencyKey) {
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
+            return "missing-idempotency-key";
+        }
+        String sanitized = idempotencyKey
+                .trim()
+                .replaceAll("[^A-Za-z0-9._-]", "_");
+        if (sanitized.isBlank()) {
+            return "invalid-idempotency-key";
+        }
+        return sanitized.length() > 128 ? sanitized.substring(0, 128) : sanitized;
+    }
+
+    private String sha256Hex(byte[] bytes) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(bytes);
+            StringBuilder sb = new StringBuilder(hash.length * 2);
+            for (byte b : hash) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 not available", e);
+        }
+    }
+
+    private String awaitDeterministicUpload(CompletableFuture<String> inFlight) {
+        try {
+            return inFlight.join();
+        } catch (CompletionException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof InfrastructureException infrastructureException) {
+                throw infrastructureException;
+            }
+            if (cause instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            }
+            throw new InfrastructureException(ExceptionStatus.S3_INFRASTRUCTURE_UPLOAD_FAILED);
+        }
+    }
+
+    private boolean isDeterministicObjectCached(String s3Url) {
+        Long expiresAt = deterministicObjectCache.get(s3Url);
+        if (expiresAt == null) {
+            return false;
+        }
+
+        long now = System.currentTimeMillis();
+        if (expiresAt <= now) {
+            deterministicObjectCache.remove(s3Url, expiresAt);
+            return false;
+        }
+        return true;
+    }
+
+    private void cacheDeterministicObject(String s3Url) {
+        if (!isDeterministicUrl(s3Url)) {
+            return;
+        }
+
+        deterministicObjectCache.put(
+                s3Url,
+                System.currentTimeMillis() + DETERMINISTIC_OBJECT_CACHE_TTL.toMillis()
+        );
+        cleanupDeterministicCacheIfNeeded();
+    }
+
+    private void evictDeterministicObjectCache(String s3Url) {
+        if (s3Url == null || s3Url.isBlank()) {
+            return;
+        }
+        deterministicObjectCache.remove(s3Url);
+    }
+
+    private void cleanupDeterministicCacheIfNeeded() {
+        if (deterministicObjectCache.size() < DETERMINISTIC_CACHE_CLEANUP_THRESHOLD) {
+            return;
+        }
+        if (deterministicCacheCleanupTicker.incrementAndGet() % DETERMINISTIC_CACHE_CLEANUP_INTERVAL != 0) {
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        deterministicObjectCache.entrySet().removeIf(entry -> entry.getValue() <= now);
+    }
+
+    private boolean isDeterministicUrl(String s3Url) {
+        String s3Key = extractS3KeyFromUrl(s3Url);
+        return s3Key != null && s3Key.startsWith(DETERMINISTIC_PREFIX);
     }
 }

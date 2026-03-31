@@ -97,6 +97,28 @@ public class S3FileService {
     }
 
     /**
+     * 멱등 요청용 deterministic 업로드.
+     * key 패턴: idempotent-v1/{memberId}/{idempotencyKey}/{fileHash}.{ext}
+     */
+    public String uploadBytesDeterministic(
+            byte[] bytes,
+            String contentType,
+            String originalFileName,
+            String domain,
+            Long memberId,
+            String idempotencyKey
+    ) {
+        return s3AttachmentService.uploadBytesDeterministic(
+                bytes,
+                contentType,
+                originalFileName,
+                domain,
+                memberId,
+                idempotencyKey
+        );
+    }
+
+    /**
      * 여러 파일을 일괄 업로드
      * @param files 업로드할 파일 리스트
      * @param domain 도메인 폴더명
