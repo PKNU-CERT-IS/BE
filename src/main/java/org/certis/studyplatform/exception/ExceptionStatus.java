@@ -29,6 +29,10 @@ public enum ExceptionStatus {
     PRESENTATION_AUTH_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "인증이 필요합니다"),
     PRESENTATION_AUTH_ACCESS_DENIED(HttpStatus.FORBIDDEN, "접근 권한이 없습니다"),
 
+    // IDEMPOTENCY
+    IDEMPOTENCY_REQUEST_IN_PROGRESS(HttpStatus.CONFLICT, "동일 요청이 처리 중입니다. 잠시 후 다시 시도해주세요"),
+    IDEMPOTENCY_PAYLOAD_MISMATCH(HttpStatus.CONFLICT, "같은 멱등 키로 다른 요청 본문을 보낼 수 없습니다"),
+
 
     // Auth - Application Layer
     AUTH_APPLICATION_ACCOUNT_NOT_FOUND(HttpStatus.UNAUTHORIZED, "존재하지 않는 계정입니다"),
