@@ -35,11 +35,15 @@ public class BoardCommandService {
      * @param command 게시글 생성 명령
      */
     public void createBoard(CreateBoardCommand command) {
+        createBoard(command, null);
+    }
+
+    public void createBoard(CreateBoardCommand command, String idempotencyKey) {
         log.info("Command Service: Creating board - title: {}, author: {}",
                 command.title(), command.authorId());
 
         // 첨부파일 전처리 (data: URL → S3 업로드)
-        CreateBoardCommand processed = preprocessCreateCommand(command);
+        CreateBoardCommand processed = preprocessCreateCommand(command, idempotencyKey);
 
         // Domain Service에 Command 전달
         boardDomainService.createBoard(processed);
@@ -53,11 +57,15 @@ public class BoardCommandService {
      * @param command 게시글 수정 명령 (권한 체크 포함)
      */
     public void updateBoard(UpdateBoardCommand command) {
+        updateBoard(command, null);
+    }
+
+    public void updateBoard(UpdateBoardCommand command, String idempotencyKey) {
         log.info("Command Service: Updating board - ID: {}, title: {}, requester: {}",
                 command.boardId(), command.title(), command.requesterId());
 
         // 첨부파일 전처리 (data: URL → S3 업로드)
-        UpdateBoardCommand processed = preprocessUpdateCommand(command);
+        UpdateBoardCommand processed = preprocessUpdateCommand(command, idempotencyKey);
 
         // Domain Service에 Command 전달 (권한 체크 포함)
         boardDomainService.updateBoard(processed);
@@ -103,8 +111,8 @@ public class BoardCommandService {
     // Attachment preprocessing helpers
     // ================================================================
 
-    private CreateBoardCommand preprocessCreateCommand(CreateBoardCommand command) {
-        List<AttachmentCommand> processed = preprocessAttachments(command.attachments());
+    private CreateBoardCommand preprocessCreateCommand(CreateBoardCommand command, String idempotencyKey) {
+        List<AttachmentCommand> processed = preprocessAttachments(command.attachments(), command.authorId(), idempotencyKey);
         return CreateBoardCommand.of(
                 command.title(),
                 command.content(),
@@ -115,14 +123,14 @@ public class BoardCommandService {
         );
     }
 
-    private UpdateBoardCommand preprocessUpdateCommand(UpdateBoardCommand command) {
+    private UpdateBoardCommand preprocessUpdateCommand(UpdateBoardCommand command, String idempotencyKey) {
         List<AttachmentCommand> processed;
         if (command.attachments() == null) {
             processed = List.of(); // treat null as [] → DB clear only
         } else if (command.attachments().isEmpty()) {
             processed = List.of();
         } else {
-            processed = preprocessAttachments(command.attachments());
+            processed = preprocessAttachments(command.attachments(), command.requesterId(), idempotencyKey);
             // Deduplicate by canonical URL while preserving order
             java.util.LinkedHashMap<String, AttachmentCommand> byUrl = new java.util.LinkedHashMap<>();
             for (AttachmentCommand a : processed) {
@@ -144,17 +152,17 @@ public class BoardCommandService {
         );
     }
 
-    private List<AttachmentCommand> preprocessAttachments(List<AttachmentCommand> attachments) {
+    private List<AttachmentCommand> preprocessAttachments(List<AttachmentCommand> attachments, Long memberId, String idempotencyKey) {
         if (attachments == null || attachments.isEmpty()) {
             return List.of();
         }
 
         return attachments.stream()
-                .map(this::processAttachment)
+                .map(attachment -> processAttachment(attachment, memberId, idempotencyKey))
                 .collect(Collectors.toList());
     }
 
-    private AttachmentCommand processAttachment(AttachmentCommand attachment) {
+    private AttachmentCommand processAttachment(AttachmentCommand attachment, Long memberId, String idempotencyKey) {
         String url = attachment.attachedUrl();
         if (url == null || url.isBlank()) {
             return attachment;
@@ -168,7 +176,25 @@ public class BoardCommandService {
                 String contentType = meta.contains(";") ? meta.substring(0, meta.indexOf(';')) : "application/octet-stream";
                 byte[] bytes = Base64.getDecoder().decode(base64Part.getBytes(StandardCharsets.UTF_8));
                 String originalName = attachment.name() != null ? attachment.name() : "board.bin";
-                String s3Url = s3FileService.uploadBytes(bytes, contentType, originalName, S3FileService.DomainFolders.BOARD_ATTACHMENTS, System.currentTimeMillis());
+                String s3Url;
+                if (idempotencyKey != null && !idempotencyKey.isBlank()) {
+                    s3Url = s3FileService.uploadBytesDeterministic(
+                            bytes,
+                            contentType,
+                            originalName,
+                            S3FileService.DomainFolders.BOARD_ATTACHMENTS,
+                            memberId,
+                            idempotencyKey
+                    );
+                } else {
+                    s3Url = s3FileService.uploadBytes(
+                            bytes,
+                            contentType,
+                            originalName,
+                            S3FileService.DomainFolders.BOARD_ATTACHMENTS,
+                            System.currentTimeMillis()
+                    );
+                }
                 return AttachmentCommand.of(attachment.id(), attachment.name(), attachment.type(), attachment.size(), s3Url);
             } catch (Exception e) {
                 throw new ApplicationException(ExceptionStatus.S3_INFRASTRUCTURE_UPLOAD_FAILED);
