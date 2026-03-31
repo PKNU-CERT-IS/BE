@@ -56,6 +56,11 @@ public class StudyCommandService {
     // 3. 생성자를 참가자로 등록
     @Transactional
     public StudyVo createStudy(CreateStudyCommand command) {
+        return createStudy(command, null);
+    }
+
+    @Transactional
+    public StudyVo createStudy(CreateStudyCommand command, String idempotencyKey) {
         log.info("Command: Creating study - {}", command.title());
 
         // 1) 첨부파일을 S3에 먼저 업로드 (data URL이면 업로드, 아니면 기존 URL 사용)
@@ -90,7 +95,24 @@ public class StudyCommandService {
                         
                         byte[] bytes = java.util.Base64.getDecoder().decode(paddedBase64);
                         String contentType = mapAttachedTypeToContentType(fileCmd.type());
-                        finalUrl = s3FileService.uploadBytes(bytes, contentType, fileCmd.name(), S3FileService.DomainFolders.STUDY_ATTACHMENTS, System.currentTimeMillis());
+                        if (isNotBlank(idempotencyKey)) {
+                            finalUrl = s3FileService.uploadBytesDeterministic(
+                                    bytes,
+                                    contentType,
+                                    fileCmd.name(),
+                                    S3FileService.DomainFolders.STUDY_ATTACHMENTS,
+                                    command.creatorId(),
+                                    idempotencyKey
+                            );
+                        } else {
+                            finalUrl = s3FileService.uploadBytes(
+                                    bytes,
+                                    contentType,
+                                    fileCmd.name(),
+                                    S3FileService.DomainFolders.STUDY_ATTACHMENTS,
+                                    System.currentTimeMillis()
+                            );
+                        }
                     } catch (ApplicationException e) {
                         // ApplicationException은 그대로 재발생
                         throw e;
@@ -164,6 +186,11 @@ public class StudyCommandService {
      */
     @Transactional
     public StudyVo updateStudy(UpdateStudyCommand command) {
+        return updateStudy(command, null);
+    }
+
+    @Transactional
+    public StudyVo updateStudy(UpdateStudyCommand command, String idempotencyKey) {
         log.info("Command: Updating study - ID: {}", command.id());
 
         // 1) 첨부파일 사전 처리 (data URL -> S3 업로드)
@@ -198,7 +225,24 @@ public class StudyCommandService {
                         
                         byte[] bytes = java.util.Base64.getDecoder().decode(paddedBase64);
                         String contentType = mapAttachedTypeToContentType(fileCmd.type());
-                        finalUrl = s3FileService.uploadBytes(bytes, contentType, fileCmd.name(), S3FileService.DomainFolders.STUDY_ATTACHMENTS, System.currentTimeMillis());
+                        if (isNotBlank(idempotencyKey)) {
+                            finalUrl = s3FileService.uploadBytesDeterministic(
+                                    bytes,
+                                    contentType,
+                                    fileCmd.name(),
+                                    S3FileService.DomainFolders.STUDY_ATTACHMENTS,
+                                    command.requesterId(),
+                                    idempotencyKey
+                            );
+                        } else {
+                            finalUrl = s3FileService.uploadBytes(
+                                    bytes,
+                                    contentType,
+                                    fileCmd.name(),
+                                    S3FileService.DomainFolders.STUDY_ATTACHMENTS,
+                                    System.currentTimeMillis()
+                            );
+                        }
                     } catch (ApplicationException e) {
                         // ApplicationException은 그대로 재발생
                         throw e;
@@ -260,6 +304,11 @@ public class StudyCommandService {
      */
     @Transactional
     public StudyVo endStudy(EndStudyCommand command) {
+        return endStudy(command, null);
+    }
+
+    @Transactional
+    public StudyVo endStudy(EndStudyCommand command, String idempotencyKey) {
         log.info("Command: Ending study - ID: {}", command.studyId());
 
         // 현재 상태 선조회하여 중복 신청 방지 (INPROGRESS/COMPLETED 차단)
@@ -340,10 +389,27 @@ public class StudyCommandService {
                             sanitizeFilename(endedVo.creatorName()),
                             extension);
                     originalName = customFilename;
-                    fileUrl = s3FileService.uploadBytes(bytes, contentType, customFilename, S3FileService.DomainFolders.STUDY_END_ATTACHMENTS, endedVo.id());
+                    if (isNotBlank(idempotencyKey)) {
+                        fileUrl = s3FileService.uploadBytesDeterministic(
+                                bytes,
+                                contentType,
+                                customFilename,
+                                S3FileService.DomainFolders.STUDY_END_ATTACHMENTS,
+                                command.requesterId(),
+                                idempotencyKey
+                        );
+                    } else {
+                        fileUrl = s3FileService.uploadBytes(
+                                bytes,
+                                contentType,
+                                customFilename,
+                                S3FileService.DomainFolders.STUDY_END_ATTACHMENTS,
+                                endedVo.id()
+                        );
+                    }
                 } else {
                     // 이미 업로드된 S3 URL
-                    fileUrl = provided;
+                    fileUrl = s3FileService.normalizeUrl(provided);
                 }
                 ObjectNode attachment = objectMapper.createObjectNode();
                 attachment.put("name", originalName != null ? originalName : "result");
@@ -475,5 +541,9 @@ public class StudyCommandService {
         } catch (IllegalArgumentException e) {
             return false;
         }
+    }
+
+    private boolean isNotBlank(String value) {
+        return value != null && !value.isBlank();
     }
 }
