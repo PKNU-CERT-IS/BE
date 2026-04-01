@@ -207,6 +207,15 @@ app:
     metrics:
       enabled: true
 
+certis:
+  idempotency:
+    board:
+      enabled: false
+    study:
+      enabled: false
+    project:
+      enabled: false
+
 # Swagger/OpenAPI 설정
 springdoc:
   api-docs:
