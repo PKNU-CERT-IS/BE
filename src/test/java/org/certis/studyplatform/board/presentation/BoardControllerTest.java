@@ -32,6 +32,7 @@ import java.util.List;
 
 import static org.certis.generated.jooq.Tables.*;  // 추가!
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -331,7 +332,7 @@ public class BoardControllerTest {
 
     @Test
     @Order(8)
-    @WithMockUser(username = "admin", roles = "STAFF")
+        @WithMockUser(username = "admin", roles = "ADMIN")
     @DisplayName("7️⃣ 매일 00시 View→RDB 동기화 트리거 검증 - 수동 호출 시 정상 동작")
     void syncBoardStatsDaily_ManualTrigger_Success() throws Exception {
         // 1. 테스트용 게시글 생성 (트랜잭션 없이)
@@ -339,7 +340,7 @@ public class BoardControllerTest {
         BoardIdVo boardIdVo = BoardIdVo.of(testBoardId);
         
         // 2. 먼저 동기화를 한 번 실행하여 DB에 기본 통계 데이터 생성
-        mockMvc.perform(post("/api/v1/board/admin/sync").with(csrf()))
+        mockMvc.perform(post("/api/v1/board/admin/sync").with(csrf()).with(user("admin").roles("ADMIN")))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
@@ -350,7 +351,7 @@ public class BoardControllerTest {
         boardRedisRepository.setViewCount(boardIdVo, 10L); // Redis: 10 (DB: 0)
         
         // 4. 동기화 전 일관성 검증 (불일치 상태여야 함)
-        mockMvc.perform(get("/api/v1/board/stats/today"))
+        mockMvc.perform(get("/api/v1/board/stats/today").with(user("admin").roles("ADMIN")))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
@@ -358,14 +359,14 @@ public class BoardControllerTest {
                 .andExpect(jsonPath("$.data").exists()); // 동기화 상태 값만 확인
 
         // 5. 동기화 실행
-        mockMvc.perform(post("/api/v1/board/admin/sync").with(csrf()))
+        mockMvc.perform(post("/api/v1/board/admin/sync").with(csrf()).with(user("admin").roles("ADMIN")))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("BOARD_SYNC_SUCCESS"));
 
         // 6. 동기화 후 일관성 검증 (일치 상태여야 함)
-        mockMvc.perform(get("/api/v1/board/stats/today"))
+        mockMvc.perform(get("/api/v1/board/stats/today").with(user("admin").roles("ADMIN")))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
