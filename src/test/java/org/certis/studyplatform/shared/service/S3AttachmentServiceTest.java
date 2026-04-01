@@ -4,9 +4,22 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectResponse;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
 import java.lang.reflect.Field;
 import java.time.Duration;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 class S3AttachmentServiceTest {
 
@@ -93,11 +106,126 @@ class S3AttachmentServiceTest {
         Assertions.assertEquals(koreanFile, decoded);
     }
 
+    @Test
+    void uploadBytesDeterministic_shouldReuseLocalPresenceCache_afterFirstUpload() throws Exception {
+        S3AttachmentService service = mockedService();
+        S3Client mockS3Client = getS3Client(service);
+
+        Mockito.when(mockS3Client.headObject(Mockito.any(HeadObjectRequest.class)))
+                .thenThrow(NoSuchKeyException.builder().message("missing").build());
+        Mockito.when(mockS3Client.putObject(Mockito.any(PutObjectRequest.class), Mockito.any(RequestBody.class)))
+                .thenReturn(PutObjectResponse.builder().eTag("etag").build());
+
+        byte[] bytes = "hello".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+        String first = service.uploadBytesDeterministic(bytes, "text/plain", "memo.txt", "study-attachments", 1L, "same-key");
+        String second = service.uploadBytesDeterministic(bytes, "text/plain", "memo.txt", "study-attachments", 1L, "same-key");
+
+        Assertions.assertEquals(first, second);
+        Mockito.verify(mockS3Client, Mockito.times(1)).headObject(Mockito.any(HeadObjectRequest.class));
+        Mockito.verify(mockS3Client, Mockito.times(1)).putObject(Mockito.any(PutObjectRequest.class), Mockito.any(RequestBody.class));
+    }
+
+    @Test
+    void uploadBytesDeterministic_shouldCollapseConcurrentUploads_forSameKey() throws Exception {
+        S3AttachmentService service = mockedService();
+        S3Client mockS3Client = getS3Client(service);
+
+        CountDownLatch putStarted = new CountDownLatch(1);
+        CountDownLatch releasePut = new CountDownLatch(1);
+
+        Mockito.when(mockS3Client.headObject(Mockito.any(HeadObjectRequest.class)))
+                .thenThrow(NoSuchKeyException.builder().message("missing").build());
+        Mockito.when(mockS3Client.putObject(Mockito.any(PutObjectRequest.class), Mockito.any(RequestBody.class)))
+                .thenAnswer(invocation -> {
+                    putStarted.countDown();
+                    Assertions.assertTrue(releasePut.await(1, TimeUnit.SECONDS));
+                    return PutObjectResponse.builder().eTag("etag").build();
+                });
+
+        byte[] bytes = "hello".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var first = executor.submit(() -> service.uploadBytesDeterministic(
+                    bytes,
+                    "text/plain",
+                    "memo.txt",
+                    "study-attachments",
+                    1L,
+                    "same-key"
+            ));
+
+            Assertions.assertTrue(putStarted.await(1, TimeUnit.SECONDS));
+
+            var second = executor.submit(() -> service.uploadBytesDeterministic(
+                    bytes,
+                    "text/plain",
+                    "memo.txt",
+                    "study-attachments",
+                    1L,
+                    "same-key"
+            ));
+
+            releasePut.countDown();
+
+            Assertions.assertEquals(first.get(1, TimeUnit.SECONDS), second.get(1, TimeUnit.SECONDS));
+        }
+
+        Mockito.verify(mockS3Client, Mockito.times(1)).headObject(Mockito.any(HeadObjectRequest.class));
+        Mockito.verify(mockS3Client, Mockito.times(1)).putObject(Mockito.any(PutObjectRequest.class), Mockito.any(RequestBody.class));
+    }
+
+    @Test
+    void deleteFile_shouldEvictDeterministicCache() throws Exception {
+        S3AttachmentService service = mockedService();
+        S3Client mockS3Client = getS3Client(service);
+
+        byte[] bytes = "hello".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+        Mockito.when(mockS3Client.headObject(Mockito.any(HeadObjectRequest.class)))
+                .thenThrow(NoSuchKeyException.builder().message("missing").build());
+        Mockito.when(mockS3Client.putObject(Mockito.any(PutObjectRequest.class), Mockito.any(RequestBody.class)))
+                .thenReturn(PutObjectResponse.builder().eTag("etag").build());
+        Mockito.when(mockS3Client.deleteObject(Mockito.any(DeleteObjectRequest.class)))
+                .thenReturn(DeleteObjectResponse.builder().build());
+
+        String uploaded = service.uploadBytesDeterministic(bytes, "text/plain", "memo.txt", "study-attachments", 1L, "same-key");
+        service.deleteFile(uploaded);
+        service.uploadBytesDeterministic(bytes, "text/plain", "memo.txt", "study-attachments", 1L, "same-key");
+
+        Mockito.verify(mockS3Client, Mockito.times(2)).headObject(Mockito.any(HeadObjectRequest.class));
+        Mockito.verify(mockS3Client, Mockito.times(2)).putObject(Mockito.any(PutObjectRequest.class), Mockito.any(RequestBody.class));
+        Mockito.verify(mockS3Client, Mockito.times(1)).deleteObject(Mockito.any(DeleteObjectRequest.class));
+    }
+
     private static void setField(Object target, String name, Object value) throws Exception {
         Field field = target.getClass().getDeclaredField(name);
         field.setAccessible(true);
         field.set(target, value);
     }
-}
 
+    private static S3AttachmentService mockedService() throws Exception {
+        S3AttachmentService service = new S3AttachmentService();
+        setField(service, "bucketName", "test-bucket");
+        setField(service, "region", "ap-northeast-2");
+
+        S3Client mockS3Client = Mockito.mock(S3Client.class);
+        setField(service, "s3Client", mockS3Client);
+        getMapField(service, "s3ClientByRegion").put("ap-northeast-2", mockS3Client);
+        return service;
+    }
+
+    private static S3Client getS3Client(S3AttachmentService service) throws Exception {
+        Field field = service.getClass().getDeclaredField("s3Client");
+        field.setAccessible(true);
+        return (S3Client) field.get(service);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, S3Client> getMapField(Object target, String name) throws Exception {
+        Field field = target.getClass().getDeclaredField(name);
+        field.setAccessible(true);
+        return (Map<String, S3Client>) field.get(target);
+    }
+}
 
