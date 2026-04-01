@@ -81,7 +81,7 @@ class ProjectEndApiE2ETest {
             f.set(req, projectId);
         } catch (Exception ignore) {}
 
-        ProjectDetailResponseDto resp = projectFacadeService.endProject(req, creatorId);
+        ProjectDetailResponseDto resp = projectFacadeService.endProject(req, creatorId, null);
 
         // Then: success; endedAt past should not block since status != COMPLETED
         assertThat(resp).isNotNull();
