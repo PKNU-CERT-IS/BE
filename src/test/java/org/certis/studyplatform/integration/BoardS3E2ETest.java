@@ -65,6 +65,13 @@ public class BoardS3E2ETest {
     void setUp() {
         // Clean up test data
         dsl.execute("TRUNCATE TABLE board RESTART IDENTITY CASCADE");
+
+                // Ensure FK target exists for direct SQL inserts in tests
+                dsl.execute("""
+                                INSERT INTO member (id, name, student_number, role, grade, birthday, gender, major, created_at, updated_at)
+                                VALUES (1, 'board-test-user', 'board-test@certis.org', 'PLAYER', 'JUNIOR', NOW() - INTERVAL '20 years', 'MALE', '컴퓨터공학과', NOW(), NOW())
+                                ON CONFLICT (id) DO NOTHING
+                                """);
     }
 
     @Test

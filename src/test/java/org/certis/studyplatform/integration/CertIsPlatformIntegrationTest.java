@@ -200,7 +200,7 @@ class CertIsPlatformIntegrationTest {
 
         // When & Then - 6만자는 허용되어야 함
         assertDoesNotThrow(() -> {
-            boardFacadeService.createBoard(boardRequest, 1L); // 기본 멤버 ID 사용
+            boardFacadeService.createBoard(boardRequest, 1L, null); // 기본 멤버 ID 사용
         });
     }
 

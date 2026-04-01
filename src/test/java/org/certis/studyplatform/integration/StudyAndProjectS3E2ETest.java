@@ -12,6 +12,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
@@ -46,6 +47,12 @@ class StudyAndProjectS3E2ETest {
 
     @Autowired
     private DSLContext dsl;
+    
+        @Value("${certis.idempotency.study.enabled:false}")
+        private boolean studyIdempotencyEnabled;
+    
+        @Value("${certis.idempotency.project.enabled:false}")
+        private boolean projectIdempotencyEnabled;
 
     private static final Long TEST_MEMBER_ID = 1L;
     private static final Long TEST_STUDY_ID = 2L;
@@ -274,6 +281,89 @@ class StudyAndProjectS3E2ETest {
     }
 
     @Test
+    @DisplayName("Study 업데이트 멱등성: 같은 키로 canonical/presigned payload는 동일 요청으로 허용")
+    void e2e_study_update_idempotency_accepts_canonical_and_presigned_as_same_payload() throws Exception {
+                assumeTrue(studyIdempotencyEnabled, "study idempotency disabled in this profile");
+        String region = System.getProperty("AWS_DEFAULT_REGION", "ap-northeast-2");
+        String bucket = System.getProperty("AWS_S3_BUCKET", "test-bucket");
+        String key = "study-attachments/" + TEST_STUDY_ID + "/idem-same-" + System.currentTimeMillis() + ".txt";
+        String canonical = "https://" + bucket + ".s3." + region + ".amazonaws.com/" + key;
+        String presigned = canonical + "?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20250101T000000Z&X-Amz-Expires=3600&X-Amz-Signature=dummy";
+        String idemKey = "study-idem-same-" + System.currentTimeMillis();
+
+        String first = "{" +
+                "\"studyId\":" + TEST_STUDY_ID + "," +
+                "\"attachments\":[{" +
+                "\"name\":\"same.txt\"," +
+                "\"type\":\"TEXT\"," +
+                "\"size\":\"3\"," +
+                "\"attachedUrl\":\"" + canonical + "\"}]}";
+
+        String second = "{" +
+                "\"studyId\":" + TEST_STUDY_ID + "," +
+                "\"attachments\":[{" +
+                "\"name\":\"same.txt\"," +
+                "\"type\":\"TEXT\"," +
+                "\"size\":\"3\"," +
+                "\"attachedUrl\":\"" + presigned + "\"}]}";
+
+        mockMvc.perform(put("/api/v1/study/update")
+                        .header("X-Idempotency-Key", idemKey)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(first))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        mockMvc.perform(put("/api/v1/study/update")
+                        .header("X-Idempotency-Key", idemKey)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(second))
+                .andDo(print())
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Study 업데이트 멱등성: 같은 키로 실질 payload 변경 시 충돌(409)")
+    void e2e_study_update_idempotency_conflicts_on_payload_mismatch() throws Exception {
+                assumeTrue(studyIdempotencyEnabled, "study idempotency disabled in this profile");
+        String region = System.getProperty("AWS_DEFAULT_REGION", "ap-northeast-2");
+        String bucket = System.getProperty("AWS_S3_BUCKET", "test-bucket");
+        String key = "study-attachments/" + TEST_STUDY_ID + "/idem-mismatch-" + System.currentTimeMillis() + ".txt";
+        String canonical = "https://" + bucket + ".s3." + region + ".amazonaws.com/" + key;
+        String idemKey = "study-idem-mismatch-" + System.currentTimeMillis();
+
+        String first = "{" +
+                "\"studyId\":" + TEST_STUDY_ID + "," +
+                "\"attachments\":[{" +
+                "\"name\":\"origin.txt\"," +
+                "\"type\":\"TEXT\"," +
+                "\"size\":\"3\"," +
+                "\"attachedUrl\":\"" + canonical + "\"}]}";
+
+        String second = "{" +
+                "\"studyId\":" + TEST_STUDY_ID + "," +
+                "\"attachments\":[{" +
+                "\"name\":\"changed.txt\"," +
+                "\"type\":\"TEXT\"," +
+                "\"size\":\"3\"," +
+                "\"attachedUrl\":\"" + canonical + "\"}]}";
+
+        mockMvc.perform(put("/api/v1/study/update")
+                        .header("X-Idempotency-Key", idemKey)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(first))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        mockMvc.perform(put("/api/v1/study/update")
+                        .header("X-Idempotency-Key", idemKey)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(second))
+                .andDo(print())
+                .andExpect(status().isConflict());
+    }
+
+    @Test
     @DisplayName("Project 업데이트 시 presigned S3 URL을 보내면 쿼리 제거하여 저장한다")
     void e2e_project_update_with_presigned_url_is_normalized() throws Exception {
         String region = System.getProperty("AWS_DEFAULT_REGION", "ap-northeast-2");
@@ -300,6 +390,89 @@ class StudyAndProjectS3E2ETest {
         Assertions.assertNotNull(rec);
         String stored = (String) rec.get("attached_url");
         Assertions.assertEquals(canonical, stored);
+    }
+
+    @Test
+    @DisplayName("Project 업데이트 멱등성: 같은 키로 canonical/presigned payload는 동일 요청으로 허용")
+    void e2e_project_update_idempotency_accepts_canonical_and_presigned_as_same_payload() throws Exception {
+                assumeTrue(projectIdempotencyEnabled, "project idempotency disabled in this profile");
+        String region = System.getProperty("AWS_DEFAULT_REGION", "ap-northeast-2");
+        String bucket = System.getProperty("AWS_S3_BUCKET", "test-bucket");
+        String key = "project-attachments/" + TEST_PROJECT_ID + "/idem-same-" + System.currentTimeMillis() + ".pdf";
+        String canonical = "https://" + bucket + ".s3." + region + ".amazonaws.com/" + key;
+        String presigned = canonical + "?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20250101T000000Z&X-Amz-Expires=3600&X-Amz-Signature=dummy";
+        String idemKey = "project-idem-same-" + System.currentTimeMillis();
+
+        String first = "{" +
+                "\"projectId\":" + TEST_PROJECT_ID + "," +
+                "\"attachments\":[{" +
+                "\"name\":\"same.pdf\"," +
+                "\"type\":\"PDF\"," +
+                "\"size\":\"3\"," +
+                "\"attachedUrl\":\"" + canonical + "\"}]}";
+
+        String second = "{" +
+                "\"projectId\":" + TEST_PROJECT_ID + "," +
+                "\"attachments\":[{" +
+                "\"name\":\"same.pdf\"," +
+                "\"type\":\"PDF\"," +
+                "\"size\":\"3\"," +
+                "\"attachedUrl\":\"" + presigned + "\"}]}";
+
+        mockMvc.perform(put("/api/v1/project/update")
+                        .header("X-Idempotency-Key", idemKey)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(first))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        mockMvc.perform(put("/api/v1/project/update")
+                        .header("X-Idempotency-Key", idemKey)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(second))
+                .andDo(print())
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Project 업데이트 멱등성: 같은 키로 실질 payload 변경 시 충돌(409)")
+    void e2e_project_update_idempotency_conflicts_on_payload_mismatch() throws Exception {
+                assumeTrue(projectIdempotencyEnabled, "project idempotency disabled in this profile");
+        String region = System.getProperty("AWS_DEFAULT_REGION", "ap-northeast-2");
+        String bucket = System.getProperty("AWS_S3_BUCKET", "test-bucket");
+        String key = "project-attachments/" + TEST_PROJECT_ID + "/idem-mismatch-" + System.currentTimeMillis() + ".pdf";
+        String canonical = "https://" + bucket + ".s3." + region + ".amazonaws.com/" + key;
+        String idemKey = "project-idem-mismatch-" + System.currentTimeMillis();
+
+        String first = "{" +
+                "\"projectId\":" + TEST_PROJECT_ID + "," +
+                "\"attachments\":[{" +
+                "\"name\":\"origin.pdf\"," +
+                "\"type\":\"PDF\"," +
+                "\"size\":\"3\"," +
+                "\"attachedUrl\":\"" + canonical + "\"}]}";
+
+        String second = "{" +
+                "\"projectId\":" + TEST_PROJECT_ID + "," +
+                "\"attachments\":[{" +
+                "\"name\":\"changed.pdf\"," +
+                "\"type\":\"PDF\"," +
+                "\"size\":\"3\"," +
+                "\"attachedUrl\":\"" + canonical + "\"}]}";
+
+        mockMvc.perform(put("/api/v1/project/update")
+                        .header("X-Idempotency-Key", idemKey)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(first))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        mockMvc.perform(put("/api/v1/project/update")
+                        .header("X-Idempotency-Key", idemKey)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(second))
+                .andDo(print())
+                .andExpect(status().isConflict());
     }
 
     @Test
@@ -911,5 +1084,4 @@ class StudyAndProjectS3E2ETest {
         Assertions.assertTrue(((Number)c3.get("c")).longValue() >= 2L);
     }
 }
-
 
