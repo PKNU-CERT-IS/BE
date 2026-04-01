@@ -64,12 +64,13 @@ public class StudyController {
     @PostMapping("/create")
     public ResponseEntity<GlobalResponseHandler<Void>> createStudy(
             @Valid @RequestBody StudyCreateRequestDto request,
+            @RequestHeader(value = "X-Idempotency-Key", required = false) String idempotencyKey,
             @AuthenticationPrincipal CurrentUser currentUser
             ) {
         log.info("REST: Creating study - {}", request.getTitle());
 
         // Facade Service 호출
-        studyFacadeService.createStudy(request, currentUser.getId());
+        studyFacadeService.createStudy(request, currentUser.getId(), idempotencyKey);
 
         log.info("REST: Study created successfully");
 
@@ -85,12 +86,13 @@ public class StudyController {
     @PutMapping("/update")
     public ResponseEntity<GlobalResponseHandler<Void>> updateStudy(
             @Valid @RequestBody StudyUpdateRequestDto request,
+            @RequestHeader(value = "X-Idempotency-Key", required = false) String idempotencyKey,
             @AuthenticationPrincipal CurrentUser currentUser
     ) {
         log.info("REST: Updating study - ID: {}", request.getStudyId());
 
         // Facade Service 호출
-        studyFacadeService.updateStudy(request,currentUser.getId());
+        studyFacadeService.updateStudy(request,currentUser.getId(), idempotencyKey);
 
         return GlobalResponseHandler.success(ResponseStatus.STUDY_UPDATE_SUCCESS);
     }
@@ -213,13 +215,15 @@ public class StudyController {
     @PostMapping(value = "/end")
     public ResponseEntity<GlobalResponseHandler<StudyDetailResponseDto>> endStudy(
             @Valid @RequestBody StudyEndRequestDto requestDto,
+            @RequestHeader(value = "X-Idempotency-Key", required = false) String idempotencyKey,
             @AuthenticationPrincipal CurrentUser currentUser) {
         log.info("REST: Ending study - ID: {}, requesterId: {}", requestDto.getStudyId(), currentUser.getId());
 
         // Facade Service 호출 (VO → DTO 변환 포함)
         StudyDetailResponseDto endedStudy = studyFacadeService.endStudy(
                 requestDto,
-                currentUser.getId()
+            currentUser.getId(),
+            idempotencyKey
         );
 
         log.info("REST: Study ended successfully - ID: {}", endedStudy.getId());
