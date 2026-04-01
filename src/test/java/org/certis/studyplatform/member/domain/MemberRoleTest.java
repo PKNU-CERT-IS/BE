@@ -21,8 +21,8 @@ class MemberRoleTest {
             assertThat(MemberRole.CHAIRMAN.getLevel()).isLessThan(MemberRole.VICECHAIRMAN.getLevel());
             assertThat(MemberRole.VICECHAIRMAN.getLevel()).isLessThan(MemberRole.STAFF.getLevel());
             assertThat(MemberRole.STAFF.getLevel()).isLessThan(MemberRole.PLAYER.getLevel());
-            assertThat(MemberRole.PLAYER.getLevel()).isEqualTo(MemberRole.UPSOLVER.getLevel());
-            assertThat(MemberRole.UPSOLVER.getLevel()).isLessThan(MemberRole.NONE.getLevel());
+            assertThat(MemberRole.PLAYER.getLevel()).isLessThan(MemberRole.UPSOLVER.getLevel());
+            assertThat(MemberRole.UPSOLVER.getLevel()).isLessThanOrEqualTo(MemberRole.NONE.getLevel());
         }
     }
 

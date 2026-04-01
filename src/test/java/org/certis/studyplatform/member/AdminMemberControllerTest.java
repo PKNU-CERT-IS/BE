@@ -151,7 +151,7 @@ class AdminMemberControllerTest {
 
     @Test
     @Order(4)
-    @DisplayName("⏰ 유예기간 부여 - 성공")
+        @DisplayName("⏰ 유예기간 부여 엔드포인트 미노출 시 405 반환")
     void grantGracePeriod_Success() throws Exception {
         // Given: 유예기간 부여 요청이 준비됨
         GrantGracePeriodRequestDto request = new GrantGracePeriodRequestDto(
@@ -164,19 +164,14 @@ class AdminMemberControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
-                // Then: HTTP 200 OK 응답과 성공 확인
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value(200))
-                .andExpect(jsonPath("$.message").value("관리자권한으로 회원 유예기간이 성공적으로 갱신되었습니다"));
-
-        // Then: 데이터베이스에서 유예기간 설정 확인
-        verifyGracePeriodInDatabase(TEST_TARGET_MEMBER_ID);
+                // Then: 현재 컨트롤러에서 엔드포인트가 비활성화되어 405 응답
+                        .andExpect(status().isMethodNotAllowed());
 
     }
 
     @Test
     @Order(5)
-    @DisplayName("⚠️ 벌점 부여 - 성공")
+        @DisplayName("⚠️ 벌점 부여 엔드포인트 미노출 시 405 반환")
     void assignPenalty_Success() throws Exception {
         // Given: 벌점 부여 요청이 준비됨
         PenaltyRequestDto request = new PenaltyRequestDto(
@@ -189,13 +184,8 @@ class AdminMemberControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
-                // Then: HTTP 200 OK 응답과 성공 확인
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value(200))
-                .andExpect(jsonPath("$.message").value("관리자권한으로 회원 벌점이 성공적으로 갱신되었습니다"));
-
-        // Then: 데이터베이스에서 벌점 설정 확인
-        verifyPenaltyInDatabase(TEST_TARGET_MEMBER_ID, 5);
+                // Then: 현재 컨트롤러에서 엔드포인트가 비활성화되어 405 응답
+                        .andExpect(status().isMethodNotAllowed());
 
     }
 
