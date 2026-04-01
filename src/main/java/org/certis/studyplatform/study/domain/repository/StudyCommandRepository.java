@@ -79,4 +79,8 @@ public interface StudyCommandRepository {
      * attachments 비어있지 않음 -> 기존 첨부 전체 삭제 후 신규 저장
      */
     void updateStudyAttachments(Long studyId, Long requesterId, java.util.List<CreateStudyAttachedCommand> attachments);
+
+    boolean tryClaimApprovedSlot(Long studyId);
+
+    void releaseApprovedSlot(Long studyId);
 }

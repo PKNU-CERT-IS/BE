@@ -45,7 +45,7 @@ spring:
     redis:
       client-type: lettuce
       host: ${embedded.redis.host:localhost}
-      port: ${embedded.redis.actual.port:6379}
+      port: ${embedded.redis.port:16380}
       timeout: 2000ms
       database: 0
       lettuce:
@@ -57,7 +57,7 @@ spring:
   # Redisson 자동 설정을 위한 표준 spring.redis 속성
   redis:
     host: ${embedded.redis.host:localhost}
-    port: ${embedded.redis.actual.port:6379}
+    port: ${embedded.redis.port:16380}
 
   # 캐시 비활성화
   cache:
@@ -110,7 +110,7 @@ management:
 embedded:
   redis:
     enabled: true
-    port: 6380 # 다른 포트로 설정하여 충돌 방지
+    port: 16380 # 로컬 Redis와 충돌 가능성이 낮은 테스트 전용 포트
 
 # Redis 데이터 저장소 활성화 (실제 Redis 테스트용)
 spring.data.redis.repositories.enabled: true

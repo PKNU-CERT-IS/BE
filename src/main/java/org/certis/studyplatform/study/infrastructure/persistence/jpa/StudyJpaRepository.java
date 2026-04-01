@@ -55,4 +55,14 @@ public interface StudyJpaRepository extends JpaRepository<StudyEntity, Long> {
     @Modifying(clearAutomatically = true)
     @Query("UPDATE StudyEntity s SET s.status = 'APPROVED', s.updatedAt = :now WHERE s.id = :id AND s.deletedAt IS NULL")
     int approveCreation(@Param("id") Long id, @Param("now") OffsetDateTime now);
+
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE StudyEntity s SET s.approvedSlotsUsed = s.approvedSlotsUsed + 1, s.updatedAt = :now " +
+            "WHERE s.id = :id AND s.deletedAt IS NULL AND s.approvedSlotsUsed < s.maxParticipantsNumber")
+    int tryClaimApprovedSlot(@Param("id") Long id, @Param("now") OffsetDateTime now);
+
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE StudyEntity s SET s.approvedSlotsUsed = s.approvedSlotsUsed - 1, s.updatedAt = :now " +
+            "WHERE s.id = :id AND s.deletedAt IS NULL AND s.approvedSlotsUsed > 0")
+    int releaseApprovedSlot(@Param("id") Long id, @Param("now") OffsetDateTime now);
 }

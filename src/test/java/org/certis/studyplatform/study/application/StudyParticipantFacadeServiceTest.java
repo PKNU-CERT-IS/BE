@@ -82,9 +82,7 @@ public class StudyParticipantFacadeServiceTest {
         Long creatorId = 10L;
         Long participantId = 100L;
 
-        when(studyQueryService.getStudyById(GetStudyByIdQuery.of(studyId))).thenReturn(studyVo(studyId, creatorId));
-        when(participantQueryService.getByStudyIdAndMemberId(studyId, memberId)).thenReturn(Optional.of(participantVo(participantId, studyId, memberId, StudyParticipantStatus.PENDING)));
-        when(commandService.approveParticipant(any())).thenReturn(new StudyParticipantStatusUpdatedVo(
+        when(commandService.approveParticipant(studyId, memberId, creatorId)).thenReturn(new StudyParticipantStatusUpdatedVo(
                 participantId, studyId, memberId, StudyParticipantStatus.PENDING, StudyParticipantStatus.APPROVED, OffsetDateTime.now(), creatorId
         ));
         when(dtoMapper.toStudyParticipantStatusUpdateResponseDto(any())).thenReturn(
@@ -113,7 +111,11 @@ public class StudyParticipantFacadeServiceTest {
         Long memberId = 2L;
         Long requesterId = 99L; // not creator
 
-        when(studyQueryService.getStudyById(GetStudyByIdQuery.of(studyId))).thenReturn(studyVo(studyId, 10L));
+        when(commandService.approveParticipant(studyId, memberId, requesterId))
+                .thenThrow(new ApplicationException(
+                        org.certis.studyplatform.exception.ExceptionStatus.STUDY_DOMAIN_PERMISSION_DENINED,
+                        "스터디 생성자 또는 관리자만 참가 승인/거절을 할 수 있습니다."
+                ));
 
         StudyJoinApproveRequestDto req = new StudyJoinApproveRequestDto();
         req.setStudyId(studyId);
@@ -124,5 +126,4 @@ public class StudyParticipantFacadeServiceTest {
                 .hasMessageContaining("스터디 생성자 또는 관리자만 참가 승인/거절을 할 수 있습니다.");
     }
 }
-
 

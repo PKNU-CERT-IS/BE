@@ -1,5 +1,6 @@
 package org.certis.studyplatform.study.presentation;
 
+import io.github.bucket4j.distributed.proxy.ProxyManager;
 import org.certis.studyplatform.member.domain.MemberGrade;
 import org.certis.studyplatform.study.application.StudyFacadeService;
 import org.certis.studyplatform.study.application.StudyParticipantFacadeService;
@@ -60,6 +61,12 @@ class AdminStudyControllerE2ETest {
         org.certis.studyplatform.shared.security.JwtTokenProvider jwtTokenProvider() {
             return mock(org.certis.studyplatform.shared.security.JwtTokenProvider.class);
         }
+
+        @Bean
+        @Primary
+        ProxyManager<String> proxyManager() {
+            return mock(ProxyManager.class);
+        }
     }
 
     @Test
@@ -117,5 +124,4 @@ class AdminStudyControllerE2ETest {
                 .andExpect(jsonPath("$.data.max_participant_number").value(10));
     }
 }
-
 

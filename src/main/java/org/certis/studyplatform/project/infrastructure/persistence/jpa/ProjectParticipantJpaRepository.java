@@ -32,7 +32,7 @@ public interface ProjectParticipantJpaRepository extends JpaRepository<ProjectPa
     @Query("UPDATE ProjectParticipantEntity p SET " +
             "p.status = :status, " +
             "p.updatedAt = :updatedAt " +
-            "WHERE p.id = :id AND p.deletedAt IS NULL")
+            "WHERE p.id = :id AND p.deletedAt IS NULL AND p.status = org.certis.studyplatform.project.domain.ProjectParticipantStatus.PENDING")
     int bulkUpdateStatus(@Param("id") Long id,
                          @Param("status") ProjectParticipantStatus status,
                          @Param("updatedAt") OffsetDateTime updatedAt);
@@ -45,7 +45,7 @@ public interface ProjectParticipantJpaRepository extends JpaRepository<ProjectPa
             "p.status = org.certis.studyplatform.project.domain.ProjectParticipantStatus.REJECTED, " +
             "p.updatedAt = :deletedAt, " +
             "p.deletedAt = :deletedAt " +
-            "WHERE p.id = :id AND p.deletedAt IS NULL")
+            "WHERE p.id = :id AND p.deletedAt IS NULL AND p.status = org.certis.studyplatform.project.domain.ProjectParticipantStatus.PENDING")
     int bulkRejectWithSoftDelete(@Param("id") Long id,
                                  @Param("deletedAt") OffsetDateTime deletedAt);
 
@@ -107,4 +107,3 @@ public interface ProjectParticipantJpaRepository extends JpaRepository<ProjectPa
                                       @Param("updatedAt") OffsetDateTime updatedAt);
 
 }
-

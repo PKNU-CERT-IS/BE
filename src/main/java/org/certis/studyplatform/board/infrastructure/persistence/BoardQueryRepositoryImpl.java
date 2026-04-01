@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.jooq.impl.DSL.*;
@@ -219,6 +220,20 @@ public class BoardQueryRepositoryImpl implements BoardQueryRepository {
     }
 
     @Override
+    public Long getAuthorId(BoardIdVo boardIdVo) {
+        try {
+            return dsl.select(field("b.member_id", Long.class))
+                    .from(table("board").as("b"))
+                    .where(field("b.id").eq(boardIdVo.value()))
+                    .and(field("b.deleted_at").isNull())
+                    .fetchOne(field("b.member_id", Long.class));
+        } catch (Exception e) {
+            log.error("❌ Infrastructure: Failed to get author id for board: {}", boardIdVo.value(), e);
+            throw new DomainException(ExceptionStatus.BOARD_INFRASTRUCTURE_QUERY_FAILED);
+        }
+    }
+
+    @Override
     public List<Long> findAllActiveBoardIds() {
         try {
             return dsl.select(field("b.id"))
@@ -249,6 +264,32 @@ public class BoardQueryRepositoryImpl implements BoardQueryRepository {
     }
 
     @Override
+    public Map<Long, Long> getLikeCountsFromDB(List<BoardIdVo> boardIds) {
+        if (boardIds.isEmpty()) {
+            return Map.of();
+        }
+        try {
+            List<Long> ids = boardIds.stream().map(BoardIdVo::value).toList();
+            Map<Long, Long> counts = new java.util.LinkedHashMap<>();
+            Field<Long> boardIdField = field("bl.board_id", Long.class).as("board_id");
+            Field<Long> countField = sum(field("bl.like_number", Integer.class)).cast(Long.class).as("count");
+            dsl.select(boardIdField, countField)
+                    .from(table("board_like").as("bl"))
+                    .where(field("bl.board_id").in(ids))
+                    .groupBy(field("bl.board_id"))
+                    .fetch()
+                    .forEach(record -> counts.put(
+                            record.get(boardIdField),
+                            record.get(countField) != null ? record.get(countField) : 0L
+                    ));
+            return counts;
+        } catch (Exception e) {
+            log.error("❌ Infrastructure: Failed to get like counts from DB for boards: {}", boardIds.size(), e);
+            return Map.of();
+        }
+    }
+
+    @Override
     public Long getViewCountFromDB(BoardIdVo boardIdVo) {
         try {
             Long viewCount = dsl.select(sum(field("bv.view_number", Integer.class)))
@@ -260,6 +301,32 @@ public class BoardQueryRepositoryImpl implements BoardQueryRepository {
         } catch (Exception e) {
             log.error("❌ Infrastructure: Failed to get view count from DB - board: {}", boardIdVo.value(), e);
             return 0L;
+        }
+    }
+
+    @Override
+    public Map<Long, Long> getViewCountsFromDB(List<BoardIdVo> boardIds) {
+        if (boardIds.isEmpty()) {
+            return Map.of();
+        }
+        try {
+            List<Long> ids = boardIds.stream().map(BoardIdVo::value).toList();
+            Map<Long, Long> counts = new java.util.LinkedHashMap<>();
+            Field<Long> boardIdField = field("bv.board_id", Long.class).as("board_id");
+            Field<Long> countField = sum(field("bv.view_number", Integer.class)).cast(Long.class).as("count");
+            dsl.select(boardIdField, countField)
+                    .from(table("board_view").as("bv"))
+                    .where(field("bv.board_id").in(ids))
+                    .groupBy(field("bv.board_id"))
+                    .fetch()
+                    .forEach(record -> counts.put(
+                            record.get(boardIdField),
+                            record.get(countField) != null ? record.get(countField) : 0L
+                    ));
+            return counts;
+        } catch (Exception e) {
+            log.error("❌ Infrastructure: Failed to get view counts from DB for boards: {}", boardIds.size(), e);
+            return Map.of();
         }
     }
 

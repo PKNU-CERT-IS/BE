@@ -96,32 +96,11 @@ public class StudyParticipantFacadeService {
     public StudyParticipantStatusUpdateResponseDto approveJoinStudy(StudyJoinApproveRequestDto requestDto, Long currentUserId) {
         log.info("Facade: Approving study join - studyId: {}, memberId: {}", requestDto.getStudyId(), requestDto.getMemberId());
 
-        // 권한 검증: 스터디 생성자 또는 관리자(STAFF 이상)만 승인 가능
-        StudyVo studyVo = studyQueryService.getStudyById(GetStudyByIdQuery.of(requestDto.getStudyId()));
-        boolean isLeader = studyVo.creatorId().equals(currentUserId);
-        MemberVo requesterMember = memberQueryService.getMemberById(new GetMemberByIdQuery(currentUserId));
-        boolean isAdmin = requesterMember != null
-                && requesterMember.role() != null
-                && MemberRole.isStaffOrAbove(requesterMember.role());
-        if (!(isLeader || isAdmin)) {
-            throw new ApplicationException(
-                    ExceptionStatus.STUDY_DOMAIN_PERMISSION_DENINED,
-                    "스터디 생성자 또는 관리자만 참가 승인/거절을 할 수 있습니다.");
-        }
-
-        // 참가 신청 resolve: (studyId, memberId) → participantId
-        var participantVo = participantQueryService
-                .getByStudyIdAndMemberId(requestDto.getStudyId(), requestDto.getMemberId())
-                .orElseThrow(() -> new ApplicationException(ExceptionStatus.STUDY_DOMAIN_NOT_FOUND,
-                        "참가 신청을 찾을 수 없습니다."));
-
-        // Command 생성 및 호출
-        UpdateStudyParticipantStatusCommand command = new UpdateStudyParticipantStatusCommand(
-                participantVo.id(),
-                StudyParticipantStatus.APPROVED,
+        StudyParticipantStatusUpdatedVo updatedVo = participantCommandService.approveParticipant(
+                requestDto.getStudyId(),
+                requestDto.getMemberId(),
                 currentUserId
         );
-        StudyParticipantStatusUpdatedVo updatedVo = participantCommandService.approveParticipant(command);
 
         // Response 변환
         StudyParticipantStatusUpdateResponseDto responseDto = dtoMapper

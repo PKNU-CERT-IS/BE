@@ -2,6 +2,7 @@ package org.certis.studyplatform.project.domain.service;
 
 import org.certis.studyplatform.member.domain.MemberRole;
 import org.certis.studyplatform.project.domain.ProjectParticipantStatus;
+import org.certis.studyplatform.project.domain.repository.ProjectCommandRepository;
 import org.certis.studyplatform.project.domain.repository.ProjectParticipantCommandRepository;
 import org.certis.studyplatform.project.domain.repository.ProjectParticipantQueryRepository;
 import org.certis.studyplatform.project.domain.repository.ProjectQueryRepository;
@@ -55,6 +56,9 @@ class ProjectParticipantDomainServiceTest {
     
     @Mock
     private ProjectQueryRepository projectQueryRepository;
+
+    @Mock
+    private ProjectCommandRepository projectCommandRepository;
     
     @Mock
     private MemberQueryRepository memberQueryRepository;
@@ -67,8 +71,14 @@ class ProjectParticipantDomainServiceTest {
                 commandRepository,
                 queryRepository,
                 projectQueryRepository,
+                projectCommandRepository,
                 memberQueryRepository
         );
+        lenient().when(projectQueryRepository.findByIdForUpdate(anyLong()))
+                .thenAnswer(invocation -> projectQueryRepository.findById(invocation.getArgument(0, Long.class)));
+        lenient().when(projectQueryRepository.findCreatorIdById(anyLong()))
+                .thenReturn(Optional.of(1L));
+        lenient().when(projectCommandRepository.tryClaimApprovedSlot(anyLong())).thenReturn(true);
     }
 
     @Nested
@@ -284,6 +294,7 @@ class ProjectParticipantDomainServiceTest {
 
             // Then
             verify(commandRepository).deleteByIdHard(participantId);
+            verify(projectCommandRepository).releaseApprovedSlot(projectId);
         }
 
         @Test

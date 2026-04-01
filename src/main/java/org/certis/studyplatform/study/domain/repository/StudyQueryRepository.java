@@ -103,6 +103,11 @@ public interface StudyQueryRepository {
     Optional<StudyVo> findById(Long studyId);
 
     /**
+     * 스터디 행을 잠근 뒤 조회합니다.
+     */
+    Optional<StudyVo> findByIdForUpdate(Long studyId);
+
+    /**
      * APPROVED 상태이면서 started_at이 지정된 시간 이전인 스터디 ID 목록 조회
      * 
      * @param currentTime 현재 시간
@@ -126,6 +131,11 @@ public interface StudyQueryRepository {
      * @return StudyVo
      */
     Optional<StudyVo> findByIdAndDeletedAtIsNull(Long studyId);
+
+    /**
+     * 스터디 생성자 ID만 조회합니다.
+     */
+    Optional<Long> findCreatorIdById(Long studyId);
 
     /**
      * ✅ 스터디 제목 존재 여부 확인

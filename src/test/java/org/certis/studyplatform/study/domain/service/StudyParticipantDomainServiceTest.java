@@ -3,6 +3,7 @@ package org.certis.studyplatform.study.domain.service;
 import org.certis.studyplatform.study.application.object.command.CreateStudyParticipantCommand;
 import org.certis.studyplatform.study.application.object.command.UpdateStudyParticipantStatusCommand;
 import org.certis.studyplatform.study.domain.StudyParticipantStatus;
+import org.certis.studyplatform.study.domain.repository.StudyCommandRepository;
 import org.certis.studyplatform.study.domain.repository.StudyParticipantCommandRepository;
 import org.certis.studyplatform.study.domain.repository.StudyParticipantQueryRepository;
 import org.certis.studyplatform.study.domain.repository.StudyQueryRepository;
@@ -58,6 +59,9 @@ class StudyParticipantDomainServiceTest {
     
     @Mock
     private StudyQueryRepository studyQueryRepository;
+
+    @Mock
+    private StudyCommandRepository studyCommandRepository;
     
     @Mock
     private ProjectParticipantQueryRepository projectParticipantQueryRepository;
@@ -76,10 +80,16 @@ class StudyParticipantDomainServiceTest {
                 commandRepository,
                 queryRepository,
                 studyQueryRepository,
+                studyCommandRepository,
                 projectParticipantQueryRepository,
                 projectQueryRepository,
                 memberQueryRepository
         );
+        lenient().when(studyQueryRepository.findByIdForUpdate(anyLong()))
+                .thenAnswer(invocation -> studyQueryRepository.findById(invocation.getArgument(0, Long.class)));
+        lenient().when(studyQueryRepository.findCreatorIdById(anyLong()))
+                .thenReturn(Optional.of(1L));
+        lenient().when(studyCommandRepository.tryClaimApprovedSlot(anyLong())).thenReturn(true);
     }
 
     @Nested
@@ -256,6 +266,7 @@ class StudyParticipantDomainServiceTest {
 
             // Then
             verify(commandRepository).deleteByIdHard(participantId);
+            verify(studyCommandRepository).releaseApprovedSlot(studyId);
         }
 
         @Test

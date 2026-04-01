@@ -223,4 +223,18 @@ public class StudyCommandRepositoryImpl implements StudyCommandRepository {
         }
         log.debug("Command: Study creation approved successfully - ID: {}", studyId);
     }
+
+    @Override
+    public boolean tryClaimApprovedSlot(Long studyId) {
+        return jpaRepository.tryClaimApprovedSlot(studyId, OffsetDateTime.now()) > 0;
+    }
+
+    @Override
+    public void releaseApprovedSlot(Long studyId) {
+        int affectedRows = jpaRepository.releaseApprovedSlot(studyId, OffsetDateTime.now());
+        if (affectedRows == 0) {
+            throw new InfrastructureException(ExceptionStatus.STUDY_INFRASTRUCTURE_NOT_FOUND,
+                    "반납할 스터디 슬롯이 없습니다: " + studyId);
+        }
+    }
 }

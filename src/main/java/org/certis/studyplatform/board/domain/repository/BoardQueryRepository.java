@@ -4,6 +4,7 @@ import org.certis.studyplatform.board.domain.model.vo.*;
 import org.springframework.data.domain.Page;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface BoardQueryRepository {
@@ -18,12 +19,18 @@ public interface BoardQueryRepository {
     // Get author information with role for board detail
     BoardAuthorInfoVo getAuthorInfo(BoardIdVo boardIdVo);
 
+    Long getAuthorId(BoardIdVo boardIdVo);
+
     // 모든 활성 게시글 id 반환
     List<Long> findAllActiveBoardIds();
 
     Long getLikeCountFromDB(BoardIdVo boardIdVo);
 
+    Map<Long, Long> getLikeCountsFromDB(List<BoardIdVo> boardIds);
+
     Long getViewCountFromDB(BoardIdVo boardIdVo);
+
+    Map<Long, Long> getViewCountsFromDB(List<BoardIdVo> boardIds);
 
     List<AttachmentVo> findAttachmentsByBoardId(BoardIdVo boardIdVo);
 

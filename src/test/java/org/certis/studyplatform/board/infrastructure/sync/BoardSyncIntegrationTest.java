@@ -11,6 +11,7 @@ import org.certis.studyplatform.config.TestEmbeddedPostgresConfig;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -34,6 +35,7 @@ import org.certis.generated.jooq.tables.Member;
 @SpringBootTest
 @Import(TestEmbeddedPostgresConfig.class)
 @ActiveProfiles("redis-test")
+@Disabled("Legacy overwrite/reset board sync behavior has been replaced by BoardSyncRedesignIntegrationTest.")
 // @Transactional // 동기화 결과를 확인하기 위해 트랜잭션 롤백 제거
 class BoardSyncIntegrationTest {
 

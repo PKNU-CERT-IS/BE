@@ -6,8 +6,10 @@ import org.certis.studyplatform.exception.DomainException;
 import org.certis.studyplatform.exception.ExceptionStatus;
 import org.certis.studyplatform.member.application.object.query.GetMemberByIdQuery;
 import org.certis.studyplatform.member.domain.MemberRole;
+import org.certis.studyplatform.member.domain.repository.query.MemberQueryRepository;
 import org.certis.studyplatform.member.domain.service.MemberDomainService;
 import org.certis.studyplatform.member.domain.vo.MemberVo;
+import org.certis.studyplatform.member.domain.vo.MemberIdVo;
 import org.certis.studyplatform.project.application.object.command.CreateProjectCommand;
 import org.certis.studyplatform.project.application.object.command.DeleteProjectCommand;
 import org.certis.studyplatform.project.application.object.command.EndProjectCommand;
@@ -53,6 +55,7 @@ public class ProjectDomainService {
     private final ProjectCommandRepository commandRepository;
     private final ProjectQueryRepository queryRepository;
     private final MemberDomainService memberDomainService;
+    private final MemberQueryRepository memberQueryRepository;
     private final ProjectParticipantQueryRepository projectParticipantQueryRepository;
 
     // ================================================================
@@ -74,6 +77,9 @@ public class ProjectDomainService {
         // 중복 검사 (Repository 의존성이 필요한 검증만 수행)
 //        validateProjectTitleDuplication(command.title());
         // Creation limit enforcement: consider created + joined actives
+        memberQueryRepository.findByIdForUpdate(MemberIdVo.of(command.creatorId()))
+                .orElseThrow(() -> new DomainException(ExceptionStatus.MEMBER_DOMAIN_NOT_FOUND,
+                        "프로젝트 생성자를 찾을 수 없습니다: " + command.creatorId()));
         enforceCreationLimits(command.creatorId());
 
         // ProjectVo.createNew() 사용 - 생성 시 자동으로 나머지 검증 수행

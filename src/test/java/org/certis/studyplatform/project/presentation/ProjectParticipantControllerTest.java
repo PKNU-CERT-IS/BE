@@ -122,12 +122,15 @@ class ProjectParticipantControllerTest {
     @Order(1)
     @DisplayName("프로젝트 참가 신청 - 성공적인 비즈니스 시나리오")
     void registerJoinProject_SuccessfulBusinessScenario() throws Exception {
-        // Given: 유효한 프로젝트가 존재하고, 일반 멤버(1L)가 다른 사용자가 생성한 프로젝트(2번)에 참가 신청을 준비함
+        // Given: 유효한 프로젝트가 존재하고, 활성 프로젝트가 없는 일반 멤버(2L)가 다른 사용자가 생성한 프로젝트(2번)에 참가 신청을 준비함
         ProjectJoinRequestDto request = new ProjectJoinRequestDto();
         request.setProjectId(TEST_PROJECT_2_ID);
 
         // When: 프로젝트 참가 신청 API를 호출
         mockMvc.perform(post(BASE_URL + "/join/register")
+                        .with(SecurityMockMvcRequestPostProcessors.user(
+                                new CurrentUser(TEST_MEMBER_ID, "user2", "user2@certis.org", "유저2", "PLAYER")
+                        ))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -547,6 +550,9 @@ class ProjectParticipantControllerTest {
 
         // When & Then: 정원 초과로 참가 신청 거부
         mockMvc.perform(post(BASE_URL + "/join/register")
+                        .with(SecurityMockMvcRequestPostProcessors.user(
+                                new CurrentUser(TEST_MEMBER_ID, "user2", "user2@certis.org", "유저2", "PLAYER")
+                        ))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -747,7 +753,7 @@ class ProjectParticipantControllerTest {
     private void verifyParticipantCreatedInDatabase(ProjectJoinRequestDto request) {
         var participant = dsl.selectFrom(PROJECT_PARTICIPANT)
                 .where(PROJECT_PARTICIPANT.PROJECT_ID.eq(request.getProjectId()))
-                .and(PROJECT_PARTICIPANT.MEMBER_ID.eq(1L)) // 현재 로그인 사용자 ID (하드코딩)
+                .and(PROJECT_PARTICIPANT.MEMBER_ID.eq(TEST_MEMBER_ID))
                 .and(PROJECT_PARTICIPANT.DELETED_AT.isNull())
                 .fetchOne();
 

@@ -65,6 +65,16 @@ public interface ProjectJpaRepository extends JpaRepository<ProjectEntity, Long>
     @Query("UPDATE ProjectEntity p SET p.status = 'APPROVED', p.updatedAt = :now WHERE p.id = :id AND p.deletedAt IS NULL")
     int approveCreation(@Param("id") Long id, @Param("now") OffsetDateTime now);
 
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE ProjectEntity p SET p.approvedSlotsUsed = p.approvedSlotsUsed + 1, p.updatedAt = :now " +
+            "WHERE p.id = :id AND p.deletedAt IS NULL AND p.approvedSlotsUsed < p.maxParticipantsNumber")
+    int tryClaimApprovedSlot(@Param("id") Long id, @Param("now") OffsetDateTime now);
+
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE ProjectEntity p SET p.approvedSlotsUsed = p.approvedSlotsUsed - 1, p.updatedAt = :now " +
+            "WHERE p.id = :id AND p.deletedAt IS NULL AND p.approvedSlotsUsed > 0")
+    int releaseApprovedSlot(@Param("id") Long id, @Param("now") OffsetDateTime now);
+
     /**
      * Reject both end and creation: mark REJECTED and soft delete (deletedAt=now)
      */

@@ -938,6 +938,9 @@ class StudyControllerTest {
     private void createStudyWithNewFields() {
         // Ensure member exists first
         setupTestData();
+
+        OffsetDateTime startedAt = OffsetDateTime.parse("2025-09-01T00:00:00+09:00");
+        OffsetDateTime endedAt = OffsetDateTime.parse("2025-10-31T23:59:59+09:00");
         
         dsl.insertInto(STUDY)
                 .set(STUDY.ID, TEST_STUDY_ID)
@@ -947,8 +950,8 @@ class StudyControllerTest {
                 .set(STUDY.CATEGORY, "CS")
                 .set(STUDY.SUBCATEGORY, "백엔드")
                 .set(STUDY.STATUS, "READY")
-                .set(STUDY.STARTED_AT, OffsetDateTime.now().plusDays(1))
-                .set(STUDY.ENDED_AT, OffsetDateTime.now().plusDays(30))
+                .set(STUDY.STARTED_AT, startedAt)
+                .set(STUDY.ENDED_AT, endedAt)
                 .set(STUDY.MEMBER_ID, TEST_MEMBER_ID)
                 .set(STUDY.MAX_PARTICIPANTS_NUMBER, 10)
                 .set(STUDY.RESULT_SUBMIT_STATUS, "READY")
