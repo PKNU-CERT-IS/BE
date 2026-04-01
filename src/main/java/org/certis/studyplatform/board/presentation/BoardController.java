@@ -50,9 +50,10 @@ public class BoardController {
     @PostMapping("/create")
     public ResponseEntity<GlobalResponseHandler<Void>> createBoard(
             @Valid @RequestBody BoardCreateRequestDto request,
+            @RequestHeader(value = "X-Idempotency-Key", required = false) String idempotencyKey,
             @AuthenticationPrincipal CurrentUser currentUser
     ) {
-        boardFacadeService.createBoard(request, currentUser.getId());
+        boardFacadeService.createBoard(request, currentUser.getId(), idempotencyKey);
 
         return GlobalResponseHandler.success(ResponseStatus.BOARD_CREATE_SUCCESS);
     }
@@ -62,10 +63,11 @@ public class BoardController {
     public ResponseEntity<GlobalResponseHandler<Void>> updateBoard(
             @PathVariable Long id,
             @Valid @RequestBody BoardUpdateRequestDto request,
+            @RequestHeader(value = "X-Idempotency-Key", required = false) String idempotencyKey,
             @AuthenticationPrincipal CurrentUser currentUser
     ) {
 
-        boardFacadeService.updateBoard(id, request, currentUser.getId());
+        boardFacadeService.updateBoard(id, request, currentUser.getId(), idempotencyKey);
 
         return GlobalResponseHandler.success(ResponseStatus.BOARD_UPDATE_SUCCESS);
     }

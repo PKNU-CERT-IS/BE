@@ -80,7 +80,7 @@ class StudyEndApiE2ETest {
             f.set(req, studyId);
         } catch (Exception ignore) {}
 
-        StudyDetailResponseDto resp = studyFacadeService.endStudy(req, creatorId);
+        StudyDetailResponseDto resp = studyFacadeService.endStudy(req, creatorId, null);
 
         // Then: success and resultSubmitStatus moved to INPROGRESS (submission created)
         assertThat(resp).isNotNull();

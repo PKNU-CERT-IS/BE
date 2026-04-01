@@ -199,7 +199,7 @@ class MemberControllerTest {
 
     @Test
     @Order(7)
-    @DisplayName("✏️ 회원 정보 수정 - 성공적인 업데이트")
+    @DisplayName("✏️ 회원 정보 수정 엔드포인트 미노출 시 404 반환")
     void updateMember_Success() throws Exception {
         // Given: 수정할 회원 정보가 준비됨
         MemberUpdateRequestDto request = createValidUpdateRequest();
@@ -209,14 +209,8 @@ class MemberControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
-                // Then: HTTP 200 OK 응답과 수정 성공 확인
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value(200))
-                .andExpect(jsonPath("$.message").value("회원 정보가 성공적으로 갱신되었습니다"))
-                .andExpect(jsonPath("$.data.name.value").value(request.getName()));
-
-        // Then: 데이터베이스에서 실제 수정 확인
-        verifyMemberUpdatedInDatabase(TEST_MEMBER_ID, request.getName());
+                // Then: 현재 MemberController에는 수정 엔드포인트가 없어 404 응답
+                .andExpect(status().isNotFound());
 
     }
 

@@ -136,7 +136,9 @@ class ScheduleControllerTest {
         // Given: 승인된 스케줄이 미리 생성되어 있음
         createApprovedScheduleInDatabase();
 
-        OffsetDateTime queryDate = OffsetDateTime.now();
+        // 월말 실행 시 createApprovedScheduleInDatabase()가 다음 달 일정을 만들 수 있으므로
+        // 조회 기준도 같은 월로 맞춰 flaky failure를 방지한다.
+        OffsetDateTime queryDate = OffsetDateTime.now().plusDays(1);
 
         // When: 월별 승인된 스케줄 조회 API 호출
         mockMvc.perform(get("/api/v1/schedule/requests")

@@ -63,12 +63,13 @@ public class ProjectController {
     @PostMapping("/create")
     public ResponseEntity<GlobalResponseHandler<Void>> createProject(
             @Valid @RequestBody ProjectCreateRequestDto request,
+            @RequestHeader(value = "X-Idempotency-Key", required = false) String idempotencyKey,
             @AuthenticationPrincipal CurrentUser currentUser
     ) {
         log.info("REST: Creating project - {}", request.getTitle());
 
         // Facade Service 호출
-        projectFacadeService.createProject(request, currentUser.getId());
+        projectFacadeService.createProject(request, currentUser.getId(), idempotencyKey);
 
         log.info("REST: Project created successfully");
 
@@ -82,12 +83,13 @@ public class ProjectController {
     @PutMapping("/update")
     public ResponseEntity<GlobalResponseHandler<Void>> updateProject(
             @Valid @RequestBody ProjectUpdateRequestDto request,
+            @RequestHeader(value = "X-Idempotency-Key", required = false) String idempotencyKey,
             @AuthenticationPrincipal CurrentUser currentUser
     ) {
         log.info("REST: Updating project - ID: {}", request.getProjectId());
 
         // Facade Service 호출
-        projectFacadeService.updateProject(request, currentUser.getId());
+        projectFacadeService.updateProject(request, currentUser.getId(), idempotencyKey);
 
         return GlobalResponseHandler.success(ResponseStatus.PROJECT_UPDATE_SUCCESS);
     }
@@ -210,13 +212,15 @@ public class ProjectController {
     @PostMapping(value = "/end")
     public ResponseEntity<GlobalResponseHandler<ProjectDetailResponseDto>> endProject(
             @Valid @RequestBody ProjectEndRequestDto requestDto,
+            @RequestHeader(value = "X-Idempotency-Key", required = false) String idempotencyKey,
             @AuthenticationPrincipal CurrentUser currentUser) {
         log.info("REST: Ending project - ID: {}, requesterId: {}", requestDto.getProjectId(), currentUser.getId());
 
         // Facade Service 호출 (VO → DTO 변환 포함)
         ProjectDetailResponseDto endedProject = projectFacadeService.endProject(
                 requestDto,
-                currentUser.getId()
+            currentUser.getId(),
+            idempotencyKey
         );
 
         log.info("REST: Project ended successfully - ID: {}", endedProject.getId());

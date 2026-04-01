@@ -23,6 +23,9 @@ import org.certis.studyplatform.study.application.object.query.GetStudyByIdQuery
 import org.certis.studyplatform.study.application.object.query.SearchStudiesQuery;
 import org.certis.studyplatform.study.application.query.StudyMeetingQueryService;
 import org.certis.studyplatform.study.application.query.StudyQueryService;
+import org.certis.studyplatform.shared.idempotency.IdempotencyExecutor;
+import org.certis.studyplatform.shared.idempotency.IdempotencyKeyContext;
+import org.certis.studyplatform.shared.idempotency.IdempotencyProperties;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -65,6 +68,9 @@ public class StudyFacadeService {
     private final Executor virtualThreadExecutor;
     private final StudyMeetingQueryService studyMeetingQueryService;
     private final S3FileService s3FileService;
+    private final IdempotencyExecutor idempotencyExecutor;
+    private final IdempotencyProperties idempotencyProperties;
+    private final StudyIdempotencyPayloadHasher studyIdempotencyPayloadHasher;
 
     // ================================================================
     // COMMAND OPERATIONS - 상태 변경 작업
@@ -73,14 +79,25 @@ public class StudyFacadeService {
     /**
      * 프로젝트 생성 (임시 - Spring Security 미구축 상태)
      */
-    public void createStudy(StudyCreateRequestDto requestDto, Long creatorId) {
+    public void createStudy(StudyCreateRequestDto requestDto, Long creatorId, String idempotencyKey) {
         log.info("Facade: Creating study - {}", requestDto.getTitle());
 
-        // DTO → Command Object 변환
-        CreateStudyCommand command = commandMapper.toCreateStudyCommand(requestDto, creatorId);
+        StudyVo createdVo;
+        if (idempotencyProperties.getStudy().isEnabled() && isNotBlank(idempotencyKey)) {
+            String payloadHash = studyIdempotencyPayloadHasher.hashCreate(requestDto);
+            IdempotencyKeyContext context = new IdempotencyKeyContext(creatorId, "study", "study:create", idempotencyKey);
 
-        // Command Service 호출 (VO 반환)
-        StudyVo createdVo = studyCommandService.createStudy(command);
+            createdVo = idempotencyExecutor.execute(context, payloadHash, () -> {
+                CreateStudyCommand command = commandMapper.toCreateStudyCommand(requestDto, creatorId);
+                return studyCommandService.createStudy(command, idempotencyKey);
+            });
+        } else {
+            // DTO → Command Object 변환
+            CreateStudyCommand command = commandMapper.toCreateStudyCommand(requestDto, creatorId);
+
+            // Command Service 호출 (VO 반환)
+            createdVo = studyCommandService.createStudy(command, idempotencyKey);
+        }
 
         log.info("Facade: Study created successfully - ID: {}", createdVo.id());
     }
@@ -88,14 +105,30 @@ public class StudyFacadeService {
     /**
      * 프로젝트 수정 (임시 - Spring Security 미구축 상태)
      */
-    public void updateStudy(StudyUpdateRequestDto requestDto, Long requesterId) {
+    public void updateStudy(StudyUpdateRequestDto requestDto, Long requesterId, String idempotencyKey) {
         log.info("Facade: Updating study - ID: {}", requestDto.getStudyId());
 
-        // DTO → Command Object 변환
-        UpdateStudyCommand command = commandMapper.toUpdateStudyCommand(requestDto, requesterId);
+        StudyVo updatedVo;
+        if (idempotencyProperties.getStudy().isEnabled() && isNotBlank(idempotencyKey)) {
+            String payloadHash = studyIdempotencyPayloadHasher.hashUpdate(requestDto);
+            IdempotencyKeyContext context = new IdempotencyKeyContext(
+                    requesterId,
+                    "study",
+                    "study:%d:update".formatted(requestDto.getStudyId()),
+                    idempotencyKey
+            );
 
-        // Command Service 호출 (VO 반환)
-        StudyVo updatedVo = studyCommandService.updateStudy(command);
+            updatedVo = idempotencyExecutor.execute(context, payloadHash, () -> {
+                UpdateStudyCommand command = commandMapper.toUpdateStudyCommand(requestDto, requesterId);
+                return studyCommandService.updateStudy(command, idempotencyKey);
+            });
+        } else {
+            // DTO → Command Object 변환
+            UpdateStudyCommand command = commandMapper.toUpdateStudyCommand(requestDto, requesterId);
+
+            // Command Service 호출 (VO 반환)
+            updatedVo = studyCommandService.updateStudy(command, idempotencyKey);
+        }
 
         log.info("Facade: Study updated successfully - ID: {}", updatedVo.id());
     }
@@ -234,15 +267,32 @@ public class StudyFacadeService {
     /**
      * 스터디 종료 (DTO 반환)
      */
-    public StudyDetailResponseDto endStudy(StudyEndRequestDto requestDto, Long requesterId) {
+    public StudyDetailResponseDto endStudy(StudyEndRequestDto requestDto, Long requesterId, String idempotencyKey) {
         log.info("Facade: Ending study - ID: {}, requesterId: {}", requestDto.getStudyId(), requesterId);
 
-        // Command 객체 생성
-        String attachmentUrl = requestDto.getAttachment() != null ? requestDto.getAttachment().getAttachedUrl() : null;
-        EndStudyCommand command = EndStudyCommand.of(requestDto.getStudyId(), requesterId, attachmentUrl);
+        if (idempotencyProperties.getStudy().isEnabled() && isNotBlank(idempotencyKey)) {
+            String payloadHash = studyIdempotencyPayloadHasher.hashEnd(requestDto);
+            IdempotencyKeyContext context = new IdempotencyKeyContext(
+                    requesterId,
+                    "study",
+                    "study:%d:end".formatted(requestDto.getStudyId()),
+                    idempotencyKey
+            );
 
-        // Command Service 호출 (VO 반환)
-        studyCommandService.endStudy(command);
+            idempotencyExecutor.execute(context, payloadHash, () -> {
+                String attachmentUrl = requestDto.getAttachment() != null ? requestDto.getAttachment().getAttachedUrl() : null;
+                EndStudyCommand command = EndStudyCommand.of(requestDto.getStudyId(), requesterId, attachmentUrl);
+                studyCommandService.endStudy(command, idempotencyKey);
+                return null;
+            });
+        } else {
+            // Command 객체 생성
+            String attachmentUrl = requestDto.getAttachment() != null ? requestDto.getAttachment().getAttachedUrl() : null;
+            EndStudyCommand command = EndStudyCommand.of(requestDto.getStudyId(), requesterId, attachmentUrl);
+
+            // Command Service 호출 (VO 반환)
+            studyCommandService.endStudy(command, idempotencyKey);
+        }
 
         // 상태 확정 후 최신 데이터로 재조회하여 DTO 변환
         GetStudyByIdQuery refreshQuery = queryMapper.toGetStudyByIdQuery(requestDto.getStudyId());
@@ -251,6 +301,10 @@ public class StudyFacadeService {
 
         log.info("Facade: Study ended successfully - ID: {}", refreshed.id());
         return responseDto;
+    }
+
+    private boolean isNotBlank(String value) {
+        return value != null && !value.isBlank();
     }
 
     /**

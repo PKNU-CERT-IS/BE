@@ -21,9 +21,13 @@ import org.certis.studyplatform.board.presentation.dto.response.BoardLikeRespons
 import org.certis.studyplatform.board.presentation.dto.response.BoardListResponseDto;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.certis.studyplatform.board.presentation.dto.response.BoardStatsResponseDto;
 import org.certis.studyplatform.board.domain.service.BoardDomainService;
+import org.certis.studyplatform.shared.idempotency.IdempotencyExecutor;
+import org.certis.studyplatform.shared.idempotency.IdempotencyKeyContext;
+import org.certis.studyplatform.shared.idempotency.IdempotencyProperties;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +38,9 @@ public class BoardFacadeService {
     private final BoardQueryService boardQueryService;
     private final BoardSyncService boardSyncService;
     private final BoardDomainService boardDomainService;
+    private final IdempotencyExecutor idempotencyExecutor;
+    private final IdempotencyProperties idempotencyProperties;
+    private final BoardIdempotencyPayloadHasher boardIdempotencyPayloadHasher;
 
     private final BoardApplicationMapper boardApplicationMapper;
 
@@ -93,14 +100,24 @@ public class BoardFacadeService {
      * @param memberId 작성자 ID
      */
     @Transactional
-    public void createBoard(BoardCreateRequestDto request, Long memberId) {
+    public void createBoard(BoardCreateRequestDto request, Long memberId, String idempotencyKey) {
         log.info("Facade: Creating board - title: {}, author: {}", request.getTitle(), memberId);
 
-        // 1. DTO → Command Object 변환
-        CreateBoardCommand command = boardApplicationMapper.toCreateBoardCommand(request, memberId);
+        if (idempotencyProperties.getBoard().isEnabled() && isNotBlank(idempotencyKey)) {
+            String payloadHash = boardIdempotencyPayloadHasher.hashCreate(request);
+            IdempotencyKeyContext context = new IdempotencyKeyContext(memberId, "board", "board:create", idempotencyKey);
+            idempotencyExecutor.execute(context, payloadHash, () -> {
+                CreateBoardCommand command = boardApplicationMapper.toCreateBoardCommand(request, memberId);
+                boardCommandService.createBoard(command, idempotencyKey);
+                return null;
+            });
+        } else {
+            // 1. DTO → Command Object 변환
+            CreateBoardCommand command = boardApplicationMapper.toCreateBoardCommand(request, memberId);
 
-        // 2. Command Service 호출
-        boardCommandService.createBoard(command);
+            // 2. Command Service 호출
+            boardCommandService.createBoard(command, idempotencyKey);
+        }
 
         log.info("Facade: Board created successfully");
     }
@@ -113,15 +130,30 @@ public class BoardFacadeService {
      * @param memberId 요청자 ID (권한 체크용)
      */
     @Transactional
-    public void updateBoard(Long boardId, BoardUpdateRequestDto request, Long memberId) {
+    public void updateBoard(Long boardId, BoardUpdateRequestDto request, Long memberId, String idempotencyKey) {
         log.info("Facade: Updating board - ID: {}, title: {}, requesterId: {}",
                 boardId, request.getTitle(), memberId);
 
-        // 1. DTO → Command Object 변환
-        UpdateBoardCommand command = boardApplicationMapper.toUpdateBoardCommand(boardId, request, memberId);
+        if (idempotencyProperties.getBoard().isEnabled() && isNotBlank(idempotencyKey)) {
+            String payloadHash = boardIdempotencyPayloadHasher.hashUpdate(request);
+            IdempotencyKeyContext context = new IdempotencyKeyContext(
+                    memberId,
+                    "board",
+                    "board:%d:edit".formatted(boardId),
+                    idempotencyKey
+            );
+            idempotencyExecutor.execute(context, payloadHash, () -> {
+                UpdateBoardCommand command = boardApplicationMapper.toUpdateBoardCommand(boardId, request, memberId);
+                boardCommandService.updateBoard(command, idempotencyKey);
+                return null;
+            });
+        } else {
+            // 1. DTO → Command Object 변환
+            UpdateBoardCommand command = boardApplicationMapper.toUpdateBoardCommand(boardId, request, memberId);
 
-        // 2. Command Service 호출 (권한 체크 포함)
-        boardCommandService.updateBoard(command);
+            // 2. Command Service 호출 (권한 체크 포함)
+            boardCommandService.updateBoard(command, idempotencyKey);
+        }
 
         log.info("Facade: Board updated successfully - ID: {}", boardId);
     }
@@ -173,7 +205,7 @@ public class BoardFacadeService {
     }
 
     // 수동 동기화 트리거
-    @Transactional
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void syncBoardStats() {
         boardSyncService.syncStatsFromRedisToDatabase();
     }
@@ -189,5 +221,9 @@ public class BoardFacadeService {
             log.error("Facade: Failed to get today's board stats consistency", e);
             return new BoardStatsResponseDto(false);
         }
+    }
+
+    private boolean isNotBlank(String value) {
+        return value != null && !value.isBlank();
     }
 }

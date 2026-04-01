@@ -62,6 +62,13 @@ spring:
         shutdown-timeout: 100ms
 
 certis:
+  idempotency:
+    board:
+      enabled: false
+    study:
+      enabled: false
+    project:
+      enabled: false
   redis:
     dev-schedule:
       enabled: true

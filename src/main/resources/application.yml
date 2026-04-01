@@ -195,6 +195,18 @@ management:
       executor: true
       hikaricp: true
 
+certis:
+  idempotency:
+    board:
+      enabled: ${CERTIS_IDEMPOTENCY_BOARD_ENABLED:false}
+    study:
+      enabled: ${CERTIS_IDEMPOTENCY_STUDY_ENABLED:false}
+    project:
+      enabled: ${CERTIS_IDEMPOTENCY_PROJECT_ENABLED:false}
+    processing-stale-seconds: ${CERTIS_IDEMPOTENCY_PROCESSING_STALE_SECONDS:90}
+    record-ttl-seconds: ${CERTIS_IDEMPOTENCY_RECORD_TTL_SECONDS:86400}
+    lock-lease-seconds: ${CERTIS_IDEMPOTENCY_LOCK_LEASE_SECONDS:30}
+
 # ✅ 애플리케이션 공통 커스텀 설정
 app:
   # 목 데이터 기본 설정

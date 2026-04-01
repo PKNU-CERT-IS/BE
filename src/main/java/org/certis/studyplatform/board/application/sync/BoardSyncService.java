@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.certis.studyplatform.board.domain.service.BoardDomainService;
 import org.certis.studyplatform.board.infrastructure.monitoring.BoardSyncMetrics;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -19,7 +20,7 @@ public class BoardSyncService {
      * 매일 00시 배치 작업
      * 재시도 메커니즘과 상세한 에러 처리 포함
      */
-    @Transactional
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void syncStatsFromRedisToDatabase() {
         long startTime = System.currentTimeMillis();
         log.info("Application: Starting Redis to Database sync job at {}", java.time.LocalDateTime.now());

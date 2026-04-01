@@ -59,6 +59,11 @@ public class ProjectCommandService {
     // 3. 생성자를 참가자로 등록
     @Transactional
     public ProjectVo createProject(CreateProjectCommand command) {
+        return createProject(command, null);
+    }
+
+    @Transactional
+    public ProjectVo createProject(CreateProjectCommand command, String idempotencyKey) {
         log.info("Command: Creating project - {}", command.title());
 
         // 1) 첨부파일을 S3에 먼저 업로드 (data URL이면 업로드, 아니면 기존 URL 사용)
@@ -93,7 +98,24 @@ public class ProjectCommandService {
                         
                         byte[] bytes = Base64.getDecoder().decode(paddedBase64);
                         String contentType = mapAttachedTypeToContentType(fileCmd.type());
-                        finalUrl = s3FileService.uploadBytes(bytes, contentType, fileCmd.name(), S3FileService.DomainFolders.PROJECT_ATTACHMENTS, System.currentTimeMillis());
+                        if (isNotBlank(idempotencyKey)) {
+                            finalUrl = s3FileService.uploadBytesDeterministic(
+                                    bytes,
+                                    contentType,
+                                    fileCmd.name(),
+                                    S3FileService.DomainFolders.PROJECT_ATTACHMENTS,
+                                    command.creatorId(),
+                                    idempotencyKey
+                            );
+                        } else {
+                            finalUrl = s3FileService.uploadBytes(
+                                    bytes,
+                                    contentType,
+                                    fileCmd.name(),
+                                    S3FileService.DomainFolders.PROJECT_ATTACHMENTS,
+                                    System.currentTimeMillis()
+                            );
+                        }
                     } catch (ApplicationException e) {
                         // ApplicationException은 그대로 재발생
                         throw e;
@@ -143,6 +165,11 @@ public class ProjectCommandService {
      */
     @Transactional
     public ProjectVo updateProject(UpdateProjectCommand command) {
+        return updateProject(command, null);
+    }
+
+    @Transactional
+    public ProjectVo updateProject(UpdateProjectCommand command, String idempotencyKey) {
         log.info("Command: Updating project - ID: {}", command.id());
 
         // 1) 첨부파일 사전 처리 (data URL -> S3 업로드)
@@ -177,7 +204,24 @@ public class ProjectCommandService {
                         
                         byte[] bytes = Base64.getDecoder().decode(paddedBase64);
                         String contentType = mapAttachedTypeToContentType(fileCmd.type());
-                        finalUrl = s3FileService.uploadBytes(bytes, contentType, fileCmd.name(), S3FileService.DomainFolders.PROJECT_ATTACHMENTS, System.currentTimeMillis());
+                        if (isNotBlank(idempotencyKey)) {
+                            finalUrl = s3FileService.uploadBytesDeterministic(
+                                    bytes,
+                                    contentType,
+                                    fileCmd.name(),
+                                    S3FileService.DomainFolders.PROJECT_ATTACHMENTS,
+                                    command.requesterId(),
+                                    idempotencyKey
+                            );
+                        } else {
+                            finalUrl = s3FileService.uploadBytes(
+                                    bytes,
+                                    contentType,
+                                    fileCmd.name(),
+                                    S3FileService.DomainFolders.PROJECT_ATTACHMENTS,
+                                    System.currentTimeMillis()
+                            );
+                        }
                     } catch (ApplicationException e) {
                         // ApplicationException은 그대로 재발생
                         throw e;
@@ -290,6 +334,11 @@ public class ProjectCommandService {
      */
     @Transactional
     public ProjectVo endProject(EndProjectCommand command) {
+        return endProject(command, null);
+    }
+
+    @Transactional
+    public ProjectVo endProject(EndProjectCommand command, String idempotencyKey) {
         log.info("Command: Ending project - ID: {}", command.projectId());
 
         // 현재 상태 선조회하여 중복 신청 방지 (INPROGRESS/COMPLETED 차단)
@@ -364,9 +413,26 @@ public class ProjectCommandService {
                             endedVo.id(),
                             sanitizeFilename(endedVo.creatorName()),
                             extension);
-                    attachmentUrl = s3FileService.uploadBytes(bytes, contentType, customFilename, S3FileService.DomainFolders.PROJECT_END_ATTACHMENTS, endedVo.id());
+                    if (isNotBlank(idempotencyKey)) {
+                        attachmentUrl = s3FileService.uploadBytesDeterministic(
+                                bytes,
+                                contentType,
+                                customFilename,
+                                S3FileService.DomainFolders.PROJECT_END_ATTACHMENTS,
+                                command.requesterId(),
+                                idempotencyKey
+                        );
+                    } else {
+                        attachmentUrl = s3FileService.uploadBytes(
+                                bytes,
+                                contentType,
+                                customFilename,
+                                S3FileService.DomainFolders.PROJECT_END_ATTACHMENTS,
+                                endedVo.id()
+                        );
+                    }
                 } else {
-                    attachmentUrl = provided;
+                    attachmentUrl = s3FileService.normalizeUrl(provided);
                 }
             } catch (Exception e) {
                 log.error("Failed to handle project end attachment (string)", e);
@@ -517,5 +583,9 @@ public class ProjectCommandService {
         } catch (IllegalArgumentException e) {
             return false;
         }
+    }
+
+    private boolean isNotBlank(String value) {
+        return value != null && !value.isBlank();
     }
 }

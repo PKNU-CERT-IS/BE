@@ -42,6 +42,9 @@ import org.certis.studyplatform.project.domain.service.ProjectDomainService;
 
 import org.certis.studyplatform.project.presentation.dto.response.AdminProjectEndSubmissionResponseDto;
 import org.certis.studyplatform.project.presentation.dto.response.ProjectAttachedResponseDto;
+import org.certis.studyplatform.shared.idempotency.IdempotencyExecutor;
+import org.certis.studyplatform.shared.idempotency.IdempotencyKeyContext;
+import org.certis.studyplatform.shared.idempotency.IdempotencyProperties;
 
 import org.springframework.web.multipart.MultipartFile;
 
@@ -74,6 +77,9 @@ public class ProjectFacadeService {
     private final ProjectMeetingFacadeService projectMeetingFacadeService;
     private final S3FileService s3FileService;
     private final ProjectDomainService projectDomainService;
+    private final IdempotencyExecutor idempotencyExecutor;
+    private final IdempotencyProperties idempotencyProperties;
+    private final ProjectIdempotencyPayloadHasher projectIdempotencyPayloadHasher;
     
 
     // ================================================================
@@ -83,14 +89,25 @@ public class ProjectFacadeService {
     /**
      * 프로젝트 생성 (임시 - Spring Security 미구축 상태)
      */
-    public void createProject(ProjectCreateRequestDto requestDto, Long creatorId) {
+    public void createProject(ProjectCreateRequestDto requestDto, Long creatorId, String idempotencyKey) {
         log.info("Facade: Creating project - {}", requestDto.getTitle());
 
-        // DTO → Command Object 변환
-        CreateProjectCommand command = commandMapper.toCreateProjectCommand(requestDto, creatorId);
+        ProjectVo createdVo;
+        if (idempotencyProperties.getProject().isEnabled() && isNotBlank(idempotencyKey)) {
+            String payloadHash = projectIdempotencyPayloadHasher.hashCreate(requestDto);
+            IdempotencyKeyContext context = new IdempotencyKeyContext(creatorId, "project", "project:create", idempotencyKey);
 
-        // Command Service 호출 (VO 반환)
-        ProjectVo createdVo = projectCommandService.createProject(command);
+            createdVo = idempotencyExecutor.execute(context, payloadHash, () -> {
+                CreateProjectCommand command = commandMapper.toCreateProjectCommand(requestDto, creatorId);
+                return projectCommandService.createProject(command, idempotencyKey);
+            });
+        } else {
+            // DTO → Command Object 변환
+            CreateProjectCommand command = commandMapper.toCreateProjectCommand(requestDto, creatorId);
+
+            // Command Service 호출 (VO 반환)
+            createdVo = projectCommandService.createProject(command, idempotencyKey);
+        }
 
         log.info("Facade: Project created successfully - ID: {}", createdVo.id());
     }
@@ -98,14 +115,30 @@ public class ProjectFacadeService {
     /**
      * 프로젝트 수정 (임시 - Spring Security 미구축 상태)
      */
-    public void updateProject(ProjectUpdateRequestDto requestDto, Long requesterId) {
+    public void updateProject(ProjectUpdateRequestDto requestDto, Long requesterId, String idempotencyKey) {
         log.info("Facade: Updating project - ID: {}", requestDto.getProjectId());
 
-        // DTO → Command Object 변환
-        UpdateProjectCommand command = commandMapper.toUpdateProjectCommand(requestDto, requesterId);
+        ProjectVo updatedVo;
+        if (idempotencyProperties.getProject().isEnabled() && isNotBlank(idempotencyKey)) {
+            String payloadHash = projectIdempotencyPayloadHasher.hashUpdate(requestDto);
+            IdempotencyKeyContext context = new IdempotencyKeyContext(
+                    requesterId,
+                    "project",
+                    "project:%d:update".formatted(requestDto.getProjectId()),
+                    idempotencyKey
+            );
 
-        // Command Service 호출 (VO 반환)
-        ProjectVo updatedVo = projectCommandService.updateProject(command);
+            updatedVo = idempotencyExecutor.execute(context, payloadHash, () -> {
+                UpdateProjectCommand command = commandMapper.toUpdateProjectCommand(requestDto, requesterId);
+                return projectCommandService.updateProject(command, idempotencyKey);
+            });
+        } else {
+            // DTO → Command Object 변환
+            UpdateProjectCommand command = commandMapper.toUpdateProjectCommand(requestDto, requesterId);
+
+            // Command Service 호출 (VO 반환)
+            updatedVo = projectCommandService.updateProject(command, idempotencyKey);
+        }
 
         log.info("Facade: Project updated successfully - ID: {}", updatedVo.id());
     }
@@ -294,15 +327,32 @@ public class ProjectFacadeService {
     /**
      * 프로젝트 종료 (DTO 반환)
      */
-    public ProjectDetailResponseDto endProject(ProjectEndRequestDto requestDto, Long requesterId) {
+    public ProjectDetailResponseDto endProject(ProjectEndRequestDto requestDto, Long requesterId, String idempotencyKey) {
         log.info("Facade: Ending project - ID: {}, requesterId: {}", requestDto.getProjectId(), requesterId);
 
-        // Command 객체 생성
-        String attachmentUrl = requestDto.getAttachment() != null ? requestDto.getAttachment().getAttachedUrl() : null;
-        EndProjectCommand command = EndProjectCommand.of(requestDto.getProjectId(), requesterId, attachmentUrl);
+        if (idempotencyProperties.getProject().isEnabled() && isNotBlank(idempotencyKey)) {
+            String payloadHash = projectIdempotencyPayloadHasher.hashEnd(requestDto);
+            IdempotencyKeyContext context = new IdempotencyKeyContext(
+                    requesterId,
+                    "project",
+                    "project:%d:end".formatted(requestDto.getProjectId()),
+                    idempotencyKey
+            );
 
-        // Command Service 호출 (VO 반환)
-        projectCommandService.endProject(command);
+            idempotencyExecutor.execute(context, payloadHash, () -> {
+                String attachmentUrl = requestDto.getAttachment() != null ? requestDto.getAttachment().getAttachedUrl() : null;
+                EndProjectCommand command = EndProjectCommand.of(requestDto.getProjectId(), requesterId, attachmentUrl);
+                projectCommandService.endProject(command, idempotencyKey);
+                return null;
+            });
+        } else {
+            // Command 객체 생성
+            String attachmentUrl = requestDto.getAttachment() != null ? requestDto.getAttachment().getAttachedUrl() : null;
+            EndProjectCommand command = EndProjectCommand.of(requestDto.getProjectId(), requesterId, attachmentUrl);
+
+            // Command Service 호출 (VO 반환)
+            projectCommandService.endProject(command, idempotencyKey);
+        }
 
         // 상태 확정 후 최신 데이터로 재조회하여 DTO 변환
         GetProjectByIdQuery refreshQuery = queryMapper.toGetProjectByIdQuery(requestDto.getProjectId());
@@ -311,6 +361,10 @@ public class ProjectFacadeService {
 
         log.info("Facade: Project ended successfully - ID: {}", refreshed.id());
         return responseDto;
+    }
+
+    private boolean isNotBlank(String value) {
+        return value != null && !value.isBlank();
     }
 
     /**
